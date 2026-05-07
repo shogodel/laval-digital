@@ -3,6 +3,20 @@ import sys
 import uuid
 from typing import Dict, Any
 from flask import Flask, render_template, jsonify, request, redirect, url_for
+from dotenv import load_dotenv
+
+load_dotenv()
+
+if not os.getenv("DEEPSEEK_API_KEY"):
+    raise RuntimeError(
+        "DEEPSEEK_API_KEY environment variable is required. "
+        "Create a .env file with DEEPSEEK_API_KEY=your-key-here"
+    )
+if not os.getenv("FLASK_SECRET_KEY"):
+    raise RuntimeError(
+        "FLASK_SECRET_KEY environment variable is required. "
+        "Create a .env file with FLASK_SECRET_KEY=your-random-secret"
+    )
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
@@ -13,7 +27,7 @@ from agents.social_media_agent import SocialMediaAgent
 from agents.lead_conversion_agent import LeadConversionAgent
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
 # Store active threads and their states
 active_threads: Dict[str, Dict[str, Any]] = {}
@@ -26,7 +40,7 @@ AGENT_CONFIGS = {
         "model": "deepseek-chat",
         "system_prompt_file": "prompts/local_seo.md",
         "credentials": {
-            "api_key": os.getenv("DEEPSEEK_API_KEY", "dummy-key"),
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
             "api_base": "https://api.deepseek.com/v1"
         }
     },
@@ -36,7 +50,7 @@ AGENT_CONFIGS = {
         "model": "deepseek-chat",
         "system_prompt_file": "prompts/social_media.md",
         "credentials": {
-            "api_key": os.getenv("DEEPSEEK_API_KEY", "dummy-key"),
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
             "api_base": "https://api.deepseek.com/v1"
         }
     },
@@ -46,7 +60,7 @@ AGENT_CONFIGS = {
         "model": "deepseek-chat",
         "system_prompt_file": "prompts/lead_conversion.md",
         "credentials": {
-            "api_key": os.getenv("DEEPSEEK_API_KEY", "dummy-key"),
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
             "api_base": "https://api.deepseek.com/v1"
         }
     }
@@ -55,7 +69,7 @@ AGENT_CONFIGS = {
 # Initialize LLM Adapter for Orchestrator
 llm_adapter = LLMAdapter(
     model="deepseek-chat",
-    api_key=os.getenv("DEEPSEEK_API_KEY", "dummy-key"),
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
     api_base="https://api.deepseek.com/v1"
 )
 
@@ -75,8 +89,20 @@ orchestrator_graph = orchestrator.build_graph()
 
 
 @app.route("/")
-def admin_panel():
-    """Serve the admin panel HTML."""
+def lead_site():
+    """Serve the client-facing lead generation site."""
+    return render_template("lead_site.html",
+        business_name="Laval 24/7 Plumbing",
+        city="Laval",
+        service="Plumbing",
+        phone="(450) 555-0199",
+        services=["Emergency Repairs", "Pipe Installation", "Water Heater Service", "Drain Cleaning", "Bathroom Remodeling"]
+    )
+
+
+@app.route("/admin")
+def admin_panel_redirect():
+    """Redirect to admin panel."""
     return render_template("admin.html")
 
 
