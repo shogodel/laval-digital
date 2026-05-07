@@ -134,6 +134,62 @@ def toggle_agent(agent_id):
     })
 
 
+@app.route("/api/agents/<agent_id>/config", methods=["GET"])
+def get_agent_config(agent_id):
+    """Get configuration for a specific agent."""
+    if agent_id not in AGENT_CONFIGS:
+        return jsonify({"error": "Agent not found"}), 404
+    
+    config = AGENT_CONFIGS[agent_id]
+    return jsonify({
+        "agent_id": agent_id,
+        "model": config.get("model", "deepseek-chat"),
+        "api_key": config.get("credentials", {}).get("api_key", ""),
+        "api_base": config.get("credentials", {}).get("api_base", "")
+    })
+
+
+@app.route("/api/agents/<agent_id>/config", methods=["POST"])
+def update_agent_config(agent_id):
+    """Update configuration for a specific agent."""
+    if agent_id not in AGENT_CONFIGS:
+        return jsonify({"error": "Agent not found"}), 404
+    
+    data = request.json
+    config = AGENT_CONFIGS[agent_id]
+    
+    if "model" in data:
+        if data["model"] not in ["deepseek-chat", "gpt-4o", "claude-3.5-sonnet"]:
+            return jsonify({"error": "Invalid model"}), 400
+        config["model"] = data["model"]
+    
+    if "api_key" in data:
+        config["credentials"]["api_key"] = data["api_key"]
+    
+    if "api_base" in data:
+        config["credentials"]["api_base"] = data["api_base"]
+    
+    # Re-initialize the agent with new config
+    if agent_id == "local_seo":
+        agent_registry[agent_id] = LocalSEOAgent(agent_id, config)
+    elif agent_id == "social_media":
+        agent_registry[agent_id] = SocialMediaAgent(agent_id, config)
+    elif agent_id == "lead_conversion":
+        agent_registry[agent_id] = LeadConversionAgent(agent_id, config)
+    
+    # Rebuild orchestrator with updated agent
+    global orchestrator, orchestrator_graph
+    orchestrator = Orchestrator(llm_adapter, agent_registry)
+    orchestrator_graph = orchestrator.build_graph()
+    
+    return jsonify({
+        "agent_id": agent_id,
+        "model": config["model"],
+        "message": "Configuration updated and agent reinitialized"
+    })
+
+
+
 @app.route("/api/tasks", methods=["POST"])
 def submit_task():
     """Submit a task to the orchestrator."""
