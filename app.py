@@ -2,6 +2,7 @@ import os
 import sys
 import uuid
 import warnings
+from datetime import datetime
 from typing import Dict, Any
 
 # Suppress warnings before any imports that might trigger them
@@ -40,6 +41,24 @@ active_threads: Dict[str, Dict[str, Any]] = {}
 
 # In-memory lead storage (replace with database in production)
 leads: list[Dict[str, Any]] = []
+
+# Per-agent activity telemetry for admin panel
+agent_activity: Dict[str, Dict[str, Any]] = {
+    agent_id: {
+        "status": "idle",
+        "last_invoked": None,
+        "task_count": 0,
+        "success_count": 0,
+        "failure_count": 0,
+        "last_draft_preview": None,
+    }
+    for agent_id in ["local_seo", "social_media", "lead_conversion"]
+}
+
+def _update_activity(agent_id: str, **kwargs) -> None:
+    """Update activity fields for a given agent."""
+    if agent_id in agent_activity:
+        agent_activity[agent_id].update(kwargs)
 
 # Agent configurations - in production, load from config files
 AGENT_CONFIGS = {
@@ -146,13 +165,20 @@ def handle_leads():
 
 @app.route("/api/agents", methods=["GET"])
 def get_agents():
-    """Get status of all agents."""
+    """Get status and activity telemetry of all agents."""
     agents_status = []
     for agent_id, agent in agent_registry.items():
+        act = agent_activity.get(agent_id, {})
         agents_status.append({
             "agent_id": agent.agent_id,
             "enabled": agent.enabled,
             "model": agent.model,
+            "status": act.get("status", "idle"),
+            "last_invoked": act.get("last_invoked"),
+            "task_count": act.get("task_count", 0),
+            "success_count": act.get("success_count", 0),
+            "failure_count": act.get("failure_count", 0),
+            "last_draft_preview": act.get("last_draft_preview"),
         })
     return jsonify({"agents": agents_status})
 
@@ -290,6 +316,19 @@ def submit_task():
             "status": status
         }
         
+        agent_name = result.get("routed_agent", "")
+        if agent_name and agent_name in agent_activity:
+            draft_preview = None
+            if has_draft:
+                draft = result.get("agent_draft", "")
+                draft_preview = (draft[:120] + "...") if len(draft) > 120 else draft
+            _update_activity(agent_name,
+                status="idle" if status == "completed" else "pending_approval",
+                last_invoked=datetime.now().isoformat(),
+                task_count=agent_activity[agent_name]["task_count"] + 1,
+                last_draft_preview=draft_preview,
+            )
+        
         return jsonify({
             "thread_id": thread_id,
             "status": status,
@@ -349,8 +388,23 @@ def respond_approval(thread_id):
                     agent = agent_registry[agent_name]
                     execution_result = agent.execute(draft)
                     thread_data["state"]["final_result"] = execution_result
+                    _update_activity(agent_name,
+                        success_count=agent_activity[agent_name]["success_count"] + 1,
+                        status="idle",
+                    )
                 except Exception as exec_err:
                     thread_data["state"]["final_result"] = f"Execution error: {str(exec_err)}"
+                    _update_activity(agent_name,
+                        failure_count=agent_activity[agent_name]["failure_count"] + 1,
+                        status="idle",
+                    )
+        else:
+            agent_name = thread_data["state"].get("routed_agent")
+            if agent_name and agent_name in agent_activity:
+                _update_activity(agent_name,
+                    failure_count=agent_activity[agent_name]["failure_count"] + 1,
+                    status="idle",
+                )
         
         return jsonify({
             "thread_id": thread_id,
@@ -379,6 +433,7 @@ def invoke_agent(agent_id):
         return jsonify({"error": "No task provided"}), 400
     
     try:
+        _update_activity(agent_id, status="processing")
         graph = agent.build_graph()
         result = graph.invoke({
             "task": task,
@@ -388,11 +443,25 @@ def invoke_agent(agent_id):
             "result": None,
         })
         
+        draft = result.get("draft_output", "")
+        draft_preview = (draft[:120] + "...") if len(draft) > 120 else draft
+        _update_activity(agent_id,
+            status="idle",
+            last_invoked=datetime.now().isoformat(),
+            task_count=agent_activity[agent_id]["task_count"] + 1,
+            success_count=agent_activity[agent_id]["success_count"] + 1,
+            last_draft_preview=draft_preview,
+        )
+        
         return jsonify({
             "agent_id": agent_id,
             "result": result
         })
     except Exception as e:
+        _update_activity(agent_id,
+            status="idle",
+            failure_count=agent_activity[agent_id]["failure_count"] + 1,
+        )
         return jsonify({"error": str(e)}), 500
 
 
