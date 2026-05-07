@@ -26,6 +26,28 @@
         .status-processing { background: #007bff; color: white; }
         .status-idle { background: #28a745; color: white; }
         .status-disabled { background: #6c757d; color: white; }
+        pre { white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
+
+        @media (max-width: 768px) {
+            body { margin: 10px; }
+            .container { padding: 12px; }
+            h1 { font-size: 1.3rem; }
+            .section { padding: 10px; margin: 12px 0; }
+            .agent-card { display: block; min-width: unset; max-width: unset; margin: 10px 0; }
+            .agent-card p { font-size: 0.85em; }
+            button { width: 100%; margin: 6px 0; padding: 12px; font-size: 1em; }
+            input, textarea, select { font-size: 16px; }
+            .approval-card { padding: 10px; }
+            .approval-card pre { font-size: 0.8em; }
+            #agent-config-form [style*="display:flex"] { flex-direction: column; align-items: stretch; }
+            #agent-config-form [style*="display:grid"] { grid-template-columns: 1fr !important; }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 8px; }
+            .section { padding: 8px; }
+            h1 { font-size: 1.1rem; }
+        }
     </style>
 </head>
 <body>
