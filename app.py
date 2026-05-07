@@ -3,11 +3,13 @@ import sys
 import uuid
 import warnings
 from typing import Dict, Any
+
+# Suppress warnings before any imports that might trigger them
+warnings.filterwarnings("ignore", module="langgraph")
+warnings.filterwarnings("ignore", module="langchain")
+
 from flask import Flask, render_template, jsonify, request, redirect, url_for
 from dotenv import load_dotenv
-
-# Suppress LangChain deprecation warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 load_dotenv()
 
