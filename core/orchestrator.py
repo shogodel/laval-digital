@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional, TypedDict
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
-from .llm_adapter import LLMAdapter
-from .base_agent import BaseAgent
+from core.llm_adapter import LLMAdapter
+from core.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
