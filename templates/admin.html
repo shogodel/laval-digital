@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laval Digital - Admin Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .agent-card { display: inline-block; margin: 10px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; min-width: 200px; }
+        .agent-card.enabled { border-color: #28a745; background: #f8fff9; }
+        .agent-card.disabled { border-color: #dc3545; background: #fff8f8; }
+        button { padding: 8px 16px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        input, textarea { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 100%; }
+        .approval-card { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .status-badge { padding: 4px 8px; border-radius: 3px; font-size: 12px; }
+        .status-pending { background: #ffc107; color: black; }
+        .status-completed { background: #28a745; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Laval Digital - Admin Panel</h1>
+        
+        <!-- Agent Status Section -->
+        <div class="section">
+            <h2>Agent Status</h2>
+            <div id="agent-list"></div>
+        </div>
+        
+        <!-- Submit Task Section -->
+        <div class="section">
+            <h2>Submit Task to Orchestrator</h2>
+            <textarea id="task-input" rows="3" placeholder="e.g., I want more plumbing leads in Laval this week"></textarea>
+            <button class="btn-primary" onclick="submitTask()">Submit Task</button>
+            <div id="task-result"></div>
+        </div>
+        
+        <!-- Pending Approvals Section -->
+        <div class="section">
+            <h2>Pending Approvals</h2>
+            <button class="btn-warning" onclick="loadApprovals()">Refresh Approvals</button>
+            <div id="approvals-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Load agent status on page load
+        window.onload = function() {
+            loadAgents();
+            loadApprovals();
+        };
+
+        function loadAgents() {
+            fetch('/api/agents')
+                .then(r => r.json())
+                .then(data => {
+                    const html = data.agents.map(a => `
+                        <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}">
+                            <h3>${a.agent_id}</h3>
+                            <p>Model: ${a.model}</p>
+                            <p>Status: <span class="status-badge ${a.enabled ? 'status-completed' : 'status-pending'}">${a.enabled ? 'Enabled' : 'Disabled'}</span></p>
+                            <button class="btn-${a.enabled ? 'danger' : 'success'}" onclick="toggleAgent('${a.agent_id}')">
+                                ${a.enabled ? 'Disable' : 'Enable'}
+                            </button>
+                        </div>
+                    `).join('');
+                    document.getElementById('agent-list').innerHTML = html;
+                });
+        }
+
+        function toggleAgent(agentId) {
+            fetch(`/api/agents/${agentId}/toggle`, { method: 'POST' })
+                .then(r => r.json())
+                .then(() => loadAgents());
+        }
+
+        function submitTask() {
+            const task = document.getElementById('task-input').value;
+            if (!task) return alert('Please enter a task');
+            
+            fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ request: task })
+            })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('task-result').innerHTML = `
+                    <p>Task submitted! Thread ID: ${data.thread_id}</p>
+                    <p>Status: <span class="status-badge ${data.status === 'completed' ? 'status-completed' : 'status-pending'}">${data.status}</span></p>
+                `;
+                setTimeout(loadApprovals, 2000);
+            });
+        }
+
+        function loadApprovals() {
+            fetch('/api/approvals')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.approvals.length === 0) {
+                        document.getElementById('approvals-list').innerHTML = '<p>No pending approvals</p>';
+                        return;
+                    }
+                    
+                    const html = data.approvals.map(a => `
+                        <div class="approval-card">
+                            <h3>Agent: ${a.agent}</h3>
+                            <p><strong>Task:</strong> ${a.task}</p>
+                            <p><strong>Draft:</strong></p>
+                            <pre>${a.draft}</pre>
+                            <button class="btn-success" onclick="respondApproval('${a.thread_id}', true)">Approve</button>
+                            <button class="btn-danger" onclick="showRejectForm('${a.thread_id}')">Reject</button>
+                            <div id="reject-form-${a.thread_id}" style="display:none; margin-top:10px;">
+                                <input type="text" id="feedback-${a.thread_id}" placeholder="Feedback (optional)">
+                                <button class="btn-danger" onclick="respondApproval('${a.thread_id}', false)">Confirm Reject</button>
+                            </div>
+                        </div>
+                    `).join('');
+                    document.getElementById('approvals-list').innerHTML = html;
+                });
+        }
+
+        function showRejectForm(threadId) {
+            document.getElementById(`reject-form-${threadId}`).style.display = 'block';
+        }
+
+        function respondApproval(threadId, approved) {
+            const feedback = document.getElementById(`feedback-${threadId}`)?.value || '';
+            
+            fetch(`/api/approvals/${threadId}/respond`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ approved: approved, feedback: feedback })
+            })
+            .then(r => r.json())
+            .then(() => {
+                alert(`Approval ${approved ? 'approved' : 'rejected'}!`);
+                loadApprovals();
+            });
+        }
+    </script>
+</body>
+</html>
