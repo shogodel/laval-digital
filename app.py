@@ -1,9 +1,13 @@
 import os
 import sys
 import uuid
+import warnings
 from typing import Dict, Any
 from flask import Flask, render_template, jsonify, request, redirect, url_for
 from dotenv import load_dotenv
+
+# Suppress LangChain deprecation warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 load_dotenv()
 
@@ -83,9 +87,16 @@ for agent_id, config in AGENT_CONFIGS.items():
     elif agent_id == "lead_conversion":
         agent_registry[agent_id] = LeadConversionAgent(agent_id, config)
 
-# Initialize Orchestrator
-orchestrator = Orchestrator(llm_adapter, agent_registry)
-orchestrator_graph = orchestrator.build_graph()
+# Initialize Orchestrator (deferred to first use)
+orchestrator = None
+orchestrator_graph = None
+
+def get_orchestrator():
+    global orchestrator, orchestrator_graph
+    if orchestrator is None:
+        orchestrator = Orchestrator(llm_adapter, agent_registry)
+        orchestrator_graph = orchestrator.build_graph()
+    return orchestrator_graph
 
 
 @app.route("/")
@@ -215,7 +226,8 @@ def submit_task():
     config = {"configurable": {"thread_id": thread_id}}
     
     try:
-        result = orchestrator_graph.invoke(initial_state, config)
+        graph = get_orchestrator()
+        result = graph.invoke(initial_state, config)
         
         active_threads[thread_id] = {
             "state": result,
@@ -266,7 +278,8 @@ def respond_approval(thread_id):
     }
     
     try:
-        result = orchestrator_graph.invoke(human_response, thread_data["config"])
+        graph = get_orchestrator()
+        result = graph.invoke(human_response, thread_data["config"])
         
         thread_data["state"] = result
         thread_data["status"] = "completed"
