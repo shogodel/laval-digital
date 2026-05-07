@@ -6,9 +6,13 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.language_models import BaseChatModel
 
 try:
-    from litellm import ChatLiteLLM, model_list
+    from langchain_litellm import ChatLiteLLM
 except ImportError:
     ChatLiteLLM = None  # type: ignore
+
+try:
+    from litellm import model_list
+except ImportError:
     model_list = None
 
 logger = logging.getLogger(__name__)

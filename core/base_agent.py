@@ -12,7 +12,7 @@ from langgraph.types import interrupt
 from core.llm_adapter import LLMAdapter
 
 try:
-    from litellm import ChatLiteLLM
+    from langchain_litellm import ChatLiteLLM
 except ImportError:
     ChatLiteLLM = None
 
