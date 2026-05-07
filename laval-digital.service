@@ -1,0 +1,14 @@
+[Unit]
+Description=Laval Digital Flask App
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/laval-digital
+Environment="PATH=/var/www/laval-digital/venv/bin"
+ExecStart=/var/www/laval-digital/venv/bin/python /var/www/laval-digital/app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
