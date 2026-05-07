@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ business_name }} - Professional {{ service }} in {{ city }}</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(26, 58, 92, 0.9), rgba(26, 58, 92, 0.9)), url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%231a3a5c" width="1200" height="600"/></svg>');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: #ff6b35;
+            color: white;
+            padding: 18px 40px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            min-height: 60px;
+            min-width: 280px;
+            transition: background 0.3s;
+        }
+        
+        .cta-button:hover {
+            background: #e55a2b;
+        }
+        
+        /* Services Section */
+        .services {
+            padding: 60px 20px;
+            background: #f8f9fa;
+        }
+        
+        .services h2 {
+            text-align: center;
+            color: #1a3a5c;
+            margin-bottom: 40px;
+            font-size: 2rem;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .service-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            font-size: 1.1rem;
+            color: #1a3a5c;
+            font-weight: 500;
+        }
+        
+        /* Why Choose Us */
+        .why-choose {
+            padding: 60px 20px;
+        }
+        
+        .why-choose h2 {
+            text-align: center;
+            color: #1a3a5c;
+            margin-bottom: 40px;
+            font-size: 2rem;
+        }
+        
+        .badges {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        
+        .badge {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .badge-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .badge h3 {
+            color: #1a3a5c;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+        
+        .badge p {
+            color: #666;
+        }
+        
+        /* Lead Form */
+        .lead-form {
+            padding: 60px 20px;
+            background: #f8f9fa;
+        }
+        
+        .lead-form h2 {
+            text-align: center;
+            color: #1a3a5c;
+            margin-bottom: 40px;
+            font-size: 2rem;
+        }
+        
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #1a3a5c;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 15px;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            min-height: 50px;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            background: #ff6b35;
+            color: white;
+            padding: 18px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            min-height: 60px;
+            transition: background 0.3s;
+        }
+        
+        .submit-btn:hover {
+            background: #e55a2b;
+        }
+        
+        #thankYou {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #1a3a5c;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        .footer p {
+            margin: 10px 0;
+        }
+        
+        .footer a {
+            color: #ff6b35;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Responsive */
+        @media (min-width: 768px) {
+            .hero h1 {
+                font-size: 3.5rem;
+            }
+            
+            .services-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .badges {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .services-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+    
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "{{ business_name }}",
+        "description": "Professional {{ service }} services in {{ city }}",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "{{ city }}",
+            "addressRegion": "QC",
+            "addressCountry": "CA"
+        },
+        "telephone": "{{ phone }}",
+        "areaServed": "{{ city }}",
+        "serviceType": "{{ service }}"
+    }
+    </script>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Professional {{ service }} in {{ city }}</h1>
+            <p>Available 24/7 for emergency {{ service }}</p>
+            <a href="tel:{{ phone | replace('(', '') | replace(')', '') | replace('-', '') | replace(' ', '') }}" class="cta-button">Call Now: {{ phone }}</a>
+        </div>
+    </section>
+    
+    <!-- Services Section -->
+    <section class="services">
+        <div class="container">
+            <h2>Our {{ service }} Services</h2>
+            <div class="services-grid">
+                {% for s in services %}
+                <div class="service-card">{{ s }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    
+    <!-- Why Choose Us -->
+    <section class="why-choose">
+        <div class="container">
+            <h2>Why Choose {{ business_name }}?</h2>
+            <div class="badges">
+                <div class="badge">
+                    <div class="badge-icon">🛡️</div>
+                    <h3>Licensed & Insured</h3>
+                    <p>Full protection and peace of mind for every job</p>
+                </div>
+                <div class="badge">
+                    <div class="badge-icon">⭐</div>
+                    <h3>5-Star Reviews</h3>
+                    <p>Top-rated service by your local neighbors</p>
+                </div>
+                <div class="badge">
+                    <div class="badge-icon">⚡</div>
+                    <h3>Same-Day Service</h3>
+                    <p>Fast response when you need it most</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Lead Form -->
+    <section class="lead-form">
+        <div class="container">
+            <h2>Get a Free Quote</h2>
+            <div class="form-container">
+                <form id="leadForm">
+                    <div class="form-group">
+                        <label for="name">Your Name</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Your Phone</label>
+                        <input type="tel" id="phone" name="phone" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="service">Service Needed</label>
+                        <select id="service" name="service" required>
+                            <option value="">Select a service...</option>
+                            {% for s in services %}
+                            <option value="{{ s }}">{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Urgency</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="urgency" value="Now" required> Now</label>
+                            <label><input type="radio" name="urgency" value="Today"> Today</label>
+                            <label><input type="radio" name="urgency" value="This Week"> This Week</label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">Get Free Quote</button>
+                </form>
+                
+                <div id="thankYou">
+                    <h3>Thank You!</h3>
+                    <p>We've received your request and will call you shortly.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p><strong>{{ business_name }}</strong></p>
+            <p>Call: {{ phone }}</p>
+            <p>Serving {{ city }} and surrounding areas</p>
+            <p>Powered by <a href="/admin">Laval Digital</a></p>
+        </div>
+    </footer>
+    
+    <script>
+        document.getElementById('leadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch('/api/leads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.fromEntries(formData))
+            }).then(() => {
+                showThankYou();
+            }).catch(() => {
+                showThankYou();
+            });
+        });
+        
+        function showThankYou() {
+            document.getElementById('leadForm').style.display = 'none';
+            document.getElementById('thankYou').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
