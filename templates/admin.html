@@ -80,7 +80,7 @@
         };
 
         function loadAgents() {
-            fetch('/api/agents')
+            return fetch('/api/agents')
                 .then(r => r.json())
                 .then(data => {
                     const html = data.agents.map(a => `
@@ -97,13 +97,16 @@
                 });
         }
 
+        let togglePromise = Promise.resolve();
+
         function toggleAgent(agentId) {
-            const btn = document.querySelector(`[data-agent-id="${agentId}"] .toggle-btn`);
-            if (btn) btn.disabled = true;
-            fetch(`/api/agents/${agentId}/toggle`, { method: 'POST' })
-                .then(r => r.json())
-                .then(() => new Promise(r => setTimeout(r, 300)))
-                .then(() => loadAgents());
+            togglePromise = togglePromise.then(() => {
+                const btn = document.querySelector(`[data-agent-id="${agentId}"] .toggle-btn`);
+                if (btn) btn.disabled = true;
+                return fetch(`/api/agents/${agentId}/toggle`, { method: 'POST' })
+                    .then(r => r.json())
+                    .then(() => loadAgents());
+            });
         }
 
         function submitTask() {
