@@ -43,10 +43,14 @@
             <div id="agent-config-form" style="display:none; margin-top:10px;">
                 <label>Model:</label>
                 <select id="config-model">
-                    <option value="">-- Loading models --</option>
+                    <option value="">-- Enter API key and click Detect --</option>
                 </select>
                 <label>API Key:</label>
-                <input type="password" id="config-api-key" placeholder="sk-...">
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="password" id="config-api-key" placeholder="sk-..." style="flex:1;">
+                    <button id="detect-btn" class="btn-primary" onclick="detectModels()" disabled style="white-space:nowrap;">Detect</button>
+                </div>
+                <div id="detect-result" style="font-size:0.9em; margin:5px 0;"></div>
                 <label>API Base URL (optional):</label>
                 <input type="text" id="config-api-base" placeholder="https://api.deepseek.com/v1">
                 <button class="btn-primary" onclick="saveAgentConfig()">Save Configuration</button>
@@ -77,6 +81,9 @@
             loadApprovals();
             populateAgentSelect();
             populateModelDropdown();
+            document.getElementById('config-api-key').addEventListener('input', function() {
+                document.getElementById('detect-btn').disabled = !this.value.trim();
+            });
         };
 
         function loadAgents() {
@@ -189,18 +196,51 @@
         }
 
         function populateModelDropdown() {
-            fetch('/api/models')
-                .then(r => r.json())
-                .then(data => {
-                    const select = document.getElementById('config-model');
-                    select.innerHTML = '';
-                    data.models.forEach(m => {
-                        const option = document.createElement('option');
-                        option.value = m;
-                        option.textContent = m;
-                        select.appendChild(option);
-                    });
+            const select = document.getElementById('config-model');
+            select.innerHTML = '<option value="">-- Enter API key and click Detect --</option>';
+        }
+
+        function detectModels() {
+            const apiKey = document.getElementById('config-api-key').value.trim();
+            if (!apiKey) return;
+            const btn = document.getElementById('detect-btn');
+            const resultDiv = document.getElementById('detect-result');
+            btn.disabled = true;
+            btn.textContent = 'Detecting...';
+            resultDiv.textContent = '';
+            fetch('/api/models/detect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key: apiKey })
+            })
+            .then(r => r.json())
+            .then(data => {
+                const select = document.getElementById('config-model');
+                if (data.provider === 'unknown' || data.models.length === 0) {
+                    select.innerHTML = '<option value="">-- No models detected for this key --</option>';
+                    resultDiv.textContent = 'Could not detect provider. Check your key.';
+                    resultDiv.style.color = 'red';
+                    return;
+                }
+                select.innerHTML = '';
+                data.models.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m;
+                    select.appendChild(opt);
                 });
+                resultDiv.textContent = 'Provider: ' + data.provider + ' (' + data.models.length + ' models)';
+                resultDiv.style.color = 'green';
+            })
+            .catch(err => {
+                document.getElementById('config-model').innerHTML = '<option value="">-- Detection failed --</option>';
+                resultDiv.textContent = 'Error: ' + err.message;
+                resultDiv.style.color = 'red';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = 'Detect';
+            });
         }
 
         function loadAgentConfig() {
@@ -209,12 +249,14 @@
                 document.getElementById('agent-config-form').style.display = 'none';
                 return;
             }
+            populateModelDropdown();
+            document.getElementById('detect-result').textContent = '';
             fetch(`/api/agents/${agentId}/config`)
                 .then(r => r.json())
                 .then(data => {
-                    document.getElementById('config-model').value = data.model || 'deepseek-chat';
                     document.getElementById('config-api-key').value = data.api_key || '';
                     document.getElementById('config-api-base').value = data.api_base || '';
+                    document.getElementById('detect-btn').disabled = !data.api_key;
                     document.getElementById('agent-config-form').style.display = 'block';
                 })
                 .catch(() => {

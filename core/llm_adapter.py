@@ -1,6 +1,7 @@
 import logging
-from typing import List, Optional, Generator
+from typing import Any, Dict, List, Optional, Generator
 
+import requests
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.language_models import BaseChatModel
 
@@ -112,6 +113,80 @@ class LLMAdapter:
         """
         available = cls.get_available_models()
         return model in available
+
+    @classmethod
+    def detect_models(cls, api_key: str) -> Dict[str, Any]:
+        """Detect provider from API key and return its available models.
+
+        Uses key prefix heuristics to try the most likely provider first,
+        falling back to other providers if the endpoint rejects the key.
+
+        Args:
+            api_key: Provider API key to test.
+
+        Returns:
+            Dict with 'provider' (str) and 'models' (list of str).
+            'provider' is 'unknown' if no provider accepts the key.
+        """
+        providers = [
+            {
+                "name": "anthropic",
+                "url": "https://api.anthropic.com/v1/models",
+                "headers": {"x-api-key": api_key, "anthropic-version": "2023-06-01"},
+                "parse": lambda d: [m["name"] for m in d.get("data", [])],
+            },
+            {
+                "name": "google",
+                "url": f"https://generativelanguage.googleapis.com/v1/models?key={api_key}",
+                "headers": {},
+                "parse": lambda d: [m["name"] for m in d.get("models", [])],
+            },
+            {
+                "name": "openai",
+                "url": "https://api.openai.com/v1/models",
+                "headers": {"Authorization": f"Bearer {api_key}"},
+                "parse": lambda d: [m["id"] for m in d.get("data", [])],
+            },
+            {
+                "name": "deepseek",
+                "url": "https://api.deepseek.com/models",
+                "headers": {"Authorization": f"Bearer {api_key}"},
+                "parse": lambda d: [m["id"] for m in d.get("data", [])],
+            },
+            {
+                "name": "mistral",
+                "url": "https://api.mistral.ai/v1/models",
+                "headers": {"Authorization": f"Bearer {api_key}"},
+                "parse": lambda d: [m["id"] for m in d.get("data", [])],
+            },
+        ]
+
+        if api_key.startswith("sk-ant-"):
+            order = ["anthropic", "openai", "deepseek", "mistral", "google"]
+        elif api_key.startswith("AIza"):
+            order = ["google", "openai", "deepseek", "mistral", "anthropic"]
+        else:
+            order = ["openai", "deepseek", "mistral", "google", "anthropic"]
+
+        provider_map = {p["name"]: p for p in providers}
+
+        for name in order:
+            p = provider_map.get(name)
+            if not p:
+                continue
+            try:
+                resp = requests.get(p["url"], headers=p["headers"], timeout=10)
+                if resp.status_code == 200:
+                    models = p["parse"](resp.json())
+                    if models:
+                        logger.info(f"Detected provider '{name}' with {len(models)} models")
+                        return {"provider": name, "models": sorted(models)}
+            except requests.RequestException:
+                logger.debug(f"Provider '{name}' rejected key {api_key[:8]}...")
+                continue
+
+        logger.warning(f"No provider accepted key {api_key[:8]}...")
+        return {"provider": "unknown", "models": []}
 
     def _get_llm(self) -> BaseChatModel:
         """Create and return a configured LiteLLM chat model instance.

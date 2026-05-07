@@ -167,6 +167,20 @@ def get_available_models():
         return jsonify({"models": ["deepseek-chat", "gpt-4o", "claude-3.5-sonnet"]})
 
 
+@app.route("/api/models/detect", methods=["POST"])
+def detect_models():
+    """Detect provider from API key and return available models."""
+    data = request.json
+    api_key = data.get("api_key", "")
+    if not api_key:
+        return jsonify({"error": "API key is required"}), 400
+    try:
+        result = LLMAdapter.detect_models(api_key)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"provider": "unknown", "models": [], "error": str(e)}), 500
+
+
 @app.route("/api/agents/<agent_id>/toggle", methods=["POST"])
 def toggle_agent(agent_id):
     """Toggle agent on/off."""
