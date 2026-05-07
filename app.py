@@ -32,6 +32,7 @@ from core.llm_adapter import LLMAdapter
 from agents.local_seo_agent import LocalSEOAgent
 from agents.social_media_agent import SocialMediaAgent
 from agents.lead_conversion_agent import LeadConversionAgent
+from agents.executioner_agent import ExecutionerAgent
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
@@ -110,6 +111,13 @@ for agent_id, config in AGENT_CONFIGS.items():
         agent_registry[agent_id] = SocialMediaAgent(agent_id, config)
     elif agent_id == "lead_conversion":
         agent_registry[agent_id] = LeadConversionAgent(agent_id, config)
+
+# Initialize ExecutionerAgent for approved draft execution
+executioner = ExecutionerAgent({
+    "execution_log_path": "logs/executions.jsonl",
+    "max_retries": 3,
+    "retry_delay": 5,
+})
 
 # Initialize Orchestrator (deferred to first use)
 orchestrator = None
@@ -205,6 +213,43 @@ def detect_models():
         return jsonify(result)
     except Exception as e:
         return jsonify({"provider": "unknown", "models": [], "error": str(e)}), 500
+
+
+@app.route("/api/executioner/settings", methods=["GET", "PUT"])
+def handle_executioner_settings():
+    """Get or update ExecutionerAgent settings."""
+    if request.method == "PUT":
+        data = request.json
+        if data:
+            executioner.update_settings(data)
+        return jsonify(executioner.get_settings())
+    return jsonify(executioner.get_settings())
+
+
+@app.route("/api/executioner/pending", methods=["GET"])
+def get_pending_executions():
+    """Get all executions awaiting confirmation."""
+    return jsonify({"pending": executioner.get_pending_executions()})
+
+
+@app.route("/api/executioner/confirm/<execution_id>", methods=["POST"])
+def confirm_execution(execution_id):
+    """Confirm and execute a queued execution."""
+    try:
+        result = executioner.confirm_execution(execution_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/executioner/reject/<execution_id>", methods=["POST"])
+def reject_execution(execution_id):
+    """Reject a queued execution without running it."""
+    try:
+        result = executioner.reject_execution(execution_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @app.route("/api/agents/<agent_id>/toggle", methods=["POST"])
@@ -378,20 +423,33 @@ def respond_approval(thread_id):
         thread_data["state"] = result
         thread_data["status"] = "completed"
         
-        # If approved, execute the agent's business logic
+        # If approved, execute via the ExecutionerAgent
         if approved:
             state = result
             agent_name = state.get("routed_agent")
             draft = state.get("agent_draft", "")
             if agent_name and agent_name in agent_registry:
                 try:
-                    agent = agent_registry[agent_name]
-                    execution_result = agent.execute(draft)
-                    thread_data["state"]["final_result"] = execution_result
-                    _update_activity(agent_name,
-                        success_count=agent_activity[agent_name]["success_count"] + 1,
-                        status="idle",
-                    )
+                    exec_result = executioner.execute(agent_name, draft)
+                    thread_data["state"]["final_result"] = exec_result.get("result", str(exec_result))
+                    thread_data["state"]["execution_id"] = exec_result.get("execution_id")
+
+                    if exec_result.get("status") == "pending_confirmation":
+                        _update_activity(agent_name,
+                            status="pending_confirmation",
+                            last_invoked=datetime.now().isoformat(),
+                            last_draft_preview=(draft[:120] + "...") if len(draft) > 120 else draft,
+                        )
+                    elif exec_result.get("success"):
+                        _update_activity(agent_name,
+                            success_count=agent_activity[agent_name]["success_count"] + 1,
+                            status="idle",
+                        )
+                    else:
+                        _update_activity(agent_name,
+                            failure_count=agent_activity[agent_name]["failure_count"] + 1,
+                            status="idle",
+                        )
                 except Exception as exec_err:
                     thread_data["state"]["final_result"] = f"Execution error: {str(exec_err)}"
                     _update_activity(agent_name,

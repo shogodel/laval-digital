@@ -76,6 +76,52 @@
             <button class="btn-warning" onclick="loadApprovals()">Refresh Approvals</button>
             <div id="approvals-list"></div>
         </div>
+
+        <!-- Pending Confirmations Section -->
+        <div class="section">
+            <h2>Pending Confirmations</h2>
+            <p style="font-size:0.85em;color:#666;">These approved drafts are waiting for your final go-ahead before being sent (email, social, SMS).</p>
+            <button class="btn-warning" onclick="loadPendingExecutions()">Refresh</button>
+            <div id="pending-executions-list"><p style="color:#666;">Loading...</p></div>
+        </div>
+
+        <!-- Executioner Settings Section -->
+        <div class="section">
+            <h2>Executioner Settings</h2>
+            <p style="font-size:0.85em;color:#666;">Configure SMTP and social media API credentials for executing approved drafts.</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                <div>
+                    <h3>SMTP</h3>
+                    <label>Host:</label>
+                    <input type="text" id="smtp-host" placeholder="smtp.gmail.com">
+                    <label>Port:</label>
+                    <input type="number" id="smtp-port" placeholder="587">
+                    <label>Username:</label>
+                    <input type="text" id="smtp-username" placeholder="user@gmail.com">
+                    <label>Password:</label>
+                    <input type="password" id="smtp-password" placeholder="app password">
+                    <label>From Email:</label>
+                    <input type="text" id="smtp-from" placeholder="info@lavalplumbing.com">
+                    <label><input type="checkbox" id="smtp-tls" checked> Use TLS</label>
+                </div>
+                <div>
+                    <h3>Social Media</h3>
+                    <label>Facebook Page ID:</label>
+                    <input type="text" id="fb-page-id" placeholder="123456789">
+                    <label>Facebook Access Token:</label>
+                    <input type="password" id="fb-token" placeholder="EAA...">
+                    <label>Instagram Account ID:</label>
+                    <input type="text" id="ig-account-id" placeholder="123456789">
+                    <label>Instagram Access Token:</label>
+                    <input type="password" id="ig-token" placeholder="EAA...">
+                </div>
+            </div>
+            <div style="margin-top:10px;">
+                <button class="btn-primary" onclick="loadExecutionerSettings()">Reload</button>
+                <button class="btn-success" onclick="saveExecutionerSettings()">Save Settings</button>
+                <span id="executioner-settings-result"></span>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -83,6 +129,8 @@
         window.onload = function() {
             loadAgents();
             loadApprovals();
+            loadPendingExecutions();
+            loadExecutionerSettings();
             populateAgentSelect();
             populateModelDropdown();
             document.getElementById('config-api-key').addEventListener('input', function() {
@@ -297,6 +345,113 @@
                 document.getElementById('config-save-result').innerHTML = 
                     '<span style="color:red;">Error saving configuration</span>';
             });
+        }
+
+        /* ------------------------------------------------------------------ */
+        /*  Pending Confirmations                                             */
+        /* ------------------------------------------------------------------ */
+
+        function loadPendingExecutions() {
+            fetch('/api/executioner/pending')
+                .then(r => r.json())
+                .then(data => {
+                    const list = document.getElementById('pending-executions-list');
+                    if (!data.pending || data.pending.length === 0) {
+                        list.innerHTML = '<p style="color:#666;">No pending confirmations</p>';
+                        return;
+                    }
+                    list.innerHTML = data.pending.map(p => `
+                        <div class="approval-card">
+                            <p><strong>Agent:</strong> ${p.agent_name}</p>
+                            <p><strong>Tool:</strong> ${p.tool_name}</p>
+                            <p><strong>Created:</strong> ${new Date(p.created_at).toLocaleString()}</p>
+                            <p><strong>Draft preview:</strong></p>
+                            <pre style="font-size:0.85em;">${p.draft_preview}</pre>
+                            <button class="btn-success" onclick="confirmPending('${p.execution_id}')">Confirm</button>
+                            <button class="btn-danger" onclick="rejectPending('${p.execution_id}')">Reject</button>
+                        </div>
+                    `).join('');
+                })
+                .catch(() => {
+                    document.getElementById('pending-executions-list').innerHTML =
+                        '<p style="color:red;">Failed to load pending confirmations</p>';
+                });
+        }
+
+        function confirmPending(executionId) {
+            fetch(`/api/executioner/confirm/${executionId}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    const msg = data.success ? 'Execution confirmed!' : 'Execution failed: ' + (data.error || 'unknown');
+                    alert(msg);
+                    loadPendingExecutions();
+                    loadAgents();
+                })
+                .catch(err => alert('Error: ' + err.message));
+        }
+
+        function rejectPending(executionId) {
+            fetch(`/api/executioner/reject/${executionId}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(() => {
+                    alert('Execution rejected.');
+                    loadPendingExecutions();
+                })
+                .catch(err => alert('Error: ' + err.message));
+        }
+
+        /* ------------------------------------------------------------------ */
+        /*  Executioner Settings                                              */
+        /* ------------------------------------------------------------------ */
+
+        function loadExecutionerSettings() {
+            fetch('/api/executioner/settings')
+                .then(r => r.json())
+                .then(s => {
+                    document.getElementById('smtp-host').value = s.smtp_host || '';
+                    document.getElementById('smtp-port').value = s.smtp_port || 587;
+                    document.getElementById('smtp-username').value = s.smtp_username || '';
+                    document.getElementById('smtp-password').value = s.smtp_password || '';
+                    document.getElementById('smtp-from').value = s.smtp_from_email || '';
+                    document.getElementById('smtp-tls').checked = s.smtp_use_tls !== false;
+                    document.getElementById('fb-page-id').value = s.facebook_page_id || '';
+                    document.getElementById('fb-token').value = s.facebook_access_token || '';
+                    document.getElementById('ig-account-id').value = s.instagram_account_id || '';
+                    document.getElementById('ig-token').value = s.instagram_access_token || '';
+                })
+                .catch(() => {});
+        }
+
+        function saveExecutionerSettings() {
+            const settings = {
+                smtp_host: document.getElementById('smtp-host').value,
+                smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
+                smtp_username: document.getElementById('smtp-username').value,
+                smtp_password: document.getElementById('smtp-password').value,
+                smtp_from_email: document.getElementById('smtp-from').value,
+                smtp_use_tls: document.getElementById('smtp-tls').checked,
+                facebook_page_id: document.getElementById('fb-page-id').value,
+                facebook_access_token: document.getElementById('fb-token').value,
+                instagram_account_id: document.getElementById('ig-account-id').value,
+                instagram_access_token: document.getElementById('ig-token').value,
+            };
+            fetch('/api/executioner/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            })
+                .then(r => r.json())
+                .then(() => {
+                    document.getElementById('executioner-settings-result').innerHTML =
+                        '<span style="color:green;margin-left:10px;">Settings saved!</span>';
+                    setTimeout(() => {
+                        document.getElementById('executioner-settings-result').textContent = '';
+                    }, 3000);
+                })
+                .catch(err => {
+                    document.getElementById('executioner-settings-result').innerHTML =
+                        '<span style="color:red;margin-left:10px;">Error: ' + err.message + '</span>';
+                });
         }
     </script>
 </body>
