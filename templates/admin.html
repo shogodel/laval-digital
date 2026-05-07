@@ -107,6 +107,13 @@
             <div id="pending-executions-list"><p style="color:#666;">Loading...</p></div>
         </div>
 
+        <!-- Execution Activity Section -->
+        <div class="section">
+            <h2>Execution Activity</h2>
+            <button class="btn-warning" onclick="loadExecutions()">Refresh</button>
+            <div id="execution-list"><p style="color:#666;">Loading...</p></div>
+        </div>
+
         <!-- Executioner Settings Section -->
         <div class="section">
             <h2>Executioner Settings</h2>
@@ -152,6 +159,7 @@
             loadAgents();
             loadApprovals();
             loadPendingExecutions();
+            loadExecutions();
             loadExecutionerSettings();
             populateAgentSelect();
             populateModelDropdown();
@@ -473,6 +481,33 @@
                 .catch(err => {
                     document.getElementById('executioner-settings-result').innerHTML =
                         '<span style="color:red;margin-left:10px;">Error: ' + err.message + '</span>';
+                });
+        }
+
+        /* ------------------------------------------------------------------ */
+        /*  Execution Activity Feed                                           */
+        /* ------------------------------------------------------------------ */
+
+        function loadExecutions() {
+            fetch('/api/executions')
+                .then(r => r.json())
+                .then(data => {
+                    const list = document.getElementById('execution-list');
+                    if (!data.executions || data.executions.length === 0) {
+                        list.innerHTML = '<p style="color:#666;">No executions yet</p>';
+                        return;
+                    }
+                    list.innerHTML = data.executions.slice(0, 20).map(e => `
+                        <div class="approval-card" style="background:${e.success ? '#d4edda' : '#f8d7da'};margin:6px 0;padding:10px;">
+                            <p><strong>${e.agent_name}</strong> &middot; ${e.tool_name} &middot; <small>${new Date(e.timestamp).toLocaleString()}</small></p>
+                            <p>Status: ${e.success ? '✅ Success' : '❌ Failed'} ${e.error ? `&middot; <span style="color:red;">${e.error}</span>` : ''}</p>
+                            <details><summary style="cursor:pointer;font-size:0.85em;color:#555;">Draft Preview</summary><pre style="font-size:0.8em;margin-top:6px;">${e.draft_preview}</pre></details>
+                        </div>
+                    `).join('');
+                })
+                .catch(() => {
+                    document.getElementById('execution-list').innerHTML =
+                        '<p style="color:red;">Failed to load executions</p>';
                 });
         }
     </script>
