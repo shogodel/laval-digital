@@ -86,7 +86,6 @@ Respond only with the JSON, no other text."""
                 user_message=prompt
             )
 
-            import json
             routing_decision = json.loads(response)
 
             state["routed_agent"] = routing_decision["agent"]
