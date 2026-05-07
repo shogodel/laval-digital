@@ -32,6 +32,8 @@ from core.llm_adapter import LLMAdapter
 from agents.local_seo_agent import LocalSEOAgent
 from agents.social_media_agent import SocialMediaAgent
 from agents.lead_conversion_agent import LeadConversionAgent
+from agents.paid_ads_agent import PaidAdsAgent
+from agents.growth_hacker_agent import GrowthHackerAgent
 from agents.executioner_agent import ExecutionerAgent
 
 app = Flask(__name__)
@@ -53,7 +55,7 @@ agent_activity: Dict[str, Dict[str, Any]] = {
         "failure_count": 0,
         "last_draft_preview": None,
     }
-    for agent_id in ["local_seo", "social_media", "lead_conversion"]
+    for agent_id in ["local_seo", "social_media", "lead_conversion", "paid_ads", "growth_hacker"]
 }
 
 def _update_activity(agent_id: str, **kwargs) -> None:
@@ -92,6 +94,26 @@ AGENT_CONFIGS = {
             "api_key": os.getenv("DEEPSEEK_API_KEY"),
             "api_base": "https://api.deepseek.com/v1"
         }
+    },
+    "paid_ads": {
+        "agent_id": "paid_ads",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/paid_ads.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1"
+        }
+    },
+    "growth_hacker": {
+        "agent_id": "growth_hacker",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/growth_hacker.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1"
+        }
     }
 }
 
@@ -111,6 +133,10 @@ for agent_id, config in AGENT_CONFIGS.items():
         agent_registry[agent_id] = SocialMediaAgent(agent_id, config)
     elif agent_id == "lead_conversion":
         agent_registry[agent_id] = LeadConversionAgent(agent_id, config)
+    elif agent_id == "paid_ads":
+        agent_registry[agent_id] = PaidAdsAgent(agent_id, config)
+    elif agent_id == "growth_hacker":
+        agent_registry[agent_id] = GrowthHackerAgent(agent_id, config)
 
 # Initialize ExecutionerAgent for approved draft execution
 executioner = ExecutionerAgent({
@@ -252,6 +278,14 @@ def reject_execution(execution_id):
         return jsonify({"error": str(e)}), 400
 
 
+@app.route("/api/executions", methods=["GET"])
+def get_executions():
+    """Get recent execution history."""
+    limit = request.args.get("limit", 50, type=int)
+    history = executioner.get_execution_history(limit)
+    return jsonify({"executions": history})
+
+
 @app.route("/api/agents/<agent_id>/toggle", methods=["POST"])
 def toggle_agent(agent_id):
     """Toggle agent on/off."""
@@ -309,6 +343,10 @@ def update_agent_config(agent_id):
         agent_registry[agent_id] = SocialMediaAgent(agent_id, config)
     elif agent_id == "lead_conversion":
         agent_registry[agent_id] = LeadConversionAgent(agent_id, config)
+    elif agent_id == "paid_ads":
+        agent_registry[agent_id] = PaidAdsAgent(agent_id, config)
+    elif agent_id == "growth_hacker":
+        agent_registry[agent_id] = GrowthHackerAgent(agent_id, config)
     
     # Rebuild orchestrator with updated agent
     global orchestrator, orchestrator_graph
