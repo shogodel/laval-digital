@@ -34,6 +34,28 @@
             <div id="agent-list"></div>
         </div>
         
+        <!-- Agent Configuration Section -->
+        <div class="section">
+            <h2>Agent Configuration</h2>
+            <select id="config-agent-select" onchange="loadAgentConfig()">
+                <option value="">-- Select agent to configure --</option>
+            </select>
+            <div id="agent-config-form" style="display:none; margin-top:10px;">
+                <label>Model:</label>
+                <select id="config-model">
+                    <option value="deepseek-chat">DeepSeek Chat</option>
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                </select>
+                <label>API Key:</label>
+                <input type="password" id="config-api-key" placeholder="sk-...">
+                <label>API Base URL (optional):</label>
+                <input type="text" id="config-api-base" placeholder="https://api.deepseek.com/v1">
+                <button class="btn-primary" onclick="saveAgentConfig()">Save Configuration</button>
+                <div id="config-save-result"></div>
+            </div>
+        </div>
+        
         <!-- Submit Task Section -->
         <div class="section">
             <h2>Submit Task to Orchestrator</h2>
@@ -55,6 +77,7 @@
         window.onload = function() {
             loadAgents();
             loadApprovals();
+            populateAgentSelect();
         };
 
         function loadAgents() {
@@ -143,6 +166,61 @@
             .then(() => {
                 alert(`Approval ${approved ? 'approved' : 'rejected'}!`);
                 loadApprovals();
+            });
+        }
+
+        function populateAgentSelect() {
+            fetch('/api/agents')
+                .then(r => r.json())
+                .then(data => {
+                    const select = document.getElementById('config-agent-select');
+                    data.agents.forEach(a => {
+                        const option = document.createElement('option');
+                        option.value = a.agent_id;
+                        option.textContent = a.agent_id;
+                        select.appendChild(option);
+                    });
+                });
+        }
+
+        function loadAgentConfig() {
+            const agentId = document.getElementById('config-agent-select').value;
+            if (!agentId) {
+                document.getElementById('agent-config-form').style.display = 'none';
+                return;
+            }
+            fetch(`/api/agents/${agentId}/config`)
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('config-model').value = data.model || 'deepseek-chat';
+                    document.getElementById('config-api-key').value = data.api_key || '';
+                    document.getElementById('config-api-base').value = data.api_base || '';
+                    document.getElementById('agent-config-form').style.display = 'block';
+                })
+                .catch(() => {
+                    document.getElementById('agent-config-form').style.display = 'block';
+                });
+        }
+
+        function saveAgentConfig() {
+            const agentId = document.getElementById('config-agent-select').value;
+            const model = document.getElementById('config-model').value;
+            const apiKey = document.getElementById('config-api-key').value;
+            const apiBase = document.getElementById('config-api-base').value;
+            
+            fetch(`/api/agents/${agentId}/config`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model, api_key: apiKey, api_base: apiBase })
+            })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('config-save-result').innerHTML = 
+                    '<span style="color:green;">Configuration saved!</span>';
+            })
+            .catch(err => {
+                document.getElementById('config-save-result').innerHTML = 
+                    '<span style="color:red;">Error saving configuration</span>';
             });
         }
     </script>
