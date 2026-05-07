@@ -1,31 +1,30 @@
 import logging
-from typing import Optional, Generator
+from typing import List, Optional, Generator
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.language_models import BaseChatModel
 
 try:
-    from litellm import ChatLiteLLM
+    from litellm import ChatLiteLLM, model_list
 except ImportError:
     ChatLiteLLM = None  # type: ignore
+    model_list = None
 
 logger = logging.getLogger(__name__)
 
-# SUPPORTED_MODELS identical to BaseAgent.VALID_MODELS format
-SUPPORTED_MODELS = {
-    "deepseek-chat": {
-        "provider": "deepseek",
-        "model": "deepseek-chat",
-    },
-    "gpt-4o": {
-        "provider": "openai",
-        "model": "gpt-4o",
-    },
-    "claude-3.5-sonnet": {
-        "provider": "anthropic",
-        "model": "claude-3.5-sonnet",
-    },
-}
+_FALLBACK_MODELS = [
+    "deepseek-chat",
+    "gpt-4o",
+    "gpt-4o-mini",
+    "gpt-4-turbo",
+    "claude-3.5-sonnet",
+    "claude-3-opus-20240229",
+    "claude-3-haiku-20240307",
+    "gemini-1.5-pro",
+    "gemini-1.5-flash",
+    "mistral-large-latest",
+    "mistral-medium",
+]
 
 
 class LLMAdapterError(Exception):
@@ -36,9 +35,11 @@ class LLMAdapterError(Exception):
 class LLMAdapter:
     """Production-grade multi-LLM adapter for LangGraph agents.
 
-    Supports switching between DeepSeek, GPT-4o, and Claude 3.5 Sonnet
-    via LiteLLM, with per-agent API key management and error handling.
+    Supports any model available via LiteLLM, with per-agent API key
+    management and dynamic model discovery through litellm.model_list.
     """
+
+    _available_models_cache: Optional[List[str]] = None
 
     def __init__(
         self,
@@ -50,17 +51,18 @@ class LLMAdapter:
         """Initialize LLMAdapter.
 
         Args:
-            model: LLM model identifier (must be in SUPPORTED_MODELS).
+            model: LLM model identifier (e.g., 'gpt-4o', 'claude-3.5-sonnet').
             api_key: Provider API key for the selected model.
             api_base: Optional custom API base URL (e.g., for DeepSeek).
             temperature: Sampling temperature for LLM generation (0.0-1.0).
 
         Raises:
-            ValueError: If model is not in SUPPORTED_MODELS.
+            ValueError: If model is not valid according to is_valid_model().
         """
-        if model not in SUPPORTED_MODELS:
+        if not self.is_valid_model(model):
             raise ValueError(
-                f"Unsupported model '{model}'. Valid models: {list(SUPPORTED_MODELS.keys())}"
+                f"Unsupported model '{model}'. "
+                f"Use get_available_models() to see all supported models."
             )
         self._model = model
         self._api_key = api_key
@@ -73,9 +75,43 @@ class LLMAdapter:
         """Get the configured LLM model identifier.
 
         Returns:
-            Model string from SUPPORTED_MODELS.
+            Model string passed during initialization.
         """
         return self._model
+
+    @classmethod
+    def get_available_models(cls) -> List[str]:
+        """Return all available LLM model IDs via litellm.
+
+        Results are cached on first call to avoid repeated lookups.
+
+        Returns:
+            Sorted list of model ID strings.
+        """
+        if cls._available_models_cache is not None:
+            return cls._available_models_cache
+
+        if model_list and isinstance(model_list, list):
+            cls._available_models_cache = sorted(model_list)
+            logger.info(f"Discovered {len(cls._available_models_cache)} models via litellm")
+        else:
+            cls._available_models_cache = _FALLBACK_MODELS
+            logger.warning(f"litellm model_list unavailable, using {len(_FALLBACK_MODELS)} fallback models")
+
+        return cls._available_models_cache
+
+    @classmethod
+    def is_valid_model(cls, model: str) -> bool:
+        """Check if a given model string is valid.
+
+        Args:
+            model: Model identifier to validate.
+
+        Returns:
+            True if the model is in the available models list.
+        """
+        available = cls.get_available_models()
+        return model in available
 
     def _get_llm(self) -> BaseChatModel:
         """Create and return a configured LiteLLM chat model instance.
@@ -90,17 +126,16 @@ class LLMAdapter:
             raise LLMAdapterError(
                 "litellm is required for multi-LLM support. Install with: pip install litellm"
             )
-        
-        model_config = SUPPORTED_MODELS[self._model]
+
         llm_kwargs = {
-            "model": f"{model_config['provider']}/{model_config['model']}",
+            "model": self._model,
             "api_key": self._api_key,
             "temperature": self._temperature,
         }
-        
+
         if self._api_base:
             llm_kwargs["api_base"] = self._api_base
-        
+
         try:
             return ChatLiteLLM(**llm_kwargs)
         except Exception as e:
@@ -120,7 +155,7 @@ class LLMAdapter:
             LLMAdapterError: If LLM invocation fails for any reason.
         """
         logger.debug(f"Invoking LLM {self._model} with task: {user_message[:50]}...")
-        
+
         try:
             llm = self._get_llm()
             messages = [
@@ -149,14 +184,14 @@ class LLMAdapter:
             LLMAdapterError: If LLM streaming fails for any reason.
         """
         logger.debug(f"Streaming LLM {self._model} with task: {user_message[:50]}...")
-        
+
         try:
             llm = self._get_llm()
             messages = [
                 SystemMessage(content=system_prompt),
                 HumanMessage(content=user_message),
             ]
-            
+
             for chunk in llm.stream(messages):
                 if chunk.content:
                     yield chunk.content

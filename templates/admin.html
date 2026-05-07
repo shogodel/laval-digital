@@ -43,9 +43,7 @@
             <div id="agent-config-form" style="display:none; margin-top:10px;">
                 <label>Model:</label>
                 <select id="config-model">
-                    <option value="deepseek-chat">DeepSeek Chat</option>
-                    <option value="gpt-4o">GPT-4o</option>
-                    <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                    <option value="">-- Loading models --</option>
                 </select>
                 <label>API Key:</label>
                 <input type="password" id="config-api-key" placeholder="sk-...">
@@ -78,6 +76,7 @@
             loadAgents();
             loadApprovals();
             populateAgentSelect();
+            populateModelDropdown();
         };
 
         function loadAgents() {
@@ -178,6 +177,21 @@
                         const option = document.createElement('option');
                         option.value = a.agent_id;
                         option.textContent = a.agent_id;
+                        select.appendChild(option);
+                    });
+                });
+        }
+
+        function populateModelDropdown() {
+            fetch('/api/models')
+                .then(r => r.json())
+                .then(data => {
+                    const select = document.getElementById('config-model');
+                    select.innerHTML = '';
+                    data.models.forEach(m => {
+                        const option = document.createElement('option');
+                        option.value = m;
+                        option.textContent = m;
                         select.appendChild(option);
                     });
                 });

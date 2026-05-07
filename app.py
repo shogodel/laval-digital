@@ -132,6 +132,16 @@ def get_agents():
     return jsonify({"agents": agents_status})
 
 
+@app.route("/api/models", methods=["GET"])
+def get_available_models():
+    """Return list of all available LLM models via litellm."""
+    try:
+        models = LLMAdapter.get_available_models()
+        return jsonify({"models": models})
+    except Exception as e:
+        return jsonify({"models": ["deepseek-chat", "gpt-4o", "claude-3.5-sonnet"]})
+
+
 @app.route("/api/agents/<agent_id>/toggle", methods=["POST"])
 def toggle_agent(agent_id):
     """Toggle agent on/off."""
@@ -172,8 +182,8 @@ def update_agent_config(agent_id):
     config = AGENT_CONFIGS[agent_id]
     
     if "model" in data:
-        if data["model"] not in ["deepseek-chat", "gpt-4o", "claude-3.5-sonnet"]:
-            return jsonify({"error": "Invalid model"}), 400
+        if not LLMAdapter.is_valid_model(data["model"]):
+            return jsonify({"error": f"Invalid model '{data['model']}'"}), 400
         config["model"] = data["model"]
     
     if "api_key" in data:
