@@ -84,11 +84,11 @@
                 .then(r => r.json())
                 .then(data => {
                     const html = data.agents.map(a => `
-                        <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}">
+                        <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" id="agent-card-${a.agent_id}" data-agent-id="${a.agent_id}">
                             <h3>${a.agent_id}</h3>
                             <p>Model: ${a.model}</p>
                             <p>Status: <span class="status-badge ${a.enabled ? 'status-completed' : 'status-pending'}">${a.enabled ? 'Enabled' : 'Disabled'}</span></p>
-                            <button class="btn-${a.enabled ? 'danger' : 'success'}" onclick="toggleAgent('${a.agent_id}')">
+                            <button class="toggle-btn btn-${a.enabled ? 'danger' : 'success'}" onclick="toggleAgent('${a.agent_id}')">
                                 ${a.enabled ? 'Disable' : 'Enable'}
                             </button>
                         </div>
@@ -98,8 +98,11 @@
         }
 
         function toggleAgent(agentId) {
+            const btn = document.querySelector(`[data-agent-id="${agentId}"] .toggle-btn`);
+            if (btn) btn.disabled = true;
             fetch(`/api/agents/${agentId}/toggle`, { method: 'POST' })
                 .then(r => r.json())
+                .then(() => new Promise(r => setTimeout(r, 300)))
                 .then(() => loadAgents());
         }
 

@@ -38,6 +38,9 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY")
 # Store active threads and their states
 active_threads: Dict[str, Dict[str, Any]] = {}
 
+# In-memory lead storage (replace with database in production)
+leads: list[Dict[str, Any]] = []
+
 # Agent configurations - in production, load from config files
 AGENT_CONFIGS = {
     "local_seo": {
@@ -117,6 +120,28 @@ def lead_site():
 def admin_panel_redirect():
     """Redirect to admin panel."""
     return render_template("admin.html")
+
+
+@app.route("/api/leads", methods=["GET", "POST"])
+def handle_leads():
+    """Capture and list lead form submissions."""
+    if request.method == "POST":
+        data = request.json
+        lead = {
+            "id": str(uuid.uuid4()),
+            "name": data.get("name", ""),
+            "phone": data.get("phone", ""),
+            "service": data.get("service", ""),
+            "urgency": data.get("urgency", ""),
+            "created_at": __import__("datetime").datetime.now().isoformat()
+        }
+        if not lead["name"] or not lead["phone"]:
+            return jsonify({"error": "Name and phone are required"}), 400
+        leads.append(lead)
+        return jsonify({"status": "ok", "lead": lead}), 201
+
+    # GET: return all leads (for admin panel)
+    return jsonify({"leads": leads})
 
 
 @app.route("/api/agents", methods=["GET"])
@@ -241,15 +266,19 @@ def submit_task():
         graph = get_orchestrator()
         result = graph.invoke(initial_state, config)
         
+        has_draft = bool(result.get("agent_draft"))
+        has_final = bool(result.get("final_result"))
+        status = "completed" if has_final else ("pending_approval" if has_draft else "error")
+        
         active_threads[thread_id] = {
             "state": result,
             "config": config,
-            "status": "completed" if result.get("final_result") else "pending_approval"
+            "status": status
         }
         
         return jsonify({
             "thread_id": thread_id,
-            "status": active_threads[thread_id]["status"],
+            "status": status,
             "result": result
         })
     except Exception as e:
@@ -274,7 +303,7 @@ def get_approvals():
 
 @app.route("/api/approvals/<thread_id>/respond", methods=["POST"])
 def respond_approval(thread_id):
-    """Respond to an approval request."""
+    """Respond to an approval request and execute agent if approved."""
     if thread_id not in active_threads:
         return jsonify({"error": "Thread not found"}), 404
     
@@ -296,10 +325,23 @@ def respond_approval(thread_id):
         thread_data["state"] = result
         thread_data["status"] = "completed"
         
+        # If approved, execute the agent's business logic
+        if approved:
+            state = result
+            agent_name = state.get("routed_agent")
+            draft = state.get("agent_draft", "")
+            if agent_name and agent_name in agent_registry:
+                try:
+                    agent = agent_registry[agent_name]
+                    execution_result = agent.execute(draft)
+                    thread_data["state"]["final_result"] = execution_result
+                except Exception as exec_err:
+                    thread_data["state"]["final_result"] = f"Execution error: {str(exec_err)}"
+        
         return jsonify({
             "thread_id": thread_id,
             "status": "completed",
-            "result": result.get("final_result")
+            "result": thread_data["state"].get("final_result")
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

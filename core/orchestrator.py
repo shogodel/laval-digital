@@ -109,13 +109,18 @@ Respond only with the JSON, no other text."""
         return state
 
     def _route_to_agent(self, state: OrchestratorState) -> OrchestratorState:
-        """Route the task to the selected agent and execute its graph.
+        """Route the task to the selected agent and produce a draft via LLM.
+
+        Does NOT invoke the agent's full graph (draft→approval→execute).
+        Instead, calls the LLM directly with the agent's system prompt to
+        produce a draft. Approval and execution happen separately via the
+        orchestrator's approval node and the admin panel.
 
         Args:
             state: Current state with routed_agent and agent_task.
 
         Returns:
-            Updated state with agent_draft from the agent's execution.
+            Updated state with agent_draft (but NOT final_result).
         """
         agent_name = state["routed_agent"]
         task = state["agent_task"]
@@ -123,7 +128,6 @@ Respond only with the JSON, no other text."""
         if agent_name not in self._agent_registry:
             logger.error(f"Agent '{agent_name}' not found in registry")
             state["agent_draft"] = f"Error: Agent '{agent_name}' not available"
-            state["final_result"] = f"Agent '{agent_name}' not found"
             return state
 
         agent = self._agent_registry[agent_name]
@@ -131,33 +135,25 @@ Respond only with the JSON, no other text."""
         if not agent.enabled:
             logger.warning(f"Agent '{agent_name}' is disabled")
             state["agent_draft"] = f"Agent '{agent_name}' is currently disabled"
-            state["final_result"] = f"Agent '{agent_name}' is disabled"
             return state
 
-        logger.info(f"Executing agent: {agent_name}")
+        logger.info(f"Producing draft via agent: {agent_name}")
 
         try:
-            agent_graph = agent.build_graph()
-            agent_state = {
-                "task": task,
-                "draft_output": None,
-                "approved": None,
-                "feedback": None,
-                "result": None,
-            }
-
-            result = agent_graph.invoke(agent_state)
-            state["agent_draft"] = result.get("draft_output", "")
+            response = self._llm_adapter.invoke(
+                system_prompt=agent.system_prompt,
+                user_message=task
+            )
+            state["agent_draft"] = response
             state["messages"].append({
                 "role": "agent",
                 "agent": agent_name,
-                "content": state["agent_draft"]
+                "content": response
             })
 
         except Exception as e:
-            logger.error(f"Agent execution failed: {e}")
-            state["agent_draft"] = f"Agent execution error: {str(e)}"
-            state["final_result"] = f"Agent failed: {str(e)}"
+            logger.error(f"Draft generation failed: {e}")
+            state["agent_draft"] = f"Draft generation error: {str(e)}"
 
         return state
 
