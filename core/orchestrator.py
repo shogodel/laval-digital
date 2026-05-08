@@ -39,6 +39,9 @@ Available agents:
 - local_seo: Handles Google Business Profile optimization, local citations, local keyword content, review management
 - social_media: Handles social media posts, content creation, content calendars, engagement strategies
 - lead_conversion: Handles lead follow-up sequences, CRM integration, conversion optimization, email campaigns
+- reputation: Handles online review monitoring, review response generation, review generation campaigns, reputation audits, crisis response
+- email_marketing: Handles newsletter campaigns, promotional emails, lead nurture sequences, reactivation campaigns, post-service follow-ups
+- tiktok: Handles short-form video content for TikTok, Instagram Reels, YouTube Shorts, content calendars, video scripts, trend adaptation
 
 Analyze the user's request and respond in JSON format:
 {

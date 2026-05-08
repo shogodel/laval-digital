@@ -52,11 +52,11 @@
             transition: border-color 0.3s;
             outline: none;
         }
-        .form-group input:focus { border-color: #ff6b35; }
+        .form-group input:focus { border-color: #D42B2B; }
         .login-btn {
             width: 100%;
             padding: 14px;
-            background: #ff6b35;
+            background: #D42B2B;
             color: #fff;
             border: none;
             border-radius: 8px;
@@ -65,7 +65,7 @@
             cursor: pointer;
             transition: background 0.3s, transform 0.2s;
         }
-        .login-btn:hover { background: #e55a2b; transform: translateY(-1px); }
+        .login-btn:hover { background: #A82323; transform: translateY(-1px); }
         .error {
             background: #fff0f0;
             color: #d32f2f;
@@ -86,7 +86,7 @@
 <body>
     <div class="login-card">
         <div class="logo">
-            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48">
+            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="96">
         </div>
         <h1>Admin Login</h1>
         <p>Enter your credentials to access the admin panel.</p>

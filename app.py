@@ -34,6 +34,9 @@ from agents.social_media_agent import SocialMediaAgent
 from agents.lead_conversion_agent import LeadConversionAgent
 from agents.paid_ads_agent import PaidAdsAgent
 from agents.growth_hacker_agent import GrowthHackerAgent
+from agents.reputation_agent import ReputationManagementAgent
+from agents.email_marketing_agent import EmailMarketingAgent
+from agents.tiktok_agent import TikTokAgent
 from agents.executioner_agent import ExecutionerAgent
 
 app = Flask(__name__)
@@ -55,7 +58,7 @@ agent_activity: Dict[str, Dict[str, Any]] = {
         "failure_count": 0,
         "last_draft_preview": None,
     }
-    for agent_id in ["local_seo", "social_media", "lead_conversion", "paid_ads", "growth_hacker"]
+    for agent_id in ["local_seo", "social_media", "lead_conversion", "paid_ads", "growth_hacker", "reputation", "email_marketing", "tiktok"]
 }
 
 def _update_activity(agent_id: str, **kwargs) -> None:
@@ -114,6 +117,36 @@ AGENT_CONFIGS = {
             "api_key": os.getenv("DEEPSEEK_API_KEY"),
             "api_base": "https://api.deepseek.com/v1"
         }
+    },
+    "reputation": {
+        "agent_id": "reputation",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/reputation.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1"
+        }
+    },
+    "email_marketing": {
+        "agent_id": "email_marketing",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/email_marketing.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1"
+        }
+    },
+    "tiktok": {
+        "agent_id": "tiktok",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/tiktok_agent.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1"
+        }
     }
 }
 
@@ -137,6 +170,12 @@ for agent_id, config in AGENT_CONFIGS.items():
         agent_registry[agent_id] = PaidAdsAgent(agent_id, config)
     elif agent_id == "growth_hacker":
         agent_registry[agent_id] = GrowthHackerAgent(agent_id, config)
+    elif agent_id == "reputation":
+        agent_registry[agent_id] = ReputationManagementAgent(agent_id, config)
+    elif agent_id == "email_marketing":
+        agent_registry[agent_id] = EmailMarketingAgent(agent_id, config)
+    elif agent_id == "tiktok":
+        agent_registry[agent_id] = TikTokAgent(agent_id, config)
 
 # Initialize ExecutionerAgent for approved draft execution
 executioner = ExecutionerAgent({
@@ -460,6 +499,12 @@ def update_agent_config(agent_id):
         agent_registry[agent_id] = PaidAdsAgent(agent_id, config)
     elif agent_id == "growth_hacker":
         agent_registry[agent_id] = GrowthHackerAgent(agent_id, config)
+    elif agent_id == "reputation":
+        agent_registry[agent_id] = ReputationManagementAgent(agent_id, config)
+    elif agent_id == "email_marketing":
+        agent_registry[agent_id] = EmailMarketingAgent(agent_id, config)
+    elif agent_id == "tiktok":
+        agent_registry[agent_id] = TikTokAgent(agent_id, config)
     
     # Rebuild orchestrator with updated agent
     global orchestrator, orchestrator_graph

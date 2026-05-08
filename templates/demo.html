@@ -7,14 +7,14 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
         .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        h1 { color: #333; border-bottom: 2px solid #D42B2B; padding-bottom: 10px; }
         .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
         .agent-card { display: inline-block; margin: 10px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; min-width: 280px; max-width: 360px; vertical-align: top; text-align: left; }
         .agent-card p { margin: 6px 0; font-size: 0.9em; }
         .agent-card.enabled { border-color: #28a745; background: #f8fff9; }
         .agent-card.disabled { border-color: #dc3545; background: #fff8f8; }
         button { padding: 8px 16px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-primary { background: #007bff; color: white; }
+        .btn-primary { background: #D42B2B; color: white; }
         .btn-success { background: #28a745; color: white; }
         .btn-danger { background: #dc3545; color: white; }
         .btn-warning { background: #ffc107; color: black; }
@@ -23,15 +23,15 @@
         .status-badge { padding: 4px 8px; border-radius: 3px; font-size: 12px; }
         .status-pending { background: #ffc107; color: black; }
         .status-completed { background: #28a745; color: white; }
-        .status-processing { background: #007bff; color: white; }
+        .status-processing { background: #005A9E; color: white; }
         .status-idle { background: #28a745; color: white; }
         .status-disabled { background: #6c757d; color: white; }
         pre { white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
-        .back-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-size: 0.9rem; }
+        .back-link { display: inline-block; margin-bottom: 15px; color: #D42B2B; text-decoration: none; font-size: 0.9rem; }
         .back-link:hover { text-decoration: underline; }
-        .lang-toggle { color: #007bff; text-decoration: none; font-size: 0.9rem; margin-left: 15px; }
+        .lang-toggle { color: #D42B2B; text-decoration: none; font-size: 0.9rem; margin-left: 15px; }
         .lang-toggle:hover { text-decoration: underline; }
-        .demo-badge { background: #ff6b35; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-left: 10px; vertical-align: middle; }
+        .demo-badge { background: #D42B2B; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-left: 10px; vertical-align: middle; }
         .demo-notice { background: #fff3cd; border: 1px solid #ffc107; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
 
         @media (max-width: 768px) {
@@ -61,7 +61,7 @@
                 <a href="/" class="back-link">&larr; Back to Home</a>
                 <a href="/fr/demo" class="lang-toggle">FR</a>
             </div>
-            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="32">
+            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="64">
         </div>
         <h1>Laval Digital - Admin Panel <span class="demo-badge">Preview</span></h1>
 
@@ -118,6 +118,33 @@
                     <p><strong>Draft:</strong> <span style="font-size:0.85em;color:#555;">A/B test: landing page CTA button color variation...</span></p>
                     <button class="btn-danger">Disable</button>
                 </div>
+                <div class="agent-card enabled">
+                    <h3>reputation</h3>
+                    <p><strong>Model:</strong> deepseek-chat</p>
+                    <p><strong>Agent:</strong> <span class="status-badge status-idle">Idle</span></p>
+                    <p><strong>Tasks:</strong> 18 (18 ok / 0 fail)</p>
+                    <p><strong>Last:</strong> 5/7/2026, 10:00:00 AM</p>
+                    <p><strong>Draft:</strong> <span style="font-size:0.85em;color:#555;">Review response: "Great service, fixed my leak fast!"...</span></p>
+                    <button class="btn-danger">Disable</button>
+                </div>
+                <div class="agent-card enabled">
+                    <h3>email_marketing</h3>
+                    <p><strong>Model:</strong> deepseek-chat</p>
+                    <p><strong>Agent:</strong> <span class="status-badge status-idle">Idle</span></p>
+                    <p><strong>Tasks:</strong> 9 (9 ok / 0 fail)</p>
+                    <p><strong>Last:</strong> 5/6/2026, 2:30:00 PM</p>
+                    <p><strong>Draft:</strong> <span style="font-size:0.85em;color:#555;">Newsletter: "Spring Plumbing Tips for Laval Homeowners"...</span></p>
+                    <button class="btn-danger">Disable</button>
+                </div>
+                <div class="agent-card enabled">
+                    <h3>tiktok</h3>
+                    <p><strong>Model:</strong> deepseek-chat</p>
+                    <p><strong>Agent:</strong> <span class="status-badge status-idle">Idle</span></p>
+                    <p><strong>Tasks:</strong> 14 (14 ok / 0 fail)</p>
+                    <p><strong>Last:</strong> 5/7/2026, 4:00:00 PM</p>
+                    <p><strong>Draft:</strong> <span style="font-size:0.85em;color:#555;">TikTok script: "3 Signs Your Pipes Are Freezing" 60s...</span></p>
+                    <button class="btn-danger">Disable</button>
+                </div>
             </div>
         </div>
 
@@ -131,6 +158,9 @@
                 <option>lead_conversion</option>
                 <option>paid_ads</option>
                 <option>growth_hacker</option>
+                <option>reputation</option>
+                <option>email_marketing</option>
+                <option>tiktok</option>
             </select>
             <div style="margin-top:10px;">
                 <label>Model:</label>

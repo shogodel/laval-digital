@@ -7,8 +7,8 @@
     <meta name="description" content="On remplace votre département marketing par l'IA. SEO, médias sociaux et capture de leads pour un prix fixe.">
     <style>
         :root {
-            --navy: #1a3a5c;
-            --orange: #ff6b35;
+            --navy: #003399;
+            --orange: #D4A017;
             --white: #ffffff;
             --light-gray: #f8f9fa;
             --dark: #333333;
@@ -25,17 +25,27 @@
         nav ul li a { color: var(--white); text-decoration: none; font-weight: 500; transition: color 0.3s; }
         nav ul li a:hover { color: var(--orange); }
         .nav-cta { background: var(--orange); padding: 10px 20px; border-radius: 5px; }
-        .nav-cta:hover { background: #e55a2b !important; color: var(--white) !important; }
+        .nav-cta:hover { background: #B38600 !important; color: var(--white) !important; }
         .lang-toggle { background: transparent; color: var(--white); border: 1px solid var(--white); padding: 6px 14px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; text-decoration: none; }
         .lang-toggle:hover { background: var(--white); color: var(--navy); }
-        .hero { background: linear-gradient(135deg, var(--navy) 0%, #0d2137 100%); color: var(--white); padding: 80px 0; text-align: center; }
+        .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.8rem; cursor: pointer; padding: 4px 8px; }
+        @media (max-width: 768px) {
+            .hamburger { display: block; }
+            nav ul { display: none; flex-direction: column; width: 100%; gap: 0; padding: 15px 0; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 10px; }
+            nav ul.open { display: flex; }
+            nav ul li { text-align: center; padding: 10px 0; }
+            nav ul li a { font-size: 1.1rem; }
+            nav .container { flex-wrap: wrap; }
+            .hero h1 { font-size: 2rem; }
+        }
+        .hero { background: linear-gradient(135deg, var(--navy) 0%, #001a4d 100%); color: var(--white); padding: 80px 0; text-align: center; }
         .hero h1 { font-size: 3rem; margin-bottom: 20px; }
         .hero h1 span { color: var(--orange); }
         .hero p { font-size: 1.3rem; margin-bottom: 30px; opacity: 0.9; max-width: 700px; margin-left: auto; margin-right: auto; }
         .hero-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
         .btn { display: inline-block; padding: 15px 35px; font-size: 1.1rem; font-weight: 600; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; transition: all 0.3s; }
         .btn-primary { background: var(--orange); color: var(--white); }
-        .btn-primary:hover { background: #e55a2b; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(255,107,53,0.4); }
+        .btn-primary:hover { background: #B38600; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(212,160,23,0.4); }
         .btn-secondary { background: transparent; color: var(--white); border: 2px solid var(--white); }
         .btn-secondary:hover { background: var(--white); color: var(--navy); }
         .pricing { padding: 80px 0; background: var(--light-gray); }
@@ -58,24 +68,21 @@
         .card h3 { color: var(--navy); margin-bottom: 10px; }
         .demo-cta { padding: 60px 0; background: var(--navy); color: var(--white); text-align: center; }
         .demo-cta h2 { font-size: 2rem; margin-bottom: 15px; }
-        footer { background: #0d2137; color: var(--white); padding: 40px 0; text-align: center; }
+        footer { background: #001a4d; color: var(--white); padding: 40px 0; text-align: center; }
         footer .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; text-align: left; }
         footer h4 { margin-bottom: 15px; color: var(--orange); }
         footer a { color: var(--white); text-decoration: none; opacity: 0.8; }
         footer a:hover { opacity: 1; }
         .footer-bottom { text-align: center; padding-top: 20px; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); }
-        @media (max-width: 768px) {
-            .hero h1 { font-size: 2rem; }
-            nav ul { display: none; }
-        }
     </style>
 </head>
 <body>
 
 <nav>
     <div class="container">
-        <a href="/fr/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="32" style="vertical-align:middle;"></a>
-        <ul>
+        <a href="/fr/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="64" style="vertical-align:middle;"></a>
+        <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')">&#9776;</button>
+        <ul id="nav-menu">
             <li><a href="/fr/">Accueil</a></li>
             <li><a href="/fr/demo">Démo</a></li>
             <li><a href="/fr/blogue">Blogue</a></li>
@@ -114,6 +121,9 @@
                 <li>Agent Publicités Payantes — campagnes Google et Meta</li>
                 <li>Agent Conversion de Leads — chatbot qualifie les prospects 24/7</li>
                 <li>Agent Growth Hacker — tests A/B et optimisation des conversions</li>
+                <li>Agent de Réputation — surveille et gère les avis Google, Facebook et Yelp</li>
+                <li>Agent Marketing Courriel — infolettres, promotions et séquences automatisées</li>
+                <li>Agent TikTok/Reels — vidéos courtes pour TikTok, Instagram et YouTube Shorts</li>
                 <li>Tableau de Bord Admin — contrôle complet, approbations et analytiques</li>
                 <li>Support Multi-LLM (DeepSeek, GPT-4, Claude)</li>
             </ul>
@@ -153,6 +163,21 @@
                 <div class="card-icon">🚀</div>
                 <h3>Agent Growth Hacker</h3>
                 <p>Conçoit des expériences, fait des tests A/B sur les pages d'atterrissage, analyse les entonnoirs de conversion et trouve des canaux de croissance.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">⭐</div>
+                <h3>Agent de Réputation</h3>
+                <p>Surveille les avis Google, Facebook et Yelp, génère des réponses professionnelles et lance des campagnes pour améliorer votre cote d'étoiles.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">📧</div>
+                <h3>Agent Marketing Courriel</h3>
+                <p>Crée des infolettres, des campagnes promotionnelles et des séquences automatisées qui nourrissent les prospects et fidélisent les clients.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">🎬</div>
+                <h3>Agent TikTok/Reels</h3>
+                <p>Crée du contenu vidéo court pour TikTok, Instagram Reels et YouTube Shorts — scripts, accroches, légendes et adaptation aux tendances locales.</p>
             </div>
             <div class="card">
                 <div class="card-icon">📊</div>

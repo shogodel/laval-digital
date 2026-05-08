@@ -8,7 +8,7 @@
     <style>
         :root {
             --navy: #1a3a5c;
-            --orange: #ff6b35;
+            --orange: #D42B2B;
             --white: #ffffff;
             --light-gray: #f8f9fa;
             --dark: #333333;
@@ -27,9 +27,10 @@
         nav ul li a { color: var(--white); text-decoration: none; font-weight: 500; transition: color 0.3s; }
         nav ul li a:hover { color: var(--orange); }
         .nav-cta { background: var(--orange); padding: 10px 20px; border-radius: 5px; }
-        .nav-cta:hover { background: #e55a2b !important; color: var(--white) !important; }
+        .nav-cta:hover { background: #A82323 !important; color: var(--white) !important; }
         .lang-toggle { background: transparent; color: var(--white); border: 1px solid var(--white); padding: 6px 14px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; text-decoration: none; }
         .lang-toggle:hover { background: var(--white); color: var(--navy); }
+        .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.8rem; cursor: pointer; padding: 4px 8px; }
 
         /* Hero */
         .hero { background: linear-gradient(135deg, var(--navy) 0%, #0d2137 100%); color: var(--white); padding: 80px 0; text-align: center; }
@@ -39,7 +40,7 @@
         .hero-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
         .btn { display: inline-block; padding: 15px 35px; font-size: 1.1rem; font-weight: 600; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; transition: all 0.3s; }
         .btn-primary { background: var(--orange); color: var(--white); }
-        .btn-primary:hover { background: #e55a2b; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(255,107,53,0.4); }
+        .btn-primary:hover { background: #A82323; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(212,43,43,0.4); }
         .btn-secondary { background: transparent; color: var(--white); border: 2px solid var(--white); }
         .btn-secondary:hover { background: var(--white); color: var(--navy); }
 
@@ -76,10 +77,15 @@
         footer a { color: var(--white); text-decoration: none; opacity: 0.8; }
         footer a:hover { opacity: 1; }
         .footer-bottom { text-align: center; padding-top: 20px; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); }
-        
+
         @media (max-width: 768px) {
+            .hamburger { display: block; }
+            nav ul { display: none; flex-direction: column; width: 100%; gap: 0; padding: 15px 0; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 10px; }
+            nav ul.open { display: flex; }
+            nav ul li { text-align: center; padding: 10px 0; }
+            nav ul li a { font-size: 1.1rem; }
+            nav .container { flex-wrap: wrap; }
             .hero h1 { font-size: 2rem; }
-            nav ul { display: none; }
         }
     </style>
 </head>
@@ -88,8 +94,9 @@
 <!-- Navigation -->
 <nav>
     <div class="container">
-        <a href="/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="32" style="vertical-align:middle;"></a>
-        <ul>
+        <a href="/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="64" style="vertical-align:middle;"></a>
+        <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')">&#9776;</button>
+        <ul id="nav-menu">
             <li><a href="/">Home</a></li>
             <li><a href="/demo">Live Demo</a></li>
             <li><a href="/blog">Blog</a></li>
@@ -130,6 +137,9 @@
                 <li>Paid Ads Agent — Google &amp; Meta ad campaign management</li>
                 <li>Lead Conversion Agent — qualifies leads 24/7 with chatbot</li>
                 <li>Growth Hacker Agent — A/B testing &amp; conversion optimization</li>
+                <li>Reputation Agent — monitors &amp; manages online reviews across Google, Facebook &amp; Yelp</li>
+                <li>Email Marketing Agent — newsletters, promotions &amp; automated email sequences</li>
+                <li>TikTok/Reels Agent — short-form video content for TikTok, Instagram &amp; YouTube Shorts</li>
                 <li>Admin Dashboard — full control, approvals, &amp; analytics</li>
                 <li>Multi-LLM Support (DeepSeek, GPT-4, Claude)</li>
             </ul>
@@ -170,6 +180,21 @@
                 <div class="card-icon">🚀</div>
                 <h3>Growth Hacker Agent</h3>
                 <p>Designs experiments, A/B tests landing pages and offers, analyzes conversion funnels, and finds scalable growth channels for your business.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">⭐</div>
+                <h3>Reputation Agent</h3>
+                <p>Monitors reviews across Google, Facebook &amp; Yelp, generates professional responses, and runs review generation campaigns to boost your star rating.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">📧</div>
+                <h3>Email Marketing Agent</h3>
+                <p>Creates newsletters, promotional campaigns, and automated sequences that nurture leads, retain customers, and drive repeat business.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">🎬</div>
+                <h3>TikTok/Reels Agent</h3>
+                <p>Creates short-form video content for TikTok, Instagram Reels &amp; YouTube Shorts — scripts, hooks, captions, and trend adaptation to reach local audiences.</p>
             </div>
             <div class="card">
                 <div class="card-icon">📊</div>
