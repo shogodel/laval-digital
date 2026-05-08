@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laval Digital — AI Marketing Agency for Local Businesses</title>
+    <meta name="description" content="We replace your entire marketing department with AI. SEO, social media, and lead capture for one flat fee.">
+    <style>
+        :root {
+            --navy: #1a3a5c;
+            --orange: #ff6b35;
+            --white: #ffffff;
+            --light-gray: #f8f9fa;
+            --dark: #333333;
+            --green: #28a745;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color: var(--dark); line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+        /* Navigation */
+        nav { background: var(--navy); padding: 15px 0; position: sticky; top: 0; z-index: 100; }
+        nav .container { display: flex; justify-content: space-between; align-items: center; }
+        nav .logo { color: var(--white); font-size: 1.5rem; font-weight: 700; text-decoration: none; }
+        nav .logo span { color: var(--orange); }
+        nav ul { list-style: none; display: flex; gap: 25px; }
+        nav ul li a { color: var(--white); text-decoration: none; font-weight: 500; transition: color 0.3s; }
+        nav ul li a:hover { color: var(--orange); }
+        .nav-cta { background: var(--orange); padding: 10px 20px; border-radius: 5px; }
+        .nav-cta:hover { background: #e55a2b !important; color: var(--white) !important; }
+
+        /* Hero */
+        .hero { background: linear-gradient(135deg, var(--navy) 0%, #0d2137 100%); color: var(--white); padding: 80px 0; text-align: center; }
+        .hero h1 { font-size: 3rem; margin-bottom: 20px; }
+        .hero h1 span { color: var(--orange); }
+        .hero p { font-size: 1.3rem; margin-bottom: 30px; opacity: 0.9; max-width: 700px; margin-left: auto; margin-right: auto; }
+        .hero-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+        .btn { display: inline-block; padding: 15px 35px; font-size: 1.1rem; font-weight: 600; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: var(--orange); color: var(--white); }
+        .btn-primary:hover { background: #e55a2b; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(255,107,53,0.4); }
+        .btn-secondary { background: transparent; color: var(--white); border: 2px solid var(--white); }
+        .btn-secondary:hover { background: var(--white); color: var(--navy); }
+
+        /* Pricing */
+        .pricing { padding: 80px 0; background: var(--light-gray); }
+        .pricing h2 { text-align: center; font-size: 2.2rem; color: var(--navy); margin-bottom: 40px; }
+        .pricing-card { max-width: 550px; margin: 0 auto; background: var(--white); border-radius: 12px; box-shadow: 0 5px 30px rgba(0,0,0,0.1); padding: 40px; text-align: center; }
+        .original-price { text-decoration: line-through; color: #999; font-size: 1.5rem; }
+        .discount-badge { display: inline-block; background: var(--orange); color: var(--white); padding: 8px 20px; border-radius: 20px; font-weight: 700; margin: 10px 0; }
+        .final-price { font-size: 3.5rem; font-weight: 800; color: var(--navy); margin: 15px 0; }
+        .final-price small { font-size: 1rem; color: #666; }
+        .savings { color: var(--green); font-weight: 600; font-size: 1.1rem; }
+        .features { list-style: none; text-align: left; margin: 30px 0; }
+        .features li { padding: 10px 0; border-bottom: 1px solid #eee; }
+        .features li:before { content: "✅ "; }
+        .financing { background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 20px; font-weight: 600; }
+
+        /* What You Get */
+        .what-you-get { padding: 80px 0; }
+        .what-you-get h2 { text-align: center; font-size: 2.2rem; color: var(--navy); margin-bottom: 40px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .card { background: var(--white); padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); text-align: center; }
+        .card-icon { font-size: 3rem; margin-bottom: 15px; }
+        .card h3 { color: var(--navy); margin-bottom: 10px; }
+
+        /* Demo CTA */
+        .demo-cta { padding: 60px 0; background: var(--navy); color: var(--white); text-align: center; }
+        .demo-cta h2 { font-size: 2rem; margin-bottom: 15px; }
+
+        /* Footer */
+        footer { background: #0d2137; color: var(--white); padding: 40px 0; text-align: center; }
+        footer .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; text-align: left; }
+        footer h4 { margin-bottom: 15px; color: var(--orange); }
+        footer a { color: var(--white); text-decoration: none; opacity: 0.8; }
+        footer a:hover { opacity: 1; }
+        .footer-bottom { text-align: center; padding-top: 20px; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            nav ul { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav>
+    <div class="container">
+        <a href="/" class="logo">Laval<span>Digital</span></a>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/demo">Live Demo</a></li>
+            <li><a href="/blog">Blog</a></li>
+            <li><a href="tel:5142431580">📞 (514) 243-1580</a></li>
+            <li><a href="/demo" class="nav-cta">Get Started</a></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="container">
+        <h1>We Replace Your Entire <span>Marketing Department</span> with AI</h1>
+        <p>Get a full digital agency suite — SEO, social media, lead capture, and paid ads — powered by artificial intelligence, for a one-time fee. No retainers. No hidden costs.</p>
+        <div class="hero-buttons">
+            <a href="/demo" class="btn btn-primary">See Live Demo</a>
+            <a href="tel:5142431580" class="btn btn-secondary">📞 Call (514) 243-1580</a>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+    <div class="container">
+        <h2>The Offer</h2>
+        <div class="pricing-card">
+            <p style="font-size: 1.1rem; font-weight: 600; color: var(--navy);">Full AI Digital Agency Suite</p>
+            <p class="original-price">$10,000</p>
+            <div class="discount-badge">☀️ Summer Special — 25% OFF</div>
+            <p class="final-price">$7,500 <small>CAD</small></p>
+            <p class="savings">You save $2,500</p>
+            <p style="margin-top: 10px; color: #666;">One-time fee. No monthly retainers.</p>
+            <ul class="features">
+                <li>AI-Powered Website (mobile-optimized, SEO-ready)</li>
+                <li>Local SEO Agent — ranks you on Google</li>
+                <li>Social Media Agent — posts every week</li>
+                <li>Lead Capture Chatbot — qualifies leads 24/7</li>
+                <li>Admin Dashboard — full control</li>
+                <li>Multi-LLM Support (DeepSeek, GPT-4, Claude)</li>
+            </ul>
+            <div class="financing">
+                💳 In-House Financing Available — Pay in 3 installments
+            </div>
+            <a href="tel:5142431580" class="btn btn-primary" style="display: block; margin-top: 20px;">Call (514) 243-1580 to Claim Offer</a>
+        </div>
+    </div>
+</section>
+
+<!-- What You Get -->
+<section class="what-you-get">
+    <div class="container">
+        <h2>What You Get</h2>
+        <div class="cards">
+            <div class="card">
+                <div class="card-icon">🤖</div>
+                <h3>AI SEO Agent</h3>
+                <p>Automatically optimizes your Google Business Profile, writes service pages, and finds local keywords that bring customers.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">📱</div>
+                <h3>Social Media Agent</h3>
+                <p>Creates and schedules posts for Facebook and Instagram. Keeps your business visible every week.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">💬</div>
+                <h3>Lead Chatbot</h3>
+                <p>Qualifies leads on your website 24/7. Sends you a text when a hot lead is ready to book.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">📊</div>
+                <h3>Admin Dashboard</h3>
+                <p>Full control panel. Turn agents on/off, approve posts before they publish, switch AI models.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Demo CTA -->
+<section class="demo-cta">
+    <div class="container">
+        <h2>See the AI Agents in Action</h2>
+        <p style="margin-bottom: 20px;">Try our live demo — ask our AI to generate an SEO plan for your business.</p>
+        <a href="/demo" class="btn btn-primary">Launch Demo</a>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <div>
+            <h4>Laval Digital</h4>
+            <p>AI-powered digital agency for local businesses in Laval and surrounding areas.</p>
+        </div>
+        <div>
+            <h4>Contact</h4>
+            <p>📞 <a href="tel:5142431580">(514) 243-1580</a></p>
+            <p>✉️ <a href="mailto:lavaldigital@gmail.com">lavaldigital@gmail.com</a></p>
+        </div>
+        <div>
+            <h4>Links</h4>
+            <p><a href="/demo">Live Demo</a></p>
+            <p><a href="/blog">Blog</a></p>
+        </div>
+    </div>
+    <div class="footer-bottom container">
+        <p>&copy; 2026 Laval Digital. All rights reserved.</p>
+    </div>
+</footer>
+
+</body>
+</html>

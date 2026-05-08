@@ -158,20 +158,31 @@ def get_orchestrator():
 
 
 @app.route("/")
-def lead_site():
-    """Serve the client-facing lead generation site."""
-    return render_template("lead_site.html",
-        business_name="Laval 24/7 Plumbing",
-        city="Laval",
-        service="Plumbing",
-        phone="(450) 555-0199",
-        services=["Emergency Repairs", "Pipe Installation", "Water Heater Service", "Drain Cleaning", "Bathroom Remodeling"]
-    )
+def home():
+    """Serve the new marketing home page."""
+    return render_template("home.html")
+
+
+@app.route("/demo")
+def demo():
+    """Serve the interactive agent demo page."""
+    return render_template("demo.html")
+
+
+@app.route("/blog")
+def blog():
+    """Serve the blog page."""
+    return render_template("blog.html")
 
 
 @app.route("/admin")
 def admin_panel_redirect():
-    """Redirect to admin panel."""
+    """Redirect to admin panel with HTTP Basic Auth."""
+    auth = request.authorization
+    expected_user = os.getenv("ADMIN_USERNAME", "laval")
+    expected_pass = os.getenv("ADMIN_PASSWORD", "digital2026!")
+    if not auth or auth.username != expected_user or auth.password != expected_pass:
+        return "Unauthorized", 401, {"WWW-Authenticate": 'Basic realm="Laval Digital Admin"'}
     return render_template("admin.html")
 
 
