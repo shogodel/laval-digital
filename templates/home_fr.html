@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laval Digital — AI Marketing Agency for Local Businesses</title>
-    <meta name="description" content="We replace your entire marketing department with AI. SEO, social media, and lead capture for one flat fee.">
+    <title>Laval Digital — Agence Marketing IA pour PME</title>
+    <meta name="description" content="On remplace votre département marketing par l'IA. SEO, médias sociaux et capture de leads pour un prix fixe.">
     <style>
         :root {
             --navy: #1a3a5c;
@@ -17,8 +17,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color: var(--dark); line-height: 1.6; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-
-        /* Navigation */
         nav { background: var(--navy); padding: 15px 0; position: sticky; top: 0; z-index: 100; }
         nav .container { display: flex; justify-content: space-between; align-items: center; }
         nav .logo { color: var(--white); font-size: 1.5rem; font-weight: 700; text-decoration: none; }
@@ -30,8 +28,6 @@
         .nav-cta:hover { background: #e55a2b !important; color: var(--white) !important; }
         .lang-toggle { background: transparent; color: var(--white); border: 1px solid var(--white); padding: 6px 14px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; text-decoration: none; }
         .lang-toggle:hover { background: var(--white); color: var(--navy); }
-
-        /* Hero */
         .hero { background: linear-gradient(135deg, var(--navy) 0%, #0d2137 100%); color: var(--white); padding: 80px 0; text-align: center; }
         .hero h1 { font-size: 3rem; margin-bottom: 20px; }
         .hero h1 span { color: var(--orange); }
@@ -42,8 +38,6 @@
         .btn-primary:hover { background: #e55a2b; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(255,107,53,0.4); }
         .btn-secondary { background: transparent; color: var(--white); border: 2px solid var(--white); }
         .btn-secondary:hover { background: var(--white); color: var(--navy); }
-
-        /* Pricing */
         .pricing { padding: 80px 0; background: var(--light-gray); }
         .pricing h2 { text-align: center; font-size: 2.2rem; color: var(--navy); margin-bottom: 40px; }
         .pricing-card { max-width: 550px; margin: 0 auto; background: var(--white); border-radius: 12px; box-shadow: 0 5px 30px rgba(0,0,0,0.1); padding: 40px; text-align: center; }
@@ -56,27 +50,20 @@
         .features li { padding: 10px 0; border-bottom: 1px solid #eee; }
         .features li:before { content: "✅ "; }
         .financing { background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 20px; font-weight: 600; }
-
-        /* What You Get */
         .what-you-get { padding: 80px 0; }
         .what-you-get h2 { text-align: center; font-size: 2.2rem; color: var(--navy); margin-bottom: 40px; }
         .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
         .card { background: var(--white); padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); text-align: center; }
         .card-icon { font-size: 3rem; margin-bottom: 15px; }
         .card h3 { color: var(--navy); margin-bottom: 10px; }
-
-        /* Demo CTA */
         .demo-cta { padding: 60px 0; background: var(--navy); color: var(--white); text-align: center; }
         .demo-cta h2 { font-size: 2rem; margin-bottom: 15px; }
-
-        /* Footer */
         footer { background: #0d2137; color: var(--white); padding: 40px 0; text-align: center; }
         footer .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; text-align: left; }
         footer h4 { margin-bottom: 15px; color: var(--orange); }
         footer a { color: var(--white); text-decoration: none; opacity: 0.8; }
         footer a:hover { opacity: 1; }
         .footer-bottom { text-align: center; padding-top: 20px; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); }
-        
         @media (max-width: 768px) {
             .hero h1 { font-size: 2rem; }
             nav ul { display: none; }
@@ -85,116 +72,110 @@
 </head>
 <body>
 
-<!-- Navigation -->
 <nav>
     <div class="container">
-        <a href="/" class="logo">Laval<span>Digital</span></a>
+        <a href="/fr/" class="logo">Laval<span>Digital</span></a>
         <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/demo">Live Demo</a></li>
-            <li><a href="/blog">Blog</a></li>
+            <li><a href="/fr/">Accueil</a></li>
+            <li><a href="/fr/demo">Démo</a></li>
+            <li><a href="/fr/blogue">Blogue</a></li>
             <li><a href="tel:5142431580">📞 (514) 243-1580</a></li>
-            <li><a href="/demo" class="nav-cta">Get Started</a></li>
-            <li><a href="/fr/" class="lang-toggle">FR</a></li>
+            <li><a href="/fr/demo" class="nav-cta">Démo Gratuite</a></li>
+            <li><a href="/" class="lang-toggle">EN</a></li>
         </ul>
     </div>
 </nav>
 
-<!-- Hero -->
 <section class="hero">
     <div class="container">
-        <h1>We Replace Your Entire <span>Marketing Department</span> with AI</h1>
-        <p>Get a full digital agency suite — SEO, social media, lead capture, and paid ads — powered by artificial intelligence, for a one-time fee. No retainers. No hidden costs.</p>
+        <h1>On Remplace Votre Département <span>Marketing</span> par l'IA</h1>
+        <p>Obtenez une gamme complète d'agence numérique — SEO, médias sociaux, capture de leads et pubs payantes — propulsée par l'intelligence artificielle, pour un prix unique. Sans frais mensuels.</p>
         <div class="hero-buttons">
-            <a href="/demo" class="btn btn-primary">See Live Demo</a>
-            <a href="tel:5142431580" class="btn btn-secondary">📞 Call (514) 243-1580</a>
+            <a href="/fr/demo" class="btn btn-primary">Voir la Démo</a>
+            <a href="tel:5142431580" class="btn btn-secondary">📞 Appelez (514) 243-1580</a>
         </div>
     </div>
 </section>
 
-<!-- Pricing -->
 <section class="pricing" id="pricing">
     <div class="container">
-        <h2>The Offer</h2>
+        <h2>L'Offre</h2>
         <div class="pricing-card">
-            <p style="font-size: 1.1rem; font-weight: 600; color: var(--navy);">Full AI Digital Agency Suite</p>
-            <p class="original-price">$10,000</p>
-            <div class="discount-badge">☀️ Summer Special — 25% OFF</div>
-            <p class="final-price">$7,500 <small>CAD</small></p>
-            <p class="savings">You save $2,500</p>
-            <p style="margin-top: 10px; color: #666;">One-time fee. No monthly retainers.</p>
+            <p style="font-size: 1.1rem; font-weight: 600; color: var(--navy);">Suite Complète d'Agence Numérique IA</p>
+            <p class="original-price">10 000 $</p>
+            <div class="discount-badge">☀️ Spécial Été — 25 % DE RABAIS</div>
+            <p class="final-price">7 500 $ <small>CAD</small></p>
+            <p class="savings">Vous économisez 2 500 $</p>
+            <p style="margin-top: 10px; color: #666;">Prix unique. Aucun abonnement mensuel.</p>
             <ul class="features">
-                <li>AI-Powered Website (mobile-optimized, SEO-ready)</li>
-                <li>Local SEO Agent — ranks you on Google Maps &amp; Search</li>
-                <li>Social Media Agent — posts to Facebook/Instagram weekly</li>
-                <li>Paid Ads Agent — Google &amp; Meta ad campaign management</li>
-                <li>Lead Conversion Agent — qualifies leads 24/7 with chatbot</li>
-                <li>Growth Hacker Agent — A/B testing &amp; conversion optimization</li>
-                <li>Admin Dashboard — full control, approvals, &amp; analytics</li>
-                <li>Multi-LLM Support (DeepSeek, GPT-4, Claude)</li>
+                <li>Site Web Propulsé par l'IA (optimisé mobile et SEO)</li>
+                <li>Agent SEO Local — vous classe sur Google Maps et Recherche</li>
+                <li>Agent Médias Sociaux — publications Facebook/Instagram chaque semaine</li>
+                <li>Agent Publicités Payantes — campagnes Google et Meta</li>
+                <li>Agent Conversion de Leads — chatbot qualifie les prospects 24/7</li>
+                <li>Agent Growth Hacker — tests A/B et optimisation des conversions</li>
+                <li>Tableau de Bord Admin — contrôle complet, approbations et analytiques</li>
+                <li>Support Multi-LLM (DeepSeek, GPT-4, Claude)</li>
             </ul>
             <div class="financing">
-                💳 In-House Financing Available — Pay in 3 installments
+                💳 Financement Interne Disponible — Payez en 3 versements
             </div>
-            <a href="tel:5142431580" class="btn btn-primary" style="display: block; margin-top: 20px;">Call (514) 243-1580 to Claim Offer</a>
+            <a href="tel:5142431580" class="btn btn-primary" style="display: block; margin-top: 20px;">Appelez (514) 243-1580 pour Réclamer l'Offre</a>
         </div>
     </div>
 </section>
 
-<!-- What You Get -->
 <section class="what-you-get">
     <div class="container">
-        <h2>What You Get</h2>
+        <h2>Ce Que Vous Obtenez</h2>
         <div class="cards">
             <div class="card">
                 <div class="card-icon">🔍</div>
-                <h3>Local SEO Agent</h3>
-                <p>Optimizes your Google Business Profile, ranks you for local keywords, writes service pages, and builds citations. Gets you on the map — literally.</p>
+                <h3>Agent SEO Local</h3>
+                <p>Optimise votre profil Google d'affaires, vous classe pour des mots-clés locaux, rédige des pages de service et crée des citations. Vous met sur la carte.</p>
             </div>
             <div class="card">
                 <div class="card-icon">📱</div>
-                <h3>Social Media Agent</h3>
-                <p>Creates and schedules weekly Facebook &amp; Instagram posts. Keeps your business visible, drives engagement, and builds local following.</p>
+                <h3>Agent Médias Sociaux</h3>
+                <p>Crée et planifie des publications Facebook et Instagram chaque semaine. Garde votre entreprise visible et stimule l'engagement local.</p>
             </div>
             <div class="card">
                 <div class="card-icon">💰</div>
-                <h3>Paid Ads Agent</h3>
-                <p>Architects Google &amp; Meta ad campaigns. Writes ad copy, selects keywords, sets budgets, and A/B tests creative — all optimized for local lead gen.</p>
+                <h3>Agent Publicités Payantes</h3>
+                <p>Conçoit des campagnes Google et Meta. Rédige des textes publicitaires, choisit les mots-clés, établit les budgets et fait des tests A/B.</p>
             </div>
             <div class="card">
                 <div class="card-icon">💬</div>
-                <h3>Lead Conversion Agent</h3>
-                <p>Qualifies website visitors 24/7 with intelligent chatbot. Asks the right questions, books appointments, and texts you when a hot lead is ready.</p>
+                <h3>Agent Conversion de Leads</h3>
+                <p>Qualifie les visiteurs 24h/24 avec un chatbot intelligent. Pose les bonnes questions, prend des rendez-vous et vous texte quand un prospect est chaud.</p>
             </div>
             <div class="card">
                 <div class="card-icon">🚀</div>
-                <h3>Growth Hacker Agent</h3>
-                <p>Designs experiments, A/B tests landing pages and offers, analyzes conversion funnels, and finds scalable growth channels for your business.</p>
+                <h3>Agent Growth Hacker</h3>
+                <p>Conçoit des expériences, fait des tests A/B sur les pages d'atterrissage, analyse les entonnoirs de conversion et trouve des canaux de croissance.</p>
             </div>
             <div class="card">
                 <div class="card-icon">📊</div>
-                <h3>Admin Dashboard</h3>
-                <p>Full control panel. Toggle agents on/off, approve drafts before publishing, switch AI models, view execution history, and configure settings.</p>
+                <h3>Tableau de Bord Admin</h3>
+                <p>Panneau de contrôle complet. Activez/désactivez les agents, approuvez les publications avant publication, changez de modèle IA et consultez l'historique.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Demo CTA -->
 <section class="demo-cta">
     <div class="container">
-        <h2>See the AI Agents in Action</h2>
-        <p style="margin-bottom: 20px;">Try our live demo — ask our AI to generate an SEO plan for your business.</p>
-        <a href="/demo" class="btn btn-primary">Launch Demo</a>
+        <h2>Voyez les Agents IA en Action</h2>
+        <p style="margin-bottom: 20px;">Essayez notre démo en direct — demandez à notre IA de générer un plan SEO pour votre entreprise.</p>
+        <a href="/fr/demo" class="btn btn-primary">Lancer la Démo</a>
     </div>
 </section>
 
-<!-- Footer -->
 <footer>
     <div class="container">
         <div>
             <h4>Laval Digital</h4>
-            <p>AI-powered digital agency for local businesses in Laval and surrounding areas.</p>
+            <p>Agence numérique propulsée par l'IA pour les PME de Laval et des environs.</p>
         </div>
         <div>
             <h4>Contact</h4>
@@ -202,13 +183,13 @@
             <p>✉️ <a href="mailto:lavaldigital@gmail.com">lavaldigital@gmail.com</a></p>
         </div>
         <div>
-            <h4>Links</h4>
-            <p><a href="/demo">Live Demo</a></p>
-            <p><a href="/blog">Blog</a></p>
+            <h4>Liens</h4>
+            <p><a href="/fr/demo">Démo en Direct</a></p>
+            <p><a href="/fr/blogue">Blogue</a></p>
         </div>
     </div>
     <div class="footer-bottom container">
-        <p>&copy; 2026 Laval Digital. All rights reserved.</p>
+        <p>&copy; 2026 Laval Digital. Tous droits réservés.</p>
     </div>
 </footer>
 

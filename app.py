@@ -163,16 +163,34 @@ def home():
     return render_template("home.html")
 
 
+@app.route("/fr/")
+def home_fr():
+    """Serve the French marketing home page."""
+    return render_template("home_fr.html")
+
+
 @app.route("/demo")
 def demo():
     """Serve the interactive agent demo page."""
     return render_template("demo.html")
 
 
+@app.route("/fr/demo")
+def demo_fr():
+    """Serve the French interactive agent demo page."""
+    return render_template("demo_fr.html")
+
+
 @app.route("/blog")
 def blog():
     """Serve the blog page."""
     return render_template("blog.html")
+
+
+@app.route("/fr/blogue")
+def blog_fr():
+    """Serve the French blog page."""
+    return render_template("blog_fr.html")
 
 
 @app.route("/admin")
@@ -184,6 +202,17 @@ def admin_panel_redirect():
     if not auth or auth.username != expected_user or auth.password != expected_pass:
         return "Unauthorized", 401, {"WWW-Authenticate": 'Basic realm="Laval Digital Admin"'}
     return render_template("admin.html")
+
+
+@app.route("/fr/admin")
+def admin_panel_redirect_fr():
+    """Redirect to French admin panel with HTTP Basic Auth."""
+    auth = request.authorization
+    expected_user = os.getenv("ADMIN_USERNAME", "laval")
+    expected_pass = os.getenv("ADMIN_PASSWORD", "digital2026!")
+    if not auth or auth.username != expected_user or auth.password != expected_pass:
+        return "Unauthorized", 401, {"WWW-Authenticate": 'Basic realm="Laval Digital Admin"'}
+    return render_template("admin_fr.html")
 
 
 @app.route("/api/leads", methods=["GET", "POST"])

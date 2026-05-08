@@ -3,120 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Demo — Laval Digital AI Agents</title>
+    <title>Laval Digital - Admin Panel Preview</title>
     <style>
-        :root { --navy: #1a3a5c; --orange: #ff6b35; --white: #ffffff; --light-gray: #f8f9fa; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; color: #333; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
         .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        .section h2 { margin-bottom: 15px; color: #333; }
-        p { margin-bottom: 15px; color: #666; }
-        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 100%; }
+        .agent-card { display: inline-block; margin: 10px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; min-width: 280px; max-width: 360px; vertical-align: top; text-align: left; }
+        .agent-card p { margin: 6px 0; font-size: 0.9em; }
+        .agent-card.enabled { border-color: #28a745; background: #f8fff9; }
+        .agent-card.disabled { border-color: #dc3545; background: #fff8f8; }
         button { padding: 8px 16px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
         .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        input, textarea { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 100%; }
+        .approval-card { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .approval-card { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .status-badge { padding: 4px 8px; border-radius: 3px; font-size: 12px; }
+        .status-pending { background: #ffc107; color: black; }
+        .status-completed { background: #28a745; color: white; }
+        .status-processing { background: #007bff; color: white; }
+        .status-idle { background: #28a745; color: white; }
+        .status-disabled { background: #6c757d; color: white; }
         pre { white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
         .back-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-size: 0.9rem; }
         .back-link:hover { text-decoration: underline; }
-
-        /* Chat */
-        #chatMessages { height: 400px; overflow-y: auto; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
-        .message { margin-bottom: 12px; padding: 12px 16px; border-radius: 8px; max-width: 85%; }
-        .message.user { background: #007bff; color: white; margin-left: auto; }
-        .message.agent { background: white; border: 1px solid #ddd; }
-        .message.agent .agent-label { font-size: 0.8rem; color: #ff6b35; font-weight: 600; margin-bottom: 4px; }
-        .input-row { display: flex; gap: 8px; align-items: center; }
-        .input-row input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        .input-row button { background: #ff6b35; color: white; padding: 10px 24px; font-weight: 600; }
+        .lang-toggle { color: #007bff; text-decoration: none; font-size: 0.9rem; margin-left: 15px; }
+        .lang-toggle:hover { text-decoration: underline; }
+        .demo-badge { background: #ff6b35; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-left: 10px; vertical-align: middle; }
+        .demo-notice { background: #fff3cd; border: 1px solid #ffc107; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
 
         @media (max-width: 768px) {
             body { margin: 10px; }
             .container { padding: 12px; }
             h1 { font-size: 1.3rem; }
-            .section { padding: 10px; }
-            .message { max-width: 95%; }
-            .input-row button { padding: 10px 16px; }
+            .section { padding: 10px; margin: 12px 0; }
+            .agent-card { display: block; min-width: unset; max-width: unset; margin: 10px 0; }
+            .agent-card p { font-size: 0.85em; }
+            button { width: 100%; margin: 6px 0; padding: 12px; font-size: 1em; }
+            input, textarea, select { font-size: 16px; }
+            .approval-card { padding: 10px; }
+            .approval-card pre { font-size: 0.8em; }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 8px; }
+            .section { padding: 8px; }
+            h1 { font-size: 1.1rem; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="/" class="back-link">&larr; Back to Home</a>
-        <h1>Try Our AI Marketing Agents</h1>
+        <a href="/fr/demo" class="lang-toggle">FR</a>
+        <h1>Laval Digital - Admin Panel <span class="demo-badge">Preview</span></h1>
 
+        <div class="demo-notice">
+            <strong>This is a preview of your admin panel.</strong> This is exactly what you get when you purchase Laval Digital. All agents, controls, and settings are fully functional in the real version. Fields shown are sample data.
+        </div>
+
+        <!-- Agent Status Section -->
         <div class="section">
-            <h2>AI Agent Chat</h2>
-            <p>Ask our AI to create an SEO plan, write social media posts, design ad campaigns, or build a lead capture strategy for your business.</p>
-            <div id="chatMessages">
-                <div class="message agent">
-                    <div class="agent-label">🤖 Laval Digital AI</div>
-                    <p>Hi! I'm your AI marketing assistant. Tell me about your business and what you need help with. For example:</p>
-                    <p style="margin-top:8px;">&bull; "Create an SEO plan for a plumber in Laval"</p>
-                    <p>&bull; "Write a week of social media posts for an electrician"</p>
-                    <p>&bull; "Design a Google Ads campaign for a roofer"</p>
-                    <p>&bull; "Build a lead qualification chatbot for a dentist"</p>
+            <h2>Agent Status</h2>
+            <div id="agent-list">
+                <div class="agent-card enabled">
+                    <h3>local_seo</h3>
+                    <p><strong>Model:</strong> deepseek-chat</p>
+                    <p><strong>Agent:</strong> <span class="status-badge status-idle">Idle</span></p>
+                    <p><strong>Tasks:</strong> 47 (45 ok / 2 fail)</p>
+                    <p><strong>Last:</strong> 5/7/2026, 2:30:00 PM</p>
+                    <p><strong>Draft:</strong> <span style="font-size:0.85em;color:#555;">Optimize GBP for Laval plumbing services...</span></p>
+                    <button class="btn-danger">Disable</button>
+                </div>
+                <div class="agent-card enabled">
+                    <h3>social_media</h3>
+                    <p><strong>Model:</strong> deepseek-chat</p>
+                    <p><strong>Agent:</strong> <span class="status-badge status-idle">Idle</span></p>
+                    <p><strong>Tasks:</strong> 31 (30 ok / 1 fail)</p>
+                    <p><strong>Last:</strong> 5/7/2026, 11:15:00 AM</p>
+                    <p><strong>Draft:</strong> <span style="font-size:0.85em;color:#555;">Weekly Facebook post: Spring plumbing tips...</span></p>
+                    <button class="btn-danger">Disable</button>
+                </div>
+                <div class="agent-card enabled">
+                    <h3>lead_conversion</h3>
+                    <p><strong>Model:</strong> gpt-4o</p>
+                    <p><strong>Agent:</strong> <span class="status-badge status-idle">Idle</span></p>
+                    <p><strong>Tasks:</strong> 89 (87 ok / 2 fail)</p>
+                    <p><strong>Last:</strong> 5/7/2026, 3:45:00 PM</p>
+                    <p><strong>Draft:</strong> <span style="font-size:0.85em;color:#555;">Lead qualification flow for emergency calls...</span></p>
+                    <button class="btn-danger">Disable</button>
+                </div>
+                <div class="agent-card enabled">
+                    <h3>paid_ads</h3>
+                    <p><strong>Model:</strong> claude-3.5-sonnet</p>
+                    <p><strong>Agent:</strong> <span class="status-badge status-idle">Idle</span></p>
+                    <p><strong>Tasks:</strong> 24 (22 ok / 2 fail)</p>
+                    <p><strong>Last:</strong> 5/6/2026, 4:20:00 PM</p>
+                    <p><strong>Draft:</strong> <span style="font-size:0.85em;color:#555;">Google Ads RSA: "Emergency Plumber Laval" campaign...</span></p>
+                    <button class="btn-danger">Disable</button>
+                </div>
+                <div class="agent-card enabled">
+                    <h3>growth_hacker</h3>
+                    <p><strong>Model:</strong> deepseek-chat</p>
+                    <p><strong>Agent:</strong> <span class="status-badge status-idle">Idle</span></p>
+                    <p><strong>Tasks:</strong> 12 (12 ok / 0 fail)</p>
+                    <p><strong>Last:</strong> 5/5/2026, 1:00:00 PM</p>
+                    <p><strong>Draft:</strong> <span style="font-size:0.85em;color:#555;">A/B test: landing page CTA button color variation...</span></p>
+                    <button class="btn-danger">Disable</button>
                 </div>
             </div>
-            <div class="input-row">
-                <input type="text" id="userInput" placeholder="Type your request..." onkeydown="if(event.key==='Enter')sendMessage()">
-                <button onclick="sendMessage()">Send</button>
+        </div>
+
+        <!-- Agent Configuration Section -->
+        <div class="section">
+            <h2>Agent Configuration</h2>
+            <select>
+                <option value="">-- Select agent to configure --</option>
+                <option>local_seo</option>
+                <option>social_media</option>
+                <option>lead_conversion</option>
+                <option>paid_ads</option>
+                <option>growth_hacker</option>
+            </select>
+            <div style="margin-top:10px;">
+                <label>Model:</label>
+                <select>
+                    <option>deepseek-chat</option>
+                    <option>gpt-4o</option>
+                    <option>claude-3.5-sonnet</option>
+                </select>
+                <label>API Key:</label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="password" placeholder="sk-..." value="sk-demo****key" style="flex:1;">
+                    <button class="btn-primary" style="white-space:nowrap;">Detect</button>
+                </div>
+                <label>API Base URL (optional):</label>
+                <input type="text" placeholder="https://api.deepseek.com/v1" value="https://api.deepseek.com/v1">
+                <button class="btn-primary">Save Configuration</button>
             </div>
         </div>
 
-        <div class="section" style="background: #fff3cd;">
-            <h2>About This Demo</h2>
-            <p style="margin:0;">This is a live demonstration of Laval Digital's AI marketing agents. Your request is processed by the real orchestrator and routed to the appropriate specialist agent. In production, every agent output requires human approval before publishing.</p>
+        <!-- Submit Task Section -->
+        <div class="section">
+            <h2>Submit Task to Orchestrator</h2>
+            <textarea rows="3" placeholder="e.g., I want more plumbing leads in Laval this week">Create an SEO plan for a plumbing business in Laval targeting emergency repairs</textarea>
+            <button class="btn-primary">Submit Task</button>
+            <div style="margin-top:10px; font-size:0.9em; color:green;">Task submitted! Thread ID: demo-abc-123</div>
+        </div>
+
+        <!-- Pending Approvals Section -->
+        <div class="section">
+            <h2>Pending Approvals</h2>
+            <button class="btn-warning">Refresh Approvals</button>
+            <div class="approval-card">
+                <h3>Agent: social_media</h3>
+                <p><strong>Task:</strong> Create a week of Facebook posts for Laval 24/7 Plumbing</p>
+                <p><strong>Draft:</strong></p>
+                <pre>📣 **Monday - Tip Post**
+"Did you know a slow drip wastes 3,000+ gallons a year? Laval 24/7 Plumbing fixes leaks fast. Call (450) 555-0199 for same-day service. #LavalPlumbing #SaveWater"
+
+📣 **Wednesday - Before/After**
+"Full bathroom remodel in Chomedey — complete in 3 days. 🛁✨ From old tile to modern luxury. Trust Laval 24/7 Plumbing for your next renovation."</pre>
+                <button class="btn-success">Approve</button>
+                <button class="btn-danger">Reject</button>
+            </div>
+        </div>
+
+        <!-- Pending Confirmations Section -->
+        <div class="section">
+            <h2>Pending Confirmations</h2>
+            <p style="font-size:0.85em;color:#666;">These approved drafts are waiting for your final go-ahead before being sent (email, social, SMS).</p>
+            <button class="btn-warning">Refresh</button>
+            <div class="approval-card">
+                <p><strong>Agent:</strong> social_media</p>
+                <p><strong>Tool:</strong> post_to_facebook</p>
+                <p><strong>Created:</strong> 5/7/2026, 11:15:00 AM</p>
+                <p><strong>Draft preview:</strong></p>
+                <pre style="font-size:0.85em;">📣 Spring plumbing checkup special — $50 off any inspection. Call (450) 555-0199 to book. Offer valid until May 31st.</pre>
+                <button class="btn-success">Confirm</button>
+                <button class="btn-danger">Reject</button>
+            </div>
+        </div>
+
+        <!-- Execution Activity Section -->
+        <div class="section">
+            <h2>Execution Activity</h2>
+            <button class="btn-warning">Refresh</button>
+            <div class="approval-card" style="background:#d4edda;margin:6px 0;padding:10px;">
+                <p><strong>local_seo</strong> &middot; publish_blog_post &middot; <small>5/7/2026, 2:30:00 PM</small></p>
+                <p>Status: ✅ Success</p>
+                <details><summary style="cursor:pointer;font-size:0.85em;color:#555;">Draft Preview</summary><pre style="font-size:0.8em;margin-top:6px;">Blog: Why Regular Plumbing Maintenance Saves You Money</pre></details>
+            </div>
+            <div class="approval-card" style="background:#d4edda;margin:6px 0;padding:10px;">
+                <p><strong>social_media</strong> &middot; post_to_facebook &middot; <small>5/7/2026, 11:15:00 AM</small></p>
+                <p>Status: ✅ Success</p>
+                <details><summary style="cursor:pointer;font-size:0.85em;color:#555;">Draft Preview</summary><pre style="font-size:0.8em;margin-top:6px;">Facebook post: Spring plumbing tips for Laval homeowners</pre></details>
+            </div>
+            <div class="approval-card" style="background:#f8d7da;margin:6px 0;padding:10px;">
+                <p><strong>paid_ads</strong> &middot; create_ad_campaign &middot; <small>5/6/2026, 4:20:00 PM</small></p>
+                <p>Status: ❌ Failed &middot; <span style="color:red;">Budget threshold exceeded</span></p>
+                <details><summary style="cursor:pointer;font-size:0.85em;color:#555;">Draft Preview</summary><pre style="font-size:0.8em;margin-top:6px;">Google Ads campaign: Emergency Plumber Laval</pre></details>
+            </div>
+        </div>
+
+        <!-- Executioner Settings Section -->
+        <div class="section">
+            <h2>Executioner Settings</h2>
+            <p style="font-size:0.85em;color:#666;">Configure SMTP and social media API credentials for executing approved drafts.</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                <div>
+                    <h3>SMTP</h3>
+                    <label>Host:</label>
+                    <input type="text" value="smtp.gmail.com">
+                    <label>Port:</label>
+                    <input type="number" value="587">
+                    <label>Username:</label>
+                    <input type="text" value="info@lavalplumbing.com">
+                    <label>Password:</label>
+                    <input type="password" value="••••••••">
+                    <label>From Email:</label>
+                    <input type="text" value="info@lavalplumbing.com">
+                    <label><input type="checkbox" checked> Use TLS</label>
+                </div>
+                <div>
+                    <h3>Social Media</h3>
+                    <label>Facebook Page ID:</label>
+                    <input type="text" value="10987654321">
+                    <label>Facebook Access Token:</label>
+                    <input type="password" value="EAA••••••••">
+                    <label>Instagram Account ID:</label>
+                    <input type="text" value="178987654321">
+                    <label>Instagram Access Token:</label>
+                    <input type="password" value="EAA••••••••">
+                </div>
+            </div>
+            <div style="margin-top:10px;">
+                <button class="btn-primary">Reload</button>
+                <button class="btn-success">Save Settings</button>
+            </div>
         </div>
     </div>
-
-    <script>
-    async function sendMessage() {
-        const input = document.getElementById('userInput');
-        const userMessage = input.value.trim();
-        if (!userMessage) return;
-
-        const messagesDiv = document.getElementById('chatMessages');
-
-        messagesDiv.innerHTML += '<div class="message user"><p>' + userMessage + '</p></div>';
-        input.value = '';
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-        messagesDiv.innerHTML += '<div class="message agent"><div class="agent-label">🤖 Processing...</div><p>Thinking...</p></div>';
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-        try {
-            const response = await fetch('/api/tasks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ request: userMessage })
-            });
-            const data = await response.json();
-            const threadId = data.thread_id;
-
-            setTimeout(async () => {
-                const approvalsResp = await fetch('/api/approvals');
-                const approvalsData = await approvalsResp.json();
-                const approval = approvalsData.approvals.find(function(a) { return a.thread_id === threadId; });
-
-                // Remove thinking message
-                var msgs = messagesDiv.querySelectorAll('.message.agent');
-                if (msgs.length > 0) msgs[msgs.length - 1].remove();
-
-                if (approval) {
-                    messagesDiv.innerHTML += '<div class="message agent"><div class="agent-label">🤖 ' + approval.agent.replace(/_/g, ' ').toUpperCase() + '</div><div style="max-height:250px;overflow-y:auto;"><pre style="font-family:inherit;">' + approval.draft.substring(0, 1500) + (approval.draft.length > 1500 ? '...' : '') + '</pre></div><p style="margin-top:8px;font-size:0.85rem;color:#666;">This is a demo. In production, you would review and approve this output before it goes live.</p></div>';
-                } else {
-                    messagesDiv.innerHTML += '<div class="message agent"><div class="agent-label">🤖 Laval Digital AI</div><p>Your request has been submitted. Check the admin panel for the full agent output once it&#39;s ready.</p></div>';
-                }
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            }, 3000);
-
-        } catch(e) {
-            var msgs = messagesDiv.querySelectorAll('.message.agent');
-            if (msgs.length > 0) msgs[msgs.length - 1].remove();
-            messagesDiv.innerHTML += '<div class="message agent"><div class="agent-label">🤖 Laval Digital AI</div><p>Demo mode: This is a simulation. In production, our AI agents generate real, actionable content for your business.</p></div>';
-        }
-    }
-    </script>
 </body>
 </html>

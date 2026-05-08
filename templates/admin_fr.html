@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laval Digital - Admin Panel</title>
+    <title>Laval Digital - Panneau d'Admin</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
         .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
@@ -27,8 +27,6 @@
         .status-idle { background: #28a745; color: white; }
         .status-disabled { background: #6c757d; color: white; }
         pre { white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
-        .lang-toggle { color: #007bff; text-decoration: none; font-size: 0.9rem; margin-left: 15px; }
-        .lang-toggle:hover { text-decoration: underline; }
 
         @media (max-width: 768px) {
             body { margin: 10px; }
@@ -54,109 +52,108 @@
 </head>
 <body>
     <div class="container">
-        <h1>Laval Digital - Admin Panel <a href="/fr/admin" class="lang-toggle">FR</a></h1>
-        
-        <!-- Agent Status Section -->
+        <h1>Laval Digital - Panneau d'Admin</h1>
+
+        <!-- Statut des Agents -->
         <div class="section">
-            <h2>Agent Status</h2>
+            <h2>Statut des Agents</h2>
             <div id="agent-list"></div>
         </div>
-        
-        <!-- Agent Configuration Section -->
+
+        <!-- Configuration des Agents -->
         <div class="section">
-            <h2>Agent Configuration</h2>
+            <h2>Configuration des Agents</h2>
             <select id="config-agent-select" onchange="loadAgentConfig()">
-                <option value="">-- Select agent to configure --</option>
+                <option value="">-- Sélectionnez un agent à configurer --</option>
             </select>
             <div id="agent-config-form" style="display:none; margin-top:10px;">
-                <label>Model:</label>
+                <label>Modèle :</label>
                 <select id="config-model">
-                    <option value="">-- Enter API key and click Detect --</option>
+                    <option value="">-- Entrez une clé API et cliquez Détecter --</option>
                 </select>
-                <label>API Key:</label>
+                <label>Clé API :</label>
                 <div style="display:flex; gap:8px; align-items:center;">
                     <input type="password" id="config-api-key" placeholder="sk-..." style="flex:1;">
-                    <button id="detect-btn" class="btn-primary" onclick="detectModels()" disabled style="white-space:nowrap;">Detect</button>
+                    <button id="detect-btn" class="btn-primary" onclick="detectModels()" disabled style="white-space:nowrap;">Détecter</button>
                 </div>
                 <div id="detect-result" style="font-size:0.9em; margin:5px 0;"></div>
-                <label>API Base URL (optional):</label>
+                <label>URL de Base API (optionnel) :</label>
                 <input type="text" id="config-api-base" placeholder="https://api.deepseek.com/v1">
-                <button class="btn-primary" onclick="saveAgentConfig()">Save Configuration</button>
+                <button class="btn-primary" onclick="saveAgentConfig()">Sauvegarder la Configuration</button>
                 <div id="config-save-result"></div>
             </div>
         </div>
-        
-        <!-- Submit Task Section -->
+
+        <!-- Soumettre une Tâche -->
         <div class="section">
-            <h2>Submit Task to Orchestrator</h2>
-            <textarea id="task-input" rows="3" placeholder="e.g., I want more plumbing leads in Laval this week"></textarea>
-            <button class="btn-primary" onclick="submitTask()">Submit Task</button>
+            <h2>Soumettre une Tâche à l'Orchestrateur</h2>
+            <textarea id="task-input" rows="3" placeholder="ex. : Je veux plus de prospects de plomberie à Laval cette semaine"></textarea>
+            <button class="btn-primary" onclick="submitTask()">Soumettre la Tâche</button>
             <div id="task-result"></div>
         </div>
-        
-        <!-- Pending Approvals Section -->
+
+        <!-- Approbations en Attente -->
         <div class="section">
-            <h2>Pending Approvals</h2>
-            <button class="btn-warning" onclick="loadApprovals()">Refresh Approvals</button>
+            <h2>Approbations en Attente</h2>
+            <button class="btn-warning" onclick="loadApprovals()">Actualiser</button>
             <div id="approvals-list"></div>
         </div>
 
-        <!-- Pending Confirmations Section -->
+        <!-- Confirmations en Attente -->
         <div class="section">
-            <h2>Pending Confirmations</h2>
-            <p style="font-size:0.85em;color:#666;">These approved drafts are waiting for your final go-ahead before being sent (email, social, SMS).</p>
-            <button class="btn-warning" onclick="loadPendingExecutions()">Refresh</button>
-            <div id="pending-executions-list"><p style="color:#666;">Loading...</p></div>
+            <h2>Confirmations en Attente</h2>
+            <p style="font-size:0.85em;color:#666;">Ces brouillons approuvés attendent votre feu vert final avant d'être envoyés (courriel, social, SMS).</p>
+            <button class="btn-warning" onclick="loadPendingExecutions()">Actualiser</button>
+            <div id="pending-executions-list"><p style="color:#666;">Chargement...</p></div>
         </div>
 
-        <!-- Execution Activity Section -->
+        <!-- Activité d'Exécution -->
         <div class="section">
-            <h2>Execution Activity</h2>
-            <button class="btn-warning" onclick="loadExecutions()">Refresh</button>
-            <div id="execution-list"><p style="color:#666;">Loading...</p></div>
+            <h2>Activité d'Exécution</h2>
+            <button class="btn-warning" onclick="loadExecutions()">Actualiser</button>
+            <div id="execution-list"><p style="color:#666;">Chargement...</p></div>
         </div>
 
-        <!-- Executioner Settings Section -->
+        <!-- Paramètres d'Exécution -->
         <div class="section">
-            <h2>Executioner Settings</h2>
-            <p style="font-size:0.85em;color:#666;">Configure SMTP and social media API credentials for executing approved drafts.</p>
+            <h2>Paramètres d'Exécution</h2>
+            <p style="font-size:0.85em;color:#666;">Configurez les identifiants SMTP et API des médias sociaux pour exécuter les brouillons approuvés.</p>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
                 <div>
                     <h3>SMTP</h3>
-                    <label>Host:</label>
+                    <label>Hôte :</label>
                     <input type="text" id="smtp-host" placeholder="smtp.gmail.com">
-                    <label>Port:</label>
+                    <label>Port :</label>
                     <input type="number" id="smtp-port" placeholder="587">
-                    <label>Username:</label>
+                    <label>Nom d'utilisateur :</label>
                     <input type="text" id="smtp-username" placeholder="user@gmail.com">
-                    <label>Password:</label>
-                    <input type="password" id="smtp-password" placeholder="app password">
-                    <label>From Email:</label>
-                    <input type="text" id="smtp-from" placeholder="info@lavalplumbing.com">
-                    <label><input type="checkbox" id="smtp-tls" checked> Use TLS</label>
+                    <label>Mot de passe :</label>
+                    <input type="password" id="smtp-password" placeholder="mot de passe d'application">
+                    <label>Courriel d'envoi :</label>
+                    <input type="text" id="smtp-from" placeholder="info@lavalplomberie.com">
+                    <label><input type="checkbox" id="smtp-tls" checked> Utiliser TLS</label>
                 </div>
                 <div>
-                    <h3>Social Media</h3>
-                    <label>Facebook Page ID:</label>
+                    <h3>Médias Sociaux</h3>
+                    <label>ID Page Facebook :</label>
                     <input type="text" id="fb-page-id" placeholder="123456789">
-                    <label>Facebook Access Token:</label>
+                    <label>Jeton d'accès Facebook :</label>
                     <input type="password" id="fb-token" placeholder="EAA...">
-                    <label>Instagram Account ID:</label>
+                    <label>ID Compte Instagram :</label>
                     <input type="text" id="ig-account-id" placeholder="123456789">
-                    <label>Instagram Access Token:</label>
+                    <label>Jeton d'accès Instagram :</label>
                     <input type="password" id="ig-token" placeholder="EAA...">
                 </div>
             </div>
             <div style="margin-top:10px;">
-                <button class="btn-primary" onclick="loadExecutionerSettings()">Reload</button>
-                <button class="btn-success" onclick="saveExecutionerSettings()">Save Settings</button>
+                <button class="btn-primary" onclick="loadExecutionerSettings()">Recharger</button>
+                <button class="btn-success" onclick="saveExecutionerSettings()">Sauvegarder</button>
                 <span id="executioner-settings-result"></span>
             </div>
         </div>
     </div>
 
     <script>
-        // Load agent status on page load
         window.onload = function() {
             loadAgents();
             loadApprovals();
@@ -176,19 +173,20 @@
                 .then(data => {
                     const html = data.agents.map(a => {
                         const agentStatus = a.enabled ? a.status : 'disabled';
-                        const statusLabel = a.enabled ? (a.status === 'processing' ? 'Processing' : a.status === 'pending_approval' ? 'Pending Approval' : 'Idle') : 'Disabled';
-                        const lastInvoked = a.last_invoked ? new Date(a.last_invoked).toLocaleString() : '--';
+                        const statusLabels = {processing:'En cours',pending_approval:'Approbation en attente',idle:'Inactif',disabled:'Désactivé'};
+                        const statusLabel = a.enabled ? (statusLabels[a.status] || 'Inactif') : 'Désactivé';
+                        const lastInvoked = a.last_invoked ? new Date(a.last_invoked).toLocaleString('fr-CA') : '--';
                         const draftPreview = a.last_draft_preview || '--';
                         return `
                         <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" id="agent-card-${a.agent_id}" data-agent-id="${a.agent_id}">
                             <h3>${a.agent_id}</h3>
-                            <p><strong>Model:</strong> ${a.model}</p>
-                            <p><strong>Agent:</strong> <span class="status-badge status-${agentStatus}">${statusLabel}</span></p>
-                            <p><strong>Tasks:</strong> ${a.task_count} (${a.success_count} ok / ${a.failure_count} fail)</p>
-                            <p><strong>Last:</strong> ${lastInvoked}</p>
-                            <p><strong>Draft:</strong> <span style="font-size:0.85em;color:#555;">${draftPreview}</span></p>
+                            <p><strong>Modèle :</strong> ${a.model}</p>
+                            <p><strong>Agent :</strong> <span class="status-badge status-${agentStatus}">${statusLabel}</span></p>
+                            <p><strong>Tâches :</strong> ${a.task_count} (${a.success_count} ok / ${a.failure_count} échouées)</p>
+                            <p><strong>Dernière :</strong> ${lastInvoked}</p>
+                            <p><strong>Brouillon :</strong> <span style="font-size:0.85em;color:#555;">${draftPreview}</span></p>
                             <button class="toggle-btn btn-${a.enabled ? 'danger' : 'success'}" onclick="toggleAgent('${a.agent_id}')">
-                                ${a.enabled ? 'Disable' : 'Enable'}
+                                ${a.enabled ? 'Désactiver' : 'Activer'}
                             </button>
                         </div>
                         `;
@@ -211,8 +209,7 @@
 
         function submitTask() {
             const task = document.getElementById('task-input').value;
-            if (!task) return alert('Please enter a task');
-            
+            if (!task) return alert('Veuillez entrer une tâche');
             fetch('/api/tasks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -221,8 +218,8 @@
             .then(r => r.json())
             .then(data => {
                 document.getElementById('task-result').innerHTML = `
-                    <p>Task submitted! Thread ID: ${data.thread_id}</p>
-                    <p>Status: <span class="status-badge ${data.status === 'completed' ? 'status-completed' : 'status-pending'}">${data.status}</span></p>
+                    <p>Tâche soumise ! ID de fil : ${data.thread_id}</p>
+                    <p>Statut : <span class="status-badge ${data.status === 'completed' ? 'status-completed' : 'status-pending'}">${data.status === 'completed' ? 'Terminé' : 'En attente'}</span></p>
                 `;
                 setTimeout(loadApprovals, 2000);
             });
@@ -233,21 +230,20 @@
                 .then(r => r.json())
                 .then(data => {
                     if (data.approvals.length === 0) {
-                        document.getElementById('approvals-list').innerHTML = '<p>No pending approvals</p>';
+                        document.getElementById('approvals-list').innerHTML = '<p>Aucune approbation en attente</p>';
                         return;
                     }
-                    
                     const html = data.approvals.map(a => `
                         <div class="approval-card">
-                            <h3>Agent: ${a.agent}</h3>
-                            <p><strong>Task:</strong> ${a.task}</p>
-                            <p><strong>Draft:</strong></p>
+                            <h3>Agent : ${a.agent}</h3>
+                            <p><strong>Tâche :</strong> ${a.task}</p>
+                            <p><strong>Brouillon :</strong></p>
                             <pre>${a.draft}</pre>
-                            <button class="btn-success" onclick="respondApproval('${a.thread_id}', true)">Approve</button>
-                            <button class="btn-danger" onclick="showRejectForm('${a.thread_id}')">Reject</button>
+                            <button class="btn-success" onclick="respondApproval('${a.thread_id}', true)">Approuver</button>
+                            <button class="btn-danger" onclick="showRejectForm('${a.thread_id}')">Rejeter</button>
                             <div id="reject-form-${a.thread_id}" style="display:none; margin-top:10px;">
-                                <input type="text" id="feedback-${a.thread_id}" placeholder="Feedback (optional)">
-                                <button class="btn-danger" onclick="respondApproval('${a.thread_id}', false)">Confirm Reject</button>
+                                <input type="text" id="feedback-${a.thread_id}" placeholder="Commentaires (optionnel)">
+                                <button class="btn-danger" onclick="respondApproval('${a.thread_id}', false)">Confirmer le Rejet</button>
                             </div>
                         </div>
                     `).join('');
@@ -261,7 +257,6 @@
 
         function respondApproval(threadId, approved) {
             const feedback = document.getElementById(`feedback-${threadId}`)?.value || '';
-            
             fetch(`/api/approvals/${threadId}/respond`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -269,7 +264,7 @@
             })
             .then(r => r.json())
             .then(() => {
-                alert(`Approval ${approved ? 'approved' : 'rejected'}!`);
+                alert(approved ? 'Approbation confirmée !' : 'Approbation rejetée.');
                 loadApprovals();
             });
         }
@@ -290,7 +285,7 @@
 
         function populateModelDropdown() {
             const select = document.getElementById('config-model');
-            select.innerHTML = '<option value="">-- Enter API key and click Detect --</option>';
+            select.innerHTML = '<option value="">-- Entrez une clé API et cliquez Détecter --</option>';
         }
 
         function detectModels() {
@@ -299,7 +294,7 @@
             const btn = document.getElementById('detect-btn');
             const resultDiv = document.getElementById('detect-result');
             btn.disabled = true;
-            btn.textContent = 'Detecting...';
+            btn.textContent = 'Détection...';
             resultDiv.textContent = '';
             fetch('/api/models/detect', {
                 method: 'POST',
@@ -310,8 +305,8 @@
             .then(data => {
                 const select = document.getElementById('config-model');
                 if (data.provider === 'unknown' || data.models.length === 0) {
-                    select.innerHTML = '<option value="">-- No models detected for this key --</option>';
-                    resultDiv.textContent = 'Could not detect provider. Check your key.';
+                    select.innerHTML = '<option value="">-- Aucun modèle détecté pour cette clé --</option>';
+                    resultDiv.textContent = 'Impossible de détecter le fournisseur. Vérifiez votre clé.';
                     resultDiv.style.color = 'red';
                     return;
                 }
@@ -322,17 +317,17 @@
                     opt.textContent = m;
                     select.appendChild(opt);
                 });
-                resultDiv.textContent = 'Provider: ' + data.provider + ' (' + data.models.length + ' models)';
+                resultDiv.textContent = 'Fournisseur : ' + data.provider + ' (' + data.models.length + ' modèles)';
                 resultDiv.style.color = 'green';
             })
             .catch(err => {
-                document.getElementById('config-model').innerHTML = '<option value="">-- Detection failed --</option>';
-                resultDiv.textContent = 'Error: ' + err.message;
+                document.getElementById('config-model').innerHTML = '<option value="">-- Échec de la détection --</option>';
+                resultDiv.textContent = 'Erreur : ' + err.message;
                 resultDiv.style.color = 'red';
             })
             .finally(() => {
                 btn.disabled = false;
-                btn.textContent = 'Detect';
+                btn.textContent = 'Détecter';
             });
         }
 
@@ -362,7 +357,6 @@
             const model = document.getElementById('config-model').value;
             const apiKey = document.getElementById('config-api-key').value;
             const apiBase = document.getElementById('config-api-base').value;
-            
             fetch(`/api/agents/${agentId}/config`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -370,18 +364,12 @@
             })
             .then(r => r.json())
             .then(data => {
-                document.getElementById('config-save-result').innerHTML = 
-                    '<span style="color:green;">Configuration saved!</span>';
+                document.getElementById('config-save-result').innerHTML = '<span style="color:green;">Configuration sauvegardée !</span>';
             })
             .catch(err => {
-                document.getElementById('config-save-result').innerHTML = 
-                    '<span style="color:red;">Error saving configuration</span>';
+                document.getElementById('config-save-result').innerHTML = '<span style="color:red;">Erreur lors de la sauvegarde</span>';
             });
         }
-
-        /* ------------------------------------------------------------------ */
-        /*  Pending Confirmations                                             */
-        /* ------------------------------------------------------------------ */
 
         function loadPendingExecutions() {
             fetch('/api/executioner/pending')
@@ -389,24 +377,23 @@
                 .then(data => {
                     const list = document.getElementById('pending-executions-list');
                     if (!data.pending || data.pending.length === 0) {
-                        list.innerHTML = '<p style="color:#666;">No pending confirmations</p>';
+                        list.innerHTML = '<p style="color:#666;">Aucune confirmation en attente</p>';
                         return;
                     }
                     list.innerHTML = data.pending.map(p => `
                         <div class="approval-card">
-                            <p><strong>Agent:</strong> ${p.agent_name}</p>
-                            <p><strong>Tool:</strong> ${p.tool_name}</p>
-                            <p><strong>Created:</strong> ${new Date(p.created_at).toLocaleString()}</p>
-                            <p><strong>Draft preview:</strong></p>
+                            <p><strong>Agent :</strong> ${p.agent_name}</p>
+                            <p><strong>Outil :</strong> ${p.tool_name}</p>
+                            <p><strong>Créé :</strong> ${new Date(p.created_at).toLocaleString('fr-CA')}</p>
+                            <p><strong>Aperçu du brouillon :</strong></p>
                             <pre style="font-size:0.85em;">${p.draft_preview}</pre>
-                            <button class="btn-success" onclick="confirmPending('${p.execution_id}')">Confirm</button>
-                            <button class="btn-danger" onclick="rejectPending('${p.execution_id}')">Reject</button>
+                            <button class="btn-success" onclick="confirmPending('${p.execution_id}')">Confirmer</button>
+                            <button class="btn-danger" onclick="rejectPending('${p.execution_id}')">Rejeter</button>
                         </div>
                     `).join('');
                 })
                 .catch(() => {
-                    document.getElementById('pending-executions-list').innerHTML =
-                        '<p style="color:red;">Failed to load pending confirmations</p>';
+                    document.getElementById('pending-executions-list').innerHTML = '<p style="color:red;">Échec du chargement des confirmations</p>';
                 });
         }
 
@@ -414,27 +401,23 @@
             fetch(`/api/executioner/confirm/${executionId}`, { method: 'POST' })
                 .then(r => r.json())
                 .then(data => {
-                    const msg = data.success ? 'Execution confirmed!' : 'Execution failed: ' + (data.error || 'unknown');
+                    const msg = data.success ? 'Exécution confirmée !' : 'Échec : ' + (data.error || 'inconnu');
                     alert(msg);
                     loadPendingExecutions();
                     loadAgents();
                 })
-                .catch(err => alert('Error: ' + err.message));
+                .catch(err => alert('Erreur : ' + err.message));
         }
 
         function rejectPending(executionId) {
             fetch(`/api/executioner/reject/${executionId}`, { method: 'POST' })
                 .then(r => r.json())
                 .then(() => {
-                    alert('Execution rejected.');
+                    alert('Exécution rejetée.');
                     loadPendingExecutions();
                 })
-                .catch(err => alert('Error: ' + err.message));
+                .catch(err => alert('Erreur : ' + err.message));
         }
-
-        /* ------------------------------------------------------------------ */
-        /*  Executioner Settings                                              */
-        /* ------------------------------------------------------------------ */
 
         function loadExecutionerSettings() {
             fetch('/api/executioner/settings')
@@ -474,21 +457,13 @@
             })
                 .then(r => r.json())
                 .then(() => {
-                    document.getElementById('executioner-settings-result').innerHTML =
-                        '<span style="color:green;margin-left:10px;">Settings saved!</span>';
-                    setTimeout(() => {
-                        document.getElementById('executioner-settings-result').textContent = '';
-                    }, 3000);
+                    document.getElementById('executioner-settings-result').innerHTML = '<span style="color:green;margin-left:10px;">Paramètres sauvegardés !</span>';
+                    setTimeout(() => { document.getElementById('executioner-settings-result').textContent = ''; }, 3000);
                 })
                 .catch(err => {
-                    document.getElementById('executioner-settings-result').innerHTML =
-                        '<span style="color:red;margin-left:10px;">Error: ' + err.message + '</span>';
+                    document.getElementById('executioner-settings-result').innerHTML = '<span style="color:red;margin-left:10px;">Erreur : ' + err.message + '</span>';
                 });
         }
-
-        /* ------------------------------------------------------------------ */
-        /*  Execution Activity Feed                                           */
-        /* ------------------------------------------------------------------ */
 
         function loadExecutions() {
             fetch('/api/executions')
@@ -496,20 +471,19 @@
                 .then(data => {
                     const list = document.getElementById('execution-list');
                     if (!data.executions || data.executions.length === 0) {
-                        list.innerHTML = '<p style="color:#666;">No executions yet</p>';
+                        list.innerHTML = '<p style="color:#666;">Aucune exécution</p>';
                         return;
                     }
                     list.innerHTML = data.executions.slice(0, 20).map(e => `
                         <div class="approval-card" style="background:${e.success ? '#d4edda' : '#f8d7da'};margin:6px 0;padding:10px;">
-                            <p><strong>${e.agent_name}</strong> &middot; ${e.tool_name} &middot; <small>${new Date(e.timestamp).toLocaleString()}</small></p>
-                            <p>Status: ${e.success ? '✅ Success' : '❌ Failed'} ${e.error ? `&middot; <span style="color:red;">${e.error}</span>` : ''}</p>
-                            <details><summary style="cursor:pointer;font-size:0.85em;color:#555;">Draft Preview</summary><pre style="font-size:0.8em;margin-top:6px;">${e.draft_preview}</pre></details>
+                            <p><strong>${e.agent_name}</strong> &middot; ${e.tool_name} &middot; <small>${new Date(e.timestamp).toLocaleString('fr-CA')}</small></p>
+                            <p>Statut : ${e.success ? '✅ Réussi' : '❌ Échoué'} ${e.error ? `&middot; <span style="color:red;">${e.error}</span>` : ''}</p>
+                            <details><summary style="cursor:pointer;font-size:0.85em;color:#555;">Aperçu du Brouillon</summary><pre style="font-size:0.8em;margin-top:6px;">${e.draft_preview}</pre></details>
                         </div>
                     `).join('');
                 })
                 .catch(() => {
-                    document.getElementById('execution-list').innerHTML =
-                        '<p style="color:red;">Failed to load executions</p>';
+                    document.getElementById('execution-list').innerHTML = '<p style="color:red;">Échec du chargement des exécutions</p>';
                 });
         }
     </script>
