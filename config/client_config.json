@@ -1,0 +1,24 @@
+{
+  "business_name": "Laval Digital Client",
+  "contact_email": "client@example.com",
+  "phone": "(450) 555-0199",
+  "address": {
+    "street": "123 Main Street",
+    "city": "Laval",
+    "province": "QC",
+    "postal_code": "H7X 1A1",
+    "country": "CA"
+  },
+  "service_area": {
+    "primary_city": "Laval",
+    "radius_km": 50,
+    "secondary_cities": ["Montreal", "Longueuil", "Terrebonne", "Brossard"],
+    "neighborhoods": ["Chomedey", "Sainte-Rose", "Fabreville", "Laval-des-Rapides", "Pont-Viau"]
+  },
+  "google_business_profile": {
+    "place_id": "PLACE_ID_HERE",
+    "profile_url": "https://maps.google.com/?cid=CID_HERE"
+  },
+  "services": ["Plumbing", "Drain Cleaning", "Water Heater Installation"],
+  "business_type": "plumber"
+}

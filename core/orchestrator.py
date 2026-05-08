@@ -7,6 +7,7 @@ from langgraph.graph import END, START, StateGraph
 
 from core.llm_adapter import LLMAdapter
 from core.base_agent import BaseAgent
+from core.location_injector import LocationInjector
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ Respond only with the JSON, no other text."""
         self._llm_adapter = llm_adapter
         self._agent_registry = agent_registry
         self._checkpointer = MemorySaver()
+        self._location_injector = LocationInjector()
         self._graph = None
         logger.info(f"Orchestrator initialized with {len(agent_registry)} agents")
 
@@ -90,6 +92,14 @@ Respond only with the JSON, no other text."""
 
             state["routed_agent"] = routing_decision["agent"]
             state["agent_task"] = routing_decision["task"]
+
+            # Inject location context for location-aware agents
+            enhanced_task = self._location_injector.inject(
+                state["agent_task"],
+                state["routed_agent"]
+            )
+            state["agent_task"] = enhanced_task
+
             state["messages"].append({
                 "role": "orchestrator",
                 "content": f"Routed to {routing_decision['agent']}: {routing_decision['reasoning']}"
