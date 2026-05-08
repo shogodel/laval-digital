@@ -220,7 +220,8 @@ def admin_panel_redirect():
     """Serve the admin panel with session-based auth."""
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
-    return render_template("admin.html")
+    logo_status = request.args.get("logo_uploaded", "")
+    return render_template("admin.html", logo_uploaded=logo_status)
 
 
 @app.route("/fr/admin/login", methods=["GET", "POST"])
@@ -250,12 +251,13 @@ def admin_panel_redirect_fr():
     """Serve the French admin panel with session-based auth."""
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login_fr"))
-    return render_template("admin_fr.html")
+    logo_status = request.args.get("logo_uploaded", "")
+    return render_template("admin_fr.html", logo_uploaded=logo_status)
 
 
 @app.route("/admin/logo", methods=["POST"])
 def admin_upload_logo():
-    """Upload a custom logo PNG to replace the default."""
+    """Upload a custom logo PNG or SVG to replace the default."""
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
     if "logo" not in request.files:
@@ -263,10 +265,27 @@ def admin_upload_logo():
     file = request.files["logo"]
     if file.filename == "":
         return redirect(url_for("admin_panel_redirect"))
-    if file and (file.filename.endswith(".png") or file.filename.endswith(".svg")):
+    if file and (file.filename.lower().endswith(".png") or file.filename.lower().endswith(".svg")):
         ext = file.filename.rsplit(".", 1)[1].lower()
-        file.save(f"static/logo.{ext}")
-    return redirect(url_for("admin_panel_redirect"))
+        save_path = os.path.join(app.root_path, "static", f"logo_custom.{ext}")
+        file.save(save_path)
+        other_ext = "svg" if ext == "png" else "png"
+        other_path = os.path.join(app.root_path, "static", f"logo_custom.{other_ext}")
+        if os.path.exists(other_path):
+            os.remove(other_path)
+        session["logo_ext"] = ext
+        return redirect(url_for("admin_panel_redirect", logo_uploaded="success"))
+    return redirect(url_for("admin_panel_redirect", logo_uploaded="invalid"))
+
+
+@app.context_processor
+def inject_logo():
+    """Inject the current logo filename into all templates."""
+    for ext in ("png", "svg"):
+        path = os.path.join(app.root_path, "static", f"logo_custom.{ext}")
+        if os.path.exists(path):
+            return dict(logo_file=f"logo_custom.{ext}")
+    return dict(logo_file="logo.svg")
 
 
 @app.route("/api/leads", methods=["GET", "POST"])
