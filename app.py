@@ -9,7 +9,7 @@ from typing import Dict, Any
 warnings.filterwarnings("ignore", module="langgraph")
 warnings.filterwarnings("ignore", module="langchain")
 
-from flask import Flask, render_template, jsonify, request, redirect, url_for
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -193,26 +193,80 @@ def blog_fr():
     return render_template("blog_fr.html")
 
 
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    """Serve the admin login page and handle authentication."""
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+        expected_user = os.getenv("ADMIN_USERNAME", "laval")
+        expected_pass = os.getenv("ADMIN_PASSWORD", "digital2026!")
+        if username == expected_user and password == expected_pass:
+            session["admin_logged_in"] = True
+            return redirect(url_for("admin_panel_redirect"))
+        return render_template("login.html", error="Invalid username or password.", now=datetime.now())
+    return render_template("login.html", now=datetime.now())
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    """Log out and redirect to login."""
+    session.pop("admin_logged_in", None)
+    return redirect(url_for("admin_login"))
+
+
 @app.route("/admin")
 def admin_panel_redirect():
-    """Redirect to admin panel with HTTP Basic Auth."""
-    auth = request.authorization
-    expected_user = os.getenv("ADMIN_USERNAME", "laval")
-    expected_pass = os.getenv("ADMIN_PASSWORD", "digital2026!")
-    if not auth or auth.username != expected_user or auth.password != expected_pass:
-        return "Unauthorized", 401, {"WWW-Authenticate": 'Basic realm="Laval Digital Admin"'}
+    """Serve the admin panel with session-based auth."""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
     return render_template("admin.html")
+
+
+@app.route("/fr/admin/login", methods=["GET", "POST"])
+def admin_login_fr():
+    """Serve the French admin login page."""
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+        expected_user = os.getenv("ADMIN_USERNAME", "laval")
+        expected_pass = os.getenv("ADMIN_PASSWORD", "digital2026!")
+        if username == expected_user and password == expected_pass:
+            session["admin_logged_in"] = True
+            return redirect(url_for("admin_panel_redirect_fr"))
+        return render_template("login_fr.html", error="Nom d'utilisateur ou mot de passe invalide.", now=datetime.now())
+    return render_template("login_fr.html", now=datetime.now())
+
+
+@app.route("/fr/admin/logout")
+def admin_logout_fr():
+    """Log out from French admin and redirect to login."""
+    session.pop("admin_logged_in", None)
+    return redirect(url_for("admin_login_fr"))
 
 
 @app.route("/fr/admin")
 def admin_panel_redirect_fr():
-    """Redirect to French admin panel with HTTP Basic Auth."""
-    auth = request.authorization
-    expected_user = os.getenv("ADMIN_USERNAME", "laval")
-    expected_pass = os.getenv("ADMIN_PASSWORD", "digital2026!")
-    if not auth or auth.username != expected_user or auth.password != expected_pass:
-        return "Unauthorized", 401, {"WWW-Authenticate": 'Basic realm="Laval Digital Admin"'}
+    """Serve the French admin panel with session-based auth."""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login_fr"))
     return render_template("admin_fr.html")
+
+
+@app.route("/admin/logo", methods=["POST"])
+def admin_upload_logo():
+    """Upload a custom logo PNG to replace the default."""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+    if "logo" not in request.files:
+        return redirect(url_for("admin_panel_redirect"))
+    file = request.files["logo"]
+    if file.filename == "":
+        return redirect(url_for("admin_panel_redirect"))
+    if file and (file.filename.endswith(".png") or file.filename.endswith(".svg")):
+        ext = file.filename.rsplit(".", 1)[1].lower()
+        file.save(f"static/logo.{ext}")
+    return redirect(url_for("admin_panel_redirect"))
 
 
 @app.route("/api/leads", methods=["GET", "POST"])

@@ -12,6 +12,7 @@
         nav { background: var(--navy); padding: 15px 0; }
         nav .container { display: flex; justify-content: space-between; align-items: center; }
         nav .logo { color: var(--white); font-size: 1.5rem; font-weight: 700; text-decoration: none; }
+        nav .logo img { vertical-align: middle; }
         nav .logo span { color: var(--orange); }
         nav ul { list-style: none; display: flex; gap: 25px; }
         nav ul li a { color: var(--white); text-decoration: none; }
@@ -34,7 +35,7 @@
 
 <nav>
     <div class="container">
-        <a href="/" class="logo">Laval<span>Digital</span></a>
+        <a href="/" class="logo"><img src="{{ url_for('static', filename='logo.svg') }}" alt="Laval Digital" height="32"></a>
         <ul>
             <li><a href="/">Home</a></li>
             <li><a href="/demo">Live Demo</a></li>

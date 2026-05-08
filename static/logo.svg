@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <rect width="200" height="60" fill="#1a3a5c" rx="8"/>
+  <text x="14" y="38" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#ffffff">Laval</text>
+  <text x="82" y="38" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#ff6b35">Digital</text>
+</svg>

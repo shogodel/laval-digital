@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laval Digital - Admin Login</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 48px 40px 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .logo { margin-bottom: 32px; }
+        .login-card h1 {
+            color: #1a3a5c;
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+        .login-card p {
+            color: #888;
+            font-size: 0.95rem;
+            margin-bottom: 32px;
+        }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            outline: none;
+        }
+        .form-group input:focus { border-color: #ff6b35; }
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: #ff6b35;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+        }
+        .login-btn:hover { background: #e55a2b; transform: translateY(-1px); }
+        .error {
+            background: #fff0f0;
+            color: #d32f2f;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .error.show { display: block; }
+        .footer-text {
+            margin-top: 24px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo.svg') }}" alt="Laval Digital" height="48">
+        </div>
+        <h1>Admin Login</h1>
+        <p>Enter your credentials to access the admin panel.</p>
+
+        <div class="error {% if error %}show{% endif %}" id="error-msg">
+            {{ error or 'Invalid username or password.' }}
+        </div>
+
+        <form method="POST" action="/admin/login">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="login-btn">Sign In</button>
+        </form>
+        <div class="footer-text">Laval Digital &copy; {{ now.year }}</div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('error')) {
+            document.getElementById('error-msg').textContent = decodeURIComponent(params.get('error'));
+            document.getElementById('error-msg').classList.add('show');
+        }
+    </script>
+</body>
+</html>

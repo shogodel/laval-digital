@@ -29,6 +29,8 @@
         pre { white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
         .back-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-size: 0.9rem; }
         .back-link:hover { text-decoration: underline; }
+        .lang-toggle { color: #007bff; text-decoration: none; font-size: 0.9rem; margin-left: 15px; }
+        .lang-toggle:hover { text-decoration: underline; }
         .demo-badge { background: #ff6b35; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-left: 10px; vertical-align: middle; }
         .demo-notice { background: #fff3cd; border: 1px solid #ffc107; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
         @media (max-width: 768px) {
@@ -52,7 +54,13 @@
 </head>
 <body>
     <div class="container">
-        <a href="/fr/" class="back-link">&larr; Retour à l'Accueil</a>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px;">
+            <div>
+                <a href="/fr/" class="back-link">&larr; Retour à l'Accueil</a>
+                <a href="/demo" class="lang-toggle">EN</a>
+            </div>
+            <img src="{{ url_for('static', filename='logo.svg') }}" alt="Laval Digital" height="32">
+        </div>
         <h1>Laval Digital - Panneau d'Admin <span class="demo-badge">Aperçu</span></h1>
 
         <div class="demo-notice">

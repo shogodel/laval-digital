@@ -27,6 +27,9 @@
         .status-idle { background: #28a745; color: white; }
         .status-disabled { background: #6c757d; color: white; }
         pre { white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
+        .admin-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 0; }
+        .admin-header h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+        .admin-header .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
         @media (max-width: 768px) {
             body { margin: 10px; }
@@ -52,7 +55,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>Laval Digital - Panneau d'Admin</h1>
+        <div class="admin-header">
+            <h1><img src="{{ url_for('static', filename='logo.svg') }}" alt="Laval Digital" height="32" style="vertical-align:middle;margin-right:10px;">Laval Digital - Panneau d'Admin</h1>
+            <div class="header-right">
+                <a href="/admin/logout" class="btn-danger" style="text-decoration:none;padding:6px 14px;font-size:0.85rem;">D&eacute;connexion</a>
+                <a href="/admin" class="lang-toggle">EN</a>
+            </div>
+        </div>
 
         <!-- Statut des Agents -->
         <div class="section">
@@ -112,6 +121,16 @@
             <h2>Activité d'Exécution</h2>
             <button class="btn-warning" onclick="loadExecutions()">Actualiser</button>
             <div id="execution-list"><p style="color:#666;">Chargement...</p></div>
+        </div>
+
+        <!-- Logo Upload -->
+        <div class="section">
+            <h2>Logo</h2>
+            <p style="font-size:0.85em;color:#666;">T&eacute;l&eacute;chargez le logo de votre entreprise (PNG ou SVG). Il remplacera le logo par d&eacute;faut sur toutes les pages.</p>
+            <form method="POST" action="/admin/logo" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <input type="file" name="logo" accept=".png,.svg" required style="width:auto;flex:1;min-width:200px;">
+                <button type="submit" class="btn-primary" style="white-space:nowrap;">T&eacute;l&eacute;charger</button>
+            </form>
         </div>
 
         <!-- Paramètres d'Exécution -->

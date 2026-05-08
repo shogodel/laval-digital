@@ -20,7 +20,6 @@
         .btn-warning { background: #ffc107; color: black; }
         input, textarea { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 100%; }
         .approval-card { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 5px; }
-        .approval-card { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 5px; }
         .status-badge { padding: 4px 8px; border-radius: 3px; font-size: 12px; }
         .status-pending { background: #ffc107; color: black; }
         .status-completed { background: #28a745; color: white; }
@@ -57,8 +56,13 @@
 </head>
 <body>
     <div class="container">
-        <a href="/" class="back-link">&larr; Back to Home</a>
-        <a href="/fr/demo" class="lang-toggle">FR</a>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px;">
+            <div>
+                <a href="/" class="back-link">&larr; Back to Home</a>
+                <a href="/fr/demo" class="lang-toggle">FR</a>
+            </div>
+            <img src="{{ url_for('static', filename='logo.svg') }}" alt="Laval Digital" height="32">
+        </div>
         <h1>Laval Digital - Admin Panel <span class="demo-badge">Preview</span></h1>
 
         <div class="demo-notice">
