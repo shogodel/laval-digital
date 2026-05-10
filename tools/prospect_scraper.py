@@ -1,5 +1,9 @@
+import csv
+import json
 import os
 import logging
+from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import requests
@@ -12,6 +16,18 @@ def scrape_google_maps(
     city: str,
     max_results: int = 20,
 ) -> List[Dict]:
+    """
+    Search Google Maps Places API for local businesses.
+
+    Args:
+        business_type: Type of business to search for (e.g. "plumber", "dentist").
+        city: City to search in (e.g. "Laval").
+        max_results: Maximum number of results to return.
+
+    Returns:
+        List of dicts with keys: name, address, phone, website, rating,
+        review_count, place_id.
+    """
     api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
 
     if api_key:
@@ -31,6 +47,7 @@ def _maps_api_request(
     max_results: int,
     api_key: str,
 ) -> List[Dict]:
+    """Call the Google Maps Places API and parse results."""
     results: List[Dict] = []
     query = f"{business_type} in {city}"
 
@@ -71,12 +88,14 @@ def _maps_api_request(
             "website": website,
             "rating": rating,
             "review_count": review_count,
+            "place_id": place_id,
         })
 
     return results
 
 
 def _get_place_details(place_id: str, api_key: str) -> Dict:
+    """Fetch phone number and website for a place."""
     url = "https://maps.googleapis.com/maps/api/place/details/json"
     params = {
         "place_id": place_id,
@@ -98,6 +117,7 @@ def _get_place_details(place_id: str, api_key: str) -> Dict:
 
 
 def _sample_businesses(business_type: str, city: str) -> List[Dict]:
+    """Return hardcoded sample data for testing when no API key is available."""
     samples = [
         {
             "name": f"{business_type.title()} Pro Laval",
@@ -106,6 +126,7 @@ def _sample_businesses(business_type: str, city: str) -> List[Dict]:
             "website": "",
             "rating": 4.2,
             "review_count": 47,
+            "place_id": "sample_001",
         },
         {
             "name": f"Rapid {business_type.title()} Services",
@@ -114,6 +135,7 @@ def _sample_businesses(business_type: str, city: str) -> List[Dict]:
             "website": f"https://rapid{business_type}.ca",
             "rating": 3.8,
             "review_count": 31,
+            "place_id": "sample_002",
         },
         {
             "name": f"{business_type.title()} Express Inc.",
@@ -122,14 +144,16 @@ def _sample_businesses(business_type: str, city: str) -> List[Dict]:
             "website": "",
             "rating": 4.5,
             "review_count": 112,
+            "place_id": "sample_003",
         },
         {
             "name": f"Expert {business_type.title()} Solutions",
             "address": f"321 Rue de la Gare, {city}, QC",
             "phone": "(450) 555-0104",
             "website": f"https://expert{business_type}solutions.ca",
-            "rating": 3.3,
-            "review_count": 18,
+            "rating": 3.5,
+            "review_count": 8,
+            "place_id": "sample_004",
         },
         {
             "name": f"Affordable {business_type.title()}",
@@ -138,6 +162,7 @@ def _sample_businesses(business_type: str, city: str) -> List[Dict]:
             "website": "",
             "rating": 4.7,
             "review_count": 85,
+            "place_id": "sample_005",
         },
     ]
     return samples
@@ -146,10 +171,27 @@ def _sample_businesses(business_type: str, city: str) -> List[Dict]:
 def find_best_prospects(
     business_type: str,
     city: str,
-    min_rating: float = 3.5,
+    min_rating: float = 3.0,
     max_rating: float = 4.5,
-    no_website_only: bool = False,
+    no_website_only: bool = True,
 ) -> List[Dict]:
+    """
+    Find the best prospect businesses for outreach.
+
+    Filters Google Maps results by rating range and optionally by
+    whether the business has no website. Results are sorted by
+    review count ascending (fewer reviews = more likely to need help).
+
+    Args:
+        business_type: Type of business to search for.
+        city: City to search in.
+        min_rating: Minimum rating threshold (inclusive).
+        max_rating: Maximum rating threshold (inclusive).
+        no_website_only: If True, only include businesses with no website.
+
+    Returns:
+        Filtered and sorted list of prospect dicts.
+    """
     businesses = scrape_google_maps(business_type, city, max_results=50)
 
     prospects = []
@@ -161,29 +203,72 @@ def find_best_prospects(
             continue
         prospects.append(b)
 
-    prospects.sort(key=lambda x: x.get("review_count", 0), reverse=True)
+    prospects.sort(key=lambda x: x.get("review_count", 0))
     return prospects
+
+
+def export_to_csv(prospects: List[Dict], filename: str) -> str:
+    """
+    Export a list of prospect dicts to a CSV file.
+
+    Creates the data/prospects/ directory if it doesn't exist.
+    Returns the full path to the saved file.
+
+    Args:
+        prospects: List of prospect dicts with consistent keys.
+        filename: Name for the CSV file (e.g. "plumbers_laval.csv").
+
+    Returns:
+        Absolute path to the saved CSV file.
+    """
+    output_dir = Path("/var/www/laval-digital/data/prospects")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    filepath = output_dir / filename
+
+    if not prospects:
+        logger.warning("No prospects to export — writing empty CSV")
+        filepath.write_text("")
+        return str(filepath.resolve())
+
+    fieldnames = list(prospects[0].keys())
+    with open(filepath, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(prospects)
+
+    logger.info("Exported %d prospects to %s", len(prospects), filepath)
+    return str(filepath.resolve())
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
+    print("\nSearching for plumbers in Laval with no website...\n")
+
     prospects = find_best_prospects(
         business_type="plumber",
         city="Laval",
         min_rating=3.0,
-        max_rating=5.0,
+        max_rating=4.5,
         no_website_only=True,
     )
 
-    print(f"\n{'='*60}")
-    print(f"  Top {len(prospects)} Prospects — Plumbers in Laval")
+    print(f"Found {len(prospects)} prospects matching criteria.\n")
+
+    print(f"{'='*60}")
+    print(f"  Top 5 Prospects — Plumbers in Laval")
     print(f"{'='*60}\n")
 
     for i, b in enumerate(prospects[:5], 1):
         print(f"  {i}. {b['name']}")
-        print(f"     Address: {b['address']}")
-        print(f"     Phone:   {b['phone']}")
-        print(f"     Website: {b['website'] or 'N/A'}")
-        print(f"     Rating:  {b['rating']} ({b['review_count']} reviews)")
+        print(f"     Address:      {b['address']}")
+        print(f"     Phone:        {b['phone']}")
+        print(f"     Website:      {b['website'] or 'N/A'}")
+        print(f"     Rating:       {b['rating']} ({b['review_count']} reviews)")
+        print(f"     Place ID:     {b['place_id']}")
         print()
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    csv_file = export_to_csv(prospects, f"plumbers_laval_{timestamp}.csv")
+    print(f"Exported to: {csv_file}\n")

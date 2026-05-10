@@ -470,19 +470,9 @@
 </head>
 <body>
 
-<nav>
-    <div class="container">
+<nav style="padding:12px 0;">
+    <div class="container" style="display:flex;align-items:center;justify-content:center;">
         <a href="/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48"></a>
-        <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')" aria-label="Menu">&#9776;</button>
-        <ul id="nav-menu">
-            <li><a href="/">Home</a></li>
-            <li><a href="/demo">Live Demo</a></li>
-            <li><a href="/blog">Blog</a></li>
-            <li><a href="/affiliate">Affiliate</a></li>
-            <li><a href="/reseller">Reseller</a></li>
-            <li><a href="tel:5142431580">📞 (514) 243-1580</a></li>
-            <li><a href="/fr/contract" class="lang-toggle">FR</a></li>
-        </ul>
     </div>
 </nav>
 
@@ -607,29 +597,9 @@
     </div>
 </section>
 
-<footer>
+<footer style="padding:24px 0;text-align:center;">
     <div class="container">
-        <div>
-            <h4>Laval Digital</h4>
-            <p>AI-powered digital agency for local businesses in Laval and surrounding areas. We replace your entire marketing department with intelligent software — for a single one-time fee.</p>
-        </div>
-        <div>
-            <h4>Contact</h4>
-            <p>📞 <a href="tel:5142431580">(514) 243-1580</a></p>
-            <p>💬 <a href="sms:5142431580">Text (514) 243-1580</a></p>
-            <p>✉️ <a href="mailto:lavaldigital@gmail.com">lavaldigital@gmail.com</a></p>
-        </div>
-        <div>
-            <h4>Links</h4>
-            <p><a href="/demo">Live Demo</a></p>
-            <p><a href="/blog">Blog</a></p>
-            <p><a href="/affiliate">Affiliate Program</a></p>
-            <p><a href="/contract">Contract</a></p>
-            <p><a href="/reseller">Reseller Program</a></p>
-        </div>
-    </div>
-    <div class="footer-bottom container">
-        <p>&copy; 2026 Laval Digital. All rights reserved.</p>
+        <p style="font-size:0.85rem;color:rgba(255,255,255,0.4);">&copy; 2026 Laval Digital. All rights reserved.</p>
     </div>
 </footer>
 

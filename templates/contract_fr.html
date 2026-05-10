@@ -453,19 +453,9 @@
 </head>
 <body>
 
-<nav>
-    <div class="container">
+<nav style="padding:12px 0;">
+    <div class="container" style="display:flex;align-items:center;justify-content:center;">
         <a href="/fr/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48"></a>
-        <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')" aria-label="Menu">&#9776;</button>
-        <ul id="nav-menu">
-            <li><a href="/fr/">Accueil</a></li>
-            <li><a href="/fr/demo">Démo</a></li>
-            <li><a href="/fr/blogue">Blogue</a></li>
-            <li><a href="/fr/affiliate">Affiliation</a></li>
-            <li><a href="/fr/reseller">Revendeur</a></li>
-            <li><a href="tel:5142431580">📞 (514) 243-1580</a></li>
-            <li><a href="/contract" class="lang-toggle">EN</a></li>
-        </ul>
     </div>
 </nav>
 
@@ -584,29 +574,9 @@
     </div>
 </section>
 
-<footer>
+<footer style="padding:24px 0;text-align:center;">
     <div class="container">
-        <div>
-            <h4>Laval Digital</h4>
-            <p>Agence numérique propulsée par l'IA pour les PME de Laval et des environs. On remplace votre département marketing par un logiciel intelligent — pour un seul paiement unique.</p>
-        </div>
-        <div>
-            <h4>Contact</h4>
-            <p>📞 <a href="tel:5142431580">(514) 243-1580</a></p>
-            <p>💬 <a href="sms:5142431580">Textez (514) 243-1580</a></p>
-            <p>✉️ <a href="mailto:lavaldigital@gmail.com">lavaldigital@gmail.com</a></p>
-        </div>
-        <div>
-            <h4>Liens</h4>
-            <p><a href="/fr/demo">Démo en Direct</a></p>
-            <p><a href="/fr/blogue">Blogue</a></p>
-            <p><a href="/fr/affiliate">Programme d'Affiliation</a></p>
-            <p><a href="/fr/contract">Contrat</a></p>
-            <p><a href="/fr/reseller">Programme Revendeur</a></p>
-        </div>
-    </div>
-    <div class="footer-bottom container">
-        <p>&copy; 2026 Laval Digital. Tous droits réservés.</p>
+        <p style="font-size:0.85rem;color:rgba(255,255,255,0.4);">&copy; 2026 Laval Digital. Tous droits réservés.</p>
     </div>
 </footer>
 
