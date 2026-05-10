@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Affiliate Program — Laval Digital</title>
-    <meta name="description" content="Join the Laval Digital affiliate program. Earn $800–$1,600 per referral. Your friends save $500. 10% commission.">
+    <title>Programme d'Affiliation — Laval Digital</title>
+    <meta name="description" content="Joignez le programme d'affiliation Laval Digital. Gagnez 800 $–1 600 $ par référencement.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -39,7 +39,6 @@
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
-        /* Navigation (identical to home.html) */
         nav {
             background: var(--navy);
             padding: 0;
@@ -97,7 +96,6 @@
         }
         .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.8rem; cursor: pointer; padding: 4px 8px; }
 
-        /* Hero */
         .hero {
             background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 50%, #0d2137 100%);
             color: var(--white);
@@ -165,7 +163,6 @@
             box-shadow: 0 8px 25px rgba(212,43,43,0.35);
         }
 
-        /* Section shared */
         .section { padding: 90px 0; }
         .section-title {
             text-align: center;
@@ -184,7 +181,6 @@
             line-height: 1.7;
         }
 
-        /* How It Works - 3 steps */
         .steps-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -221,7 +217,6 @@
             line-height: 1.7;
         }
 
-        /* Commission Table */
         .commission-bg { background: var(--off-white); }
         .commission-grid {
             display: grid;
@@ -265,7 +260,6 @@
             margin-top: 2px;
         }
 
-        /* Sign-Up Form */
         .form-bg { background: var(--white); }
         .form-box {
             max-width: 560px;
@@ -342,7 +336,6 @@
             border: 1px solid #e5e7eb;
         }
 
-        /* FAQ */
         .faq-bg { background: var(--off-white); }
         .faq-list {
             max-width: 720px;
@@ -368,7 +361,6 @@
             line-height: 1.7;
         }
 
-        /* Footer (identical to home.html) */
         footer {
             background: #0a1e33;
             color: var(--white);
@@ -400,7 +392,6 @@
             color: rgba(255,255,255,0.4);
         }
 
-        /* Mobile */
         @media (max-width: 768px) {
             .hamburger { display: block; }
             nav .container { height: 64px; }
@@ -447,168 +438,161 @@
 </head>
 <body>
 
-<!-- Navigation (identical to home.html) -->
 <nav>
     <div class="container">
-        <a href="/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48"></a>
+        <a href="/fr/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48"></a>
         <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')" aria-label="Menu">&#9776;</button>
         <ul id="nav-menu">
-            <li><a href="/">Home</a></li>
-            <li><a href="/demo">Live Demo</a></li>
-            <li><a href="/blog">Blog</a></li>
+            <li><a href="/fr/">Accueil</a></li>
+            <li><a href="/fr/demo">Démo</a></li>
+            <li><a href="/fr/blogue">Blogue</a></li>
             <li><a href="tel:5142431580">📞 (514) 243-1580</a></li>
-            <li><a href="/demo" class="nav-cta">Get Started</a></li>
-            <li><a href="/fr/affiliate" class="lang-toggle">FR</a></li>
+            <li><a href="/fr/demo" class="nav-cta">Démo Gratuite</a></li>
+            <li><a href="/affiliate" class="lang-toggle">EN</a></li>
         </ul>
     </div>
 </nav>
 
-<!-- Hero -->
 <section class="hero">
     <div class="container">
-        <h1>Earn <span>$800–$1,600</span> Per Referral</h1>
-        <p>Share your unique link. Your friends save $500 on any AI marketing suite. You earn 10% commission. No limit.</p>
+        <h1>Gagnez <span>800 $–1 600 $</span> par Référencement</h1>
+        <p>Partagez votre lien unique. Vos amis économisent 500 $ sur toute suite marketing IA. Vous gagnez 10 % de commission. Aucune limite.</p>
         <div class="hero-buttons">
-            <a href="#signup" class="btn btn-primary">Get Your Referral Link</a>
+            <a href="#signup" class="btn btn-primary">Obtenez Votre Lien</a>
         </div>
     </div>
 </section>
 
-<!-- How It Works -->
 <section class="section" id="how-it-works">
     <div class="container">
-        <h2 class="section-title">How It Works</h2>
-        <p class="section-subtitle">Three simple steps to start earning.</p>
+        <h2 class="section-title">Comment Ça Marche</h2>
+        <p class="section-subtitle">Trois étapes simples pour commencer à gagner.</p>
         <div class="steps-row">
             <div class="step-card">
                 <div class="icon">🔗</div>
-                <h3>Get Your Link</h3>
-                <p>Sign up below and receive your unique referral URL instantly.</p>
+                <h3>Obtenez Votre Lien</h3>
+                <p>Inscrivez-vous ci-dessous et recevez votre URL de référencement unique instantanément.</p>
             </div>
             <div class="step-card">
                 <div class="icon">📤</div>
-                <h3>Share It</h3>
-                <p>Text it, post it, email it. Anyone who uses your link gets $500 OFF.</p>
+                <h3>Partagez-Le</h3>
+                <p>Textez-le, publiez-le, envoyez-le par courriel. Quiconque utilise votre lien obtient 500 $ DE RABAIS.</p>
             </div>
             <div class="step-card">
                 <div class="icon">💰</div>
-                <h3>Get Paid</h3>
-                <p>When they sign a contract, we send your commission via e-Transfer within 48 hours.</p>
+                <h3>Soyez Payé</h3>
+                <p>Quand ils signent un contrat, nous envoyons votre commission par virement Interac sous 48 heures.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Commission Table -->
 <section class="section commission-bg" id="commission">
     <div class="container">
-        <h2 class="section-title">What You Earn</h2>
-        <p class="section-subtitle">10% commission on every package — paid within 48 hours.</p>
+        <h2 class="section-title">Ce Que Vous Gagnez</h2>
+        <p class="section-subtitle">10 % de commission sur chaque forfait — payé sous 48 heures.</p>
         <div class="commission-grid">
             <div class="commission-card">
-                <h3>Core Suite</h3>
-                <p class="client-pays">Client Pays: <strong>$8,000</strong></p>
-                <div class="you-earn">$800</div>
-                <div class="you-earn-label">your commission</div>
+                <h3>Offre de Base</h3>
+                <p class="client-pays">Client Paie: <strong>8 000 $</strong></p>
+                <div class="you-earn">800 $</div>
+                <div class="you-earn-label">votre commission</div>
             </div>
             <div class="commission-card">
-                <h3>Growth Suite</h3>
-                <p class="client-pays">Client Pays: <strong>$12,000</strong></p>
-                <div class="you-earn">$1,200</div>
-                <div class="you-earn-label">your commission</div>
+                <h3>Offre Croissance</h3>
+                <p class="client-pays">Client Paie: <strong>12 000 $</strong></p>
+                <div class="you-earn">1 200 $</div>
+                <div class="you-earn-label">votre commission</div>
             </div>
             <div class="commission-card">
-                <h3>Full Empire</h3>
-                <p class="client-pays">Client Pays: <strong>$16,000</strong></p>
-                <div class="you-earn">$1,600</div>
-                <div class="you-earn-label">your commission</div>
+                <h3>Offre Complète</h3>
+                <p class="client-pays">Client Paie: <strong>16 000 $</strong></p>
+                <div class="you-earn">1 600 $</div>
+                <div class="you-earn-label">votre commission</div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Sign-Up Form -->
 <section class="section form-bg" id="signup">
     <div class="container">
-        <h2 class="section-title">Get Your Referral Link</h2>
-        <p class="section-subtitle">Fill out the form and we'll send your unique affiliate link within minutes.</p>
+        <h2 class="section-title">Obtenez Votre Lien de Référencement</h2>
+        <p class="section-subtitle">Remplissez le formulaire et nous vous enverrons votre lien d'affilié unique en quelques minutes.</p>
         <div class="form-box" id="signup-form-box">
             <div id="signup-form">
                 <div class="form-group">
-                    <label for="full-name">Full Name</label>
-                    <input type="text" id="full-name" placeholder="e.g. John Smith">
+                    <label for="full-name">Nom Complet</label>
+                    <input type="text" id="full-name" placeholder="p. ex. Jean Tremblay">
                 </div>
                 <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" placeholder="e.g. john@example.com">
+                    <label for="email">Adresse Courriel</label>
+                    <input type="email" id="email" placeholder="p. ex. jean@exemple.com">
                 </div>
                 <div class="form-group">
-                    <label for="phone">Phone Number <span style="color:var(--mid-gray); font-weight:400;">(optional)</span></label>
-                    <input type="tel" id="phone" placeholder="e.g. (514) 555-0100">
+                    <label for="phone">Numéro de Téléphone <span style="color:var(--mid-gray); font-weight:400;">(facultatif)</span></label>
+                    <input type="tel" id="phone" placeholder="p. ex. (514) 555-0100">
                 </div>
-                <button class="btn btn-primary" onclick="handleSignup()">Get My Referral Link</button>
+                <button class="btn btn-primary" onclick="handleSignup()">Obtenir Mon Lien</button>
             </div>
             <div class="success-message" id="success-message">
                 <div class="check">🎉</div>
-                <h3>You're In!</h3>
-                <p>Your unique referral link is ready. Share it with local business owners to start earning.</p>
-                <div class="ref-link">https://lavaldigital.ca/?ref=YOURCODE123</div>
-                <p style="margin-top:16px; font-size:0.85rem; color:var(--mid-gray);">We've also sent this link to your email. Check your inbox!</p>
+                <h3>Vous êtes Inscrit!</h3>
+                <p>Votre lien de référencement unique est prêt. Partagez-le avec des propriétaires d'entreprise pour commencer à gagner.</p>
+                <div class="ref-link">https://lavaldigital.ca/?ref=VOTRECODE123</div>
+                <p style="margin-top:16px; font-size:0.85rem; color:var(--mid-gray);">Nous avons aussi envoyé ce lien à votre courriel. Vérifiez votre boîte de réception!</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- FAQ -->
 <section class="section faq-bg" id="faq">
     <div class="container">
-        <h2 class="section-title">Frequently Asked Questions</h2>
+        <h2 class="section-title">Questions Fréquentes</h2>
         <div class="faq-list">
             <div class="faq-item">
-                <h4>How do I know if someone used my link?</h4>
-                <p>We'll email you every time a lead signs a contract using your code.</p>
+                <h4>Comment savoir si quelqu'un a utilisé mon lien?</h4>
+                <p>Nous vous enverrons un courriel chaque fois qu'un prospect signe un contrat en utilisant votre code.</p>
             </div>
             <div class="faq-item">
-                <h4>When do I get paid?</h4>
-                <p>Within 48 hours of the client making their first payment.</p>
+                <h4>Quand est-ce que je suis payé?</h4>
+                <p>Dans les 48 heures suivant le premier paiement du client.</p>
             </div>
             <div class="faq-item">
-                <h4>Can I refer myself or my own business?</h4>
-                <p>Unfortunately no. The program is for referring new clients only.</p>
+                <h4>Puis-je me référer moi-même ou ma propre entreprise?</h4>
+                <p>Malheureusement non. Le programme est réservé aux nouveaux clients uniquement.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Footer (identical to home.html) -->
 <footer>
     <div class="container">
         <div>
             <h4>Laval Digital</h4>
-            <p>AI-powered digital agency for local businesses in Laval and surrounding areas. We replace your entire marketing department with intelligent software — for a single one-time fee.</p>
+            <p>Agence numérique propulsée par l'IA pour les PME de Laval et des environs. On remplace votre département marketing par un logiciel intelligent — pour un seul paiement unique.</p>
         </div>
         <div>
             <h4>Contact</h4>
             <p>📞 <a href="tel:5142431580">(514) 243-1580</a></p>
-            <p>💬 <a href="sms:5142431580">Text (514) 243-1580</a></p>
+            <p>💬 <a href="sms:5142431580">Textez (514) 243-1580</a></p>
             <p>✉️ <a href="mailto:lavaldigital@gmail.com">lavaldigital@gmail.com</a></p>
         </div>
         <div>
-            <h4>Links</h4>
-            <p><a href="/demo">Live Demo</a></p>
-            <p><a href="/blog">Blog</a></p>
-            <p><a href="/affiliate">Affiliate Program</a></p>
+            <h4>Liens</h4>
+            <p><a href="/fr/demo">Démo en Direct</a></p>
+            <p><a href="/fr/blogue">Blogue</a></p>
+            <p><a href="/fr/affiliate">Programme d'Affiliation</a></p>
         </div>
     </div>
     <div class="footer-bottom container">
-        <p>&copy; 2026 Laval Digital. All rights reserved.</p>
+        <p>&copy; 2026 Laval Digital. Tous droits réservés.</p>
     </div>
 </footer>
 
-<div id="cookie-notice" role="dialog" aria-label="Cookie notice">
+<div id="cookie-notice" role="dialog" aria-label="Avis sur les témoins">
     <span class="cookie-icon">🍪</span>
-    <span class="cookie-text">We only collect <strong>essential cookies</strong>.</span>
-    <button class="cookie-btn" onclick="dismissCookie()">Got it</button>
+    <span class="cookie-text">Nous ne collectons que des <strong>témoins essentiels</strong>.</span>
+    <button class="cookie-btn" onclick="dismissCookie()">Compris</button>
 </div>
 
 <script>

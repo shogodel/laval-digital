@@ -233,6 +233,13 @@ def affiliate_signup():
     return render_template("affiliate.html", has_ref=has_ref)
 
 
+@app.route("/fr/affiliate")
+def affiliate_signup_fr():
+    """Serve the French affiliate program signup page."""
+    has_ref = "affiliate_ref" in session
+    return render_template("affiliate_fr.html", has_ref=has_ref)
+
+
 @app.route("/")
 def home():
     """Serve the new marketing home page."""
