@@ -159,6 +159,67 @@
             <div id="execution-list"><p style="color:#666;">Loading...</p></div>
         </div>
 
+        <!-- Deploy New Client -->
+        <div class="section">
+            <h2>Deploy New Client</h2>
+            <p style="font-size:0.85em;color:#666;">Fill in the client details and click Deploy to build their AI-powered website with isolated database.</p>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div>
+                    <label>Business Name *</label>
+                    <input type="text" id="client-business-name" placeholder="Mike's Plumbing">
+                </div>
+                <div>
+                    <label>Contact Name *</label>
+                    <input type="text" id="client-contact-name" placeholder="Mike Tremblay">
+                </div>
+                <div>
+                    <label>Client Email *</label>
+                    <input type="email" id="client-email" placeholder="mike@mikesplumbing.ca">
+                </div>
+                <div>
+                    <label>Phone *</label>
+                    <input type="tel" id="client-phone" placeholder="450-555-1234">
+                </div>
+                <div>
+                    <label>City *</label>
+                    <input type="text" id="client-city" value="Laval">
+                </div>
+                <div>
+                    <label>Niche *</label>
+                    <select id="client-niche">
+                        <option value="plumber">Plumber</option>
+                        <option value="electrician">Electrician</option>
+                        <option value="landscaper">Landscaper</option>
+                        <option value="roofer">Roofer</option>
+                        <option value="hvac">HVAC</option>
+                        <option value="cleaner">Cleaner</option>
+                        <option value="painter">Painter</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Package *</label>
+                    <select id="client-package">
+                        <option value="core_suite">Core Suite — $8,500</option>
+                        <option value="growth_suite" selected>Growth Suite — $12,500</option>
+                        <option value="full_empire">Full Empire — $16,500</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Affiliate Code (optional)</label>
+                    <input type="text" id="client-affiliate" placeholder="MIKE15">
+                </div>
+            </div>
+
+            <div style="margin-top:10px;">
+                <label>Services (comma-separated) *</label>
+                <input type="text" id="client-services" placeholder="Emergency Repairs, Drain Cleaning, Water Heaters">
+            </div>
+
+            <button class="btn-success" onclick="deployClient()" style="margin-top:15px;">Deploy Client Site</button>
+            <div id="deploy-result" style="margin-top:10px;"></div>
+        </div>
+
         <!-- Logo Upload -->
         <div class="section">
             <h2>Logo</h2>
@@ -602,6 +663,50 @@
                     document.getElementById('execution-list').innerHTML =
                         '<p style="color:red;">Failed to load executions</p>';
                 });
+        }
+
+        /* ------------------------------------------------------------------ */
+        /*  Client Deployment                                                  */
+        /* ------------------------------------------------------------------ */
+
+        function deployClient() {
+            const config = {
+                business_name: document.getElementById('client-business-name').value,
+                contact_name: document.getElementById('client-contact-name').value,
+                client_email: document.getElementById('client-email').value,
+                phone: document.getElementById('client-phone').value,
+                city: document.getElementById('client-city').value,
+                niche: document.getElementById('client-niche').value,
+                services: document.getElementById('client-services').value.split(',').map(s => s.trim()),
+                package: document.getElementById('client-package').value,
+                affiliate_code: document.getElementById('client-affiliate').value || null
+            };
+
+            if (!config.business_name || !config.client_email || !config.phone) {
+                alert('Please fill in Business Name, Email, and Phone.');
+                return;
+            }
+
+            const resultDiv = document.getElementById('deploy-result');
+            resultDiv.innerHTML = '<p style="color:#005A9E;">Deploying... this may take up to 2 minutes.</p>';
+
+            fetch('/api/clients/deploy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    resultDiv.innerHTML = '<p style="color:green;">Deployed! Site live at <a href="' + data.url + '" target="_blank">' + data.url + '</a></p>';
+                    loadAgents();
+                } else {
+                    resultDiv.innerHTML = '<p style="color:red;">Deployment failed: ' + (data.error || 'Unknown error') + '</p>';
+                }
+            })
+            .catch(err => {
+                resultDiv.innerHTML = '<p style="color:red;">Error: ' + err.message + '</p>';
+            });
         }
     </script>
 </body>

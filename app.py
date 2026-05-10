@@ -42,6 +42,7 @@ from agents.reputation_agent import ReputationManagementAgent
 from agents.email_marketing_agent import EmailMarketingAgent
 from agents.tiktok_agent import TikTokAgent
 from agents.executioner_agent import ExecutionerAgent
+from client_factory import ClientFactory
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
@@ -1202,6 +1203,33 @@ def switch_tenant():
         "active_tenant": tenant_id,
         "message": f"Switched to tenant {tenant_id}",
     })
+
+
+# ---------------------------------------------------------------------------
+# API: client deployment via Client Factory
+# ---------------------------------------------------------------------------
+
+@app.route("/api/clients/deploy", methods=["POST"])
+def deploy_client():
+    """Deploy a new client website via the Client Factory.
+
+    Requires admin login. Creates tenant database, clones template,
+    injects brand, deploys to subdomain, and sends welcome email.
+    """
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    config = request.json
+    if not config:
+        return jsonify({"success": False, "error": "No configuration provided"}), 400
+
+    try:
+        factory = ClientFactory()
+        result = factory.deploy(config)
+        return jsonify(result), 200 if result.get("success") else 500
+    except Exception as e:
+        logger.error(f"Client deployment failed: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ---------------------------------------------------------------------------
