@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finalisez Votre Entente — Laval Digital</title>
+    <meta name="description" content="Révisez et signez votre entente Laval Digital. Choisissez votre forfait, signez électroniquement et recevez les instructions de paiement.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0f2b45;
+            --navy-light: #1a3a5c;
+            --orange: #D42B2B;
+            --orange-dark: #A82323;
+            --orange-glow: rgba(212,43,43,0.15);
+            --white: #ffffff;
+            --off-white: #f7f8fa;
+            --light-gray: #eef0f3;
+            --mid-gray: #6b7280;
+            --dark: #111827;
+            --green: #059669;
+            --green-bg: #ecfdf5;
+            --blue-bg: #eff6ff;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+            --radius: 12px;
+            --radius-lg: 16px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--dark);
+            line-height: 1.6;
+            background: var(--white);
+            -webkit-font-smoothing: antialiased;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+        nav {
+            background: var(--navy);
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 72px;
+        }
+        nav .logo { display: flex; align-items: center; }
+        nav .logo img { height: 48px; width: auto; }
+        nav ul { list-style: none; display: flex; align-items: center; gap: 8px; }
+        nav ul li a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        nav ul li a:hover { color: var(--white); background: rgba(255,255,255,0.08); }
+        .nav-cta {
+            background: var(--orange) !important;
+            color: var(--white) !important;
+            padding: 10px 22px !important;
+            font-weight: 600 !important;
+        }
+        .nav-cta:hover {
+            background: var(--orange-dark) !important;
+            transform: translateY(-1px);
+        }
+        .lang-toggle {
+            background: rgba(255,255,255,0.1);
+            color: var(--white);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-left: 8px;
+        }
+        .lang-toggle:hover {
+            background: var(--white);
+            color: var(--navy);
+            border-color: var(--white);
+        }
+        .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.8rem; cursor: pointer; padding: 4px 8px; }
+
+        .hero {
+            background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 50%, #0d2137 100%);
+            color: var(--white);
+            padding: 72px 0 64px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 0%, var(--orange-glow) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .hero h1 {
+            font-size: 2.6rem;
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+            position: relative;
+        }
+        .hero h1 span { color: var(--orange); }
+        .hero p {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            opacity: 0.85;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            text-decoration: none;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s;
+            letter-spacing: -0.01em;
+        }
+        .btn-primary {
+            background: var(--orange);
+            color: var(--white);
+            box-shadow: 0 4px 14px var(--orange-glow);
+        }
+        .btn-primary:hover {
+            background: var(--orange-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212,43,43,0.35);
+        }
+
+        .section { padding: 72px 0; }
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--navy);
+            letter-spacing: -0.02em;
+            margin-bottom: 28px;
+        }
+
+        .contract-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        .form-section {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(0,0,0,0.04);
+            padding: 36px 32px;
+        }
+        .form-section h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 20px;
+        }
+
+        .package-option {
+            position: relative;
+            margin-bottom: 12px;
+        }
+        .package-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .package-option label {
+            display: block;
+            padding: 16px 20px 16px 52px;
+            border: 2px solid #e5e7eb;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .package-option label::before {
+            content: '';
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #d1d5db;
+            transition: all 0.2s;
+        }
+        .package-option input[type="radio"]:checked + label {
+            border-color: var(--orange);
+            background: rgba(212,43,43,0.03);
+        }
+        .package-option input[type="radio"]:checked + label::before {
+            border-color: var(--orange);
+            background: var(--orange);
+            box-shadow: inset 0 0 0 4px var(--white);
+        }
+        .package-option label .pkg-name {
+            font-weight: 700;
+            color: var(--navy);
+            font-size: 1rem;
+        }
+        .package-option label .pkg-badge {
+            display: inline-block;
+            background: var(--orange);
+            color: var(--white);
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 10px;
+            margin-left: 8px;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+        .package-option label .pkg-price {
+            display: block;
+            margin-top: 4px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--dark);
+        }
+        .package-option label .pkg-price .orig {
+            font-weight: 500;
+            color: #9ca3af;
+            text-decoration: line-through;
+            font-size: 0.9rem;
+        }
+        .package-option label .pkg-price .discount-note {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--green);
+            margin-left: 8px;
+        }
+        .price-note {
+            font-size: 0.85rem;
+            color: var(--mid-gray);
+            margin-top: 12px;
+            font-style: italic;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 1rem;
+            font-family: inherit;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            background: var(--white);
+            color: var(--dark);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        .form-group input:focus {
+            border-color: var(--orange);
+            box-shadow: 0 0 0 3px var(--orange-glow);
+        }
+        .form-group input::placeholder { color: #9ca3af; }
+
+        .checkbox-group {
+            margin: 20px 0;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 0.9rem;
+            color: var(--dark);
+            line-height: 1.5;
+            cursor: pointer;
+            margin-bottom: 14px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            accent-color: var(--orange);
+            cursor: pointer;
+        }
+
+        .payment-box {
+            display: none;
+            background: var(--green-bg);
+            border: 1px solid #a7f3d0;
+            border-radius: var(--radius-lg);
+            padding: 36px 32px;
+            margin-top: 24px;
+        }
+        .payment-box h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--green);
+            margin-bottom: 8px;
+        }
+        .payment-box .thank-you {
+            font-size: 1rem;
+            color: var(--dark);
+            margin-bottom: 20px;
+        }
+        .payment-detail {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 12px;
+        }
+        .payment-detail p {
+            font-size: 0.95rem;
+            color: var(--dark);
+            line-height: 1.7;
+        }
+        .payment-detail .amount {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--navy);
+            margin: 8px 0;
+        }
+        .payment-detail .label {
+            font-size: 0.85rem;
+            color: var(--mid-gray);
+        }
+        .payment-note {
+            font-size: 0.85rem;
+            color: var(--mid-gray);
+            font-style: italic;
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+
+        .legal-text {
+            max-width: 720px;
+            margin: 40px auto 0;
+            padding: 20px 24px;
+            background: var(--off-white);
+            border-radius: var(--radius);
+            font-size: 0.8rem;
+            color: var(--mid-gray);
+            line-height: 1.7;
+            text-align: center;
+        }
+
+        footer {
+            background: #0a1e33;
+            color: var(--white);
+            padding: 48px 0 32px;
+        }
+        footer .container {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 48px;
+            text-align: left;
+        }
+        footer h4 {
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255,255,255,0.5);
+        }
+        footer p { font-size: 0.9rem; line-height: 1.8; color: rgba(255,255,255,0.65); }
+        footer a { color: rgba(255,255,255,0.75); text-decoration: none; transition: color 0.2s; }
+        footer a:hover { color: var(--white); }
+        .footer-bottom {
+            text-align: center;
+            padding-top: 28px;
+            margin-top: 40px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.4);
+        }
+
+        @media (max-width: 768px) {
+            .hamburger { display: block; }
+            nav .container { height: 64px; }
+            nav ul {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                gap: 0;
+                padding: 16px 0;
+                border-top: 1px solid rgba(255,255,255,0.08);
+                margin-top: 0;
+                background: var(--navy);
+                position: absolute;
+                top: 64px;
+                left: 0;
+                right: 0;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            }
+            nav ul.open { display: flex; }
+            nav ul li { text-align: center; padding: 4px 0; }
+            nav ul li a { font-size: 1rem; padding: 12px 20px; display: block; }
+            .lang-toggle { margin-left: 0; margin-top: 8px; display: inline-block; }
+
+            .hero { padding: 56px 0 48px; }
+            .hero h1 { font-size: 1.8rem; }
+
+            .contract-layout { grid-template-columns: 1fr; gap: 24px; }
+
+            .payment-box { padding: 28px 24px; }
+
+            footer .container { grid-template-columns: 1fr; gap: 32px; }
+        }
+
+        @media (max-width: 480px) {
+            .hero h1 { font-size: 1.5rem; }
+            .hero p { font-size: 1rem; }
+            .form-section { padding: 24px 20px; }
+            .container { padding: 0 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="container">
+        <a href="/fr/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48"></a>
+        <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+        <ul id="nav-menu">
+            <li><a href="/fr/">Accueil</a></li>
+            <li><a href="/fr/demo">Démo</a></li>
+            <li><a href="/fr/blogue">Blogue</a></li>
+            <li><a href="/fr/affiliate">Affiliation</a></li>
+            <li><a href="/fr/reseller">Revendeur</a></li>
+            <li><a href="tel:5142431580">📞 (514) 243-1580</a></li>
+            <li><a href="/contract" class="lang-toggle">EN</a></li>
+        </ul>
+    </div>
+</nav>
+
+<section class="hero">
+    <div class="container">
+        <h1>Finalisez Votre Entente</h1>
+        <p>Révisez les détails, choisissez votre forfait, signez électroniquement et recevez les instructions de paiement.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="contract-layout">
+            <div class="form-section" id="form-section">
+                <h3>1. Choisissez Votre Forfait</h3>
+
+                <div class="package-option">
+                    <input type="radio" name="package" id="pkg-core" value="core" checked>
+                    <label for="pkg-core">
+                        <span class="pkg-name">Offre de Base</span>
+                        <span class="pkg-price">
+                            <span class="orig" id="core-orig">8 500 $</span>
+                            <span id="core-price">8 500 $</span>
+                            <span class="discount-note" id="core-discount" style="display:none;">avec rabais de parrainage</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="package-option">
+                    <input type="radio" name="package" id="pkg-growth" value="growth">
+                    <label for="pkg-growth">
+                        <span class="pkg-name">Offre Croissance <span class="pkg-badge">Le Plus Populaire</span></span>
+                        <span class="pkg-price">
+                            <span class="orig" id="growth-orig">12 500 $</span>
+                            <span id="growth-price">12 500 $</span>
+                            <span class="discount-note" id="growth-discount" style="display:none;">avec rabais de parrainage</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="package-option">
+                    <input type="radio" name="package" id="pkg-empire" value="empire">
+                    <label for="pkg-empire">
+                        <span class="pkg-name">Offre Complète</span>
+                        <span class="pkg-price">
+                            <span class="orig" id="empire-orig">16 500 $</span>
+                            <span id="empire-price">16 500 $</span>
+                            <span class="discount-note" id="empire-discount" style="display:none;">avec rabais de parrainage</span>
+                        </span>
+                    </label>
+                </div>
+
+                <p class="price-note">Le prix reflète tout rabais de parrainage applicable.</p>
+
+                <h3 style="margin-top:32px;">2. Vos Informations</h3>
+
+                <div class="form-group">
+                    <label for="full-name">Nom Légal Complet</label>
+                    <input type="text" id="full-name" placeholder="ex. Jean Tremblay" required>
+                </div>
+                <div class="form-group">
+                    <label for="business-name">Nom de l'Entreprise</label>
+                    <input type="text" id="business-name" placeholder="ex. Plomberie Tremblay Inc." required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Adresse Courriel</label>
+                    <input type="email" id="email" placeholder="ex. jean@plomberietremblay.ca" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Numéro de Téléphone</label>
+                    <input type="tel" id="phone" placeholder="ex. (514) 555-0100" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Adresse de Service</label>
+                    <input type="text" id="address" placeholder="ex. 123 Rue Principale, Laval, QC" required>
+                </div>
+
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="agree-terms" required>
+                        J'accepte l'Entente de Service Laval Digital et les modalités de paiement.
+                    </label>
+                    <label>
+                        <input type="checkbox" id="agree-payment" required>
+                        Je comprends que le premier paiement de 40 % est dû lors de la signature, et que le solde restant est divisé en 2 versements égaux dus 14 et 30 jours après le déploiement.
+                    </label>
+                </div>
+
+                <input type="hidden" id="affiliate-code-input" value="">
+                <button class="btn btn-primary" onclick="signContract()" id="sign-btn" style="width:100%;justify-content:center;">Signer &amp; Continuer</button>
+            </div>
+
+            <div>
+                <div class="form-section" id="payment-section" style="display:none;">
+                    <div class="payment-box" id="payment-box" style="display:block;">
+                        <h3>✅ Entente Signée</h3>
+                        <p class="thank-you" id="thank-you-msg">Merci! Votre entente a été enregistrée.</p>
+                        <div class="payment-detail">
+                            <p>Veuillez envoyer votre premier versement par <strong>Interac e-Transfer</strong> à :</p>
+                            <p style="font-size:1.1rem;font-weight:700;color:var(--navy);margin:8px 0;">lavaldigital@gmail.com</p>
+                            <p class="label">Montant à envoyer :</p>
+                            <div class="amount" id="payment-amount">0,00 $</div>
+                            <p class="label">Dans le message e-Transfer, veuillez inclure le nom de votre entreprise.</p>
+                        </div>
+                        <div class="payment-note">
+                            Dès réception de votre paiement, nous déploierons votre site Web propulsé par l'IA en <strong>24 heures</strong> et vous enverrons vos identifiants de connexion.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="legal-text">
+                    En signant, vous acceptez l'Entente de Service Laval Digital. Ceci est une entente numérique exécutoire. Tous les paiements sont non remboursables après le déploiement. Vous possédez votre domaine et vos fichiers de site Web après le paiement intégral.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <div>
+            <h4>Laval Digital</h4>
+            <p>Agence numérique propulsée par l'IA pour les PME de Laval et des environs. On remplace votre département marketing par un logiciel intelligent — pour un seul paiement unique.</p>
+        </div>
+        <div>
+            <h4>Contact</h4>
+            <p>📞 <a href="tel:5142431580">(514) 243-1580</a></p>
+            <p>💬 <a href="sms:5142431580">Textez (514) 243-1580</a></p>
+            <p>✉️ <a href="mailto:lavaldigital@gmail.com">lavaldigital@gmail.com</a></p>
+        </div>
+        <div>
+            <h4>Liens</h4>
+            <p><a href="/fr/demo">Démo en Direct</a></p>
+            <p><a href="/fr/blogue">Blogue</a></p>
+            <p><a href="/fr/affiliate">Programme d'Affiliation</a></p>
+            <p><a href="/fr/contract">Contrat</a></p>
+            <p><a href="/fr/reseller">Programme Revendeur</a></p>
+        </div>
+    </div>
+    <div class="footer-bottom container">
+        <p>&copy; 2026 Laval Digital. Tous droits réservés.</p>
+    </div>
+</footer>
+
+<div id="cookie-notice" role="dialog" aria-label="Avis sur les témoins">
+    <span class="cookie-icon">🍪</span>
+    <span class="cookie-text">Nous ne collectons que des <strong>témoins essentiels</strong>.</span>
+    <button class="cookie-btn" onclick="dismissCookie()">Compris</button>
+</div>
+
+<script>
+const PKG_PRICES = {
+    core: { normal: 8500, discount: 8000, name: 'Offre de Base' },
+    growth: { normal: 12500, discount: 12000, name: 'Offre Croissance' },
+    empire: { normal: 16500, discount: 16000, name: 'Offre Complète' },
+};
+
+let affiliateActive = false;
+let currentPrice = 8500;
+
+function getSelectedPackage() {
+    const sel = document.querySelector('input[name="package"]:checked');
+    return sel ? sel.value : 'core';
+}
+
+function updatePrices(data) {
+    if (data.active && data.discount > 0) {
+        affiliateActive = true;
+        document.getElementById('affiliate-code-input').value = data.code || '';
+
+        for (const [key, pkg] of Object.entries(PKG_PRICES)) {
+            const priceEl = document.getElementById(key + '-price');
+            const origEl = document.getElementById(key + '-orig');
+            const discountEl = document.getElementById(key + '-discount');
+            if (priceEl) priceEl.textContent = pkg.discount.toLocaleString('fr-CA', {style:'currency',currency:'CAD',minimumFractionDigits:0}).replace(/^(\D+)/, '$1 ');
+            if (origEl) origEl.style.display = 'inline';
+            if (discountEl) discountEl.style.display = 'inline';
+        }
+    }
+    updatePaymentAmount();
+}
+
+function updatePaymentAmount() {
+    const pkg = getSelectedPackage();
+    const prices = PKG_PRICES[pkg];
+    currentPrice = affiliateActive ? prices.discount : prices.normal;
+}
+
+function signContract() {
+    const name = document.getElementById('full-name').value.trim();
+    const business = document.getElementById('business-name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const address = document.getElementById('address').value.trim();
+    const agreeTerms = document.getElementById('agree-terms').checked;
+    const agreePayment = document.getElementById('agree-payment').checked;
+
+    if (!name || !business || !email || !phone || !address) {
+        alert('Veuillez remplir tous les champs obligatoires.');
+        return;
+    }
+    if (!agreeTerms || !agreePayment) {
+        alert('Veuillez accepter les conditions et l\'échéancier de paiement.');
+        return;
+    }
+
+    updatePaymentAmount();
+    const deposit = Math.round(currentPrice * 0.4);
+
+    const agreement = {
+        name: name,
+        business: business,
+        email: email,
+        phone: phone,
+        address: address,
+        package: getSelectedPackage(),
+        packageName: PKG_PRICES[getSelectedPackage()].name,
+        totalPrice: currentPrice,
+        deposit: deposit,
+        affiliateCode: document.getElementById('affiliate-code-input').value,
+        signedAt: new Date().toISOString(),
+    };
+    localStorage.setItem('laval-agreement', JSON.stringify(agreement));
+
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('payment-section').style.display = 'block';
+    document.getElementById('thank-you-msg').textContent = 'Merci, ' + name + '! Votre entente a été enregistrée.';
+    document.getElementById('payment-amount').textContent = deposit.toLocaleString('fr-CA', {style:'currency',currency:'CAD',minimumFractionDigits:0}) + ' CAD';
+}
+
+function dismissCookie() {
+    const notice = document.getElementById('cookie-notice');
+    notice.classList.remove('show');
+    localStorage.setItem('cookie-notice-dismissed', '1');
+}
+
+(function() {
+    fetch('/api/affiliate/status')
+        .then(r => r.json())
+        .then(data => updatePrices(data))
+        .catch(() => updatePaymentAmount());
+
+    if (!localStorage.getItem('cookie-notice-dismissed')) {
+        setTimeout(function() {
+            const notice = document.getElementById('cookie-notice');
+            if (notice) notice.classList.add('show');
+        }, 800);
+    }
+
+    document.querySelectorAll('input[name="package"]').forEach(el => {
+        el.addEventListener('change', updatePaymentAmount);
+    });
+})();
+</script>
+
+<style>
+#cookie-notice {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    z-index: 9999;
+    background: rgba(15, 43, 69, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 18px 24px;
+    max-width: 480px;
+    width: calc(100% - 48px);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+#cookie-notice.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+#cookie-notice .cookie-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+#cookie-notice .cookie-text {
+    flex: 1;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.5;
+}
+#cookie-notice .cookie-text strong { color: var(--white); }
+#cookie-notice .cookie-btn {
+    flex-shrink: 0;
+    background: var(--orange);
+    color: var(--white);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    white-space: nowrap;
+}
+#cookie-notice .cookie-btn:hover {
+    background: var(--orange-dark);
+    transform: scale(1.03);
+}
+@media (max-width: 480px) {
+    #cookie-notice {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 16px 20px;
+        bottom: 16px;
+        width: calc(100% - 32px);
+        border-radius: 14px;
+    }
+    #cookie-notice .cookie-btn { width: 100%; text-align: center; }
+}
+</style>
+
+</body>
+</html>

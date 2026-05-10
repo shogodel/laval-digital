@@ -240,6 +240,18 @@ def affiliate_signup_fr():
     return render_template("affiliate_fr.html", has_ref=has_ref)
 
 
+@app.route("/contract")
+def contract():
+    """Serve the contract/signup page."""
+    return render_template("contract.html")
+
+
+@app.route("/fr/contract")
+def contract_fr():
+    """Serve the French contract/signup page."""
+    return render_template("contract_fr.html")
+
+
 @app.route("/")
 def home():
     """Serve the new marketing home page."""
