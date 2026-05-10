@@ -753,6 +753,11 @@
 </head>
 <body>
 
+<!-- Affiliate Discount Banner (hidden by default) -->
+<div id="affiliate-banner" style="display:none; background:#D42B2B; color:white; text-align:center; padding:12px; font-weight:600;">
+    🎉 <span id="affiliate-banner-text">500 $ DE RABAIS</span> — grâce au parrainage de votre ami! Ce rabais est automatiquement appliqué.
+</div>
+
 <nav>
     <div class="container">
         <a href="/fr/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48"></a>
@@ -789,8 +794,8 @@
                 <h3>Offre de Base</h3>
                 <p class="original-price">10 000 $</p>
                 <div class="discount-badge">☀️ Spécial Été — 15 % DE RABAIS</div>
-                <p class="final-price">8 500 $ <small>CAD</small></p>
-                <p class="savings">Vous économisez 1 500 $</p>
+                <p class="final-price" id="core-price">8 500 $ <small>CAD</small></p>
+                <p class="savings savings-msg">Vous économisez 1 500 $</p>
                 <ul class="features">
                     <li><strong>Site Web IA</strong> — optimisé mobile et SEO</li>
                     <li><strong>Agent SEO Local</strong> — vous classe sur Google Maps et Recherche</li>
@@ -809,8 +814,8 @@
                 <h3>Offre Croissance</h3>
                 <p class="original-price">15 000 $</p>
                 <div class="discount-badge">☀️ Spécial Été — 17 % DE RABAIS</div>
-                <p class="final-price">12 500 $ <small>CAD</small></p>
-                <p class="savings">Vous économisez 2 500 $</p>
+                <p class="final-price" id="growth-price">12 500 $ <small>CAD</small></p>
+                <p class="savings savings-msg">Vous économisez 2 500 $</p>
                 <ul class="features">
                     <li><strong>Tout dans l'Offre de Base</strong></li>
                     <li><strong>Agent Publicités Payantes</strong> — campagnes Google et Meta</li>
@@ -828,8 +833,8 @@
                 <h3>Offre Complète</h3>
                 <p class="original-price">20 000 $</p>
                 <div class="discount-badge">☀️ Spécial Été — 18 % DE RABAIS</div>
-                <p class="final-price">16 500 $ <small>CAD</small></p>
-                <p class="savings">Vous économisez 3 500 $</p>
+                <p class="final-price" id="empire-price">16 500 $ <small>CAD</small></p>
+                <p class="savings savings-msg">Vous économisez 3 500 $</p>
                 <ul class="features">
                     <li><strong>Tout dans l'Offre Croissance</strong></li>
                     <li><strong>Support Prioritaire</strong> — réponse sous 24 heures</li>
@@ -1149,6 +1154,47 @@ function dismissCookie() {
         }, 800);
     }
 })();
+
+// Check for affiliate discount on page load
+fetch('/api/affiliate/status')
+    .then(r => r.json())
+    .then(data => {
+        if (data.active && data.discount > 0) {
+            const banner = document.getElementById('affiliate-banner');
+            banner.style.display = 'block';
+            document.getElementById('affiliate-banner-text').textContent =
+                data.discount + ' $ DE RABAIS';
+
+            const corePrice = document.getElementById('core-price');
+            if (corePrice) {
+                corePrice.innerHTML = '8 000 $ <small>CAD</small>';
+                corePrice.style.color = '#28a745';
+            }
+
+            const growthPrice = document.getElementById('growth-price');
+            if (growthPrice) {
+                growthPrice.innerHTML = '12 000 $ <small>CAD</small>';
+                growthPrice.style.color = '#28a745';
+            }
+
+            const empirePrice = document.getElementById('empire-price');
+            if (empirePrice) {
+                empirePrice.innerHTML = '16 000 $ <small>CAD</small>';
+                empirePrice.style.color = '#28a745';
+            }
+
+            document.querySelectorAll('.savings-msg').forEach(el => {
+                el.textContent = 'Vous économisez 500 $ supplémentaires avec votre lien de parrainage!';
+                el.style.color = '#28a745';
+            });
+
+            const discountInput = document.createElement('input');
+            discountInput.type = 'hidden';
+            discountInput.id = 'affiliate-discount-value';
+            discountInput.value = data.discount;
+            document.body.appendChild(discountInput);
+        }
+    });
 </script>
 
 </body>
