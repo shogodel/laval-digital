@@ -63,6 +63,40 @@
             </div>
         </div>
 
+        <!-- S&eacute;lection du Client -->
+        <div class="section" style="background:#f0f7ff;">
+            <h2>S&eacute;lection du Client</h2>
+            <p style="font-size:0.9em;color:#555;">S&eacute;lectionnez un client pour g&eacute;rer ses agents, t&acirc;ches et approbations.</p>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+                <select id="tenant-select" style="flex:1;min-width:250px;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                    <option value="">-- S&eacute;lectionnez un client --</option>
+                    {% if tenants.direct_clients %}
+                    <optgroup label="Clients directs">
+                        {% for t in tenants.direct_clients %}
+                        <option value="{{ t }}"{% if active_tenant == t %} selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                    {% if tenants.resellers %}
+                    <optgroup label="Revendeurs">
+                        {% for t in tenants.resellers %}
+                        <option value="{{ t }}"{% if active_tenant == t %} selected{% endif %}>{{ t }} (revendeur)</option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                </select>
+                <button class="btn-primary" onclick="switchTenant()">Changer</button>
+                <span id="tenant-switch-result" style="font-size:0.9em;"></span>
+            </div>
+            <div id="current-tenant-display" style="margin-top:8px;font-weight:600;color:{% if active_tenant %}#28a745{% else %}#dc3545{% endif %};">
+                {% if active_tenant %}
+                Client actif : <span id="active-tenant-label">{{ active_tenant }}</span>
+                {% else %}
+                Aucun client s&eacute;lectionn&eacute; — les op&eacute;rations d'agents sont indisponibles.
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Statut des Agents -->
         <div class="section">
             <h2>Statut des Agents</h2>
@@ -184,6 +218,32 @@
     </div>
 
     <script>
+        function switchTenant() {
+            const tenantId = document.getElementById('tenant-select').value;
+            if (!tenantId) return;
+            const btn = event.target;
+            btn.disabled = true;
+            document.getElementById('tenant-switch-result').textContent = 'Changement...';
+            fetch('/api/tenants/switch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tenant_id: tenantId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('tenant-switch-result').textContent = data.message || 'Client actif changé !';
+                document.getElementById('current-tenant-display').innerHTML =
+                    'Client actif : <span id="active-tenant-label">' + data.active_tenant + '</span>';
+                document.getElementById('current-tenant-display').style.color = '#28a745';
+                loadAgents();
+                loadApprovals();
+            })
+            .catch(err => {
+                document.getElementById('tenant-switch-result').textContent = 'Erreur : ' + err.message;
+            })
+            .finally(() => { btn.disabled = false; });
+        }
+
         window.onload = function() {
             loadAgents();
             loadApprovals();
