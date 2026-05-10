@@ -2,7 +2,7 @@ import os
 import sys
 import uuid
 import warnings
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any
 
 # Suppress warnings before any imports that might trigger them
@@ -41,6 +41,7 @@ from agents.executioner_agent import ExecutionerAgent
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
+app.permanent_session_lifetime = timedelta(days=30)
 
 # Store active threads and their states
 active_threads: Dict[str, Dict[str, Any]] = {}
@@ -65,6 +66,35 @@ def _update_activity(agent_id: str, **kwargs) -> None:
     """Update activity fields for a given agent."""
     if agent_id in agent_activity:
         agent_activity[agent_id].update(kwargs)
+
+# In-memory affiliate store (replace with DB later)
+AFFILIATES = {
+    "MIKE15": {"name": "Mike", "code": "MIKE15", "earnings": 0},
+    "SARAH10": {"name": "Sarah", "code": "SARAH10", "earnings": 0},
+}
+
+VALID_AFFILIATE_CODES = set(AFFILIATES.keys())
+
+# In-memory lead tracking for affiliates
+affiliate_leads: list[dict] = []
+
+@app.before_request
+def capture_affiliate_referral():
+    """Capture ?ref= parameter into a cookie and store lead info."""
+    ref_code = request.args.get("ref")
+    if ref_code and ref_code in VALID_AFFILIATE_CODES:
+        session.permanent = True
+        session["affiliate_ref"] = ref_code
+        session["affiliate_discount"] = 500
+
+        if not any(lead.get("ref_code") == ref_code and lead.get("ip") == request.remote_addr for lead in affiliate_leads):
+            affiliate_leads.append({
+                "ref_code": ref_code,
+                "ip": request.remote_addr,
+                "user_agent": request.headers.get("User-Agent"),
+                "landing_page": request.path,
+                "timestamp": datetime.now().isoformat()
+            })
 
 # Agent configurations - in production, load from config files
 AGENT_CONFIGS = {
@@ -196,6 +226,13 @@ def get_orchestrator():
     return orchestrator_graph
 
 
+@app.route("/affiliate")
+def affiliate_signup():
+    """Serve the affiliate program signup page."""
+    has_ref = "affiliate_ref" in session
+    return render_template("affiliate.html", has_ref=has_ref)
+
+
 @app.route("/")
 def home():
     """Serve the new marketing home page."""
@@ -325,6 +362,20 @@ def inject_logo():
         if os.path.exists(path):
             return dict(logo_file=f"logo_custom.{ext}")
     return dict(logo_file="logo.svg")
+
+
+@app.route("/api/affiliate/status")
+def affiliate_status():
+    """Return current affiliate status for the visitor."""
+    ref_code = session.get("affiliate_ref")
+    if ref_code and ref_code in VALID_AFFILIATE_CODES:
+        return jsonify({
+            "active": True,
+            "code": ref_code,
+            "discount": 500,
+            "affiliate_name": AFFILIATES.get(ref_code, {}).get("name", "Partner")
+        })
+    return jsonify({"active": False, "discount": 0})
 
 
 @app.route("/api/leads", methods=["GET", "POST"])
