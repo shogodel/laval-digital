@@ -83,6 +83,37 @@ affiliate_leads: list[dict] = []
 # In-memory reseller applications (replace with DB later)
 reseller_applications: list[dict] = []
 
+# Reseller MAP (Minimum Advertised Price) enforcement
+RESELLER_PRICING = {
+    "core_suite": {
+        "wholesale": 4500,
+        "map": 8500,
+        "suggested": 9500,
+        "your_direct_price": 8500,
+    },
+    "growth_suite": {
+        "wholesale": 7000,
+        "map": 12500,
+        "suggested": 13500,
+        "your_direct_price": 12500,
+    },
+    "full_empire": {
+        "wholesale": 9500,
+        "map": 16500,
+        "suggested": 17500,
+        "your_direct_price": 16500,
+    },
+}
+
+RESELLER_MAP_POLICY = """
+Resellers agree to the following:
+1. Minimum Advertised Price (MAP): All advertised prices must be at or above the MAP.
+2. Resellers may sell at any price they choose in private quotes, phone calls, and
+   one-on-one negotiations. MAP applies only to publicly advertised prices.
+3. Violations will result in a warning, then suspension of reseller privileges.
+4. Resellers keep 100% of their markup above the wholesale price.
+"""
+
 
 # ---------------------------------------------------------------------------
 # Tenant helpers
@@ -783,6 +814,8 @@ def reseller_dashboard():
         clients=clients,
         stats=stats,
         agency_name=agency_name,
+        map_pricing=RESELLER_PRICING,
+        map_policy=RESELLER_MAP_POLICY,
     )
 
 

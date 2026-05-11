@@ -5,7 +5,7 @@ import logging
 import threading
 from pathlib import Path
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ class TenantManager:
         self.reseller_path = self.base_path / "resellers"
         self._lock = threading.Lock()
         self._active_connections: Dict[str, sqlite3.Connection] = {}
+        self._last_used: Dict[str, str] = {}
         self._create_directories()
 
     # ------------------------------------------------------------------
@@ -191,14 +192,19 @@ class TenantManager:
             "users": """
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    email TEXT NOT NULL,
+                    email TEXT NOT NULL UNIQUE,
                     password_hash TEXT NOT NULL,
-                    role TEXT NOT NULL DEFAULT 'client',
-                    display_name TEXT,
-                    tenant_id TEXT,
-                    created_at TEXT,
-                    last_login TEXT,
-                    UNIQUE(email)
+                    role TEXT NOT NULL CHECK(role IN ('client', 'affiliate', 'reseller')),
+                    display_name TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    last_login TEXT
+                )
+            """,
+            "schema_version": """
+                CREATE TABLE IF NOT EXISTS schema_version (
+                    version INTEGER PRIMARY KEY,
+                    applied_at TEXT NOT NULL
                 )
             """,
         }
@@ -213,7 +219,7 @@ class TenantManager:
         Args:
             cursor: Active database cursor.
         """
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         for agent_id in DEFAULT_AGENTS:
             try:
                 cursor.execute(
@@ -263,6 +269,27 @@ class TenantManager:
             # Seed default agent rows
             self._seed_agents(cursor)
 
+            # Create indexes for common query patterns
+            indexes = [
+                "CREATE INDEX IF NOT EXISTS idx_threads_status ON threads(status)",
+                "CREATE INDEX IF NOT EXISTS idx_threads_routed_agent ON threads(routed_agent)",
+                "CREATE INDEX IF NOT EXISTS idx_execution_log_agent ON execution_log(agent_name)",
+                "CREATE INDEX IF NOT EXISTS idx_execution_log_timestamp ON execution_log(timestamp)",
+                "CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status)",
+                "CREATE INDEX IF NOT EXISTS idx_affiliate_leads_ref ON affiliate_leads(ref_code)",
+                "CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)",
+                "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
+            ]
+            for idx in indexes:
+                cursor.execute(idx)
+
+            # Record schema version
+            now = datetime.now(timezone.utc).isoformat()
+            cursor.execute(
+                "INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (1, ?)",
+                (now,),
+            )
+
             conn.commit()
             conn.close()
 
@@ -295,6 +322,7 @@ class TenantManager:
 
         with self._lock:
             if cache_key in self._active_connections:
+                self._last_used[cache_key] = datetime.now(timezone.utc).isoformat()
                 return self._active_connections[cache_key]
 
             db_path = self._get_db_path(tenant_id, tenant_type, reseller_id)
@@ -304,6 +332,7 @@ class TenantManager:
 
             conn = sqlite3.connect(str(db_path))
             conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA foreign_keys = ON")
 
             # Migrate: ensure users table exists on existing databases
             try:
@@ -313,6 +342,7 @@ class TenantManager:
                 logger.warning("Migration failed for users table in %s: %s", db_path, e)
 
             self._active_connections[cache_key] = conn
+            self._last_used[cache_key] = datetime.now(timezone.utc).isoformat()
             logger.debug("Opened connection for tenant %s (%s)", tenant_id, db_path)
             return conn
 
@@ -330,6 +360,7 @@ class TenantManager:
 
         with self._lock:
             conn = self._active_connections.pop(cache_key, None)
+            self._last_used.pop(cache_key, None)
             if conn:
                 conn.close()
                 logger.debug("Closed connection for tenant %s", tenant_id)
@@ -394,6 +425,35 @@ class TenantManager:
             logger.error("Failed to delete tenant database %s: %s", db_path, e)
             return False
 
+    def cleanup_stale_connections(self, max_idle_minutes: int = 30) -> int:
+        """Close connections idle for more than ``max_idle_minutes``.
+
+        Args:
+            max_idle_minutes: Maximum idle time in minutes before closing.
+
+        Returns:
+            Number of connections closed.
+        """
+        now = datetime.now(timezone.utc)
+        closed = 0
+        with self._lock:
+            stale = [
+                key for key, last in self._last_used.items()
+                if (now - datetime.fromisoformat(last)).total_seconds() > max_idle_minutes * 60
+            ]
+            for key in stale:
+                conn = self._active_connections.pop(key, None)
+                self._last_used.pop(key, None)
+                if conn:
+                    try:
+                        conn.close()
+                        closed += 1
+                    except sqlite3.Error as e:
+                        logger.warning("Error closing stale connection %s: %s", key, e)
+        if closed:
+            logger.info("Closed %d stale connection(s)", closed)
+        return closed
+
     def close_all(self) -> None:
         """Close every active database connection and clear the cache."""
         with self._lock:
@@ -403,4 +463,5 @@ class TenantManager:
                 except sqlite3.Error as e:
                     logger.warning("Error closing connection %s: %s", cache_key, e)
             self._active_connections.clear()
+            self._last_used.clear()
             logger.info("All tenant connections closed")
