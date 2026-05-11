@@ -529,15 +529,20 @@ def client_dashboard():
 
     # Gather site URL from client_details
     site_url = None
+    managed = False
+    managed_since = None
     try:
         conn = tenant_manager.get_connection(tenant_id)
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT site_url FROM client_details WHERE site_url IS NOT NULL LIMIT 1"
+            "SELECT site_url, managed_service, managed_since FROM client_details LIMIT 1"
         )
         row = cursor.fetchone()
         if row:
             site_url = row["site_url"]
+            managed = bool(row.get("managed_service", False))
+            ms = row.get("managed_since")
+            managed_since = ms[:10] if ms else None
     except Exception:
         pass
 
@@ -550,6 +555,8 @@ def client_dashboard():
         project_status="Live" if site_url else "In Progress",
         active_agents=11,
         tasks_this_month=0,
+        managed=managed,
+        managed_since=managed_since,
     )
 
 
@@ -2220,6 +2227,331 @@ def client_analytics_report():
     engine = AnalyticsEngine(tenant_id, tenant_manager)
     html = engine.generate_monthly_report()
     return html, 200, {"Content-Type": "text/html"}
+
+
+# ---------------------------------------------------------------------------
+# Managed Services routes
+# ---------------------------------------------------------------------------
+
+MANAGED_MONTHLY_FEE = 499
+
+
+@app.route("/client/managed-services")
+@client_required
+def client_managed_services():
+    """Serve the managed services opt-in page."""
+    tenant_id = current_user.tenant_id
+    managed = False
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT managed_service FROM client_details LIMIT 1"
+        )
+        row = cursor.fetchone()
+        if row:
+            managed = bool(row.get("managed_service", False))
+    except Exception:
+        pass
+    return render_template("client/managed_services.html", managed=managed)
+
+
+@app.route("/api/managed/upgrade", methods=["POST"])
+@client_required
+def api_managed_upgrade():
+    """Upgrade the current client to managed services."""
+    tenant_id = current_user.tenant_id
+    now_iso = datetime.now().isoformat()
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE client_details SET managed_service = 1, managed_since = ?",
+            (now_iso,),
+        )
+        conn.commit()
+
+        # Log to execution_log
+        try:
+            cursor.execute(
+                "INSERT INTO execution_log (execution_id, agent_name, tool_name, success, draft_preview, timestamp) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (str(uuid.uuid4()), "system", "managed_services", 1,
+                 f"Client upgraded to Managed Services (${MANAGED_MONTHLY_FEE}/mo)", now_iso),
+            )
+            conn.commit()
+        except Exception:
+            pass
+
+        logger.info("Client %s upgraded to Managed Services", tenant_id)
+        return jsonify({"success": True, "message": "Upgraded to Managed Services"})
+    except Exception as e:
+        logger.error("Failed to upgrade %s: %s", tenant_id, e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/managed/cancel", methods=["POST"])
+@client_required
+def api_managed_cancel():
+    """Request cancellation of managed services (30-day notice)."""
+    tenant_id = current_user.tenant_id
+    now_iso = datetime.now().isoformat()
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE client_details SET managed_service = 0 WHERE managed_service = 1"
+        )
+        conn.commit()
+        logger.info("Client %s cancelled Managed Services", tenant_id)
+        # Log cancellation
+        try:
+            cursor.execute(
+                "INSERT INTO execution_log (execution_id, agent_name, tool_name, success, draft_preview, timestamp) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (str(uuid.uuid4()), "system", "managed_services", 1,
+                 "Client cancelled Managed Services (30-day notice)", now_iso),
+            )
+            conn.commit()
+        except Exception:
+            pass
+        return jsonify({"success": True, "message": "Cancellation requested"})
+    except Exception as e:
+        logger.error("Failed to cancel managed for %s: %s", tenant_id, e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/managed/clients")
+def api_managed_clients():
+    """List all managed clients (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    filter_mode = request.args.get("filter", "active")
+    all_tenants = tenant_manager.list_tenants("direct")
+    clients = []
+    total_mrr = 0
+    total_pending = 0
+    past_due_count = 0
+
+    for tid in all_tenants:
+        try:
+            conn = tenant_manager.get_connection(tid)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT managed_service, managed_since, package FROM client_details LIMIT 1"
+            )
+            row = cursor.fetchone()
+            if not row or not row.get("managed_service"):
+                continue
+
+            managed_since = row.get("managed_since")
+            managed_since_str = managed_since[:10] if managed_since else None
+            pkg = row.get("package", "")
+
+            # Calculate billing date (30 days from managed_since)
+            next_billing = None
+            if managed_since:
+                try:
+                    from datetime import date as dt_date
+                    ms_date = dt_date.fromisoformat(managed_since[:10])
+                    from datetime import timedelta as td
+                    next_date = ms_date + td(days=30)
+                    while next_date < dt_date.today():
+                        next_date += td(days=30)
+                    next_billing = next_date.isoformat()
+                except Exception:
+                    pass
+
+            # Determine status
+            status = "active"
+            if next_billing:
+                try:
+                    from datetime import date as dt_date
+                    billing_dt = dt_date.fromisoformat(next_billing)
+                    if billing_dt < dt_date.today():
+                        status = "past_due"
+                        past_due_count += 1
+                except Exception:
+                    pass
+
+            if filter_mode != "all" and status != filter_mode:
+                continue
+
+            total_mrr += MANAGED_MONTHLY_FEE
+
+            # Count pending approvals
+            try:
+                cursor.execute(
+                    "SELECT COUNT(*) as cnt FROM threads WHERE status = 'pending_approval'"
+                )
+                pending_row = cursor.fetchone()
+                pending_count = pending_row["cnt"] if pending_row else 0
+                total_pending += pending_count
+            except Exception:
+                pending_count = 0
+
+            clients.append({
+                "tenant_id": tid,
+                "package": pkg,
+                "managed_since": managed_since_str,
+                "monthly_fee": MANAGED_MONTHLY_FEE,
+                "next_billing": next_billing[:10] if next_billing else None,
+                "status": status,
+                "pending_approvals": pending_count,
+            })
+        except Exception:
+            continue
+
+    return jsonify({
+        "clients": clients,
+        "total_mrr": total_mrr,
+        "total_pending_approvals": total_pending,
+        "past_due_count": past_due_count,
+    })
+
+
+@app.route("/api/managed/pause", methods=["POST"])
+def api_managed_pause():
+    """Pause managed services for a client (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    tenant_id = data.get("tenant_id")
+    if not tenant_id:
+        return jsonify({"error": "tenant_id required"}), 400
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE client_details SET managed_service = 0 WHERE managed_service = 1"
+        )
+        conn.commit()
+        logger.info("Admin paused Managed Services for %s", tenant_id)
+        return jsonify({"success": True, "message": "Managed services paused"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/managed/resume", methods=["POST"])
+def api_managed_resume():
+    """Resume managed services for a client (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    tenant_id = data.get("tenant_id")
+    if not tenant_id:
+        return jsonify({"error": "tenant_id required"}), 400
+    now_iso = datetime.now().isoformat()
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE client_details SET managed_service = 1, managed_since = ?",
+            (now_iso,),
+        )
+        conn.commit()
+        logger.info("Admin resumed Managed Services for %s", tenant_id)
+        return jsonify({"success": True, "message": "Managed services resumed"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/managed/bulk-approve", methods=["POST"])
+def api_managed_bulk_approve():
+    """Approve all pending approvals for a managed client (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    tenant_id = data.get("tenant_id")
+    if not tenant_id:
+        return jsonify({"error": "tenant_id required"}), 400
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT thread_id, routed_agent, agent_draft FROM threads WHERE status = 'pending_approval'"
+        )
+        pending = cursor.fetchall()
+        approved_count = 0
+        now_iso = datetime.now().isoformat()
+
+        for row in pending:
+            thread_id = row["thread_id"]
+            agent_name = row["routed_agent"]
+            draft = row["agent_draft"] or ""
+
+            # Approve the thread
+            cursor.execute(
+                "UPDATE threads SET approved = 1, status = 'completed', updated_at = ? WHERE thread_id = ?",
+                (now_iso, thread_id),
+            )
+
+            # Execute via executioner if agent exists and draft is not empty
+            if agent_name and draft and agent_name in agent_registry:
+                try:
+                    exec_result = executioner.execute(agent_name, draft)
+                    # Log execution
+                    cursor.execute(
+                        "INSERT INTO execution_log (execution_id, agent_name, tool_name, success, draft_preview, timestamp) "
+                        "VALUES (?, ?, ?, ?, ?, ?)",
+                        (str(uuid.uuid4()), agent_name, "managed_bulk_approve",
+                         int(exec_result.get("success", False)),
+                         (draft[:120] + "...") if len(draft) > 120 else draft, now_iso),
+                    )
+                except Exception:
+                    pass
+
+            approved_count += 1
+
+        conn.commit()
+        logger.info("Bulk approved %d items for %s", approved_count, tenant_id)
+        return jsonify({
+            "success": True,
+            "approved_count": approved_count,
+            "message": f"Approved {approved_count} pending item(s)",
+        })
+    except Exception as e:
+        logger.error("Bulk approve failed for %s: %s", tenant_id, e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/managed/mrr")
+def api_managed_mrr():
+    """Return total MRR from managed services (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    all_tenants = tenant_manager.list_tenants("direct")
+    active_count = 0
+    for tid in all_tenants:
+        try:
+            conn = tenant_manager.get_connection(tid)
+            cursor = conn.cursor()
+            cursor.execute("SELECT managed_service FROM client_details LIMIT 1")
+            row = cursor.fetchone()
+            if row and row.get("managed_service"):
+                active_count += 1
+        except Exception:
+            continue
+    total_mrr = active_count * MANAGED_MONTHLY_FEE
+    return jsonify({
+        "active_managed_clients": active_count,
+        "monthly_fee": MANAGED_MONTHLY_FEE,
+        "total_mrr": total_mrr,
+    })
+
+
+@app.route("/admin/managed")
+def admin_managed_page():
+    """Serve the managed clients admin page."""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+    tenants = {
+        "direct_clients": tenant_manager.list_tenants("direct"),
+        "resellers": tenant_manager.list_tenants("reseller"),
+    }
+    active_tenant = session.get("active_tenant_id")
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
 
 
 # ---------------------------------------------------------------------------

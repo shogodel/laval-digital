@@ -89,6 +89,7 @@
             <a href="#submit-task" onclick="document.getElementById('nav-links').classList.remove('open')">Submit Task</a>
             <a href="#payments" onclick="document.getElementById('nav-links').classList.remove('open')">My Payments</a>
             <a href="#client-analytics" onclick="loadClientAnalytics();document.getElementById('nav-links').classList.remove('open')">Analytics</a>
+            <a href="{{ url_for('client_managed_services') }}">Managed Services</a>
             <a href="{{ url_for('client_logout') }}" class="logout">Logout</a>
         </div>
     </nav>
@@ -125,6 +126,22 @@
         </div>
         {% endif %}
 
+        <div class="card">
+            <div class="card-header">
+                <h2>Managed Services</h2>
+                <span class="badge badge-{{ 'green' if managed else 'gray' }}">{{ "Fully Managed" if managed else "Self-Service" }}</span>
+            </div>
+            {% if managed %}
+            <p style="font-size:0.9rem;color:var(--gray-600);">Your AI agents are fully managed by the Laval Digital team. Sit back — we handle everything.</p>
+            <p style="font-size:0.85rem;color:var(--gray-500);margin-top:8px;">Managed since <strong>{{ managed_since or 'N/A' }}</strong></p>
+            {% else %}
+            <p style="font-size:0.9rem;color:var(--gray-600);">You're currently on self-service mode. Upgrade to fully managed and let us handle all AI approvals for you.</p>
+            <div style="margin-top:12px;">
+                <a href="{{ url_for('client_managed_services') }}" class="btn btn-red btn-sm">Upgrade to Managed — $499/mo</a>
+            </div>
+            {% endif %}
+        </div>
+
         <div class="card" id="payments">
             <div class="card-header"><h2>Payment Schedule</h2><p>Installment plan overview</p></div>
             {% if payments %}
@@ -156,6 +173,9 @@
 
         <div class="card" id="submit-task">
             <div class="card-header"><h2>Submit a Request</h2><p>Tell your AI team what you need</p></div>
+            {% if managed %}
+            <p style="font-size:0.85rem;color:var(--green);margin-bottom:10px;">Your AI agents are fully managed. Sit back — we handle everything.</p>
+            {% endif %}
             <textarea id="task-input" placeholder="e.g., I need more plumbing leads in Laval this week"></textarea>
             <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
                 <button class="btn btn-red" onclick="submitClientTask()">Submit Request</button>

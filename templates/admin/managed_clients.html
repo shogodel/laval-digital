@@ -1,0 +1,131 @@
+<div class="tab-content" id="tab-managed">
+    <div class="topbar">
+        <div><h1>Managed Clients</h1></div>
+        <div class="topbar-right">
+            <select id="managed-filter" onchange="loadManagedClients()" style="width:auto;min-width:140px;padding:6px 10px;font-size:0.85rem;">
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="past_due">Past Due</option>
+                <option value="all">All</option>
+            </select>
+            <button class="btn btn-gray btn-sm" onclick="loadManagedClients()">Refresh</button>
+        </div>
+    </div>
+
+    <div class="stats-grid" id="managed-stats" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-card"><div class="stat-value" id="mrr-total">$0</div><div class="stat-label">Monthly MRR</div></div>
+        <div class="stat-card"><div class="stat-value" id="managed-count">0</div><div class="stat-label">Managed Clients</div></div>
+        <div class="stat-card"><div class="stat-value" id="managed-pending-approvals">0</div><div class="stat-label">Pending Approvals</div></div>
+        <div class="stat-card"><div class="stat-value" id="managed-past-due">0</div><div class="stat-label">Past Due</div></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2>All Managed Clients</h2></div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Package</th>
+                        <th>Managed Since</th>
+                        <th>Monthly Fee</th>
+                        <th>Next Billing</th>
+                        <th>Status</th>
+                        <th>Pending</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="managed-clients-table">
+                    <tr><td colspan="8" class="empty">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadManagedClients() {
+    const filter = document.getElementById('managed-filter').value;
+
+    fetch('/api/managed/clients?filter=' + filter)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('mrr-total').textContent = '$' + (data.total_mrr || 0).toLocaleString();
+            document.getElementById('managed-count').textContent = data.clients ? data.clients.length : 0;
+            document.getElementById('managed-pending-approvals').textContent = data.total_pending_approvals || 0;
+            document.getElementById('managed-past-due').textContent = data.past_due_count || 0;
+
+            const tbody = document.getElementById('managed-clients-table');
+            if (!data.clients || !data.clients.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty">No managed clients found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.clients.map(c => {
+                const statusBadge = c.status === 'active' ? 'badge badge-green' :
+                                    c.status === 'paused' ? 'badge badge-amber' :
+                                    'badge badge-gray';
+                const statusLabel = c.status === 'active' ? 'Active' :
+                                    c.status === 'paused' ? 'Paused' :
+                                    c.status === 'past_due' ? 'Past Due' : c.status;
+                const actions = c.status === 'active'
+                    ? `<button class="btn btn-gray btn-xs" onclick="toggleManagedStatus('${c.tenant_id}', 'pause')">Pause</button>
+                       <button class="btn btn-green btn-xs" onclick="bulkApprove('${c.tenant_id}')">Approve All</button>`
+                    : c.status === 'paused'
+                    ? `<button class="btn btn-green btn-xs" onclick="toggleManagedStatus('${c.tenant_id}', 'resume')">Resume</button>`
+                    : '';
+                return `<tr>
+                    <td><strong>${c.tenant_id}</strong></td>
+                    <td>${c.package || '—'}</td>
+                    <td>${c.managed_since || '—'}</td>
+                    <td>$${c.monthly_fee || 499}</td>
+                    <td>${c.next_billing || '—'}</td>
+                    <td><span class="${statusBadge}">${statusLabel}</span></td>
+                    <td>${c.pending_approvals || 0}</td>
+                    <td style="display:flex;gap:6px;">${actions}</td>
+                </tr>`;
+            }).join('');
+        });
+}
+
+function toggleManagedStatus(tenantId, action) {
+    const label = action === 'pause' ? 'pause' : 'resume';
+    if (!confirm(`Are you sure you want to ${label} managed services for ${tenantId}?`)) return;
+
+    fetch('/api/managed/' + action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: tenantId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            loadManagedClients();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown'));
+        }
+    })
+    .catch(err => alert('Error: ' + err.message));
+}
+
+function bulkApprove(tenantId) {
+    if (!confirm(`Approve ALL pending AI content for ${tenantId}? This cannot be undone.`)) return;
+
+    fetch('/api/managed/bulk-approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: tenantId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            loadManagedClients();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown'));
+        }
+    })
+    .catch(err => alert('Error: ' + err.message));
+}
+
+document.addEventListener('DOMContentLoaded', loadManagedClients);
+</script>
