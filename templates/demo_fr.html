@@ -3,273 +3,402 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laval Digital - Aperçu du Panneau d'Admin</title>
+    <title>Démo Client — Laval Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        h1 { color: #333; border-bottom: 2px solid #003399; padding-bottom: 10px; }
-        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        .agent-card { display: inline-block; margin: 10px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; min-width: 280px; max-width: 360px; vertical-align: top; text-align: left; }
-        .agent-card p { margin: 6px 0; font-size: 0.9em; }
-        .agent-card.enabled { border-color: #28a745; background: #f8fff9; }
-        .agent-card.disabled { border-color: #dc3545; background: #fff8f8; }
-        button { padding: 8px 16px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-primary { background: #003399; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-warning { background: #ffc107; color: black; }
-        input, textarea { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 100%; }
-        .approval-card { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 5px; }
-        .status-badge { padding: 4px 8px; border-radius: 3px; font-size: 12px; }
-        .status-pending { background: #ffc107; color: black; }
-        .status-completed { background: #28a745; color: white; }
-        .status-processing { background: #003399; color: white; }
-        .status-idle { background: #28a745; color: white; }
-        .status-disabled { background: #6c757d; color: white; }
-        pre { white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
-        .back-link { display: inline-block; margin-bottom: 15px; color: #003399; text-decoration: none; font-size: 0.9rem; }
-        .back-link:hover { text-decoration: underline; }
-        .lang-toggle { color: #003399; text-decoration: none; font-size: 0.9rem; margin-left: 15px; }
-        .lang-toggle:hover { text-decoration: underline; }
-        .demo-badge { background: #D4A017; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-left: 10px; vertical-align: middle; }
-        .demo-notice { background: #fff3cd; border: 1px solid #ffc107; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; }
-        @media (max-width: 768px) {
-            body { margin: 10px; }
-            .container { padding: 12px; }
-            h1 { font-size: 1.3rem; }
-            .section { padding: 10px; margin: 12px 0; }
-            .agent-card { display: block; min-width: unset; max-width: unset; margin: 10px 0; }
-            .agent-card p { font-size: 0.85em; }
-            button { width: 100%; margin: 6px 0; padding: 12px; font-size: 1em; }
-            input, textarea, select { font-size: 16px; }
-            .approval-card { padding: 10px; }
-            .approval-card pre { font-size: 0.8em; }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
+            --orange: #D42B2B; --green: #059669; --green-bg: #ecfdf5; --amber: #d97706;
+            --amber-bg: #fffbeb; --blue: #2563eb; --blue-bg: #eff6ff;
+            --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-300: #d1d5db;
+            --gray-400: #9ca3af; --gray-500: #6b7280; --gray-600: #4b5563; --gray-700: #374151;
+            --gray-900: #111827; --white: #ffffff;
+            --radius: 8px; --radius-lg: 12px; --radius-xl: 16px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08); --shadow-lg: 0 10px 30px rgba(0,0,0,0.1);
         }
-        @media (max-width: 480px) {
-            .container { padding: 8px; }
-            .section { padding: 8px; }
-            h1 { font-size: 1.1rem; }
+        body { font-family: 'Inter', sans-serif; background: var(--white); color: var(--gray-900); }
+        .nav { background: var(--navy); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 50; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .nav-brand img { height: 34px; width: auto; }
+        .nav-brand span { color: var(--white); font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em; }
+        .nav-links { display: flex; align-items: center; gap: 6px; }
+        .nav-links a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.85rem; font-weight: 500; padding: 8px 16px; border-radius: var(--radius); transition: all 0.15s; }
+        .nav-links a:hover { color: var(--white); background: rgba(255,255,255,0.08); }
+        .nav-links a.cta { background: var(--red); color: var(--white); font-weight: 600; }
+        .nav-links a.cta:hover { background: var(--red-dark); }
+        .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.5rem; cursor: pointer; }
+        .lang-toggle { color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.8rem; padding: 4px 10px; border-radius: var(--radius); transition: all 0.15s; }
+        .lang-toggle:hover { color: var(--white); background: rgba(255,255,255,0.08); }
+
+        .hero { background: linear-gradient(135deg, var(--navy) 0%, #0d1f30 100%); color: var(--white); padding: 64px 24px 80px; text-align: center; }
+        .hero h1 { font-size: 2.6rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; max-width: 800px; margin: 0 auto 16px; }
+        .hero h1 span { color: var(--red); }
+        .hero p { font-size: 1.1rem; color: rgba(255,255,255,0.7); max-width: 640px; margin: 0 auto 32px; line-height: 1.6; }
+        .hero .btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 12px 28px; font-size: 0.95rem; font-weight: 600; font-family: inherit; border: none; border-radius: var(--radius); cursor: pointer; transition: all 0.15s; text-decoration: none; }
+        .btn-red { background: var(--red); color: var(--white); }
+        .btn-red:hover { background: var(--red-dark); transform: translateY(-1px); }
+        .btn-outline { background: transparent; color: var(--white); border: 1.5px solid rgba(255,255,255,0.3); }
+        .btn-outline:hover { border-color: var(--white); background: rgba(255,255,255,0.06); }
+
+        .section { max-width: 1200px; margin: 0 auto; padding: 64px 24px; }
+        .section-header { text-align: center; margin-bottom: 48px; }
+        .section-header h2 { font-size: 2rem; font-weight: 800; letter-spacing: -0.015em; color: var(--gray-900); }
+        .section-header p { font-size: 1rem; color: var(--gray-500); max-width: 560px; margin: 8px auto 0; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+
+        .demo-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-xl); box-shadow: var(--shadow); overflow: hidden; transition: box-shadow 0.2s, transform 0.2s; }
+        .demo-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .demo-card-img { background: var(--gray-100); height: 200px; display: flex; align-items: center; justify-content: center; padding: 24px; border-bottom: 1px solid var(--gray-200); }
+        .demo-card-body { padding: 20px; }
+        .demo-card-body h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; }
+        .demo-card-body p { font-size: 0.88rem; color: var(--gray-500); line-height: 1.55; }
+
+        .preview-box { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
+        .preview-box .label { font-size: 0.75rem; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+        .preview-box h4 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+        .preview-box p, .preview-box li { font-size: 0.88rem; color: var(--gray-600); line-height: 1.6; }
+        .preview-box .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; margin-right: 4px; }
+        .tag-green { background: #d1fae5; color: #065f46; }
+        .tag-blue { background: #dbeafe; color: #1e40af; }
+        .tag-amber { background: #fef3c7; color: #92400e; }
+        .tag-gray { background: var(--gray-200); color: var(--gray-600); }
+        .tag-red { background: #fef2f2; color: #991b1b; }
+
+        .mock-site { background: var(--white); border: 2px solid var(--gray-200); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-md); }
+        .mock-site-bar { background: var(--navy); padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+        .mock-site-bar .dots { display: flex; gap: 6px; }
+        .mock-site-bar .dots span { width: 10px; height: 10px; border-radius: 50%; }
+        .mock-site-bar .dots .r { background: #ef4444; } .mock-site-bar .dots .y { background: #eab308; } .mock-site-bar .dots .g { background: #22c55e; }
+        .mock-site-bar .url { color: rgba(255,255,255,0.5); font-size: 0.75rem; flex: 1; text-align: center; }
+        .mock-site-hero { background: linear-gradient(135deg, #1e3a5f 0%, #2a4a7a 100%); padding: 40px; text-align: center; color: var(--white); }
+        .mock-site-hero h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+        .mock-site-hero p { font-size: 0.9rem; opacity: 0.8; max-width: 400px; margin: 0 auto; }
+        .mock-site-content { padding: 24px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .mock-site-content .block { background: var(--gray-100); border-radius: var(--radius); height: 80px; }
+        .mock-site-footer { background: var(--navy); padding: 16px; text-align: center; color: rgba(255,255,255,0.4); font-size: 0.75rem; }
+
+        .mock-dash { background: var(--white); border: 2px solid var(--gray-200); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-md); }
+        .mock-dash-nav { background: var(--navy); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+        .mock-dash-nav .brand { display: flex; align-items: center; gap: 8px; color: var(--white); font-weight: 600; font-size: 0.9rem; }
+        .mock-dash-nav .brand .dot { width: 24px; height: 24px; background: var(--red); border-radius: 50%; }
+        .mock-dash-body { padding: 20px; }
+        .mock-dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+        .mock-dash-stat { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 14px; text-align: center; }
+        .mock-dash-stat .val { font-size: 1.4rem; font-weight: 800; color: var(--gray-900); }
+        .mock-dash-stat .lbl { font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+        .mock-dash-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .mock-dash-table th { text-align: left; font-weight: 600; color: var(--gray-500); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 10px; border-bottom: 2px solid var(--gray-200); }
+        .mock-dash-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-100); }
+
+        .timeline { position: relative; padding-left: 32px; }
+        .timeline::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: var(--gray-200); }
+        .timeline-item { position: relative; margin-bottom: 28px; }
+        .timeline-item::before { content: ''; position: absolute; left: -25px; top: 4px; width: 16px; height: 16px; border-radius: 50%; background: var(--red); border: 3px solid var(--white); box-shadow: 0 0 0 2px var(--red); }
+        .timeline-item .date { font-size: 0.78rem; color: var(--gray-400); font-weight: 600; }
+        .timeline-item h4 { font-size: 1rem; font-weight: 700; margin: 2px 0 4px; }
+        .timeline-item p { font-size: 0.88rem; color: var(--gray-500); line-height: 1.5; }
+
+        .footer { background: var(--navy); color: rgba(255,255,255,0.5); padding: 32px 24px; text-align: center; font-size: 0.85rem; }
+        .footer strong { color: var(--white); }
+
+        .bg-alt { background: var(--gray-50); }
+
+        @media (max-width: 900px) {
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .mock-dash-stats { grid-template-columns: repeat(2, 1fr); }
+            .mock-site-content { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .hamburger { display: block; }
+            .nav-links { display: none; flex-direction: column; position: absolute; top: 64px; left: 0; right: 0; background: var(--navy); padding: 12px; gap: 0; z-index: 50; }
+            .nav-links.open { display: flex; }
+            .nav-links a { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+            .hero h1 { font-size: 1.8rem; }
+            .hero { padding: 40px 20px 56px; }
+            .section { padding: 40px 20px; }
+            .section-header h2 { font-size: 1.5rem; }
+            .mock-site-hero { padding: 24px; }
+            .mock-site-hero h2 { font-size: 1.15rem; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px;">
-            <div>
-                <a href="/fr/" class="back-link">&larr; Retour à l'Accueil</a>
-                <a href="/demo" class="lang-toggle">EN</a>
-            </div>
-            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="64">
+
+    <nav class="nav">
+        <a href="/fr/" class="nav-brand">
+            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
+            <span>Laval Digital</span>
+        </a>
+        <button class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">☰</button>
+        <div class="nav-links" id="nav-links">
+            <a href="/fr/">Accueil</a>
+            <a href="/fr/demo">Démo</a>
+            <a href="/fr/contract" class="cta">Commencer</a>
+            <a href="/demo" class="lang-toggle">EN</a>
         </div>
-        <h1>Laval Digital - Panneau d'Admin <span class="demo-badge">Aperçu</span></h1>
+    </nav>
 
-        <div class="demo-notice">
-            <strong>Ceci est un aperçu de votre panneau d'administration.</strong> C'est exactement ce que vous recevez lorsque vous achetez Laval Digital. Tous les agents, contrôles et paramètres sont entièrement fonctionnels dans la version réelle. Les champs affichés sont des données d'exemple.
+    <section class="hero">
+        <h1>Voyez ce que votre <span>équipe marketing IA</span> vous apporte</h1>
+        <p>En vous inscrivant, vous obtenez un site web live, un tableau de bord client et 11 agents IA qui travaillent 24h/24 pour développer votre entreprise. Voici exactement à quoi cela ressemble.</p>
+        <div class="btn-group">
+            <a href="/fr/contract" class="btn btn-red">Obtenez ceci pour votre entreprise</a>
+            <a href="#ce-que-vous-obtenez" class="btn btn-outline">Découvrir</a>
         </div>
+    </section>
 
-        <div class="section">
-            <h2>Statut des Agents</h2>
-            <div id="agent-list">
-                <div class="agent-card enabled">
-                    <h3>local_seo</h3>
-                    <p><strong>Modèle :</strong> deepseek-chat</p>
-                    <p><strong>Agent :</strong> <span class="status-badge status-idle">Inactif</span></p>
-                    <p><strong>Tâches :</strong> 47 (45 ok / 2 échouées)</p>
-                    <p><strong>Dernière :</strong> 7/5/2026, 14:30</p>
-                    <p><strong>Brouillon :</strong> <span style="font-size:0.85em;color:#555;">Optimiser GBP pour services de plomberie Laval...</span></p>
-                    <button class="btn-danger">Désactiver</button>
-                </div>
-                <div class="agent-card enabled">
-                    <h3>social_media</h3>
-                    <p><strong>Modèle :</strong> deepseek-chat</p>
-                    <p><strong>Agent :</strong> <span class="status-badge status-idle">Inactif</span></p>
-                    <p><strong>Tâches :</strong> 31 (30 ok / 1 échouée)</p>
-                    <p><strong>Dernière :</strong> 7/5/2026, 11:15</p>
-                    <p><strong>Brouillon :</strong> <span style="font-size:0.85em;color:#555;">Publication Facebook hebdomadaire : conseils plomberie printemps...</span></p>
-                    <button class="btn-danger">Désactiver</button>
-                </div>
-                <div class="agent-card enabled">
-                    <h3>lead_conversion</h3>
-                    <p><strong>Modèle :</strong> gpt-4o</p>
-                    <p><strong>Agent :</strong> <span class="status-badge status-idle">Inactif</span></p>
-                    <p><strong>Tâches :</strong> 89 (87 ok / 2 échouées)</p>
-                    <p><strong>Dernière :</strong> 7/5/2026, 15:45</p>
-                    <p><strong>Brouillon :</strong> <span style="font-size:0.85em;color:#555;">Flux de qualification pour appels d'urgence...</span></p>
-                    <button class="btn-danger">Désactiver</button>
-                </div>
-                <div class="agent-card enabled">
-                    <h3>paid_ads</h3>
-                    <p><strong>Modèle :</strong> claude-3.5-sonnet</p>
-                    <p><strong>Agent :</strong> <span class="status-badge status-idle">Inactif</span></p>
-                    <p><strong>Tâches :</strong> 24 (22 ok / 2 échouées)</p>
-                    <p><strong>Dernière :</strong> 6/5/2026, 16:20</p>
-                    <p><strong>Brouillon :</strong> <span style="font-size:0.85em;color:#555;">Annonces Google RSA : campagne "Plombier Urgence Laval"...</span></p>
-                    <button class="btn-danger">Désactiver</button>
-                </div>
-                <div class="agent-card enabled">
-                    <h3>growth_hacker</h3>
-                    <p><strong>Modèle :</strong> deepseek-chat</p>
-                    <p><strong>Agent :</strong> <span class="status-badge status-idle">Inactif</span></p>
-                    <p><strong>Tâches :</strong> 12 (12 ok / 0 échouée)</p>
-                    <p><strong>Dernière :</strong> 5/5/2026, 13:00</p>
-                    <p><strong>Brouillon :</strong> <span style="font-size:0.85em;color:#555;">Test A/B : variation de couleur du bouton CTA sur page d'atterrissage...</span></p>
-                    <button class="btn-danger">Désactiver</button>
-                </div>
-                <div class="agent-card enabled">
-                    <h3>reputation</h3>
-                    <p><strong>Modèle :</strong> deepseek-chat</p>
-                    <p><strong>Agent :</strong> <span class="status-badge status-idle">Inactif</span></p>
-                    <p><strong>Tâches :</strong> 18 (18 ok / 0 échouée)</p>
-                    <p><strong>Dernière :</strong> 7/5/2026, 10:00</p>
-                    <p><strong>Brouillon :</strong> <span style="font-size:0.85em;color:#555;">Réponse d'avis : « Super service, a réparé ma fuite rapidement ! »...</span></p>
-                    <button class="btn-danger">Désactiver</button>
-                </div>
-                <div class="agent-card enabled">
-                    <h3>email_marketing</h3>
-                    <p><strong>Modèle :</strong> deepseek-chat</p>
-                    <p><strong>Agent :</strong> <span class="status-badge status-idle">Inactif</span></p>
-                    <p><strong>Tâches :</strong> 9 (9 ok / 0 échouée)</p>
-                    <p><strong>Dernière :</strong> 6/5/2026, 14:30</p>
-                    <p><strong>Brouillon :</strong> <span style="font-size:0.85em;color:#555;">Infolettre : « Conseils de plomberie printaniers pour Laval »...</span></p>
-                    <button class="btn-danger">Désactiver</button>
-                </div>
-                <div class="agent-card enabled">
-                    <h3>tiktok</h3>
-                    <p><strong>Modèle :</strong> deepseek-chat</p>
-                    <p><strong>Agent :</strong> <span class="status-badge status-idle">Inactif</span></p>
-                    <p><strong>Tâches :</strong> 14 (14 ok / 0 échouée)</p>
-                    <p><strong>Dernière :</strong> 7/5/2026, 16:00</p>
-                    <p><strong>Brouillon :</strong> <span style="font-size:0.85em;color:#555;">Script TikTok : « 3 signes que vos tuyaux gèlent » 60s...</span></p>
-                    <button class="btn-danger">Désactiver</button>
-                </div>
-            </div>
+    <div class="section" id="ce-que-vous-obtenez">
+        <div class="section-header">
+            <h2>Tout ce que vous recevez comme client</h2>
+            <p>Trois produits intégrés qui travaillent ensemble pour automatiser votre marketing.</p>
         </div>
-
-        <div class="section">
-            <h2>Configuration des Agents</h2>
-            <select>
-                <option value="">-- Sélectionnez un agent à configurer --</option>
-                <option>local_seo</option>
-                <option>social_media</option>
-                <option>lead_conversion</option>
-                <option>paid_ads</option>
-                <option>growth_hacker</option>
-                <option>reputation</option>
-                <option>email_marketing</option>
-                <option>tiktok</option>
-            </select>
-            <div style="margin-top:10px;">
-                <label>Modèle :</label>
-                <select>
-                    <option>deepseek-chat</option>
-                    <option>gpt-4o</option>
-                    <option>claude-3.5-sonnet</option>
-                </select>
-                <label>Clé API :</label>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <input type="password" value="sk-demo****key" style="flex:1;">
-                    <button class="btn-primary" style="white-space:nowrap;">Détecter</button>
-                </div>
-                <label>URL de Base API (optionnel) :</label>
-                <input type="text" value="https://api.deepseek.com/v1">
-                <button class="btn-primary">Sauvegarder la Configuration</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Soumettre une Tâche à l'Orchestrateur</h2>
-            <textarea rows="3" placeholder="ex. : Je veux plus de prospects de plomberie à Laval cette semaine">Créez un plan SEO pour une entreprise de plomberie à Laval ciblant les réparations d'urgence</textarea>
-            <button class="btn-primary">Soumettre la Tâche</button>
-            <div style="margin-top:10px; font-size:0.9em; color:green;">Tâche soumise ! ID de fil : demo-abc-123</div>
-        </div>
-
-        <div class="section">
-            <h2>Approbations en Attente</h2>
-            <button class="btn-warning">Actualiser</button>
-            <div class="approval-card">
-                <h3>Agent : social_media</h3>
-                <p><strong>Tâche :</strong> Créer une semaine de publications Facebook pour Laval 24/7 Plumbing</p>
-                <p><strong>Brouillon :</strong></p>
-                <pre>📣 **Lundi - Conseil**
-"Saviez-vous qu'un robinet qui goutte gaspille plus de 3 000 gallons par an ? Laval 24/7 Plumbing répare les fuites rapidement. Appelez (450) 555-0199 pour un service le jour même. #PlomberieLaval #ÉconomieEau"
-
-📣 **Mercredi - Avant/Après**
-"Rénovation complète de salle de bain à Chomedey — terminée en 3 jours. 🛁✨ De l'ancien carrelage au luxe moderne. Faites confiance à Laval 24/7 Plumbing pour votre prochain projet."</pre>
-                <button class="btn-success">Approuver</button>
-                <button class="btn-danger">Rejeter</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Confirmations en Attente</h2>
-            <p style="font-size:0.85em;color:#666;">Ces brouillons approuvés attendent votre feu vert final avant d'être envoyés (courriel, social, SMS).</p>
-            <button class="btn-warning">Actualiser</button>
-            <div class="approval-card">
-                <p><strong>Agent :</strong> social_media</p>
-                <p><strong>Outil :</strong> publication_facebook</p>
-                <p><strong>Créé :</strong> 7/5/2026, 11:15</p>
-                <p><strong>Aperçu du brouillon :</strong></p>
-                <pre style="font-size:0.85em;">📣 Forfait inspection de plomberie printanière — 50 $ de rabais sur toute inspection. Appelez (450) 555-0199 pour réserver. Offre valable jusqu'au 31 mai.</pre>
-                <button class="btn-success">Confirmer</button>
-                <button class="btn-danger">Rejeter</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Activité d'Exécution</h2>
-            <button class="btn-warning">Actualiser</button>
-            <div class="approval-card" style="background:#d4edda;margin:6px 0;padding:10px;">
-                <p><strong>local_seo</strong> &middot; publier_article_blog &middot; <small>7/5/2026, 14:30</small></p>
-                <p>Statut : ✅ Réussi</p>
-                <details><summary style="cursor:pointer;font-size:0.85em;color:#555;">Aperçu du Brouillon</summary><pre style="font-size:0.8em;margin-top:6px;">Article : Pourquoi l'Entretien Régulier de Plomberie Vous Fait Économiser</pre></details>
-            </div>
-            <div class="approval-card" style="background:#d4edda;margin:6px 0;padding:10px;">
-                <p><strong>social_media</strong> &middot; publication_facebook &middot; <small>7/5/2026, 11:15</small></p>
-                <p>Statut : ✅ Réussi</p>
-                <details><summary style="cursor:pointer;font-size:0.85em;color:#555;">Aperçu du Brouillon</summary><pre style="font-size:0.8em;margin-top:6px;">Publication Facebook : Conseils de plomberie printanière pour les propriétaires Laval</pre></details>
-            </div>
-            <div class="approval-card" style="background:#f8d7da;margin:6px 0;padding:10px;">
-                <p><strong>paid_ads</strong> &middot; créer_campagne_pub &middot; <small>6/5/2026, 16:20</small></p>
-                <p>Statut : ❌ Échoué &middot; <span style="color:red;">Budget maximum dépassé</span></p>
-                <details><summary style="cursor:pointer;font-size:0.85em;color:#555;">Aperçu du Brouillon</summary><pre style="font-size:0.8em;margin-top:6px;">Campagne Google Ads : Plombier Urgence Laval</pre></details>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Paramètres d'Exécution</h2>
-            <p style="font-size:0.85em;color:#666;">Configurez les identifiants SMTP et API des médias sociaux pour exécuter les brouillons approuvés.</p>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-                <div>
-                    <h3>SMTP</h3>
-                    <label>Hôte :</label>
-                    <input type="text" value="smtp.gmail.com">
-                    <label>Port :</label>
-                    <input type="number" value="587">
-                    <label>Nom d'utilisateur :</label>
-                    <input type="text" value="info@lavalplomberie.com">
-                    <label>Mot de passe :</label>
-                    <input type="password" value="••••••••">
-                    <label>Courriel d'envoi :</label>
-                    <input type="text" value="info@lavalplomberie.com">
-                    <label><input type="checkbox" checked> Utiliser TLS</label>
-                </div>
-                <div>
-                    <h3>Médias Sociaux</h3>
-                    <label>ID Page Facebook :</label>
-                    <input type="text" value="10987654321">
-                    <label>Jeton d'accès Facebook :</label>
-                    <input type="password" value="EAA••••••••">
-                    <label>ID Compte Instagram :</label>
-                    <input type="text" value="178987654321">
-                    <label>Jeton d'accès Instagram :</label>
-                    <input type="password" value="EAA••••••••">
+        <div class="grid-3">
+            <div class="demo-card">
+                <div class="demo-card-img" style="background:linear-gradient(135deg,#0f2b45,#1a3a5c);color:var(--white);font-size:2.5rem;font-weight:800;">🌐</div>
+                <div class="demo-card-body">
+                    <h3>Votre Site Web Live</h3>
+                    <p>Un site professionnel de génération de leads déployé sur votre propre sous-domaine. Personnalisé avec votre logo, couleurs et services. Conçu pour convertir les visiteurs en appels.</p>
                 </div>
             </div>
-            <div style="margin-top:10px;">
-                <button class="btn-primary">Recharger</button>
-                <button class="btn-success">Sauvegarder</button>
+            <div class="demo-card">
+                <div class="demo-card-img" style="background:linear-gradient(135deg,#1a3a5c,#0f2b45);color:var(--white);font-size:2.5rem;font-weight:800;">📊</div>
+                <div class="demo-card-body">
+                    <h3>Votre Tableau de Bord Client</h3>
+                    <p>Soumettez des demandes marketing, suivez l'activité des agents IA, consultez votre échéancier de paiement et voyez les résultats en temps réel. Votre centre de commandement pour la croissance.</p>
+                </div>
+            </div>
+            <div class="demo-card">
+                <div class="demo-card-img" style="background:linear-gradient(135deg,#0f2b45,#1a3a5c);color:var(--white);font-size:2.5rem;font-weight:800;">🤖</div>
+                <div class="demo-card-body">
+                    <h3>11 Agents Marketing IA</h3>
+                    <p>SEO local, médias sociaux, annonces payantes, courriel, TikTok, prospection, backlinks, gestion de réputation, conversion de prospects, growth hacking — tous à votre service.</p>
+                </div>
             </div>
         </div>
     </div>
+
+    <div class="bg-alt">
+        <div class="section">
+            <div class="section-header">
+                <h2>Votre Site Web Live</h2>
+                <p>Déployé en quelques heures après votre inscription. Optimisé pour la recherche locale et conçu pour générer des leads.</p>
+            </div>
+            <div class="mock-site" style="max-width:800px;margin:0 auto;">
+                <div class="mock-site-bar">
+                    <div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+                    <div class="url">plomberielaval.lavaldigital.ca</div>
+                    <div style="width:50px;"></div>
+                </div>
+                <div class="mock-site-hero">
+                    <h2>Plomberie Laval</h2>
+                    <p>Votre plombier d'urgence de confiance à Laval — disponible 24/7 pour tous vos besoins de plomberie.</p>
+                    <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
+                        <span style="background:var(--red);padding:8px 20px;border-radius:6px;font-weight:600;font-size:0.85rem;">(450) 555-1234</span>
+                        <span style="background:rgba(255,255,255,0.15);padding:8px 20px;border-radius:6px;font-size:0.85rem;">Soumission Gratuite</span>
+                    </div>
+                </div>
+                <div class="mock-site-content">
+                    <div class="block" style="height:auto;background:transparent;padding:8px;">
+                        <div style="font-weight:700;font-size:0.85rem;color:var(--gray-700);margin-bottom:4px;">Réparations d'Urgence</div>
+                        <div style="font-size:0.78rem;color:var(--gray-500);">Intervention 24/7 pour fuites, tuyaux burst et urgences de drain.</div>
+                    </div>
+                    <div class="block" style="height:auto;background:transparent;padding:8px;">
+                        <div style="font-weight:700;font-size:0.85rem;color:var(--gray-700);margin-bottom:4px;">Débouchage</div>
+                        <div style="font-size:0.78rem;color:var(--gray-500);">Hydro-jet, nettoyage et inspections par caméra pour drains bouchés.</div>
+                    </div>
+                    <div class="block" style="height:auto;background:transparent;padding:8px;">
+                        <div style="font-weight:700;font-size:0.85rem;color:var(--gray-700);margin-bottom:4px;">Chauffe-eau</div>
+                        <div style="font-size:0.78rem;color:var(--gray-500);">Installation, réparation et entretien de systèmes avec et sans réservoir.</div>
+                    </div>
+                </div>
+                <div class="mock-site-footer">© 2026 Plomberie Laval. Propulsé par Laval Digital.</div>
+            </div>
+            <div style="text-align:center;margin-top:16px;">
+                <span class="tag tag-green">✓ Optimisé Google</span>
+                <span class="tag tag-blue">✓ Adapté mobile</span>
+                <span class="tag tag-amber">✓ Boutons d'appel</span>
+                <span class="tag tag-gray">✓ Pages de services</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <h2>Votre Tableau de Bord Client</h2>
+            <p>Suivez l'état de votre projet, soumettez des demandes et surveillez votre équipe IA en temps réel.</p>
+        </div>
+        <div class="mock-dash" style="max-width:800px;margin:0 auto;">
+            <div class="mock-dash-nav">
+                <div class="brand"><div class="dot"></div>Portail Client</div>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <span style="color:rgba(255,255,255,0.5);font-size:0.75rem;">Plomberie Laval</span>
+                    <span style="background:rgba(255,255,255,0.1);color:#fca5a5;padding:4px 10px;border-radius:4px;font-size:0.72rem;">Déconnexion</span>
+                </div>
+            </div>
+            <div class="mock-dash-body">
+                <div class="mock-dash-stats">
+                    <div class="mock-dash-stat"><div class="val" style="color:var(--green);">En ligne</div><div class="lbl">Statut Projet</div></div>
+                    <div class="mock-dash-stat"><div class="val">11/11</div><div class="lbl">Agents IA Actifs</div></div>
+                    <div class="mock-dash-stat"><div class="val">8</div><div class="lbl">Tâches ce Mois</div></div>
+                    <div class="mock-dash-stat"><div class="val" style="color:var(--blue);">Live</div><div class="lbl">Site Web</div></div>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">Calendrier de Paiement</div>
+                    <table class="mock-dash-table">
+                        <thead><tr><th>#</th><th>Montant</th><th>Échéance</th><th>Statut</th></tr></thead>
+                        <tbody>
+                            <tr><td>1</td><td>3 125 $</td><td>1 juin 2026</td><td><span class="tag tag-green">Payé</span></td></tr>
+                            <tr><td>2</td><td>3 125 $</td><td>1 juil 2026</td><td><span class="tag tag-amber">Impayé</span></td></tr>
+                            <tr><td>3</td><td>3 125 $</td><td>1 août 2026</td><td><span class="tag tag-amber">Impayé</span></td></tr>
+                            <tr><td>4</td><td>3 125 $</td><td>1 sept 2026</td><td><span class="tag tag-amber">Impayé</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">Soumettre une Demande</div>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" value="Créez une campagne Facebook pour notre offre de nettoyage de drain d'automne" disabled style="flex:1;padding:10px 14px;border:1px solid var(--gray-300);border-radius:var(--radius);font-family:inherit;font-size:0.85rem;background:var(--gray-50);color:var(--gray-500);">
+                        <button class="btn btn-red" disabled style="padding:10px 20px;font-size:0.85rem;">Envoyer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-alt">
+        <div class="section">
+            <div class="section-header">
+                <h2>Contenu IA que votre entreprise reçoit</h2>
+                <p>Chaque semaine, vos agents IA produisent du contenu prêt à publier sur tous les canaux.</p>
+            </div>
+            <div class="grid-2" style="gap:24px;">
+                <div>
+                    <div class="preview-box">
+                        <div class="label">Agent SEO Local</div>
+                        <h4>Publication Google Business Profile</h4>
+                        <p>"Le printemps est arrivé — c'est le moment de vérifier votre plomberie ! 🌸 Plomberie Laval offre 50 $ de rabais sur toute inspection ce mois-ci. Appelez (450) 555-1234 ou réservez en ligne. #PlomberieLaval #EntretienPrintemps"</p>
+                        <div style="margin-top:8px;"><span class="tag tag-green">✓ Publié sur GBP</span> <span class="tag tag-blue">Vues : 1 240</span></div>
+                    </div>
+                    <div class="preview-box">
+                        <div class="label">Agent Annonces Payantes</div>
+                        <h4>Google Ads RSA — « Plombier Urgence Laval »</h4>
+                        <p><strong>Titres :</strong> Plombier d'Urgence à Laval • Disponible 24/7 • Intervention Rapide • Appelez Maintenant<br>
+                        <strong>Descriptions :</strong> Tuyau burst à 2h du matin ? On est là. Plomberie Laval intervient 24/7 pour toutes urgences. Appelez (450) 555-1234.</p>
+                        <div style="margin-top:8px;"><span class="tag tag-blue">CTR : 4,2 %</span> <span class="tag tag-green">Conversions : 12</span></div>
+                    </div>
+                    <div class="preview-box">
+                        <div class="label">Agent Réputation</div>
+                        <h4>Réponse à un Avis Google</h4>
+                        <p>"Merci beaucoup, Sarah ! Nous sommes ravis d'avoir pu réparer cette fuite si rapidement. Notre équipe est fière d'un service rapide et fiable. Si vous avez besoin de quoi que ce soit, vous savez où nous trouver ! — L'équipe Plomberie Laval 💪"</p>
+                        <div style="margin-top:8px;"><span class="tag tag-green">✓ Répondu</span> <span class="tag tag-amber">Note moyenne : 4,8★</span></div>
+                    </div>
+                    <div class="preview-box">
+                        <div class="label">Agent Prospection</div>
+                        <h4>Courriel de Partenariat</h4>
+                        <p>"Bonjour Jean, j'ai remarqué que votre agence immobilière à Laval connaît une belle croissance. Plusieurs de vos clients ont probablement besoin d'inspections de plomberie avant l'achat. Proposons un partenariat — j'offre à vos clients 50 $ de rabais et vous recevez une commission. Envie d'en discuter ?"</p>
+                        <div style="margin-top:8px;"><span class="tag tag-blue">Envoyé à 45 prospects</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="preview-box">
+                        <div class="label">Agent Médias Sociaux</div>
+                        <h4>Publication Facebook & Instagram</h4>
+                        <p>📣 <strong>Avant & Après : Rénovation de Salle de Bain</strong><br>
+                        "Transformation complète de salle de bain à Chomedey — terminée en seulement 3 jours ! 🛁✨ De l'ancien carrelage au moderne. Les propriétaires de Laval font confiance à Plomberie Laval pour des rénovations de qualité.<br>
+                        📞 (450) 555-1234 | 🔗 plomberielaval.lavaldigital.ca"</p>
+                        <div style="margin-top:8px;"><span class="tag tag-blue">Portée : 3 200</span> <span class="tag tag-amber">Engagements : 187</span></div>
+                    </div>
+                    <div class="preview-box">
+                        <div class="label">Agent Marketing Courriel</div>
+                        <h4>Infolettre Mensuelle</h4>
+                        <p><strong>Objet :</strong> Conseils de Plomberie Printaniers pour Laval 🚿<br>
+                        — Comment éviter les tuyaux gelés l'hiver prochain<br>
+                        — 50 $ de rabais sur le nettoyage de drain (offre limitée)<br>
+                        — Le conseil du mois : vérifiez votre pression d'eau<br>
+                        — Parrainez un ami et recevez 50 $ de crédit</p>
+                        <div style="margin-top:8px;"><span class="tag tag-blue">Taux d'ouverture : 34 %</span> <span class="tag tag-green">Taux de clic : 8,2 %</span></div>
+                    </div>
+                    <div class="preview-box">
+                        <div class="label">Agent TikTok</div>
+                        <h4>Script Vidéo Court</h4>
+                        <p><strong>Accroche (0-3s) :</strong> "3 signes que vos tuyaux vont geler ❄️"<br>
+                        <strong>Corps (3-45s) :</strong> Images de tuyaux gelés, Mike montrant une isolation au sous-sol. "Si vos tuyaux sont dans un endroit non chauffé, isoler-les. Débranchez les tuyaux d'arrosage. Laissez les robinets goutter par grand froid."<br>
+                        <strong>CTA (45-60s) :</strong> "Appelez Plomberie Laval — on hivernise votre maison aujourd'hui."</p>
+                        <div style="margin-top:8px;"><span class="tag tag-blue">Vues : 8 400</span> <span class="tag tag-green">Leads : 23</span></div>
+                    </div>
+                    <div class="preview-box">
+                        <div class="label">Agent Backlinks</div>
+                        <h4>Article Invité Publié</h4>
+                        <p><strong>Publication :</strong> Blog des Propriétaires de Laval<br>
+                        <strong>Titre :</strong> « 10 Vérifications de Plomberie Essentielles pour les Propriétaires de Laval ce Printemps »<br>
+                        <strong>Lien :</strong> → plomberielaval.lavaldigital.ca (backlink acquis)</p>
+                        <div style="margin-top:8px;"><span class="tag tag-green">✓ Publié</span> <span class="tag tag-blue">Autorité de domaine : 42</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">
+            <h2>Vos 30 Premiers Jours</h2>
+            <p>De l'inscription aux premiers résultats — voici le calendrier.</p>
+        </div>
+        <div class="timeline" style="max-width:600px;margin:0 auto;">
+            <div class="timeline-item">
+                <div class="date">Jour 1</div>
+                <h4>Site Web Déployé</h4>
+                <p>Votre site live est en ligne à votrenom.lavaldigital.ca avec votre logo, couleurs, services et coordonnées. Indexé Google sous 24h.</p>
+            </div>
+            <div class="timeline-item">
+                <div class="date">Jour 2-3</div>
+                <h4>Agents IA Activés</h4>
+                <p>Les 11 agents commencent à travailler. Le SEO local optimise votre profil Google Business. Les médias sociaux préparent votre première semaine de contenu.</p>
+            </div>
+            <div class="timeline-item">
+                <div class="date">Jour 4-5</div>
+                <h4>Premier Contenu Livré</h4>
+                <p>Vous recevez des brouillons dans votre tableau de bord. Révisez, approuvez et votre contenu est publié — publications sociales, articles de blog, campagnes publicitaires.</p>
+            </div>
+            <div class="timeline-item">
+                <div class="date">Jour 7</div>
+                <h4>Google Ads En Ligne</h4>
+                <p>Vos campagnes publicitaires payantes sont approuvées et actives. Mots-clés ciblés, budgets optimisés, textes publicitaires testés A/B.</p>
+            </div>
+            <div class="timeline-item">
+                <div class="date">Jour 14</div>
+                <h4>Premiers Leads</h4>
+                <p>L'agent de conversion de prospects commence à nourrir les demandes entrantes. Attendez-vous à vos premiers appels et soumissions de formulaire.</p>
+            </div>
+            <div class="timeline-item">
+                <div class="date">Jour 30</div>
+                <h4>Premier Rapport Mensuel</h4>
+                <p>Bilan complet : trafic site web, ROI publicitaire, croissance des médias sociaux, amélioration des avis, volume de leads. Stratégie basée sur les données pour le mois 2.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-alt" style="text-align:center;padding:64px 24px;">
+        <h2 style="font-size:2rem;font-weight:800;letter-spacing:-0.015em;margin-bottom:12px;">Prêt à Commencer ?</h2>
+        <p style="font-size:1.05rem;color:var(--gray-500);max-width:500px;margin:0 auto 24px;">Votre équipe marketing IA est prête. Choisissez votre forfait et nous aurons votre site en ligne en quelques heures.</p>
+        <a href="/fr/contract" class="btn btn-red" style="font-size:1.05rem;padding:14px 36px;">Choisir Votre Forfait →</a>
+    </div>
+
+    <div class="footer">
+        <p>© 2026 <strong>Laval Digital</strong> — Automatisation Marketing IA pour Entreprises Locales. Tous droits réservés.</p>
+    </div>
+
+    <script>
+    document.querySelector('.hamburger')?.addEventListener('click', function() {
+        document.getElementById('nav-links').classList.toggle('open');
+    });
+    </script>
 </body>
 </html>
