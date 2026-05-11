@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affiliate Login — Laval Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
+            --green: #059669; --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+            --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280; --gray-600: #4b5563;
+            --gray-700: #374151; --gray-900: #111827; --white: #ffffff;
+            --radius: 8px; --radius-lg: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--gray-100); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-card { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--gray-200); padding: 40px; width: 100%; max-width: 420px; }
+        .login-card .logo { text-align: center; margin-bottom: 28px; }
+        .login-card .logo img { height: 44px; width: auto; }
+        .login-card h1 { font-size: 1.3rem; font-weight: 700; text-align: center; color: var(--gray-900); margin-bottom: 4px; }
+        .login-card p.subtitle { font-size: 0.85rem; color: var(--gray-500); text-align: center; margin-bottom: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--gray-700); margin-bottom: 5px; }
+        .form-group input { width: 100%; padding: 11px 14px; font-size: 0.9rem; font-family: inherit; border: 1px solid var(--gray-300); border-radius: var(--radius); outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+        .form-group input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(212,43,43,0.12); }
+        .btn { display: block; width: 100%; padding: 12px; font-size: 0.95rem; font-weight: 600; font-family: inherit; border: none; border-radius: var(--radius); cursor: pointer; transition: background 0.15s; text-align: center; text-decoration: none; }
+        .btn-red { background: var(--red); color: var(--white); }
+        .btn-red:hover { background: var(--red-dark); }
+        .btn-red:disabled { opacity: 0.5; cursor: not-allowed; }
+        .flash { padding: 10px 14px; border-radius: var(--radius); font-size: 0.85rem; margin-bottom: 16px; }
+        .flash-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+        .flash-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+        .login-footer { text-align: center; margin-top: 20px; font-size: 0.8rem; color: var(--gray-500); }
+        .login-footer a { color: var(--red); text-decoration: none; }
+        @media (max-width: 480px) { .login-card { padding: 28px 20px; } }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo">
+            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
+        </div>
+        <h1>Affiliate Login</h1>
+        <p class="subtitle">Track your referrals and commissions</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('affiliate_login') }}">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="your@email.com" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn btn-red">Sign In</button>
+        </form>
+
+        <div class="login-footer">
+            <p>Not an affiliate yet? <a href="{{ url_for('affiliate_signup') }}">Join the program</a></p>
+        </div>
+    </div>
+</body>
+</html>

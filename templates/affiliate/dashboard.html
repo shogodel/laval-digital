@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affiliate Dashboard — Laval Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
+            --green: #059669; --green-bg: #ecfdf5; --amber: #d97706; --amber-bg: #fffbeb;
+            --blue: #2563eb; --blue-bg: #eff6ff; --gray-50: #f9fafb; --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb; --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+            --gray-600: #4b5563; --gray-700: #374151; --gray-900: #111827; --white: #ffffff;
+            --radius: 8px; --radius-lg: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--gray-100); color: var(--gray-900); min-height: 100vh; }
+        .nav { background: var(--navy); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; }
+        .nav-brand img { height: 32px; width: auto; }
+        .nav-brand span { color: var(--white); font-weight: 700; font-size: 1rem; }
+        .nav-links { display: flex; align-items: center; gap: 4px; }
+        .nav-links a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.85rem; font-weight: 500; padding: 8px 14px; border-radius: var(--radius); transition: all 0.15s; }
+        .nav-links a:hover, .nav-links a.active { color: var(--white); background: rgba(255,255,255,0.1); }
+        .nav-links a.logout { color: #fca5a5; }
+        .nav-links a.logout:hover { background: rgba(212,43,43,0.2); }
+        .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.5rem; cursor: pointer; }
+        .main { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+        .page-header { margin-bottom: 24px; }
+        .page-header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
+        .page-header p { font-size: 0.9rem; color: var(--gray-500); margin-top: 4px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+        .stat-card { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow); border: 1px solid var(--gray-200); padding: 20px; text-align: center; }
+        .stat-card .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--gray-900); line-height: 1.2; }
+        .stat-card .stat-label { font-size: 0.8rem; color: var(--gray-500); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .card { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow); border: 1px solid var(--gray-200); padding: 24px; margin-bottom: 20px; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+        .card-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--gray-900); }
+        .card-header p { font-size: 0.85rem; color: var(--gray-500); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; font-weight: 600; color: var(--gray-500); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 12px; border-bottom: 2px solid var(--gray-200); }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--gray-100); }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-amber { background: #fef3c7; color: #92400e; }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        .copy-link { display: flex; gap: 8px; align-items: center; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 10px 14px; }
+        .copy-link input { flex: 1; border: none; background: transparent; font-size: 0.9rem; font-family: inherit; color: var(--gray-700); outline: none; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 20px; font-size: 0.85rem; font-weight: 600; font-family: inherit; border: none; border-radius: var(--radius); cursor: pointer; transition: all 0.15s; text-decoration: none; white-space: nowrap; }
+        .btn-red { background: var(--red); color: var(--white); }
+        .btn-red:hover { background: var(--red-dark); }
+        .btn-gray { background: var(--gray-200); color: var(--gray-700); }
+        .btn-gray:hover { background: var(--gray-300); }
+        .btn-green { background: var(--green); color: var(--white); }
+        .btn-green:hover { opacity: 0.9; }
+        .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+        .empty { text-align: center; padding: 32px 16px; color: var(--gray-500); font-size: 0.9rem; }
+        @media (max-width: 768px) {
+            .hamburger { display: block; }
+            .nav-links { display: none; flex-direction: column; position: absolute; top: 60px; left: 0; right: 0; background: var(--navy); padding: 12px; z-index: 10; }
+            .nav-links.open { display: flex; }
+            .nav-links a { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+            .main { padding: 20px 16px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="nav">
+        <div class="nav-brand">
+            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
+            <span>Affiliate Portal</span>
+        </div>
+        <button class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">☰</button>
+        <div class="nav-links" id="nav-links">
+            <a href="{{ url_for('affiliate_dashboard') }}" class="active">My Referrals</a>
+            <a href="#link" onclick="document.getElementById('nav-links').classList.remove('open')">My Link</a>
+            <a href="#earnings" onclick="document.getElementById('nav-links').classList.remove('open')">Earnings</a>
+            <a href="{{ url_for('affiliate_logout') }}" class="logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="main">
+
+        <div class="page-header">
+            <h1>Welcome, {{ current_user.display_name or current_user.email }}</h1>
+            <p>Your affiliate referral dashboard</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-value" id="stat-clicks">{{ stats.total_clicks or 0 }}</div><div class="stat-label">Total Clicks</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-leads">{{ stats.total_leads or 0 }}</div><div class="stat-label">Leads</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-clients">{{ stats.total_clients or 0 }}</div><div class="stat-label">Clients Signed</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-commissions">${{ "%.0f"|format(stats.total_commissions or 0) }}</div><div class="stat-label">Commissions Earned</div></div>
+        </div>
+
+        <div class="card" id="link">
+            <div class="card-header"><h2>Your Referral Link</h2><p>Share this link to earn commissions</p></div>
+            <div class="copy-link">
+                <input type="text" id="ref-link" value="{{ referral_link }}" readonly>
+                <button class="btn btn-green btn-sm" onclick="copyRefLink()">Copy</button>
+            </div>
+        </div>
+
+        <div class="card" id="earnings">
+            <div class="card-header"><h2>Referral History</h2></div>
+            {% if referrals %}
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Date</th><th>Business</th><th>Package</th><th>Status</th><th>Commission</th></tr></thead>
+                    <tbody>
+                        {% for r in referrals %}
+                        <tr>
+                            <td>{{ r.created_at[:10] }}</td>
+                            <td>{{ r.business_name or "—" }}</td>
+                            <td>{{ r.package or "—" }}</td>
+                            <td><span class="badge badge-{{ 'green' if r.status == 'client' else 'blue' }}">{{ r.status|capitalize }}</span></td>
+                            <td>${{ "%.2f"|format(r.commission or 0) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="empty">No referrals yet. Share your link to get started!</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h2>Payout History</h2></div>
+            {% if payouts %}
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for p in payouts %}
+                        <tr>
+                            <td>{{ p.paid_date or p.created_at[:10] }}</td>
+                            <td>${{ "%.2f"|format(p.amount) }}</td>
+                            <td>{{ p.method or "eTransfer" }}</td>
+                            <td><span class="badge badge-green">Paid</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="empty">No payouts yet.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <script>
+    function copyRefLink() {
+        const input = document.getElementById('ref-link');
+        input.select();
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(input.value).then(() => {
+            const btn = document.querySelector('.copy-link .btn');
+            const orig = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = orig, 2000);
+        });
+    }
+    </script>
+</body>
+</html>

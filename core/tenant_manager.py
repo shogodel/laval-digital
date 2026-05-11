@@ -188,6 +188,19 @@ class TenantManager:
                     created_at TEXT
                 )
             """,
+            "users": """
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role TEXT NOT NULL DEFAULT 'client',
+                    display_name TEXT,
+                    tenant_id TEXT,
+                    created_at TEXT,
+                    last_login TEXT,
+                    UNIQUE(email)
+                )
+            """,
         }
 
     # ------------------------------------------------------------------
@@ -291,6 +304,14 @@ class TenantManager:
 
             conn = sqlite3.connect(str(db_path))
             conn.row_factory = sqlite3.Row
+
+            # Migrate: ensure users table exists on existing databases
+            try:
+                conn.execute(self._schema_sql()["users"])
+                conn.commit()
+            except sqlite3.Error as e:
+                logger.warning("Migration failed for users table in %s: %s", db_path, e)
+
             self._active_connections[cache_key] = conn
             logger.debug("Opened connection for tenant %s (%s)", tenant_id, db_path)
             return conn

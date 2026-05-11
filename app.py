@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 warnings.filterwarnings("ignore", module="langgraph")
 warnings.filterwarnings("ignore", module="langchain")
 
-from flask import Flask, render_template, jsonify, request, redirect, url_for, session
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
+from flask_login import login_user, logout_user, login_required, current_user
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -45,6 +46,11 @@ from agents.outreach_agent import OutreachAgent
 from agents.backlinks_agent import BacklinksAgent
 from agents.executioner_agent import ExecutionerAgent
 from client_factory import ClientFactory
+from core.auth import (
+    init_auth, User, find_user_by_email, add_user_to_tenant,
+    client_required, affiliate_required, reseller_required,
+    validate_password, _check_rate_limit, _record_attempt,
+)
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
@@ -52,6 +58,9 @@ app.permanent_session_lifetime = timedelta(days=30)
 
 # Initialize Tenant Manager for multi-tenant database isolation
 tenant_manager = TenantManager()
+
+# Initialize Flask-Login auth with tenant manager reference
+login_manager = init_auth(app, tenant_manager)
 
 # Store active threads and their states (in-memory cache for orchestrator resume)
 active_threads: Dict[str, Dict[str, Any]] = {}
@@ -162,6 +171,35 @@ def capture_affiliate_referral():
                 "landing_page": request.path,
                 "timestamp": datetime.now().isoformat(),
             })
+
+
+@login_manager.request_loader
+def load_user_from_request(request):
+    """Support session-based auth via Flask-Login's request loader."""
+    return None
+
+
+@app.before_request
+def check_session_timeout():
+    """Log out users after 2 hours of inactivity."""
+    if current_user.is_authenticated:
+        last_active = session.get("last_active")
+        if last_active:
+            try:
+                last = datetime.fromisoformat(last_active)
+                if datetime.now() - last > timedelta(hours=2):
+                    logout_user()
+                    session.clear()
+                    flash("Session expired. Please log in again.", "error")
+                    if current_user.role == "client":
+                        return redirect(url_for("client_login"))
+                    elif current_user.role == "affiliate":
+                        return redirect(url_for("affiliate_login"))
+                    elif current_user.role == "reseller":
+                        return redirect(url_for("reseller_login"))
+            except Exception:
+                pass
+        session["last_active"] = datetime.now().isoformat()
 
 
 # ---------------------------------------------------------------------------
@@ -398,6 +436,436 @@ def blog():
 def blog_fr():
     """Serve the French blog page."""
     return render_template("blog_fr.html")
+
+
+# ---------------------------------------------------------------------------
+# Client auth routes
+# ---------------------------------------------------------------------------
+
+@app.route("/client/login", methods=["GET", "POST"])
+def client_login():
+    """Serve client login page and authenticate."""
+    if current_user.is_authenticated and current_user.role == "client":
+        return redirect(url_for("client_dashboard"))
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        if not _check_rate_limit():
+            flash("Too many login attempts. Try again later.", "error")
+            return render_template("client/login.html")
+
+        user_row, tenant_id, tenant_type = find_user_by_email(email)
+        if not user_row or user_row["role"] != "client":
+            _record_attempt(False)
+            flash("Invalid email or password.", "error")
+            return render_template("client/login.html")
+
+        temp_user = User(
+            row_id=user_row["id"], email=user_row["email"],
+            password_hash=user_row["password_hash"], role=user_row["role"],
+            display_name=user_row["display_name"], tenant_id=tenant_id,
+        )
+        if not temp_user.check_password(password):
+            _record_attempt(False)
+            flash("Invalid email or password.", "error")
+            return render_template("client/login.html")
+
+        login_user(temp_user)
+        _record_attempt(True)
+        session["tenant_id"] = tenant_id
+        session["user_role"] = "client"
+        session["last_active"] = datetime.now().isoformat()
+
+        # Update last_login
+        try:
+            conn = tenant_manager.get_connection(tenant_id, tenant_type)
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE users SET last_login = ? WHERE id = ?",
+                (datetime.now().isoformat(), user_row["id"]),
+            )
+            conn.commit()
+        except Exception:
+            pass
+
+        return redirect(url_for("client_dashboard"))
+
+    return render_template("client/login.html")
+
+
+@app.route("/client/logout")
+def client_logout():
+    """Log out client and redirect to login."""
+    logout_user()
+    session.clear()
+    flash("You have been logged out.", "success")
+    return redirect(url_for("client_login"))
+
+
+@app.route("/client/dashboard")
+@client_required
+def client_dashboard():
+    """Serve the client project dashboard."""
+    tenant_id = current_user.tenant_id
+
+    # Gather payment info from tenant database
+    payments = []
+    total_paid = 0
+    total_owed = 0
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM payments ORDER BY installment_number")
+        for row in cursor.fetchall():
+            p = dict(row)
+            payments.append(p)
+            if p.get("paid"):
+                total_paid += p["amount"]
+            else:
+                total_owed += p["amount"]
+    except Exception:
+        pass
+
+    # Gather site URL from client_details
+    site_url = None
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT site_url FROM client_details WHERE site_url IS NOT NULL LIMIT 1"
+        )
+        row = cursor.fetchone()
+        if row:
+            site_url = row["site_url"]
+    except Exception:
+        pass
+
+    return render_template(
+        "client/dashboard.html",
+        payments=payments,
+        total_paid=total_paid,
+        total_owed=total_owed,
+        site_url=site_url,
+        project_status="Live" if site_url else "In Progress",
+        active_agents=11,
+        tasks_this_month=0,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Affiliate auth routes
+# ---------------------------------------------------------------------------
+
+@app.route("/affiliate/login", methods=["GET", "POST"])
+def affiliate_login():
+    """Serve affiliate login page and authenticate."""
+    if current_user.is_authenticated and current_user.role == "affiliate":
+        return redirect(url_for("affiliate_dashboard"))
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        if not _check_rate_limit():
+            flash("Too many login attempts. Try again later.", "error")
+            return render_template("affiliate/login.html")
+
+        user_row, tenant_id, tenant_type = find_user_by_email(email)
+        if not user_row or user_row["role"] != "affiliate":
+            _record_attempt(False)
+            flash("Invalid email or password.", "error")
+            return render_template("affiliate/login.html")
+
+        temp_user = User(
+            row_id=user_row["id"], email=user_row["email"],
+            password_hash=user_row["password_hash"], role=user_row["role"],
+            display_name=user_row["display_name"], tenant_id=tenant_id,
+        )
+        if not temp_user.check_password(password):
+            _record_attempt(False)
+            flash("Invalid email or password.", "error")
+            return render_template("affiliate/login.html")
+
+        login_user(temp_user)
+        _record_attempt(True)
+        session["tenant_id"] = tenant_id
+        session["user_role"] = "affiliate"
+        session["last_active"] = datetime.now().isoformat()
+
+        try:
+            conn = tenant_manager.get_connection(tenant_id, tenant_type)
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE users SET last_login = ? WHERE id = ?",
+                (datetime.now().isoformat(), user_row["id"]),
+            )
+            conn.commit()
+        except Exception:
+            pass
+
+        return redirect(url_for("affiliate_dashboard"))
+
+    return render_template("affiliate/login.html")
+
+
+@app.route("/affiliate/logout")
+def affiliate_logout():
+    """Log out affiliate and redirect to login."""
+    logout_user()
+    session.clear()
+    flash("You have been logged out.", "success")
+    return redirect(url_for("affiliate_login"))
+
+
+@app.route("/affiliate/dashboard")
+@affiliate_required
+def affiliate_dashboard():
+    """Serve the affiliate referral dashboard."""
+    tenant_id = current_user.tenant_id
+
+    # Gather affiliate stats from tenant database
+    stats = {"total_clicks": 0, "total_leads": 0, "total_clients": 0, "total_commissions": 0}
+    referrals = []
+    payouts = []
+
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, ref_code, lead_name, lead_email, status, commission, created_at "
+            "FROM affiliate_leads ORDER BY created_at DESC"
+        )
+        for row in cursor.fetchall():
+            referrals.append(dict(row))
+            if row["status"] == "client":
+                stats["total_clients"] += 1
+                stats["total_commissions"] += row["commission"] or 0
+            else:
+                stats["total_leads"] += 1
+    except Exception:
+        pass
+
+    # Build referral link
+    referral_link = f"https://lavaldigital.ca/?ref={tenant_id}"
+
+    return render_template(
+        "affiliate/dashboard.html",
+        stats=stats,
+        referrals=referrals,
+        payouts=payouts,
+        referral_link=referral_link,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Reseller auth routes
+# ---------------------------------------------------------------------------
+
+@app.route("/reseller/login", methods=["GET", "POST"])
+def reseller_login():
+    """Serve reseller login page and authenticate."""
+    if current_user.is_authenticated and current_user.role == "reseller":
+        return redirect(url_for("reseller_dashboard"))
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        if not _check_rate_limit():
+            flash("Too many login attempts. Try again later.", "error")
+            return render_template("reseller/login.html")
+
+        user_row, tenant_id, tenant_type = find_user_by_email(email)
+        if not user_row or user_row["role"] != "reseller":
+            _record_attempt(False)
+            flash("Invalid email or password.", "error")
+            return render_template("reseller/login.html")
+
+        temp_user = User(
+            row_id=user_row["id"], email=user_row["email"],
+            password_hash=user_row["password_hash"], role=user_row["role"],
+            display_name=user_row["display_name"], tenant_id=tenant_id,
+        )
+        if not temp_user.check_password(password):
+            _record_attempt(False)
+            flash("Invalid email or password.", "error")
+            return render_template("reseller/login.html")
+
+        login_user(temp_user)
+        _record_attempt(True)
+        session["tenant_id"] = tenant_id
+        session["user_role"] = "reseller"
+        session["last_active"] = datetime.now().isoformat()
+
+        try:
+            conn = tenant_manager.get_connection(tenant_id, tenant_type)
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE users SET last_login = ? WHERE id = ?",
+                (datetime.now().isoformat(), user_row["id"]),
+            )
+            conn.commit()
+        except Exception:
+            pass
+
+        return redirect(url_for("reseller_dashboard"))
+
+    return render_template("reseller/login.html")
+
+
+@app.route("/reseller/logout")
+def reseller_logout():
+    """Log out reseller and redirect to login."""
+    logout_user()
+    session.clear()
+    flash("You have been logged out.", "success")
+    return redirect(url_for("reseller_login"))
+
+
+@app.route("/reseller/dashboard")
+@reseller_required
+def reseller_dashboard():
+    """Serve the reseller white-label dashboard."""
+    tenant_id = current_user.tenant_id
+
+    clients = []
+    stats = {"total_clients": 0, "monthly_recurring": 0, "pending_deployments": 0, "live_sites": 0}
+    agency_name = ""
+
+    try:
+        conn = tenant_manager.get_connection(tenant_id, "reseller")
+        cursor = conn.cursor()
+
+        # Get agency settings
+        cursor.execute(
+            "SELECT business_name FROM client_details WHERE business_name IS NOT NULL LIMIT 1"
+        )
+        row = cursor.fetchone()
+        if row:
+            agency_name = row["business_name"]
+
+        # Get reseller's clients (stored as reseller_client type under this reseller)
+        reseller_clients = tenant_manager.list_tenants("reseller_client", tenant_id)
+        for cid in reseller_clients:
+            try:
+                cconn = tenant_manager.get_connection(cid, "reseller_client", tenant_id)
+                ccursor = cconn.cursor()
+                ccursor.execute(
+                    "SELECT business_name, package, created_at, site_url, payment_status "
+                    "FROM client_details LIMIT 1"
+                )
+                crow = ccursor.fetchone()
+                if crow:
+                    cdict = dict(crow)
+                    cdict["status"] = "live" if cdict.get("site_url") else "pending"
+                    clients.append(cdict)
+                    stats["total_clients"] += 1
+                    if cdict["status"] == "live":
+                        stats["live_sites"] += 1
+                    else:
+                        stats["pending_deployments"] += 1
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    stats["monthly_recurring"] = stats["total_clients"] * 2500
+
+    return render_template(
+        "reseller/dashboard.html",
+        clients=clients,
+        stats=stats,
+        agency_name=agency_name,
+    )
+
+
+# ---------------------------------------------------------------------------
+# API: User management (admin only)
+# ---------------------------------------------------------------------------
+
+@app.route("/api/users", methods=["GET"])
+def api_list_users():
+    """List all users for the active tenant (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    tenant_id = session.get("active_tenant_id")
+    if not tenant_id:
+        return jsonify({"error": "No tenant selected"}), 400
+
+    role_filter = request.args.get("role", "").strip().lower()
+
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        if role_filter in ("client", "affiliate", "reseller"):
+            cursor.execute(
+                "SELECT id, email, display_name, role, created_at, last_login "
+                "FROM users WHERE role = ? ORDER BY created_at DESC",
+                (role_filter,),
+            )
+        else:
+            cursor.execute(
+                "SELECT id, email, display_name, role, created_at, last_login "
+                "FROM users ORDER BY created_at DESC"
+            )
+        users = [dict(row) for row in cursor.fetchall()]
+        return jsonify({"users": users})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/users", methods=["POST"])
+def api_add_user():
+    """Add a user to the active tenant (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    tenant_id = session.get("active_tenant_id")
+    if not tenant_id:
+        return jsonify({"error": "No tenant selected"}), 400
+
+    data = request.json
+    email = (data.get("email") or "").strip()
+    password = data.get("password", "")
+    role = data.get("role", "client")
+    display_name = (data.get("display_name") or "").strip()
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    is_valid, err_msg = validate_password(password)
+    if not is_valid:
+        return jsonify({"error": err_msg}), 400
+
+    try:
+        result = add_user_to_tenant(email, password, role, display_name, tenant_id)
+        return jsonify(result), 201
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/users/<int:user_id>", methods=["DELETE"])
+def api_delete_user(user_id):
+    """Delete a user from the active tenant (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    tenant_id = session.get("active_tenant_id")
+    if not tenant_id:
+        return jsonify({"error": "No tenant selected"}), 400
+
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        if cursor.rowcount == 0:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify({"success": True, "message": "User deleted"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ---------------------------------------------------------------------------

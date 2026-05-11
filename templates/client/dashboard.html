@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Dashboard — Laval Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
+            --green: #059669; --green-bg: #ecfdf5; --amber: #d97706; --amber-bg: #fffbeb;
+            --blue: #2563eb; --blue-bg: #eff6ff; --gray-50: #f9fafb; --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb; --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+            --gray-600: #4b5563; --gray-700: #374151; --gray-900: #111827; --white: #ffffff;
+            --radius: 8px; --radius-lg: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--gray-100); color: var(--gray-900); min-height: 100vh; }
+        .nav { background: var(--navy); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; }
+        .nav-brand img { height: 32px; width: auto; }
+        .nav-brand span { color: var(--white); font-weight: 700; font-size: 1rem; }
+        .nav-links { display: flex; align-items: center; gap: 4px; }
+        .nav-links a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.85rem; font-weight: 500; padding: 8px 14px; border-radius: var(--radius); transition: all 0.15s; }
+        .nav-links a:hover, .nav-links a.active { color: var(--white); background: rgba(255,255,255,0.1); }
+        .nav-links a.logout { color: #fca5a5; }
+        .nav-links a.logout:hover { background: rgba(212,43,43,0.2); }
+        .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.5rem; cursor: pointer; }
+        .main { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+        .page-header { margin-bottom: 24px; }
+        .page-header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; }
+        .page-header p { font-size: 0.9rem; color: var(--gray-500); margin-top: 4px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+        .stat-card { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow); border: 1px solid var(--gray-200); padding: 20px; text-align: center; }
+        .stat-card .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--gray-900); line-height: 1.2; }
+        .stat-card .stat-label { font-size: 0.8rem; color: var(--gray-500); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .card { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow); border: 1px solid var(--gray-200); padding: 24px; margin-bottom: 20px; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+        .card-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--gray-900); }
+        .card-header p { font-size: 0.85rem; color: var(--gray-500); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; font-weight: 600; color: var(--gray-500); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 12px; border-bottom: 2px solid var(--gray-200); }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--gray-100); }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-amber { background: #fef3c7; color: #92400e; }
+        .badge-gray { background: var(--gray-200); color: var(--gray-600); }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        textarea { width: 100%; padding: 12px; font-size: 0.9rem; font-family: inherit; border: 1px solid var(--gray-300); border-radius: var(--radius); resize: vertical; min-height: 80px; outline: none; transition: border-color 0.15s; }
+        textarea:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(212,43,43,0.12); }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 20px; font-size: 0.85rem; font-weight: 600; font-family: inherit; border: none; border-radius: var(--radius); cursor: pointer; transition: all 0.15s; text-decoration: none; white-space: nowrap; }
+        .btn-red { background: var(--red); color: var(--white); }
+        .btn-red:hover { background: var(--red-dark); }
+        .btn-gray { background: var(--gray-200); color: var(--gray-700); }
+        .btn-gray:hover { background: var(--gray-300); }
+        .btn-green { background: var(--green); color: var(--white); }
+        .btn-green:hover { opacity: 0.9; }
+        .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+        .summary-row { display: flex; gap: 24px; flex-wrap: wrap; padding: 12px 0; font-size: 0.9rem; }
+        .summary-row strong { color: var(--gray-700); }
+        .summary-row .value { font-weight: 700; color: var(--gray-900); }
+        .empty { text-align: center; padding: 32px 16px; color: var(--gray-500); font-size: 0.9rem; }
+        @media (max-width: 768px) {
+            .hamburger { display: block; }
+            .nav-links { display: none; flex-direction: column; position: absolute; top: 60px; left: 0; right: 0; background: var(--navy); padding: 12px; gap: 0; z-index: 10; }
+            .nav-links.open { display: flex; }
+            .nav-links a { padding: 12px 14px; border-radius: 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+            .main { padding: 20px 16px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            table { font-size: 0.8rem; }
+            th, td { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="nav">
+        <div class="nav-brand">
+            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
+            <span>Client Portal</span>
+        </div>
+        <button class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">☰</button>
+        <div class="nav-links" id="nav-links">
+            <a href="{{ url_for('client_dashboard') }}" class="active">My Dashboard</a>
+            <a href="#submit-task" onclick="document.getElementById('nav-links').classList.remove('open')">Submit Task</a>
+            <a href="#payments" onclick="document.getElementById('nav-links').classList.remove('open')">My Payments</a>
+            <a href="{{ url_for('client_logout') }}" class="logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="main">
+
+        <div class="page-header">
+            <h1>Welcome, {{ current_user.display_name or current_user.email }}</h1>
+            <p>Your AI-powered marketing dashboard</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-status">{{ project_status or "In Progress" }}</div>
+                <div class="stat-label">Project Status</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-agents">{{ active_agents or 0 }} / 11</div>
+                <div class="stat-label">AI Agents Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-tasks">{{ tasks_this_month or 0 }}</div>
+                <div class="stat-label">Tasks This Month</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-site">{{ "Live" if site_url else "—" }}</div>
+                <div class="stat-label">Website</div>
+            </div>
+        </div>
+
+        {% if site_url %}
+        <div class="card" style="text-align:center;padding:16px;">
+            <p style="font-size:0.9rem;">Your site is live at <a href="{{ site_url }}" target="_blank" style="color:var(--red);font-weight:600;text-decoration:none;">{{ site_url }}</a></p>
+        </div>
+        {% endif %}
+
+        <div class="card" id="payments">
+            <div class="card-header"><h2>Payment Schedule</h2><p>Installment plan overview</p></div>
+            {% if payments %}
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr><th>#</th><th>Amount</th><th>Due Date</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for p in payments %}
+                        <tr>
+                            <td>{{ p.installment_number }}</td>
+                            <td>${{ "%.2f"|format(p.amount) }}</td>
+                            <td>{{ p.due_date }}</td>
+                            <td><span class="badge badge-{{ 'green' if p.paid else 'amber' }}">{{ "Paid" if p.paid else "Unpaid" }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="summary-row">
+                <span><strong>Paid:</strong> <span class="value" style="color:var(--green);">${{ "%.2f"|format(total_paid or 0) }}</span></span>
+                <span><strong>Remaining:</strong> <span class="value" style="color:var(--amber);">${{ "%.2f"|format(total_owed or 0) }}</span></span>
+            </div>
+            {% else %}
+            <p class="empty">No payment schedule yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="card" id="submit-task">
+            <div class="card-header"><h2>Submit a Request</h2><p>Tell your AI team what you need</p></div>
+            <textarea id="task-input" placeholder="e.g., I need more plumbing leads in Laval this week"></textarea>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
+                <button class="btn btn-red" onclick="submitClientTask()">Submit Request</button>
+                <span id="task-result"></span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h2>Download Contract</h2><p>View your signed agreement</p></div>
+            <button class="btn btn-gray btn-sm" onclick="alert('Contract download will be available soon.')">Download Contract (PDF)</button>
+        </div>
+
+    </div>
+
+    <script>
+    function submitClientTask() {
+        const task = document.getElementById('task-input').value;
+        if (!task) return alert('Please enter a request.');
+        const el = document.getElementById('task-result');
+        el.innerHTML = '<span style="color:var(--blue);">Submitting...</span>';
+        fetch('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request: task })
+        })
+        .then(r => r.json())
+        .then(data => {
+            const status = data.status === 'completed' ? 'Completed' : 'Pending approval';
+            el.innerHTML = '<span style="color:var(--green);">✓ ' + status + '</span>';
+        })
+        .catch(err => { el.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>'; });
+    }
+    </script>
+</body>
+</html>
