@@ -770,6 +770,27 @@ def update_agent_config(agent_id):
         config["credentials"]["api_base"] = data["api_base"]
 
     # Re-initialize the agent with new config
+    _reinitialize_agent(agent_id, config)
+
+    # Rebuild orchestrator with updated agent
+    global orchestrator, orchestrator_graph
+    orchestrator = Orchestrator(llm_adapter, agent_registry)
+    orchestrator_graph = orchestrator.build_graph()
+
+    return jsonify({
+        "agent_id": agent_id,
+        "model": config["model"],
+        "message": "Configuration updated and agent reinitialized",
+    })
+
+
+def _reinitialize_agent(agent_id: str, config: dict) -> None:
+    """Re-initialize a single agent in the registry with a new config.
+
+    Args:
+        agent_id: The agent identifier.
+        config: The updated configuration dict.
+    """
     if agent_id == "local_seo":
         agent_registry[agent_id] = LocalSEOAgent(agent_id, config)
     elif agent_id == "social_media":
@@ -791,15 +812,66 @@ def update_agent_config(agent_id):
     elif agent_id == "backlinks":
         agent_registry[agent_id] = BacklinksAgent(agent_id, config)
 
-    # Rebuild orchestrator with updated agent
-    global orchestrator, orchestrator_graph
-    orchestrator = Orchestrator(llm_adapter, agent_registry)
-    orchestrator_graph = orchestrator.build_graph()
+
+@app.route("/api/agents/config/bulk", methods=["POST"])
+def bulk_update_agent_config():
+    """Update configuration for multiple agents at once.
+
+    Accepts a JSON body with:
+        agent_ids (list): List of agent IDs to update.
+        model (str, optional): Model name to set on all listed agents.
+        api_key (str, optional): API key to set on all listed agents.
+        api_base (str, optional): API base URL to set on all listed agents.
+
+    Returns a summary of which agents were updated and any errors.
+    """
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json
+    agent_ids = data.get("agent_ids", [])
+    model = data.get("model")
+    api_key = data.get("api_key")
+    api_base = data.get("api_base")
+
+    if not agent_ids:
+        return jsonify({"error": "agent_ids list is required"}), 400
+
+    results = {"updated": [], "errors": []}
+
+    for agent_id in agent_ids:
+        if agent_id not in AGENT_CONFIGS:
+            results["errors"].append({"agent_id": agent_id, "error": "Agent not found"})
+            continue
+
+        config = AGENT_CONFIGS[agent_id]
+
+        if model:
+            if not LLMAdapter.is_valid_model(model):
+                results["errors"].append({"agent_id": agent_id, "error": f"Invalid model '{model}'"})
+                continue
+            config["model"] = model
+
+        if api_key is not None:
+            config["credentials"]["api_key"] = api_key
+
+        if api_base is not None:
+            config["credentials"]["api_base"] = api_base
+
+        # Re-initialize the agent with new config
+        _reinitialize_agent(agent_id, config)
+        results["updated"].append(agent_id)
+
+    # Rebuild orchestrator if any agent was updated
+    if results["updated"]:
+        global orchestrator, orchestrator_graph
+        orchestrator = Orchestrator(llm_adapter, agent_registry)
+        orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
-        "agent_id": agent_id,
-        "model": config["model"],
-        "message": "Configuration updated and agent reinitialized",
+        "updated": results["updated"],
+        "errors": results["errors"],
+        "message": f"Updated {len(results['updated'])} agent(s) with {len(results['errors'])} error(s)",
     })
 
 

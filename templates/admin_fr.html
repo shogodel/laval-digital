@@ -283,6 +283,28 @@
 
         .hamburger { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray-700); padding: 4px; }
 
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+        select option { padding: 8px 12px; }
+        .config-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #dbeafe;
+            color: #1e40af;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
         .empty { text-align: center; padding: 32px 16px; color: var(--gray-500); font-size: 0.9rem; }
 
         @media (max-width: 900px) {
@@ -822,6 +844,12 @@ function populateAgentSelect() {
         .then(data => {
             const select = document.getElementById('config-agent-select');
             select.innerHTML = '<option value="">-- Choisir un agent --</option>';
+            const allOpt = document.createElement('option');
+            allOpt.value = 'all';
+            allOpt.textContent = 'Tous les agents';
+            allOpt.style.fontWeight = '700';
+            allOpt.style.background = '#f3f4f6';
+            select.appendChild(allOpt);
             (data.agents || []).forEach(a => {
                 const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) };
                 const opt = document.createElement('option');
@@ -840,14 +868,31 @@ function loadAgentConfig() {
     document.getElementById('agent-config-form').style.display = 'block';
     document.getElementById('config-model').innerHTML = '<option value="">-- Entrer une clé API et cliquer Détecter --</option>';
     document.getElementById('detect-result').textContent = '';
-    fetch('/api/agents/' + agentId + '/config')
-        .then(r => r.json())
-        .then(data => {
-            document.getElementById('config-api-key').value = data.api_key || '';
-            document.getElementById('config-api-base').value = data.api_base || '';
-            document.getElementById('detect-btn').disabled = !data.api_key;
-        })
-        .catch(() => {});
+
+    const badge = document.getElementById('config-badge');
+    if (agentId === 'all') {
+        document.getElementById('config-api-key').value = '';
+        document.getElementById('config-api-base').value = '';
+        document.getElementById('detect-btn').disabled = true;
+        if (!badge) {
+            const b = document.createElement('span');
+            b.id = 'config-badge';
+            b.className = 'config-badge';
+            b.textContent = 'appliqué à tous les agents';
+            const container = document.querySelector('.form-group label');
+            if (container) container.after(b);
+        }
+    } else {
+        if (badge) badge.remove();
+        fetch('/api/agents/' + agentId + '/config')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('config-api-key').value = data.api_key || '';
+                document.getElementById('config-api-base').value = data.api_base || '';
+                document.getElementById('detect-btn').disabled = !data.api_key;
+            })
+            .catch(() => {});
+    }
 }
 
 function detectModels() {
@@ -891,19 +936,40 @@ function saveAgentConfig() {
     const model = document.getElementById('config-model').value;
     const apiKey = document.getElementById('config-api-key').value;
     const apiBase = document.getElementById('config-api-base').value;
-    fetch('/api/agents/' + agentId + '/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, api_key: apiKey, api_base: apiBase })
-    })
-    .then(r => r.json())
-    .then(() => {
-        document.getElementById('config-save-result').innerHTML = '<span style="color:var(--green);">Sauvegardé!</span>';
-        setTimeout(() => { document.getElementById('config-save-result').textContent = ''; }, 3000);
-    })
-    .catch(() => {
-        document.getElementById('config-save-result').innerHTML = '<span style="color:var(--red);">Erreur de sauvegarde</span>';
-    });
+    const resultEl = document.getElementById('config-save-result');
+
+    if (agentId === 'all') {
+        const agentIds = Object.keys(AGENT_META);
+        resultEl.innerHTML = '<span style="color:var(--blue);">Sauvegarde vers tous les agents...</span>';
+        fetch('/api/agents/config/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agent_ids: agentIds, model, api_key: apiKey, api_base: apiBase })
+        })
+        .then(r => r.json())
+        .then(data => {
+            const msg = data.updated.length + ' agent(s) mis à jour' + (data.errors.length ? ', ' + data.errors.length + ' erreur(s)' : '');
+            resultEl.innerHTML = '<span style="color:var(--green);">' + msg + '</span>';
+            setTimeout(() => { resultEl.textContent = ''; }, 4000);
+        })
+        .catch(() => {
+            resultEl.innerHTML = '<span style="color:var(--red);">Erreur de sauvegarde</span>';
+        });
+    } else {
+        fetch('/api/agents/' + agentId + '/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model, api_key: apiKey, api_base: apiBase })
+        })
+        .then(r => r.json())
+        .then(() => {
+            resultEl.innerHTML = '<span style="color:var(--green);">Sauvegardé!</span>';
+            setTimeout(() => { resultEl.textContent = ''; }, 3000);
+        })
+        .catch(() => {
+            resultEl.innerHTML = '<span style="color:var(--red);">Erreur de sauvegarde</span>';
+        });
+    }
 }
 
 /* ── Paramètres d'Exécution ── */
