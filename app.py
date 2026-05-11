@@ -1,6 +1,7 @@
 import os
 import sys
 import uuid
+import secrets
 import warnings
 import logging
 from datetime import datetime, timedelta
@@ -1048,16 +1049,30 @@ def affiliate_signup_api():
         "timestamp": datetime.now().isoformat(),
     })
 
+    password = secrets.token_urlsafe(12)
+    try:
+        tenant_manager.create_tenant_database(code, "direct")
+        add_user_to_tenant(email, password, "affiliate", name, code, "direct")
+        logger.info("Affiliate user created: %s (tenant=%s)", email, code)
+    except Exception as e:
+        logger.error("Failed to create affiliate user for %s: %s", email, e)
+        return jsonify({
+            "success": False,
+            "error": f"Account creation failed: {str(e)}",
+        }), 500
+
     return jsonify({
         "success": True,
         "code": code,
         "referral_link": f"https://lavaldigital.ca/?ref={code}",
+        "password": password,
+        "message": "Your login credentials have been created. Please check your email for your password.",
     }), 201
 
 
 @app.route("/api/contract/submit", methods=["POST"])
 def contract_submit():
-    """Submit a signed agreement."""
+    """Submit a signed agreement and create a user account."""
     data = request.json
     name = (data.get("name") or "").strip()
     business = (data.get("business") or "").strip()
@@ -1083,8 +1098,28 @@ def contract_submit():
     }
     leads.append(contract_data)
 
+    password = secrets.token_urlsafe(12)
+    subdomain = business.lower().replace(" ", "-").replace("'", "")[:40]
+    try:
+        tenant_manager.create_tenant_database(subdomain, "direct")
+        add_user_to_tenant(email, password, "client", name, subdomain, "direct")
+        logger.info("Client user created: %s (tenant=%s)", email, subdomain)
+    except Exception as e:
+        logger.error("Failed to create client user for %s: %s", email, e)
+        return jsonify({
+            "success": False,
+            "error": f"Account creation failed: {str(e)}",
+            "contract_id": contract_data["id"],
+        }), 500
+
     logger.info("Contract submitted by %s (%s) — package: %s", name, email, contract_data["package"])
-    return jsonify({"success": True, "contract_id": contract_data["id"]}), 201
+    return jsonify({
+        "success": True,
+        "contract_id": contract_data["id"],
+        "password": password,
+        "tenant_id": subdomain,
+        "message": "Your account has been created. Please check your email for login credentials.",
+    }), 201
 
 
 @app.route("/api/reseller/apply", methods=["POST"])
@@ -1109,8 +1144,27 @@ def reseller_apply():
     }
     reseller_applications.append(application)
 
+    password = secrets.token_urlsafe(12)
+    agency_slug = agency.lower().replace(" ", "-").replace("'", "")[:40]
+    try:
+        tenant_manager.create_tenant_database(agency_slug, "reseller")
+        add_user_to_tenant(email, password, "reseller", agency, agency_slug, "reseller")
+        logger.info("Reseller user created: %s (tenant=%s)", email, agency_slug)
+    except Exception as e:
+        logger.error("Failed to create reseller user for %s: %s", email, e)
+        return jsonify({
+            "success": False,
+            "error": f"Account creation failed: {str(e)}",
+            "application_id": application["id"],
+        }), 500
+
     logger.info("Reseller application received — %s (%s)", agency, email)
-    return jsonify({"success": True, "application_id": application["id"]}), 201
+    return jsonify({
+        "success": True,
+        "application_id": application["id"],
+        "password": password,
+        "tenant_id": agency_slug,
+    }), 201
 
 
 # ---------------------------------------------------------------------------
