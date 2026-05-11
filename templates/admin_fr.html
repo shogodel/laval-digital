@@ -3,75 +3,346 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laval Digital - Panneau d'Admin</title>
+    <title>Laval Digital — Panneau d'Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        h1 { color: #333; border-bottom: 2px solid #003399; padding-bottom: 10px; }
-        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        .agent-card { display: inline-block; margin: 10px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; min-width: 280px; max-width: 360px; vertical-align: top; text-align: left; }
-        .agent-card p { margin: 6px 0; font-size: 0.9em; }
-        .agent-card.enabled { border-color: #28a745; background: #f8fff9; }
-        .agent-card.disabled { border-color: #dc3545; background: #fff8f8; }
-        button { padding: 8px 16px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-primary { background: #003399; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-warning { background: #ffc107; color: black; }
-        input, textarea { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 100%; }
-        .approval-card { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 5px; }
-        .status-badge { padding: 4px 8px; border-radius: 3px; font-size: 12px; }
-        .status-pending { background: #ffc107; color: black; }
-        .status-completed { background: #28a745; color: white; }
-        .status-processing { background: #003399; color: white; }
-        .status-idle { background: #28a745; color: white; }
-        .status-disabled { background: #6c757d; color: white; }
-        pre { white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
-        .admin-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; border-bottom: 2px solid #003399; padding-bottom: 10px; margin-bottom: 0; }
-        .admin-header h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
-        .admin-header .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-
-        @media (max-width: 768px) {
-            body { margin: 10px; }
-            .container { padding: 12px; }
-            h1 { font-size: 1.3rem; }
-            .section { padding: 10px; margin: 12px 0; }
-            .agent-card { display: block; min-width: unset; max-width: unset; margin: 10px 0; }
-            .agent-card p { font-size: 0.85em; }
-            button { width: 100%; margin: 6px 0; padding: 12px; font-size: 1em; }
-            input, textarea, select { font-size: 16px; }
-            .approval-card { padding: 10px; }
-            .approval-card pre { font-size: 0.8em; }
-            #agent-config-form [style*="display:flex"] { flex-direction: column; align-items: stretch; }
-            #agent-config-form [style*="display:grid"] { grid-template-columns: 1fr !important; }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --navy: #0f2b45;
+            --navy-light: #1a3a5c;
+            --red: #D42B2B;
+            --red-dark: #A82323;
+            --green: #059669;
+            --green-bg: #ecfdf5;
+            --amber: #d97706;
+            --amber-bg: #fffbeb;
+            --blue: #2563eb;
+            --blue-bg: #eff6ff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --white: #ffffff;
+            --radius: 8px;
+            --radius-lg: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-100);
+            color: var(--gray-900);
+            min-height: 100vh;
         }
 
-        @media (max-width: 480px) {
-            .container { padding: 8px; }
-            .section { padding: 8px; }
-            h1 { font-size: 1.1rem; }
+        .app { display: flex; min-height: 100vh; }
+
+        .sidebar {
+            width: 260px;
+            background: var(--navy);
+            color: var(--white);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 50;
+            overflow-y: auto;
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .sidebar-brand img { height: 36px; width: auto; }
+        .sidebar-brand span { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; }
+        .sidebar-nav { flex: 1; padding: 12px 0; }
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-nav a:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+        .sidebar-nav a.active { color: var(--white); background: rgba(255,255,255,0.08); border-left-color: var(--red); }
+        .sidebar-nav a .icon { font-size: 1.15rem; width: 22px; text-align: center; }
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 0.85rem;
+        }
+        .sidebar-footer a {
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.15s;
+        }
+        .sidebar-footer a:hover { color: var(--white); }
+
+        .main {
+            flex: 1;
+            margin-left: 260px;
+            padding: 24px 32px 40px;
+            max-width: 1280px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+        .topbar h1 { font-size: 1.5rem; font-weight: 700; color: var(--gray-900); letter-spacing: -0.01em; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .tenant-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: 30px;
+            padding: 4px 16px 4px 4px;
+            font-size: 0.85rem;
+            box-shadow: var(--shadow);
+        }
+        .tenant-pill .dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+        }
+        .tenant-pill .dot.active { background: var(--green); }
+        .tenant-pill .dot.inactive { background: var(--gray-300); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .card-header h2 { font-size: 1.1rem; font-weight: 700; color: var(--gray-900); }
+        .card-header p { font-size: 0.85rem; color: var(--gray-500); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-card .stat-value { font-size: 2rem; font-weight: 800; color: var(--gray-900); line-height: 1.2; }
+        .stat-card .stat-label { font-size: 0.8rem; color: var(--gray-500); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+        .agent-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            padding: 20px;
+            transition: box-shadow 0.2s;
+        }
+        .agent-card:hover { box-shadow: var(--shadow-md); }
+        .agent-card.enabled { border-left: 3px solid var(--green); }
+        .agent-card.disabled { border-left: 3px solid var(--gray-300); }
+        .agent-card .agent-name { font-size: 1.05rem; font-weight: 700; color: var(--gray-900); letter-spacing: -0.01em; }
+        .agent-card .agent-desc { font-size: 0.78rem; color: var(--gray-500); line-height: 1.5; margin: 4px 0 10px; font-style: italic; }
+        .agent-card .row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 3px 0; }
+        .agent-card .row .label { color: var(--gray-500); }
+        .agent-card .row .value { font-weight: 600; color: var(--gray-700); }
+        .agent-card .draft-preview { font-size: 0.8rem; color: var(--gray-400); margin-top: 6px; word-break: break-word; }
+
+        .approval-card {
+            background: var(--amber-bg);
+            border: 1px solid #fde68a;
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .approval-card h3 { font-size: 0.95rem; font-weight: 700; color: #92400e; margin-bottom: 6px; }
+        .approval-card p { font-size: 0.85rem; color: #78350f; margin-bottom: 4px; }
+        .approval-card pre {
+            font-size: 0.8rem; color: #78350f; background: rgba(255,255,255,0.6);
+            padding: 8px; border-radius: 4px; margin: 8px 0; max-height: 120px; overflow-y: auto;
+            white-space: pre-wrap; word-break: break-word;
+        }
+
+        .execution-card {
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+        .execution-card.success { background: var(--green-bg); border: 1px solid #a7f3d0; }
+        .execution-card.fail { background: #fef2f2; border: 1px solid #fecaca; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-idle { background: #d1fae5; color: #065f46; }
+        .badge-processing { background: #dbeafe; color: #1e40af; }
+        .badge-pending_approval { background: #fef3c7; color: #92400e; }
+        .badge-pending_confirmation { background: #e0e7ff; color: #3730a3; }
+        .badge-disabled { background: var(--gray-200); color: var(--gray-600); }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-red { background: var(--red); color: var(--white); }
+        .btn-red:hover:not(:disabled) { background: var(--red-dark); }
+        .btn-green { background: var(--green); color: var(--white); }
+        .btn-green:hover:not(:disabled) { opacity: 0.9; }
+        .btn-amber { background: var(--amber); color: var(--white); }
+        .btn-amber:hover:not(:disabled) { opacity: 0.9; }
+        .btn-gray { background: var(--gray-200); color: var(--gray-700); }
+        .btn-gray:hover:not(:disabled) { background: var(--gray-300); }
+        .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+        .btn-xs { padding: 3px 8px; font-size: 0.7rem; border-radius: 4px; }
+
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--gray-700); margin-bottom: 4px; }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius);
+            background: var(--white);
+            color: var(--gray-900);
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        input:focus, textarea:focus, select:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(212,43,43,0.12); }
+        textarea { resize: vertical; min-height: 60px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+        .form-group { margin-bottom: 14px; }
+
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .settings-grid h3 { font-size: 0.9rem; font-weight: 700; color: var(--gray-700); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--gray-200); }
+
+        .deploy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+        .hamburger { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray-700); padding: 4px; }
+
+        .empty { text-align: center; padding: 32px 16px; color: var(--gray-500); font-size: 0.9rem; }
+
+        @media (max-width: 900px) {
+            .sidebar { width: 220px; }
+            .main { margin-left: 220px; padding: 20px; }
+            .form-row { grid-template-columns: 1fr; }
+            .settings-grid { grid-template-columns: 1fr; }
+            .deploy-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .hamburger { display: block; }
+            .sidebar { transform: translateX(-100%); transition: transform 0.25s ease; }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; padding: 16px; }
+            .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; }
+            .overlay.show { display: block; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .agent-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="admin-header">
-            <h1><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="64" style="vertical-align:middle;margin-right:10px;">Laval Digital - Panneau d'Admin</h1>
-            <div class="header-right">
-                <a href="/admin/logout" class="btn-danger" style="text-decoration:none;padding:6px 14px;font-size:0.85rem;">D&eacute;connexion</a>
-                <a href="/admin" class="lang-toggle">EN</a>
-            </div>
-        </div>
 
-        <!-- S&eacute;lection du Client -->
-        <div class="section" style="background:#f0f7ff;">
-            <h2>S&eacute;lection du Client</h2>
-            <p style="font-size:0.9em;color:#555;">S&eacute;lectionnez un client pour g&eacute;rer ses agents, t&acirc;ches et approbations.</p>
-            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px;">
-                <select id="tenant-select" style="flex:1;min-width:250px;padding:8px;border:1px solid #ccc;border-radius:4px;">
-                    <option value="">-- S&eacute;lectionnez un client --</option>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="app">
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
+            <span>Admin Panel</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="active" data-tab="dashboard"><span class="icon">📊</span> Tableau de Bord</a>
+            <a href="#" data-tab="agents"><span class="icon">🤖</span> Agents</a>
+            <a href="#" data-tab="tasks"><span class="icon">📋</span> Tâches &amp; Approbations</a>
+            <a href="#" data-tab="deploy"><span class="icon">🚀</span> Déployer un Client</a>
+            <a href="#" data-tab="settings"><span class="icon">⚙️</span> Paramètres</a>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="/fr/admin/logout">🚪 Déconnexion</a>
+        </div>
+    </aside>
+
+    <main class="main">
+
+        <div class="topbar">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+                <h1 id="page-title">Tableau de Bord</h1>
+            </div>
+            <div class="topbar-right">
+                <div class="tenant-pill">
+                    <span class="dot {% if active_tenant %}active{% else %}inactive{% endif %}"></span>
+                    <span id="active-tenant-label">{% if active_tenant %}{{ active_tenant }}{% else %}Aucun client{% endif %}</span>
+                </div>
+                <select id="tenant-select" onchange="switchTenant(this.value)" style="width:auto;min-width:140px;padding:6px 10px;font-size:0.85rem;">
+                    <option value="">Sélectionner un client…</option>
                     {% if tenants.direct_clients %}
-                    <optgroup label="Clients directs">
+                    <optgroup label="Directs">
                         {% for t in tenants.direct_clients %}
                         <option value="{{ t }}"{% if active_tenant == t %} selected{% endif %}>{{ t }}</option>
                         {% endfor %}
@@ -80,518 +351,657 @@
                     {% if tenants.resellers %}
                     <optgroup label="Revendeurs">
                         {% for t in tenants.resellers %}
-                        <option value="{{ t }}"{% if active_tenant == t %} selected{% endif %}>{{ t }} (revendeur)</option>
+                        <option value="{{ t }}"{% if active_tenant == t %} selected{% endif %}>{{ t }}</option>
                         {% endfor %}
                     </optgroup>
                     {% endif %}
                 </select>
-                <button class="btn-primary" onclick="switchTenant()">Changer</button>
-                <span id="tenant-switch-result" style="font-size:0.9em;"></span>
+                <a href="/admin" class="btn btn-gray btn-sm">EN</a>
+                <a href="/fr/admin/logout" class="btn btn-red btn-sm">Déconnexion</a>
             </div>
-            <div id="current-tenant-display" style="margin-top:8px;font-weight:600;color:{% if active_tenant %}#28a745{% else %}#dc3545{% endif %};">
-                {% if active_tenant %}
-                Client actif : <span id="active-tenant-label">{{ active_tenant }}</span>
-                {% else %}
-                Aucun client s&eacute;lectionn&eacute; — les op&eacute;rations d'agents sont indisponibles.
+        </div>
+
+        <span id="tenant-switch-result" style="font-size:0.85rem;color:var(--green);margin-bottom:8px;display:block;"></span>
+
+        <!-- TAB: Tableau de Bord -->
+        <div class="tab-content active" id="tab-dashboard">
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card"><div class="stat-value" id="stat-agents">0</div><div class="stat-label">Agents</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-active">0</div><div class="stat-label">Actifs</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Approbations</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-executions">0</div><div class="stat-label">Exécutions</div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h2>Exécutions Récentes</h2></div>
+                <div id="execution-list"><p class="empty">Chargement...</p></div>
+            </div>
+        </div>
+
+        <!-- TAB: Agents -->
+        <div class="tab-content" id="tab-agents">
+            <div class="card">
+                <div class="card-header"><h2>Statut des Agents</h2></div>
+                <div id="agent-list"><p class="empty">Chargement des agents...</p></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h2>Configuration des Agents</h2></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Sélectionner un agent</label>
+                        <select id="config-agent-select" onchange="loadAgentConfig()">
+                            <option value="">-- Choisir un agent --</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="agent-config-form" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Modèle</label>
+                            <select id="config-model">
+                                <option value="">-- Détecter ou entrer une clé API --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>URL de Base API (optionnel)</label>
+                            <input type="text" id="config-api-base" placeholder="https://api.deepseek.com/v1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Clé API</label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="password" id="config-api-key" placeholder="sk-..." style="flex:1;">
+                            <button id="detect-btn" class="btn btn-gray btn-sm" onclick="detectModels()" disabled style="white-space:nowrap;">Détecter</button>
+                        </div>
+                        <div id="detect-result" style="font-size:0.85rem;margin-top:4px;"></div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                        <button class="btn btn-red" onclick="saveAgentConfig()">Sauvegarder</button>
+                        <span id="config-save-result"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Tâches & Approbations -->
+        <div class="tab-content" id="tab-tasks">
+            <div class="card">
+                <div class="card-header"><h2>Soumettre une Tâche</h2><p>Envoyer une requête à l'orchestrateur IA</p></div>
+                <textarea id="task-input" rows="3" placeholder="ex. Je veux plus de prospects de plomberie à Laval cette semaine" style="margin-bottom:10px;"></textarea>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button class="btn btn-red" onclick="submitTask()">Soumettre</button>
+                    <span id="task-result"></span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Approbations en Attente</h2>
+                    <button class="btn btn-amber btn-sm" onclick="loadApprovals()">Actualiser</button>
+                </div>
+                <div id="approvals-list"><p class="empty">Chargement des approbations...</p></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Confirmations en Attente</h2>
+                    <p>Approuver l'exécution finale après révision</p>
+                    <button class="btn btn-amber btn-sm" onclick="loadPendingExecutions()">Actualiser</button>
+                </div>
+                <div id="pending-executions-list"><p class="empty">Chargement...</p></div>
+            </div>
+        </div>
+
+        <!-- TAB: Déployer un Client -->
+        <div class="tab-content" id="tab-deploy">
+            <div class="card">
+                <div class="card-header"><h2>Déployer un Nouveau Client</h2><p>Crée la base de données, le site web et envoie un courriel de bienvenue</p></div>
+                <div class="deploy-grid">
+                    <div class="form-group">
+                        <label>Nom d'Entreprise *</label>
+                        <input type="text" id="client-business-name" placeholder="Plomberie Mike">
+                    </div>
+                    <div class="form-group">
+                        <label>Nom du Contact *</label>
+                        <input type="text" id="client-contact-name" placeholder="Mike Tremblay">
+                    </div>
+                    <div class="form-group">
+                        <label>Courriel du Client *</label>
+                        <input type="email" id="client-email" placeholder="mike@plomberiemike.ca">
+                    </div>
+                    <div class="form-group">
+                        <label>Téléphone *</label>
+                        <input type="tel" id="client-phone" placeholder="450-555-1234">
+                    </div>
+                    <div class="form-group">
+                        <label>Ville *</label>
+                        <input type="text" id="client-city" value="Laval">
+                    </div>
+                    <div class="form-group">
+                        <label>Créneau *</label>
+                        <select id="client-niche">
+                            <option value="plumber">Plombier</option>
+                            <option value="electrician">Électricien</option>
+                            <option value="landscaper">Paysagiste</option>
+                            <option value="roofer">Couvreur</option>
+                            <option value="hvac">CVAC</option>
+                            <option value="cleaner">Nettoyeur</option>
+                            <option value="painter">Peintre</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Forfait *</label>
+                        <select id="client-package">
+                            <option value="core_suite">Offre de Base — 8 500 $</option>
+                            <option value="growth_suite" selected>Offre Croissance — 12 500 $</option>
+                            <option value="full_empire">Offre Complète — 16 500 $</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Code d'Affilié (optionnel)</label>
+                        <input type="text" id="client-affiliate" placeholder="MIKE15">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Services (séparés par des virgules) *</label>
+                    <input type="text" id="client-services" placeholder="Réparations d'Urgence, Débouchage, Chauffe-eau">
+                </div>
+                <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+                    <button class="btn btn-green" onclick="deployClient()">Déployer le Site</button>
+                    <span id="deploy-result"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Paramètres -->
+        <div class="tab-content" id="tab-settings">
+            <div class="card">
+                <div class="card-header"><h2>Logo</h2><p>Téléchargez le logo de votre entreprise (PNG ou SVG)</p></div>
+                {% if logo_uploaded == "success" %}
+                <p style="color:var(--green);font-weight:600;margin-bottom:10px;">✓ Logo téléchargé avec succès!</p>
+                {% elif logo_uploaded == "invalid" %}
+                <p style="color:var(--red);font-weight:600;margin-bottom:10px;">✗ Fichier invalide. Veuillez télécharger un PNG ou SVG.</p>
                 {% endif %}
-            </div>
-        </div>
-
-        <!-- Statut des Agents -->
-        <div class="section">
-            <h2>Statut des Agents</h2>
-            <div id="agent-list"></div>
-        </div>
-
-        <!-- Configuration des Agents -->
-        <div class="section">
-            <h2>Configuration des Agents</h2>
-            <select id="config-agent-select" onchange="loadAgentConfig()">
-                <option value="">-- Sélectionnez un agent à configurer --</option>
-            </select>
-            <div id="agent-config-form" style="display:none; margin-top:10px;">
-                <label>Modèle :</label>
-                <select id="config-model">
-                    <option value="">-- Entrez une clé API et cliquez Détecter --</option>
-                </select>
-                <label>Clé API :</label>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <input type="password" id="config-api-key" placeholder="sk-..." style="flex:1;">
-                    <button id="detect-btn" class="btn-primary" onclick="detectModels()" disabled style="white-space:nowrap;">Détecter</button>
+                <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+                    <div style="background:var(--gray-100);padding:10px 16px;border-radius:8px;display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:0.85rem;color:var(--gray-500);">Actuel:</span>
+                        <img src="{{ url_for('static', filename=logo_file) }}" alt="Logo" height="48">
+                    </div>
                 </div>
-                <div id="detect-result" style="font-size:0.9em; margin:5px 0;"></div>
-                <label>URL de Base API (optionnel) :</label>
-                <input type="text" id="config-api-base" placeholder="https://api.deepseek.com/v1">
-                <button class="btn-primary" onclick="saveAgentConfig()">Sauvegarder la Configuration</button>
-                <div id="config-save-result"></div>
+                <form method="POST" action="/admin/logo" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <input type="file" name="logo" accept=".png,.svg" required style="width:auto;flex:1;min-width:200px;">
+                    <button type="submit" class="btn btn-red" style="white-space:nowrap;">Télécharger</button>
+                </form>
             </div>
-        </div>
-
-        <!-- Soumettre une Tâche -->
-        <div class="section">
-            <h2>Soumettre une Tâche à l'Orchestrateur</h2>
-            <textarea id="task-input" rows="3" placeholder="ex. : Je veux plus de prospects de plomberie à Laval cette semaine"></textarea>
-            <button class="btn-primary" onclick="submitTask()">Soumettre la Tâche</button>
-            <div id="task-result"></div>
-        </div>
-
-        <!-- Approbations en Attente -->
-        <div class="section">
-            <h2>Approbations en Attente</h2>
-            <button class="btn-warning" onclick="loadApprovals()">Actualiser</button>
-            <div id="approvals-list"></div>
-        </div>
-
-        <!-- Confirmations en Attente -->
-        <div class="section">
-            <h2>Confirmations en Attente</h2>
-            <p style="font-size:0.85em;color:#666;">Ces brouillons approuvés attendent votre feu vert final avant d'être envoyés (courriel, social, SMS).</p>
-            <button class="btn-warning" onclick="loadPendingExecutions()">Actualiser</button>
-            <div id="pending-executions-list"><p style="color:#666;">Chargement...</p></div>
-        </div>
-
-        <!-- Activité d'Exécution -->
-        <div class="section">
-            <h2>Activité d'Exécution</h2>
-            <button class="btn-warning" onclick="loadExecutions()">Actualiser</button>
-            <div id="execution-list"><p style="color:#666;">Chargement...</p></div>
-        </div>
-
-        <!-- Logo Upload -->
-        <div class="section">
-            <h2>Logo</h2>
-            {% if logo_uploaded == "success" %}
-            <p style="color:green;font-weight:600;margin-bottom:10px;">&#10003; Logo t&eacute;l&eacute;charg&eacute; avec succ&egrave;s!</p>
-            {% elif logo_uploaded == "invalid" %}
-            <p style="color:red;font-weight:600;margin-bottom:10px;">&#10007; Fichier invalide. Veuillez t&eacute;l&eacute;charger un PNG ou SVG.</p>
-            {% endif %}
-            <p style="font-size:0.85em;color:#666;">T&eacute;l&eacute;chargez le logo de votre entreprise (PNG ou SVG). Il remplacera le logo par d&eacute;faut sur toutes les pages.</p>
-            <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:15px;">
-                <div style="background:#f0f0f0;padding:12px 20px;border-radius:8px;display:flex;align-items:center;gap:10px;">
-                    <strong style="font-size:0.85rem;color:#555;">Logo actuel:</strong>
-                    <img src="{{ url_for('static', filename=logo_file) }}" alt="Aper&ccedil;u du logo" height="64">
+            <div class="card">
+                <div class="card-header"><h2>Paramètres d'Exécution</h2><p>Identifiants SMTP et API des médias sociaux</p></div>
+                <div class="settings-grid">
+                    <div>
+                        <h3>SMTP</h3>
+                        <div class="form-group"><label>Hôte</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
+                        <div class="form-group"><label>Port</label><input type="number" id="smtp-port" placeholder="587"></div>
+                        <div class="form-group"><label>Utilisateur</label><input type="text" id="smtp-username" placeholder="user@gmail.com"></div>
+                        <div class="form-group"><label>Mot de passe</label><input type="password" id="smtp-password" placeholder="Mot de passe d'application"></div>
+                        <div class="form-group"><label>Courriel d'envoi</label><input type="text" id="smtp-from" placeholder="info@plomberielaval.com"></div>
+                        <div class="form-group"><label><input type="checkbox" id="smtp-tls" checked> Utiliser TLS</label></div>
+                    </div>
+                    <div>
+                        <h3>Médias Sociaux</h3>
+                        <div class="form-group"><label>ID Page Facebook</label><input type="text" id="fb-page-id" placeholder="123456789"></div>
+                        <div class="form-group"><label>Jeton d'accès Facebook</label><input type="password" id="fb-token" placeholder="EAA..."></div>
+                        <div class="form-group"><label>ID Compte Instagram</label><input type="text" id="ig-account-id" placeholder="123456789"></div>
+                        <div class="form-group"><label>Jeton d'accès Instagram</label><input type="password" id="ig-token" placeholder="EAA..."></div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                    <button class="btn btn-gray" onclick="loadExecutionerSettings()">Recharger</button>
+                    <button class="btn btn-green" onclick="saveExecutionerSettings()">Sauvegarder</button>
+                    <span id="executioner-settings-result"></span>
                 </div>
             </div>
-            <form method="POST" action="/admin/logo" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                <input type="file" name="logo" accept=".png,.svg" required style="width:auto;flex:1;min-width:200px;">
-                <button type="submit" class="btn-primary" style="white-space:nowrap;">T&eacute;l&eacute;charger</button>
-            </form>
         </div>
 
-        <!-- Paramètres d'Exécution -->
-        <div class="section">
-            <h2>Paramètres d'Exécution</h2>
-            <p style="font-size:0.85em;color:#666;">Configurez les identifiants SMTP et API des médias sociaux pour exécuter les brouillons approuvés.</p>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-                <div>
-                    <h3>SMTP</h3>
-                    <label>Hôte :</label>
-                    <input type="text" id="smtp-host" placeholder="smtp.gmail.com">
-                    <label>Port :</label>
-                    <input type="number" id="smtp-port" placeholder="587">
-                    <label>Nom d'utilisateur :</label>
-                    <input type="text" id="smtp-username" placeholder="user@gmail.com">
-                    <label>Mot de passe :</label>
-                    <input type="password" id="smtp-password" placeholder="mot de passe d'application">
-                    <label>Courriel d'envoi :</label>
-                    <input type="text" id="smtp-from" placeholder="info@lavalplomberie.com">
-                    <label><input type="checkbox" id="smtp-tls" checked> Utiliser TLS</label>
-                </div>
-                <div>
-                    <h3>Médias Sociaux</h3>
-                    <label>ID Page Facebook :</label>
-                    <input type="text" id="fb-page-id" placeholder="123456789">
-                    <label>Jeton d'accès Facebook :</label>
-                    <input type="password" id="fb-token" placeholder="EAA...">
-                    <label>ID Compte Instagram :</label>
-                    <input type="text" id="ig-account-id" placeholder="123456789">
-                    <label>Jeton d'accès Instagram :</label>
-                    <input type="password" id="ig-token" placeholder="EAA...">
-                </div>
-            </div>
-            <div style="margin-top:10px;">
-                <button class="btn-primary" onclick="loadExecutionerSettings()">Recharger</button>
-                <button class="btn-success" onclick="saveExecutionerSettings()">Sauvegarder</button>
-                <span id="executioner-settings-result"></span>
-            </div>
-        </div>
-    </div>
+    </main>
+</div>
 
-    <script>
-        const AGENT_META = {
-            local_seo: { name: 'SEO Local', desc: 'Optimisation du profil Google Business, citations locales, contenu de mots-clés locaux, gestion des avis' },
-            social_media: { name: 'Médias Sociaux', desc: 'Publications sur les réseaux sociaux, création de contenu, calendriers de contenu, stratégies d\'engagement' },
-            lead_conversion: { name: 'Conversion de Prospects', desc: 'Séquences de suivi des prospects, intégration CRM, optimisation des conversions, campagnes courriel' },
-            paid_ads: { name: 'Annonces Payantes', desc: 'Campagnes Google & Meta, création de contenu publicitaire, stratégie de mots-clés, allocation budgétaire, tests A/B, ciblage d\'audience' },
-            growth_hacker: { name: 'Growth Hacker', desc: 'Audits de croissance, boucles virales, optimisation du taux de conversion, stratégies de partenariat, expériences basées sur les données' },
-            reputation: { name: 'Réputation', desc: 'Surveillance des avis en ligne, génération de réponses aux avis, campagnes de sollicitation d\'avis, audits de réputation, gestion de crise' },
-            email_marketing: { name: 'Marketing Courriel', desc: 'Campagnes infolettres, courriels promotionnels, séquences de nurturing, campagnes de réactivation, suivis post-service' },
-            tiktok: { name: 'TikTok', desc: 'Contenu vidéo court pour TikTok, Instagram Reels, YouTube Shorts, calendriers de contenu, scripts vidéo, adaptation aux tendances' },
-            outreach: { name: 'Prospection', desc: 'Courriels de prospection, recherche de prospects, séquences de campagnes, automatisation de suivi, prospection personnalisée à grande échelle' },
-            backlinks: { name: 'Backlinks', desc: 'Création de liens, prospection d\'articles invités, création de citations, analyse des écarts de backlinks, récupération de liens brisés, soumissions d\'annuaires' },
-        };
+<script>
+/* ── Navigation par onglets ── */
+document.querySelectorAll('.sidebar-nav a[data-tab]').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        const tab = this.dataset.tab;
+        document.getElementById('tab-' + tab).classList.add('active');
+        document.getElementById('page-title').textContent = this.textContent.trim();
+        if (window.innerWidth <= 640) toggleSidebar();
+    });
+});
 
-        function switchTenant() {
-            const tenantId = document.getElementById('tenant-select').value;
-            if (!tenantId) return;
-            const btn = event.target;
-            btn.disabled = true;
-            document.getElementById('tenant-switch-result').textContent = 'Changement...';
-            fetch('/api/tenants/switch', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tenant_id: tenantId })
-            })
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('show');
+}
+
+/* ── Changement de client ── */
+function switchTenant(tenantId) {
+    if (!tenantId) return;
+    const el = document.getElementById('tenant-switch-result');
+    el.textContent = 'Changement...';
+    fetch('/api/tenants/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: tenantId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        el.textContent = data.message || 'Client changé!';
+        document.getElementById('active-tenant-label').textContent = data.active_tenant;
+        document.querySelector('.tenant-pill .dot').className = 'dot active';
+        refreshAll();
+    })
+    .catch(err => { el.textContent = 'Erreur: ' + err.message; });
+}
+
+function refreshAll() {
+    loadAgents(); loadApprovals(); loadPendingExecutions(); loadExecutions(); updateDashboard();
+}
+
+/* ── Tableau de Bord ── */
+function updateDashboard() {
+    fetch('/api/agents').then(r => r.json()).then(data => {
+        const agents = data.agents || [];
+        document.getElementById('stat-agents').textContent = agents.length;
+        document.getElementById('stat-active').textContent = agents.filter(a => a.enabled).length;
+    });
+    fetch('/api/approvals').then(r => r.json()).then(data => {
+        document.getElementById('stat-pending').textContent = (data.approvals || []).length;
+    });
+    fetch('/api/executions').then(r => r.json()).then(data => {
+        document.getElementById('stat-executions').textContent = (data.executions || []).length;
+    });
+}
+
+/* ── Agents ── */
+const AGENT_META = {
+    local_seo: { name: 'SEO Local', desc: 'Optimisation du profil Google Business, citations locales, contenu de mots-clés locaux, gestion des avis' },
+    social_media: { name: 'Médias Sociaux', desc: 'Publications sur les réseaux sociaux, création de contenu, calendriers de contenu, stratégies d\'engagement' },
+    lead_conversion: { name: 'Conversion de Prospects', desc: 'Séquences de suivi des prospects, intégration CRM, optimisation des conversions, campagnes courriel' },
+    paid_ads: { name: 'Annonces Payantes', desc: 'Campagnes Google & Meta, création de contenu publicitaire, stratégie de mots-clés, allocation budgétaire, tests A/B, ciblage d\'audience' },
+    growth_hacker: { name: 'Growth Hacker', desc: 'Audits de croissance, boucles virales, optimisation du taux de conversion, stratégies de partenariat, expériences basées sur les données' },
+    reputation: { name: 'Réputation', desc: 'Surveillance des avis en ligne, génération de réponses aux avis, campagnes de sollicitation d\'avis, audits de réputation, gestion de crise' },
+    email_marketing: { name: 'Marketing Courriel', desc: 'Campagnes infolettres, courriels promotionnels, séquences de nurturing, campagnes de réactivation, suivis post-service' },
+    tiktok: { name: 'TikTok', desc: 'Contenu vidéo court pour TikTok, Instagram Reels, YouTube Shorts, calendriers de contenu, scripts vidéo, adaptation aux tendances' },
+    outreach: { name: 'Prospection', desc: 'Courriels de prospection, recherche de prospects, séquences de campagnes, automatisation de suivi, prospection personnalisée à grande échelle' },
+    backlinks: { name: 'Backlinks', desc: 'Création de liens, prospection d\'articles invités, création de citations, analyse des écarts de backlinks, récupération de liens brisés, soumissions d\'annuaires' },
+};
+
+function loadAgents() {
+    return fetch('/api/agents')
+        .then(r => r.json())
+        .then(data => {
+            const agents = data.agents || [];
+            const html = agents.map(a => {
+                const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '' };
+                const status = a.enabled ? a.status : 'disabled';
+                const statusLabels = { processing:'En cours', pending_approval:'Approbation en attente', pending_confirmation:'Confirmation en attente', idle:'Inactif', disabled:'Désactivé' };
+                const label = statusLabels[status] || 'Inactif';
+                const lastInvoked = a.last_invoked ? new Date(a.last_invoked).toLocaleString('fr-CA') : '--';
+                return `
+                <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" data-agent-id="${a.agent_id}">
+                    <div class="agent-name">${meta.name}</div>
+                    <div class="agent-desc">${meta.desc}</div>
+                    <div class="row"><span class="label">Statut</span><span class="badge badge-${status}">${label}</span></div>
+                    <div class="row"><span class="label">Modèle</span><span class="value">${a.model}</span></div>
+                    <div class="row"><span class="label">Tâches</span><span class="value">${a.task_count} (${a.success_count} ok / ${a.failure_count} éch.)</span></div>
+                    <div class="row"><span class="label">Dernière</span><span class="value">${lastInvoked}</span></div>
+                    <div class="draft-preview">${a.last_draft_preview || '—'}</div>
+                    <div style="margin-top:10px;">
+                        <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-btn" onclick="toggleAgent('${a.agent_id}')">
+                            ${a.enabled ? 'Désactiver' : 'Activer'}
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('agent-list').innerHTML = html || '<p class="empty">Aucun agent trouvé.</p>';
+            updateDashboard();
+        });
+}
+
+let togglePromise = Promise.resolve();
+
+function toggleAgent(agentId) {
+    togglePromise = togglePromise.then(() => {
+        const btn = document.querySelector(`[data-agent-id="${agentId}"] .toggle-btn`);
+        if (btn) btn.disabled = true;
+        return fetch(`/api/agents/${agentId}/toggle`, { method: 'POST' })
             .then(r => r.json())
-            .then(data => {
-                document.getElementById('tenant-switch-result').textContent = data.message || 'Client actif changé !';
-                document.getElementById('current-tenant-display').innerHTML =
-                    'Client actif : <span id="active-tenant-label">' + data.active_tenant + '</span>';
-                document.getElementById('current-tenant-display').style.color = '#28a745';
-                loadAgents();
-                loadApprovals();
-            })
-            .catch(err => {
-                document.getElementById('tenant-switch-result').textContent = 'Erreur : ' + err.message;
-            })
-            .finally(() => { btn.disabled = false; });
-        }
+            .then(() => loadAgents());
+    });
+}
 
-        window.onload = function() {
-            loadAgents();
-            loadApprovals();
-            loadPendingExecutions();
-            loadExecutions();
-            loadExecutionerSettings();
-            populateAgentSelect();
-            populateModelDropdown();
-            document.getElementById('config-api-key').addEventListener('input', function() {
-                document.getElementById('detect-btn').disabled = !this.value.trim();
-            });
-        };
+/* ── Tâches ── */
+function submitTask() {
+    const task = document.getElementById('task-input').value;
+    if (!task) return alert('Veuillez entrer une tâche');
+    const el = document.getElementById('task-result');
+    el.innerHTML = '<span style="color:var(--blue);">Soumission...</span>';
+    fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request: task })
+    })
+    .then(r => r.json())
+    .then(data => {
+        const status = data.status === 'completed' ? 'Terminée' : 'En attente';
+        el.innerHTML = `<span style="color:var(--green);">✓ ${status}</span>`;
+        setTimeout(loadApprovals, 2000);
+    })
+    .catch(err => { el.innerHTML = '<span style="color:var(--red);">Erreur: ' + err.message + '</span>'; });
+}
 
-        function loadAgents() {
-            return fetch('/api/agents')
-                .then(r => r.json())
-                .then(data => {
-                    const html = data.agents.map(a => {
-                        const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '' };
-                        const agentStatus = a.enabled ? a.status : 'disabled';
-                        const statusLabels = {processing:'En cours',pending_approval:'Approbation en attente',idle:'Inactif',disabled:'Désactivé'};
-                        const statusLabel = a.enabled ? (statusLabels[a.status] || 'Inactif') : 'Désactivé';
-                        const lastInvoked = a.last_invoked ? new Date(a.last_invoked).toLocaleString('fr-CA') : '--';
-                        const draftPreview = a.last_draft_preview || '--';
-                        return `
-                        <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" id="agent-card-${a.agent_id}" data-agent-id="${a.agent_id}">
-                            <h3 style="margin-bottom:2px;">${meta.name}</h3>
-                            <p style="font-size:0.82rem;color:#666;margin-bottom:10px;font-style:italic;">${meta.desc}</p>
-                            <p><strong>Modèle :</strong> ${a.model}</p>
-                            <p><strong>Agent :</strong> <span class="status-badge status-${agentStatus}">${statusLabel}</span></p>
-                            <p><strong>Tâches :</strong> ${a.task_count} (${a.success_count} ok / ${a.failure_count} échouées)</p>
-                            <p><strong>Dernière :</strong> ${lastInvoked}</p>
-                            <p><strong>Brouillon :</strong> <span style="font-size:0.85em;color:#555;">${draftPreview}</span></p>
-                            <button class="toggle-btn btn-${a.enabled ? 'danger' : 'success'}" onclick="toggleAgent('${a.agent_id}')">
-                                ${a.enabled ? 'Désactiver' : 'Activer'}
-                            </button>
-                        </div>
-                        `;
-                    }).join('');
-                    document.getElementById('agent-list').innerHTML = html;
-                });
-        }
-
-        let togglePromise = Promise.resolve();
-
-        function toggleAgent(agentId) {
-            togglePromise = togglePromise.then(() => {
-                const btn = document.querySelector(`[data-agent-id="${agentId}"] .toggle-btn`);
-                if (btn) btn.disabled = true;
-                return fetch(`/api/agents/${agentId}/toggle`, { method: 'POST' })
-                    .then(r => r.json())
-                    .then(() => loadAgents());
-            });
-        }
-
-        function submitTask() {
-            const task = document.getElementById('task-input').value;
-            if (!task) return alert('Veuillez entrer une tâche');
-            fetch('/api/tasks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ request: task })
-            })
-            .then(r => r.json())
-            .then(data => {
-                document.getElementById('task-result').innerHTML = `
-                    <p>Tâche soumise ! ID de fil : ${data.thread_id}</p>
-                    <p>Statut : <span class="status-badge ${data.status === 'completed' ? 'status-completed' : 'status-pending'}">${data.status === 'completed' ? 'Terminé' : 'En attente'}</span></p>
-                `;
-                setTimeout(loadApprovals, 2000);
-            });
-        }
-
-        function loadApprovals() {
-            fetch('/api/approvals')
-                .then(r => r.json())
-                .then(data => {
-                    if (data.approvals.length === 0) {
-                        document.getElementById('approvals-list').innerHTML = '<p>Aucune approbation en attente</p>';
-                        return;
-                    }
-                    const html = data.approvals.map(a => `
-                        <div class="approval-card">
-                            <h3>Agent : ${a.agent}</h3>
-                            <p><strong>Tâche :</strong> ${a.task}</p>
-                            <p><strong>Brouillon :</strong></p>
-                            <pre>${a.draft}</pre>
-                            <button class="btn-success" onclick="respondApproval('${a.thread_id}', true)">Approuver</button>
-                            <button class="btn-danger" onclick="showRejectForm('${a.thread_id}')">Rejeter</button>
-                            <div id="reject-form-${a.thread_id}" style="display:none; margin-top:10px;">
-                                <input type="text" id="feedback-${a.thread_id}" placeholder="Commentaires (optionnel)">
-                                <button class="btn-danger" onclick="respondApproval('${a.thread_id}', false)">Confirmer le Rejet</button>
-                            </div>
-                        </div>
-                    `).join('');
-                    document.getElementById('approvals-list').innerHTML = html;
-                });
-        }
-
-        function showRejectForm(threadId) {
-            document.getElementById(`reject-form-${threadId}`).style.display = 'block';
-        }
-
-        function respondApproval(threadId, approved) {
-            const feedback = document.getElementById(`feedback-${threadId}`)?.value || '';
-            fetch(`/api/approvals/${threadId}/respond`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ approved: approved, feedback: feedback })
-            })
-            .then(r => r.json())
-            .then(() => {
-                alert(approved ? 'Approbation confirmée !' : 'Approbation rejetée.');
-                loadApprovals();
-            });
-        }
-
-        function populateAgentSelect() {
-            fetch('/api/agents')
-                .then(r => r.json())
-                .then(data => {
-                    const select = document.getElementById('config-agent-select');
-                    data.agents.forEach(a => {
-                        const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) };
-                        const option = document.createElement('option');
-                        option.value = a.agent_id;
-                        option.textContent = meta.name;
-                        select.appendChild(option);
-                    });
-                });
-        }
-
-        function populateModelDropdown() {
-            const select = document.getElementById('config-model');
-            select.innerHTML = '<option value="">-- Entrez une clé API et cliquez Détecter --</option>';
-        }
-
-        function detectModels() {
-            const apiKey = document.getElementById('config-api-key').value.trim();
-            if (!apiKey) return;
-            const btn = document.getElementById('detect-btn');
-            const resultDiv = document.getElementById('detect-result');
-            btn.disabled = true;
-            btn.textContent = 'Détection...';
-            resultDiv.textContent = '';
-            fetch('/api/models/detect', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ api_key: apiKey })
-            })
-            .then(r => r.json())
-            .then(data => {
-                const select = document.getElementById('config-model');
-                if (data.provider === 'unknown' || data.models.length === 0) {
-                    select.innerHTML = '<option value="">-- Aucun modèle détecté pour cette clé --</option>';
-                    resultDiv.textContent = 'Impossible de détecter le fournisseur. Vérifiez votre clé.';
-                    resultDiv.style.color = 'red';
-                    return;
-                }
-                select.innerHTML = '';
-                data.models.forEach(m => {
-                    const opt = document.createElement('option');
-                    opt.value = m;
-                    opt.textContent = m;
-                    select.appendChild(opt);
-                });
-                resultDiv.textContent = 'Fournisseur : ' + data.provider + ' (' + data.models.length + ' modèles)';
-                resultDiv.style.color = 'green';
-            })
-            .catch(err => {
-                document.getElementById('config-model').innerHTML = '<option value="">-- Échec de la détection --</option>';
-                resultDiv.textContent = 'Erreur : ' + err.message;
-                resultDiv.style.color = 'red';
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.textContent = 'Détecter';
-            });
-        }
-
-        function loadAgentConfig() {
-            const agentId = document.getElementById('config-agent-select').value;
-            if (!agentId) {
-                document.getElementById('agent-config-form').style.display = 'none';
+function loadApprovals() {
+    fetch('/api/approvals')
+        .then(r => r.json())
+        .then(data => {
+            const approvals = data.approvals || [];
+            const list = document.getElementById('approvals-list');
+            if (!approvals.length) {
+                list.innerHTML = '<p class="empty">Aucune approbation en attente</p>';
+                updateDashboard();
                 return;
             }
-            populateModelDropdown();
-            document.getElementById('detect-result').textContent = '';
-            fetch(`/api/agents/${agentId}/config`)
-                .then(r => r.json())
-                .then(data => {
-                    document.getElementById('config-api-key').value = data.api_key || '';
-                    document.getElementById('config-api-base').value = data.api_base || '';
-                    document.getElementById('detect-btn').disabled = !data.api_key;
-                    document.getElementById('agent-config-form').style.display = 'block';
-                })
-                .catch(() => {
-                    document.getElementById('agent-config-form').style.display = 'block';
-                });
-        }
+            list.innerHTML = approvals.map(a => `
+                <div class="approval-card">
+                    <h3>Agent: ${a.agent}</h3>
+                    <p><strong>Tâche:</strong> ${a.task}</p>
+                    <p><strong>Brouillon:</strong></p>
+                    <pre>${a.draft}</pre>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                        <button class="btn btn-green btn-sm" onclick="respondApproval('${a.thread_id}', true)">✓ Approuver</button>
+                        <button class="btn btn-gray btn-sm" onclick="showRejectForm('${a.thread_id}')">✗ Rejeter</button>
+                    </div>
+                    <div id="reject-form-${a.thread_id}" style="display:none;margin-top:8px;">
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="feedback-${a.thread_id}" placeholder="Commentaires (optionnel)" style="flex:1;">
+                            <button class="btn btn-red btn-sm" onclick="respondApproval('${a.thread_id}', false)">Confirmer</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            updateDashboard();
+        });
+}
 
-        function saveAgentConfig() {
-            const agentId = document.getElementById('config-agent-select').value;
-            const model = document.getElementById('config-model').value;
-            const apiKey = document.getElementById('config-api-key').value;
-            const apiBase = document.getElementById('config-api-base').value;
-            fetch(`/api/agents/${agentId}/config`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model, api_key: apiKey, api_base: apiBase })
-            })
-            .then(r => r.json())
-            .then(data => {
-                document.getElementById('config-save-result').innerHTML = '<span style="color:green;">Configuration sauvegardée !</span>';
-            })
-            .catch(err => {
-                document.getElementById('config-save-result').innerHTML = '<span style="color:red;">Erreur lors de la sauvegarde</span>';
+function showRejectForm(threadId) {
+    document.getElementById('reject-form-' + threadId).style.display = 'block';
+}
+
+function respondApproval(threadId, approved) {
+    const feedback = document.getElementById('feedback-' + threadId)?.value || '';
+    fetch('/api/approvals/' + threadId + '/respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approved, feedback })
+    })
+    .then(r => r.json())
+    .then(() => { loadApprovals(); loadAgents(); })
+    .catch(err => alert('Erreur: ' + err.message));
+}
+
+/* ── Confirmations en Attente ── */
+function loadPendingExecutions() {
+    fetch('/api/executioner/pending')
+        .then(r => r.json())
+        .then(data => {
+            const list = document.getElementById('pending-executions-list');
+            if (!data.pending || !data.pending.length) {
+                list.innerHTML = '<p class="empty">Aucune confirmation en attente</p>';
+                return;
+            }
+            list.innerHTML = data.pending.map(p => `
+                <div class="approval-card" style="background:var(--blue-bg);border-color:#bfdbfe;">
+                    <p><strong>Agent:</strong> ${p.agent_name} &middot; <strong>Outil:</strong> ${p.tool_name}</p>
+                    <p><small>${new Date(p.created_at).toLocaleString('fr-CA')}</small></p>
+                    <pre style="font-size:0.8em;">${p.draft_preview}</pre>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-green btn-sm" onclick="confirmPending('${p.execution_id}')">Confirmer</button>
+                        <button class="btn btn-red btn-sm" onclick="rejectPending('${p.execution_id}')">Rejeter</button>
+                    </div>
+                </div>
+            `).join('');
+        })
+        .catch(() => {
+            document.getElementById('pending-executions-list').innerHTML = '<p class="empty">Échec du chargement</p>';
+        });
+}
+
+function confirmPending(executionId) {
+    fetch('/api/executioner/confirm/' + executionId, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { loadPendingExecutions(); loadAgents(); }
+            else alert('Échec: ' + (data.error || 'inconnu'));
+        })
+        .catch(err => alert('Erreur: ' + err.message));
+}
+
+function rejectPending(executionId) {
+    fetch('/api/executioner/reject/' + executionId, { method: 'POST' })
+        .then(r => r.json())
+        .then(() => { loadPendingExecutions(); })
+        .catch(err => alert('Erreur: ' + err.message));
+}
+
+/* ── Activité d'Exécution ── */
+function loadExecutions() {
+    fetch('/api/executions')
+        .then(r => r.json())
+        .then(data => {
+            const list = document.getElementById('execution-list');
+            if (!data.executions || !data.executions.length) {
+                list.innerHTML = '<p class="empty">Aucune exécution</p>';
+                return;
+            }
+            list.innerHTML = data.executions.slice(0, 20).map(e => `
+                <div class="execution-card ${e.success ? 'success' : 'fail'}">
+                    <strong>${e.agent_name}</strong> &middot; ${e.tool_name} &middot; <small>${new Date(e.timestamp).toLocaleString('fr-CA')}</small>
+                    ${e.error ? '&middot; <span style="color:var(--red);">' + e.error + '</span>' : ''}
+                    <details style="margin-top:4px;"><summary style="cursor:pointer;font-size:0.8rem;color:var(--gray-500);">Aperçu du brouillon</summary><pre style="font-size:0.75rem;margin-top:4px;white-space:pre-wrap;">${e.draft_preview}</pre></details>
+                </div>
+            `).join('');
+            updateDashboard();
+        })
+        .catch(() => {
+            document.getElementById('execution-list').innerHTML = '<p class="empty">Échec du chargement</p>';
+        });
+}
+
+/* ── Configuration des Agents ── */
+function populateAgentSelect() {
+    fetch('/api/agents')
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('config-agent-select');
+            select.innerHTML = '<option value="">-- Choisir un agent --</option>';
+            (data.agents || []).forEach(a => {
+                const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) };
+                const opt = document.createElement('option');
+                opt.value = a.agent_id; opt.textContent = meta.name;
+                select.appendChild(opt);
             });
-        }
+        });
+}
 
-        function loadPendingExecutions() {
-            fetch('/api/executioner/pending')
-                .then(r => r.json())
-                .then(data => {
-                    const list = document.getElementById('pending-executions-list');
-                    if (!data.pending || data.pending.length === 0) {
-                        list.innerHTML = '<p style="color:#666;">Aucune confirmation en attente</p>';
-                        return;
-                    }
-                    list.innerHTML = data.pending.map(p => `
-                        <div class="approval-card">
-                            <p><strong>Agent :</strong> ${p.agent_name}</p>
-                            <p><strong>Outil :</strong> ${p.tool_name}</p>
-                            <p><strong>Créé :</strong> ${new Date(p.created_at).toLocaleString('fr-CA')}</p>
-                            <p><strong>Aperçu du brouillon :</strong></p>
-                            <pre style="font-size:0.85em;">${p.draft_preview}</pre>
-                            <button class="btn-success" onclick="confirmPending('${p.execution_id}')">Confirmer</button>
-                            <button class="btn-danger" onclick="rejectPending('${p.execution_id}')">Rejeter</button>
-                        </div>
-                    `).join('');
-                })
-                .catch(() => {
-                    document.getElementById('pending-executions-list').innerHTML = '<p style="color:red;">Échec du chargement des confirmations</p>';
-                });
-        }
+function loadAgentConfig() {
+    const agentId = document.getElementById('config-agent-select').value;
+    if (!agentId) {
+        document.getElementById('agent-config-form').style.display = 'none';
+        return;
+    }
+    document.getElementById('agent-config-form').style.display = 'block';
+    document.getElementById('config-model').innerHTML = '<option value="">-- Entrer une clé API et cliquer Détecter --</option>';
+    document.getElementById('detect-result').textContent = '';
+    fetch('/api/agents/' + agentId + '/config')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('config-api-key').value = data.api_key || '';
+            document.getElementById('config-api-base').value = data.api_base || '';
+            document.getElementById('detect-btn').disabled = !data.api_key;
+        })
+        .catch(() => {});
+}
 
-        function confirmPending(executionId) {
-            fetch(`/api/executioner/confirm/${executionId}`, { method: 'POST' })
-                .then(r => r.json())
-                .then(data => {
-                    const msg = data.success ? 'Exécution confirmée !' : 'Échec : ' + (data.error || 'inconnu');
-                    alert(msg);
-                    loadPendingExecutions();
-                    loadAgents();
-                })
-                .catch(err => alert('Erreur : ' + err.message));
+function detectModels() {
+    const apiKey = document.getElementById('config-api-key').value.trim();
+    if (!apiKey) return;
+    const btn = document.getElementById('detect-btn');
+    const resultDiv = document.getElementById('detect-result');
+    btn.disabled = true; btn.textContent = 'Détection...';
+    resultDiv.textContent = '';
+    fetch('/api/models/detect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: apiKey })
+    })
+    .then(r => r.json())
+    .then(data => {
+        const select = document.getElementById('config-model');
+        if (data.provider === 'unknown' || !data.models.length) {
+            select.innerHTML = '<option value="">-- Aucun modèle détecté --</option>';
+            resultDiv.textContent = 'Impossible de détecter le fournisseur. Vérifiez votre clé.';
+            resultDiv.style.color = 'var(--red)'; return;
         }
+        select.innerHTML = '';
+        data.models.forEach(m => {
+            const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
+            select.appendChild(opt);
+        });
+        resultDiv.textContent = 'Fournisseur: ' + data.provider + ' (' + data.models.length + ' modèles)';
+        resultDiv.style.color = 'var(--green)';
+    })
+    .catch(err => {
+        document.getElementById('config-model').innerHTML = '<option value="">-- Échec de la détection --</option>';
+        resultDiv.textContent = 'Erreur: ' + err.message;
+        resultDiv.style.color = 'var(--red)';
+    })
+    .finally(() => { btn.disabled = false; btn.textContent = 'Détecter'; });
+}
 
-        function rejectPending(executionId) {
-            fetch(`/api/executioner/reject/${executionId}`, { method: 'POST' })
-                .then(r => r.json())
-                .then(() => {
-                    alert('Exécution rejetée.');
-                    loadPendingExecutions();
-                })
-                .catch(err => alert('Erreur : ' + err.message));
-        }
+function saveAgentConfig() {
+    const agentId = document.getElementById('config-agent-select').value;
+    const model = document.getElementById('config-model').value;
+    const apiKey = document.getElementById('config-api-key').value;
+    const apiBase = document.getElementById('config-api-base').value;
+    fetch('/api/agents/' + agentId + '/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, api_key: apiKey, api_base: apiBase })
+    })
+    .then(r => r.json())
+    .then(() => {
+        document.getElementById('config-save-result').innerHTML = '<span style="color:var(--green);">Sauvegardé!</span>';
+        setTimeout(() => { document.getElementById('config-save-result').textContent = ''; }, 3000);
+    })
+    .catch(() => {
+        document.getElementById('config-save-result').innerHTML = '<span style="color:var(--red);">Erreur de sauvegarde</span>';
+    });
+}
 
-        function loadExecutionerSettings() {
-            fetch('/api/executioner/settings')
-                .then(r => r.json())
-                .then(s => {
-                    document.getElementById('smtp-host').value = s.smtp_host || '';
-                    document.getElementById('smtp-port').value = s.smtp_port || 587;
-                    document.getElementById('smtp-username').value = s.smtp_username || '';
-                    document.getElementById('smtp-password').value = s.smtp_password || '';
-                    document.getElementById('smtp-from').value = s.smtp_from_email || '';
-                    document.getElementById('smtp-tls').checked = s.smtp_use_tls !== false;
-                    document.getElementById('fb-page-id').value = s.facebook_page_id || '';
-                    document.getElementById('fb-token').value = s.facebook_access_token || '';
-                    document.getElementById('ig-account-id').value = s.instagram_account_id || '';
-                    document.getElementById('ig-token').value = s.instagram_access_token || '';
-                })
-                .catch(() => {});
-        }
+/* ── Paramètres d'Exécution ── */
+function loadExecutionerSettings() {
+    fetch('/api/executioner/settings')
+        .then(r => r.json())
+        .then(s => {
+            document.getElementById('smtp-host').value = s.smtp_host || '';
+            document.getElementById('smtp-port').value = s.smtp_port || 587;
+            document.getElementById('smtp-username').value = s.smtp_username || '';
+            document.getElementById('smtp-password').value = s.smtp_password || '';
+            document.getElementById('smtp-from').value = s.smtp_from_email || '';
+            document.getElementById('smtp-tls').checked = s.smtp_use_tls !== false;
+            document.getElementById('fb-page-id').value = s.facebook_page_id || '';
+            document.getElementById('fb-token').value = s.facebook_access_token || '';
+            document.getElementById('ig-account-id').value = s.instagram_account_id || '';
+            document.getElementById('ig-token').value = s.instagram_access_token || '';
+        })
+        .catch(() => {});
+}
 
-        function saveExecutionerSettings() {
-            const settings = {
-                smtp_host: document.getElementById('smtp-host').value,
-                smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
-                smtp_username: document.getElementById('smtp-username').value,
-                smtp_password: document.getElementById('smtp-password').value,
-                smtp_from_email: document.getElementById('smtp-from').value,
-                smtp_use_tls: document.getElementById('smtp-tls').checked,
-                facebook_page_id: document.getElementById('fb-page-id').value,
-                facebook_access_token: document.getElementById('fb-token').value,
-                instagram_account_id: document.getElementById('ig-account-id').value,
-                instagram_access_token: document.getElementById('ig-token').value,
-            };
-            fetch('/api/executioner/settings', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings)
-            })
-                .then(r => r.json())
-                .then(() => {
-                    document.getElementById('executioner-settings-result').innerHTML = '<span style="color:green;margin-left:10px;">Paramètres sauvegardés !</span>';
-                    setTimeout(() => { document.getElementById('executioner-settings-result').textContent = ''; }, 3000);
-                })
-                .catch(err => {
-                    document.getElementById('executioner-settings-result').innerHTML = '<span style="color:red;margin-left:10px;">Erreur : ' + err.message + '</span>';
-                });
-        }
+function saveExecutionerSettings() {
+    const settings = {
+        smtp_host: document.getElementById('smtp-host').value,
+        smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
+        smtp_username: document.getElementById('smtp-username').value,
+        smtp_password: document.getElementById('smtp-password').value,
+        smtp_from_email: document.getElementById('smtp-from').value,
+        smtp_use_tls: document.getElementById('smtp-tls').checked,
+        facebook_page_id: document.getElementById('fb-page-id').value,
+        facebook_access_token: document.getElementById('fb-token').value,
+        instagram_account_id: document.getElementById('ig-account-id').value,
+        instagram_access_token: document.getElementById('ig-token').value,
+    };
+    fetch('/api/executioner/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+    })
+    .then(r => r.json())
+    .then(() => {
+        document.getElementById('executioner-settings-result').innerHTML = '<span style="color:var(--green);">Sauvegardé!</span>';
+        setTimeout(() => { document.getElementById('executioner-settings-result').textContent = ''; }, 3000);
+    })
+    .catch(err => {
+        document.getElementById('executioner-settings-result').innerHTML = '<span style="color:var(--red);">Erreur: ' + err.message + '</span>';
+    });
+}
 
-        function loadExecutions() {
-            fetch('/api/executions')
-                .then(r => r.json())
-                .then(data => {
-                    const list = document.getElementById('execution-list');
-                    if (!data.executions || data.executions.length === 0) {
-                        list.innerHTML = '<p style="color:#666;">Aucune exécution</p>';
-                        return;
-                    }
-                    list.innerHTML = data.executions.slice(0, 20).map(e => `
-                        <div class="approval-card" style="background:${e.success ? '#d4edda' : '#f8d7da'};margin:6px 0;padding:10px;">
-                            <p><strong>${e.agent_name}</strong> &middot; ${e.tool_name} &middot; <small>${new Date(e.timestamp).toLocaleString('fr-CA')}</small></p>
-                            <p>Statut : ${e.success ? '✅ Réussi' : '❌ Échoué'} ${e.error ? `&middot; <span style="color:red;">${e.error}</span>` : ''}</p>
-                            <details><summary style="cursor:pointer;font-size:0.85em;color:#555;">Aperçu du Brouillon</summary><pre style="font-size:0.8em;margin-top:6px;">${e.draft_preview}</pre></details>
-                        </div>
-                    `).join('');
-                })
-                .catch(() => {
-                    document.getElementById('execution-list').innerHTML = '<p style="color:red;">Échec du chargement des exécutions</p>';
-                });
+/* ── Déployer un Client ── */
+function deployClient() {
+    const cfg = {
+        business_name: document.getElementById('client-business-name').value,
+        contact_name: document.getElementById('client-contact-name').value,
+        client_email: document.getElementById('client-email').value,
+        phone: document.getElementById('client-phone').value,
+        city: document.getElementById('client-city').value,
+        niche: document.getElementById('client-niche').value,
+        services: document.getElementById('client-services').value.split(',').map(s => s.trim()),
+        package: document.getElementById('client-package').value,
+        affiliate_code: document.getElementById('client-affiliate').value || null
+    };
+    if (!cfg.business_name || !cfg.client_email || !cfg.phone) {
+        alert('Veuillez remplir le nom d\'entreprise, le courriel et le téléphone.'); return;
+    }
+    const el = document.getElementById('deploy-result');
+    el.innerHTML = '<span style="color:var(--blue);">Déploiement... (jusqu\'à 2 min)</span>';
+    fetch('/api/clients/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cfg)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            el.innerHTML = '<span style="color:var(--green);">✓ En ligne sur <a href="' + data.url + '" target="_blank">' + data.url + '</a></span>';
+        } else {
+            el.innerHTML = '<span style="color:var(--red);">Échec: ' + (data.error || 'Inconnu') + '</span>';
         }
-    </script>
+    })
+    .catch(err => {
+        el.innerHTML = '<span style="color:var(--red);">Erreur: ' + err.message + '</span>';
+    });
+}
+
+/* ── Init ── */
+window.onload = function() {
+    loadAgents();
+    loadApprovals();
+    loadPendingExecutions();
+    loadExecutions();
+    loadExecutionerSettings();
+    populateAgentSelect();
+    updateDashboard();
+    document.getElementById('config-api-key').addEventListener('input', function() {
+        document.getElementById('detect-btn').disabled = !this.value.trim();
+    });
+};
+</script>
 </body>
 </html>
