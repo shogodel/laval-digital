@@ -1,16 +1,24 @@
 {
   "business_name": "Default Client",
+  "contact_email": "client@example.com",
+  "phone": "(450) 555-0199",
   "address": {
-    "street": "",
+    "street": "123 Main Street",
     "city": "Laval",
     "province": "QC",
-    "postal_code": ""
+    "postal_code": "H7X 1A1",
+    "country": "CA"
   },
   "service_area": {
     "primary_city": "Laval",
     "radius_km": 50,
-    "secondary_cities": ["Montreal", "Longueuil"],
-    "neighborhoods": ["Chomedey", "Sainte-Rose"]
+    "secondary_cities": ["Montreal", "Longueuil", "Terrebonne", "Brossard"],
+    "neighborhoods": ["Chomedey", "Sainte-Rose", "Fabreville", "Laval-des-Rapides", "Pont-Viau"]
   },
-  "services": ["Service 1", "Service 2"]
+  "google_business_profile": {
+    "place_id": "",
+    "profile_url": ""
+  },
+  "services": ["Service 1", "Service 2", "Service 3"],
+  "business_type": "plumber"
 }
