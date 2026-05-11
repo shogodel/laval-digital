@@ -41,6 +41,8 @@ from agents.growth_hacker_agent import GrowthHackerAgent
 from agents.reputation_agent import ReputationManagementAgent
 from agents.email_marketing_agent import EmailMarketingAgent
 from agents.tiktok_agent import TikTokAgent
+from agents.outreach_agent import OutreachAgent
+from agents.backlinks_agent import BacklinksAgent
 from agents.executioner_agent import ExecutionerAgent
 from client_factory import ClientFactory
 
@@ -247,6 +249,26 @@ AGENT_CONFIGS = {
             "api_base": "https://api.deepseek.com/v1",
         },
     },
+    "outreach": {
+        "agent_id": "outreach",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/outreach.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1",
+        },
+    },
+    "backlinks": {
+        "agent_id": "backlinks",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/backlinks.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1",
+        },
+    },
 }
 
 # Initialize LLM Adapter for Orchestrator
@@ -275,6 +297,10 @@ for agent_id, config in AGENT_CONFIGS.items():
         agent_registry[agent_id] = EmailMarketingAgent(agent_id, config)
     elif agent_id == "tiktok":
         agent_registry[agent_id] = TikTokAgent(agent_id, config)
+    elif agent_id == "outreach":
+        agent_registry[agent_id] = OutreachAgent(agent_id, config)
+    elif agent_id == "backlinks":
+        agent_registry[agent_id] = BacklinksAgent(agent_id, config)
 
 # Initialize ExecutionerAgent for approved draft execution
 executioner = ExecutionerAgent({
@@ -760,6 +786,10 @@ def update_agent_config(agent_id):
         agent_registry[agent_id] = EmailMarketingAgent(agent_id, config)
     elif agent_id == "tiktok":
         agent_registry[agent_id] = TikTokAgent(agent_id, config)
+    elif agent_id == "outreach":
+        agent_registry[agent_id] = OutreachAgent(agent_id, config)
+    elif agent_id == "backlinks":
+        agent_registry[agent_id] = BacklinksAgent(agent_id, config)
 
     # Rebuild orchestrator with updated agent
     global orchestrator, orchestrator_graph
