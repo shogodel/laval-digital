@@ -1917,6 +1917,312 @@ def deploy_client():
 
 
 # ---------------------------------------------------------------------------
+# Analytics routes
+# ---------------------------------------------------------------------------
+
+from core.analytics import AnalyticsEngine
+
+
+@app.route("/api/analytics/summary")
+def api_analytics_summary():
+    """Return summary analytics for a tenant or all tenants (admin)."""
+    tenant_id = request.args.get("client", "").strip()
+    days = int(request.args.get("days", 30))
+    end_date = datetime.now().strftime("%Y-%m-%d")
+    start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+
+    is_admin = session.get("admin_logged_in", False)
+    session_tenant = session.get("active_tenant_id") or getattr(current_user, "tenant_id", None)
+
+    if tenant_id and is_admin:
+        engine = AnalyticsEngine(tenant_id, tenant_manager)
+        perf = engine.get_performance_summary()
+        leads = engine.get_lead_metrics(start_date, end_date)
+        agents = engine.get_agent_metrics(start_date, end_date)
+        execs = engine.get_execution_metrics(start_date, end_date)
+        return jsonify({
+            "total_clients": 1,
+            "total_leads": perf.get("leads_this_month", 0),
+            "total_tasks": perf.get("tasks_this_month", 0),
+            "success_rate": perf.get("success_rate", 0),
+            "success_count": execs.get("success_count", 0),
+            "fail_count": execs.get("fail_count", 0),
+            "avg_success_rate": perf.get("success_rate", 0),
+            "leads_this_month": perf.get("leads_this_month", 0),
+            "tasks_this_month": perf.get("tasks_this_month", 0),
+            "active_agents": perf.get("active_agents", 0),
+            "total_agents": perf.get("total_agents", 0),
+            "avg_response_time": agents.get("avg_response_time", 0),
+            "leads_by_month": _leads_by_month(engine),
+            "tasks_per_agent": agents.get("tasks_per_agent", []),
+            "failures_by_tool": execs.get("failures_by_tool", {}),
+            "recent_leads": engine._fetchall(
+                "SELECT name, service, urgency, status FROM leads ORDER BY created_at DESC LIMIT 50"
+            ),
+            "recent_executions": engine._fetchall(
+                "SELECT agent_name, tool_name, success, timestamp FROM execution_log ORDER BY timestamp DESC LIMIT 50"
+            ),
+            "per_client": [{
+                "tenant_id": tenant_id,
+                "leads": perf.get("leads_this_month", 0),
+                "tasks": perf.get("tasks_this_month", 0),
+                "success_rate": perf.get("success_rate", 0),
+                "active_agents": perf.get("active_agents", 0),
+            }],
+        })
+
+    if is_admin:
+        all_tenants = tenant_manager.list_tenants("direct")
+        engine = AnalyticsEngine("_admin_", tenant_manager)
+        summary = engine.get_admin_summary(all_tenants)
+        total_leads = 0
+        total_tasks = 0
+        total_success = 0
+        total_fail = 0
+        all_tasks_per_agent = {}
+        all_failures_by_tool = {}
+        all_leads_by_month = {}
+        all_recent_leads = []
+        all_recent_execs = []
+        for tid in all_tenants:
+            e = AnalyticsEngine(tid, tenant_manager)
+            perf = e.get_performance_summary()
+            leads_m = e.get_lead_metrics(start_date, end_date)
+            agents_m = e.get_agent_metrics(start_date, end_date)
+            execs_m = e.get_execution_metrics(start_date, end_date)
+            total_leads += perf.get("leads_this_month", 0)
+            total_tasks += perf.get("tasks_this_month", 0)
+            total_success += execs_m.get("success_count", 0)
+            total_fail += execs_m.get("fail_count", 0)
+            for a in agents_m.get("tasks_per_agent", []):
+                name = a["agent"]
+                if name not in all_tasks_per_agent:
+                    all_tasks_per_agent[name] = {"agent": name, "total": 0, "success": 0, "fail": 0, "success_rate": 0}
+                all_tasks_per_agent[name]["total"] += a["total"]
+                all_tasks_per_agent[name]["success"] += a["success"]
+                all_tasks_per_agent[name]["fail"] += a["fail"]
+            for tool, cnt in execs_m.get("failures_by_tool", {}).items():
+                all_failures_by_tool[tool] = all_failures_by_tool.get(tool, 0) + cnt
+            for m in _leads_by_month(e):
+                lbl = m["label"]
+                all_leads_by_month[lbl] = all_leads_by_month.get(lbl, 0) + m["count"]
+            all_recent_leads.extend(
+                e._fetchall("SELECT name, service, urgency, status FROM leads ORDER BY created_at DESC LIMIT 20")
+            )
+            all_recent_execs.extend(
+                e._fetchall("SELECT agent_name, tool_name, success, timestamp FROM execution_log ORDER BY timestamp DESC LIMIT 20")
+            )
+        for a in all_tasks_per_agent.values():
+            a["success_rate"] = round((a["success"] / a["total"] * 100) if a["total"] else 0, 1)
+        leads_by_month = [{"label": k, "count": v} for k, v in sorted(all_leads_by_month.items())]
+        total_clients = len(all_tenants)
+        avg_sr = round((total_success / (total_success + total_fail) * 100) if (total_success + total_fail) else 0, 1)
+        return jsonify({
+            "total_clients": total_clients,
+            "total_leads": total_leads,
+            "total_tasks": total_tasks,
+            "success_count": total_success,
+            "fail_count": total_fail,
+            "avg_success_rate": avg_sr,
+            "leads_this_month": total_leads,
+            "tasks_this_month": total_tasks,
+            "leads_by_month": leads_by_month,
+            "tasks_per_agent": list(all_tasks_per_agent.values()),
+            "failures_by_tool": all_failures_by_tool,
+            "recent_leads": sorted(all_recent_leads, key=lambda x: x.get("name", ""))[:20],
+            "recent_executions": sorted(all_recent_execs, key=lambda x: x.get("timestamp", ""), reverse=True)[:20],
+            "per_client": summary.get("per_client", []),
+        })
+
+    if not is_admin and session_tenant:
+        engine = AnalyticsEngine(session_tenant, tenant_manager)
+        perf = engine.get_performance_summary()
+        leads = engine.get_lead_metrics(start_date, end_date)
+        agents = engine.get_agent_metrics(start_date, end_date)
+        execs = engine.get_execution_metrics(start_date, end_date)
+        return jsonify({
+            "leads_this_month": perf.get("leads_this_month", 0),
+            "tasks_this_month": perf.get("tasks_this_month", 0),
+            "success_rate": perf.get("success_rate", 0),
+            "active_agents": perf.get("active_agents", 0),
+            "total_agents": perf.get("total_agents", 0),
+            "avg_response_time": agents.get("avg_response_time", 0),
+            "conversion_rate": leads.get("conversion_rate", 0),
+            "leads_by_month": _leads_by_month(engine),
+            "tasks_per_agent": agents.get("tasks_per_agent", []),
+            "failures_by_tool": execs.get("failures_by_tool", {}),
+            "recent_leads": engine._fetchall(
+                "SELECT name, service, urgency, status FROM leads ORDER BY created_at DESC LIMIT 20"
+            ),
+            "recent_executions": engine._fetchall(
+                "SELECT agent_name, tool_name, success, timestamp FROM execution_log ORDER BY timestamp DESC LIMIT 20"
+            ),
+        })
+
+    return jsonify({"error": "Unauthorized"}), 401
+
+
+def _leads_by_month(engine, months: int = 6) -> list:
+    """Return lead counts grouped by month for chart display."""
+    from datetime import date as dt_date
+    import calendar
+    result = []
+    today = dt_date.today()
+    for i in range(months - 1, -1, -1):
+        m = today.month - i
+        y = today.year
+        while m < 1:
+            m += 12
+            y -= 1
+        start = f"{y}-{m:02d}-01"
+        last_day = calendar.monthrange(y, m)[1]
+        end = f"{y}-{m:02d}-{last_day}"
+        rows = engine._fetchall(
+            "SELECT COUNT(*) as cnt FROM leads WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?",
+            (start, end),
+        )
+        cnt = rows[0]["cnt"] if rows else 0
+        result.append({"label": f"{calendar.month_abbr[m]}", "count": cnt})
+    return result
+
+
+@app.route("/api/analytics/leads")
+def api_analytics_leads():
+    """Return lead metrics for a date range."""
+    tenant_id = request.args.get("client", "").strip() or session.get("active_tenant_id") or getattr(current_user, "tenant_id", None)
+    start = request.args.get("start")
+    end = request.args.get("end")
+    if not tenant_id:
+        return jsonify({"error": "No tenant context"}), 400
+    engine = AnalyticsEngine(tenant_id, tenant_manager)
+    return jsonify(engine.get_lead_metrics(start, end))
+
+
+@app.route("/api/analytics/agents")
+def api_analytics_agents():
+    """Return agent performance metrics."""
+    tenant_id = request.args.get("client", "").strip() or session.get("active_tenant_id") or getattr(current_user, "tenant_id", None)
+    start = request.args.get("start")
+    end = request.args.get("end")
+    if not tenant_id:
+        return jsonify({"error": "No tenant context"}), 400
+    engine = AnalyticsEngine(tenant_id, tenant_manager)
+    return jsonify(engine.get_agent_metrics(start, end))
+
+
+@app.route("/api/analytics/executions")
+def api_analytics_executions():
+    """Return execution metrics."""
+    tenant_id = request.args.get("client", "").strip() or session.get("active_tenant_id") or getattr(current_user, "tenant_id", None)
+    start = request.args.get("start")
+    end = request.args.get("end")
+    if not tenant_id:
+        return jsonify({"error": "No tenant context"}), 400
+    engine = AnalyticsEngine(tenant_id, tenant_manager)
+    return jsonify(engine.get_execution_metrics(start, end))
+
+
+@app.route("/api/analytics/report/generate", methods=["POST"])
+def api_analytics_generate_report():
+    """Generate a monthly report HTML for a tenant."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    tenant_id = data.get("tenant_id")
+    month = data.get("month")
+    year = data.get("year")
+    if not tenant_id:
+        return jsonify({"error": "tenant_id required"}), 400
+    engine = AnalyticsEngine(tenant_id, tenant_manager)
+    html = engine.generate_monthly_report(year, month)
+    return jsonify({"html": html})
+
+
+@app.route("/api/analytics/report/email", methods=["POST"])
+def api_analytics_email_report():
+    """Email a monthly report to the client."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    tenant_id = data.get("tenant_id")
+    month = data.get("month")
+    year = data.get("year")
+    html = data.get("html")
+    if not tenant_id or not html:
+        return jsonify({"error": "tenant_id and html are required"}), 400
+    try:
+        engine = AnalyticsEngine(tenant_id, tenant_manager)
+        biz_row = engine._fetchone("SELECT business_name, email FROM client_details LIMIT 1")
+        business_name = biz_row["business_name"] if biz_row else tenant_id
+        client_email = biz_row["email"] if biz_row else None
+        if not client_email:
+            return jsonify({"error": "No client email found"}), 400
+        settings = executioner.get_settings()
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"Monthly Performance Report — {business_name}"
+        msg["From"] = settings.get("smtp_from_email", "reports@lavaldigital.ca")
+        msg["To"] = client_email
+        part = MIMEText(html, "html")
+        msg.attach(part)
+        with smtplib.SMTP(settings.get("smtp_host", "smtp.gmail.com"), settings.get("smtp_port", 587)) as server:
+            if settings.get("smtp_use_tls", True):
+                server.starttls()
+            if settings.get("smtp_username"):
+                server.login(settings["smtp_username"], settings.get("smtp_password", ""))
+            server.send_message(msg)
+        return jsonify({"success": True, "message": f"Report emailed to {client_email}"})
+    except Exception as e:
+        logger.error("Failed to email report: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/admin/analytics")
+def admin_analytics_page():
+    """Serve the admin analytics dashboard page."""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+    tenants = {
+        "direct_clients": tenant_manager.list_tenants("direct"),
+        "resellers": tenant_manager.list_tenants("reseller"),
+    }
+    active_tenant = session.get("active_tenant_id")
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
+
+
+@app.route("/admin/reports")
+def admin_reports_page():
+    """Serve the report generation page."""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+    tenants = {
+        "direct_clients": tenant_manager.list_tenants("direct"),
+        "resellers": tenant_manager.list_tenants("reseller"),
+    }
+    active_tenant = session.get("active_tenant_id")
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
+
+
+@app.route("/client/analytics")
+@client_required
+def client_analytics_page():
+    """Serve the client analytics view."""
+    return redirect(url_for("client_dashboard"))
+
+
+@app.route("/client/analytics/report")
+@client_required
+def client_analytics_report():
+    """Generate and serve a printable monthly report for the client."""
+    tenant_id = current_user.tenant_id
+    engine = AnalyticsEngine(tenant_id, tenant_manager)
+    html = engine.generate_monthly_report()
+    return html, 200, {"Content-Type": "text/html"}
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 

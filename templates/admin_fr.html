@@ -343,6 +343,8 @@
             <a href="#" data-tab="tasks"><span class="icon">📋</span> Tâches &amp; Approbations</a>
             <a href="#" data-tab="deploy"><span class="icon">🚀</span> Déployer un Client</a>
             <a href="#" data-tab="settings"><span class="icon">⚙️</span> Paramètres</a>
+            <a href="#" data-tab="analytics"><span class="icon">📈</span> Analytiques</a>
+            <a href="#" data-tab="reports"><span class="icon">📄</span> Rapports</a>
         </nav>
         <div class="sidebar-footer">
             <a href="/fr/admin/logout">🚪 Déconnexion</a>
@@ -580,6 +582,8 @@
             </div>
         </div>
 
+        {% include 'admin/analytics.html' %}
+        {% include 'admin/reports.html' %}
     </main>
 </div>
 
@@ -625,6 +629,7 @@ function switchTenant(tenantId) {
 
 function refreshAll() {
     loadAgents(); loadApprovals(); loadPendingExecutions(); loadExecutions(); updateDashboard();
+    if (typeof loadAdminAnalytics === 'function') loadAdminAnalytics();
 }
 
 /* ── Tableau de Bord ── */

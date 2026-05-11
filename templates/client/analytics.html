@@ -1,0 +1,160 @@
+<div class="card" id="client-analytics">
+    <div class="card-header">
+        <h2>Analytics</h2>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <select id="client-analytics-period" onchange="loadClientAnalytics()" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>This month</option>
+                <option value="90">Last 90 days</option>
+            </select>
+            <button class="btn btn-red btn-sm" onclick="downloadClientReport()">Download My Report</button>
+        </div>
+    </div>
+
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-card">
+            <div class="stat-value" id="client-stat-leads">0</div>
+            <div class="stat-label">Leads This Month</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="client-stat-tasks">0</div>
+            <div class="stat-label">Tasks Run</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="client-stat-success">0%</div>
+            <div class="stat-label">Agent Success Rate</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="client-stat-response">0s</div>
+            <div class="stat-label">Avg Response Time</div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div style="background:var(--gray-50);border-radius:var(--radius);padding:16px;">
+            <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:12px;color:var(--gray-700);">Leads Over Time</h3>
+            <div id="client-leads-chart" style="height:140px;display:flex;align-items:flex-end;gap:6px;">
+                <p class="empty" style="width:100%;">Loading...</p>
+            </div>
+        </div>
+        <div style="background:var(--gray-50);border-radius:var(--radius);padding:16px;">
+            <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:12px;color:var(--gray-700);">Tasks Per Agent</h3>
+            <div id="client-agent-chart" style="padding:4px 0;">
+                <p class="empty">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div>
+            <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:8px;color:var(--gray-700);">Recent Leads</h3>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Name</th><th>Service</th><th>Urgency</th><th>Status</th></tr></thead>
+                    <tbody id="client-recent-leads">
+                        <tr><td colspan="4" class="empty">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div>
+            <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:8px;color:var(--gray-700);">Recent Executions</h3>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Agent</th><th>Tool</th><th>Result</th><th>Time</th></tr></thead>
+                    <tbody id="client-recent-executions">
+                        <tr><td colspan="4" class="empty">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadClientAnalytics() {
+    const days = document.getElementById('client-analytics-period').value;
+
+    fetch('/api/analytics/summary?days=' + days)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('client-stat-leads').textContent = data.leads_this_month || 0;
+            document.getElementById('client-stat-tasks').textContent = data.tasks_this_month || 0;
+            document.getElementById('client-stat-success').textContent = (data.success_rate || 0) + '%';
+            document.getElementById('client-stat-response').textContent = (data.avg_response_time || 0) + 's';
+
+            renderClientLeadsChart(data.leads_by_month || []);
+            renderClientAgentChart(data.tasks_per_agent || []);
+
+            const leadsBody = document.getElementById('client-recent-leads');
+            if (data.recent_leads && data.recent_leads.length) {
+                leadsBody.innerHTML = data.recent_leads.slice(0, 20).map(l => `
+                    <tr>
+                        <td>${l.name || '—'}</td>
+                        <td>${l.service || '—'}</td>
+                        <td><span class="badge badge-${l.urgency === 'emergency' ? 'amber' : 'gray'}">${l.urgency || '—'}</span></td>
+                        <td><span class="badge badge-${l.status === 'converted' ? 'green' : 'gray'}">${l.status || '—'}</span></td>
+                    </tr>
+                `).join('');
+            } else {
+                leadsBody.innerHTML = '<tr><td colspan="4" class="empty">No leads yet.</td></tr>';
+            }
+
+            const execBody = document.getElementById('client-recent-executions');
+            if (data.recent_executions && data.recent_executions.length) {
+                execBody.innerHTML = data.recent_executions.slice(0, 20).map(e => `
+                    <tr>
+                        <td>${e.agent_name || '—'}</td>
+                        <td>${e.tool_name || '—'}</td>
+                        <td><span class="badge badge-${e.success ? 'green' : 'amber'}">${e.success ? 'OK' : 'Fail'}</span></td>
+                        <td style="font-size:0.8rem;color:var(--gray-500);">${e.timestamp ? new Date(e.timestamp).toLocaleString() : '—'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                execBody.innerHTML = '<tr><td colspan="4" class="empty">No executions yet.</td></tr>';
+            }
+        });
+}
+
+function renderClientLeadsChart(months) {
+    const container = document.getElementById('client-leads-chart');
+    if (!months || !months.length) {
+        container.innerHTML = '<p class="empty" style="width:100%;">No data yet.</p>';
+        return;
+    }
+    const max = Math.max(...months.map(m => m.count), 1);
+    container.innerHTML = months.map(m => {
+        const pct = (m.count / max * 100) || 0;
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
+            <div style="font-size:0.65rem;color:var(--gray-500);margin-bottom:2px;">${m.count}</div>
+            <div style="width:100%;max-width:30px;height:${pct}%;background:var(--red);border-radius:3px 3px 0 0;min-height:4px;"></div>
+            <div style="font-size:0.6rem;color:var(--gray-400);margin-top:4px;text-align:center;">${m.label}</div>
+        </div>`;
+    }).join('');
+}
+
+function renderClientAgentChart(agents) {
+    const container = document.getElementById('client-agent-chart');
+    if (!agents || !agents.length) {
+        container.innerHTML = '<p class="empty">No agent data.</p>';
+        return;
+    }
+    const max = Math.max(...agents.map(a => a.total), 1);
+    container.innerHTML = agents.map(a => {
+        const pct = (a.total / max * 100) || 0;
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <div style="width:100px;font-size:0.75rem;color:var(--gray-600);text-align:right;flex-shrink:0;">${a.agent}</div>
+            <div style="flex:1;height:18px;background:var(--gray-200);border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;background:var(--red);border-radius:3px;"></div>
+            </div>
+            <div style="font-size:0.75rem;color:var(--gray-500);width:50px;">${a.total}</div>
+        </div>`;
+    }).join('');
+}
+
+function downloadClientReport() {
+    window.open('/client/analytics/report', '_blank');
+}
+
+document.addEventListener('DOMContentLoaded', loadClientAnalytics);
+</script>

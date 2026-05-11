@@ -364,6 +364,8 @@
             <a href="#" data-tab="deploy"><span class="icon">🚀</span> Deploy Client</a>
             <a href="#" data-tab="settings"><span class="icon">⚙️</span> Settings</a>
             <a href="#" data-tab="users"><span class="icon">👤</span> Users</a>
+            <a href="#" data-tab="analytics"><span class="icon">📈</span> Analytics</a>
+            <a href="#" data-tab="reports"><span class="icon">📄</span> Reports</a>
         </nav>
         <div class="sidebar-footer">
             <a href="/admin/logout">🚪 Sign out</a>
@@ -639,6 +641,16 @@
             </div>
         </div>
 
+        <!-- ================================================================ -->
+        <!-- TAB: Analytics                                                    -->
+        <!-- ================================================================ -->
+        {% include 'admin/analytics.html' %}
+
+        <!-- ================================================================ -->
+        <!-- TAB: Reports                                                      -->
+        <!-- ================================================================ -->
+        {% include 'admin/reports.html' %}
+
     </main>
 
     <!-- Add User Modal -->
@@ -716,6 +728,7 @@ function switchTenant(tenantId) {
 
 function refreshAll() {
     loadAgents(); loadApprovals(); loadPendingExecutions(); loadExecutions(); updateDashboard(); loadUsers();
+    if (typeof loadAdminAnalytics === 'function') loadAdminAnalytics();
 }
 
 /* ── Dashboard ── */

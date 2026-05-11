@@ -1,0 +1,145 @@
+<div class="tab-content" id="tab-reports">
+    <div class="topbar">
+        <div><h1>Monthly Reports</h1></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2>Generate Monthly Report</h2><p>Create a printable PDF-style HTML report for any client</p></div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Client</label>
+                <select id="report-client-select">
+                    <option value="">-- Select a client --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Month</label>
+                <select id="report-month">
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Year</label>
+                <select id="report-year"></select>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:4px;">
+            <button class="btn btn-red" onclick="generateReport()">Generate Report</button>
+            <button class="btn btn-green" onclick="emailReport()" id="email-report-btn" disabled>Email Report to Client</button>
+            <span id="report-result"></span>
+        </div>
+    </div>
+
+    <div class="card" id="report-preview-card" style="display:none;">
+        <div class="card-header"><h2>Report Preview</h2></div>
+        <iframe id="report-preview" style="width:100%;height:600px;border:1px solid var(--gray-200);border-radius:var(--radius);background:var(--white);"></iframe>
+    </div>
+</div>
+
+<script>
+let lastReportHtml = '';
+
+function populateReportYears() {
+    const sel = document.getElementById('report-year');
+    const currentYear = new Date().getFullYear();
+    for (let y = currentYear; y >= currentYear - 3; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        if (y === currentYear) opt.selected = true;
+        sel.appendChild(opt);
+    }
+}
+
+function populateReportClients() {
+    const sel = document.getElementById('report-client-select');
+    fetch('/api/tenants')
+        .then(r => r.json())
+        .then(data => {
+            (data.direct_clients || []).forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                sel.appendChild(opt);
+            });
+        });
+}
+
+function generateReport() {
+    const tenantId = document.getElementById('report-client-select').value;
+    const month = document.getElementById('report-month').value;
+    const year = document.getElementById('report-year').value;
+
+    if (!tenantId) {
+        document.getElementById('report-result').innerHTML = '<span style="color:var(--red);">Please select a client.</span>';
+        return;
+    }
+
+    const resultEl = document.getElementById('report-result');
+    resultEl.innerHTML = '<span style="color:var(--blue);">Generating report...</span>';
+
+    fetch('/api/analytics/report/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: tenantId, month: parseInt(month), year: parseInt(year) })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.html) {
+            lastReportHtml = data.html;
+            const preview = document.getElementById('report-preview');
+            const blob = new Blob([data.html], { type: 'text/html' });
+            preview.src = URL.createObjectURL(blob);
+            document.getElementById('report-preview-card').style.display = 'block';
+            document.getElementById('email-report-btn').disabled = false;
+            resultEl.innerHTML = '<span style="color:var(--green);">Report generated successfully.</span>';
+        } else {
+            resultEl.innerHTML = '<span style="color:var(--red);">' + (data.error || 'Failed to generate report.') + '</span>';
+        }
+    })
+    .catch(err => {
+        resultEl.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>';
+    });
+}
+
+function emailReport() {
+    const tenantId = document.getElementById('report-client-select').value;
+    const month = document.getElementById('report-month').value;
+    const year = document.getElementById('report-year').value;
+    const resultEl = document.getElementById('report-result');
+
+    if (!lastReportHtml) return;
+
+    resultEl.innerHTML = '<span style="color:var(--blue);">Sending email...</span>';
+
+    fetch('/api/analytics/report/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: tenantId, month: parseInt(month), year: parseInt(year), html: lastReportHtml })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            resultEl.innerHTML = '<span style="color:var(--green);">Report emailed successfully!</span>';
+        } else {
+            resultEl.innerHTML = '<span style="color:var(--red);">' + (data.error || 'Failed to send email.') + '</span>';
+        }
+    })
+    .catch(err => {
+        resultEl.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>';
+    });
+}
+
+populateReportYears();
+populateReportClients();
+</script>

@@ -1,0 +1,209 @@
+<div class="tab-content" id="tab-analytics">
+    <div class="topbar">
+        <div><h1>Analytics</h1></div>
+        <div class="topbar-right">
+            <select id="analytics-client-select" onchange="loadAdminAnalytics()" style="width:auto;min-width:180px;padding:6px 10px;font-size:0.85rem;">
+                <option value="">All Clients</option>
+            </select>
+            <select id="analytics-period" onchange="loadAdminAnalytics()" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>This month</option>
+                <option value="90">Last 90 days</option>
+                <option value="365">This year</option>
+            </select>
+            <button class="btn btn-gray btn-sm" onclick="exportAnalyticsCSV()">Download CSV</button>
+        </div>
+    </div>
+
+    <div class="stats-grid" id="analytics-summary-cards">
+        <div class="stat-card"><div class="stat-value" id="stat-total-clients">0</div><div class="stat-label">Total Clients</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-total-leads">0</div><div class="stat-label">Leads This Month</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-total-tasks">0</div><div class="stat-label">Tasks Executed</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-avg-success">0%</div><div class="stat-label">Avg Success Rate</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+        <div class="card">
+            <div class="card-header"><h2>Leads Per Month</h2></div>
+            <div id="leads-bar-chart" style="height:200px;display:flex;align-items:flex-end;gap:8px;padding:16px 0;">
+                <p class="empty" style="width:100%;">Loading...</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><h2>Tasks Per Agent</h2></div>
+            <div id="agent-bar-chart" style="padding:8px 0;">
+                <p class="empty">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+        <div class="card">
+            <div class="card-header"><h2>Execution Success Rate</h2></div>
+            <div id="success-pie-chart" style="height:160px;display:flex;align-items:center;justify-content:center;gap:24px;padding:16px 0;">
+                <p class="empty">Loading...</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><h2>Failures By Tool</h2></div>
+            <div id="failures-by-tool" style="padding:8px 0;">
+                <p class="empty">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2>All Clients</h2><p>Click a row to drill into client analytics</p></div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr><th>Client</th><th>Leads</th><th>Tasks</th><th>Success Rate</th><th>Active Agents</th></tr>
+                </thead>
+                <tbody id="analytics-clients-table">
+                    <tr><td colspan="5" class="empty">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+let analyticsData = {};
+
+function loadAdminAnalytics() {
+    const clientId = document.getElementById('analytics-client-select').value;
+    const days = document.getElementById('analytics-period').value;
+
+    fetch('/api/analytics/summary?client=' + encodeURIComponent(clientId) + '&days=' + days)
+        .then(r => r.json())
+        .then(data => {
+            analyticsData = data;
+            document.getElementById('stat-total-clients').textContent = data.total_clients || 0;
+            document.getElementById('stat-total-leads').textContent = data.total_leads || 0;
+            document.getElementById('stat-total-tasks').textContent = data.total_tasks || 0;
+            document.getElementById('stat-avg-success').textContent = (data.avg_success_rate || 0) + '%';
+
+            renderLeadsBarChart(data.leads_by_month || []);
+            renderAgentBarChart(data.tasks_per_agent || []);
+            renderSuccessPie(data.success_count || 0, data.fail_count || 0);
+            renderFailuresByTool(data.failures_by_tool || {});
+
+            const tbody = document.getElementById('analytics-clients-table');
+            if (data.per_client && data.per_client.length) {
+                tbody.innerHTML = data.per_client.map(c => `
+                    <tr style="cursor:pointer;" onclick="drillIntoClient('${c.tenant_id}')">
+                        <td><strong>${c.tenant_id}</strong></td>
+                        <td>${c.leads}</td>
+                        <td>${c.tasks}</td>
+                        <td>${c.success_rate}%</td>
+                        <td>${c.active_agents}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty">No client data available.</td></tr>';
+            }
+        });
+}
+
+function renderLeadsBarChart(months) {
+    const container = document.getElementById('leads-bar-chart');
+    if (!months || !months.length) {
+        container.innerHTML = '<p class="empty" style="width:100%;">No data yet.</p>';
+        return;
+    }
+    const max = Math.max(...months.map(m => m.count), 1);
+    container.innerHTML = months.map(m => {
+        const pct = (m.count / max * 100) || 0;
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
+            <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:4px;">${m.count}</div>
+            <div style="width:100%;max-width:40px;height:${pct}%;background:var(--red);border-radius:4px 4px 0 0;min-height:4px;"></div>
+            <div style="font-size:0.65rem;color:var(--gray-400);margin-top:6px;text-align:center;white-space:nowrap;">${m.label}</div>
+        </div>`;
+    }).join('');
+}
+
+function renderAgentBarChart(agents) {
+    const container = document.getElementById('agent-bar-chart');
+    if (!agents || !agents.length) {
+        container.innerHTML = '<p class="empty">No agent data yet.</p>';
+        return;
+    }
+    const max = Math.max(...agents.map(a => a.total), 1);
+    container.innerHTML = agents.map(a => {
+        const pct = (a.total / max * 100) || 0;
+        const sr = a.success_rate || 0;
+        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="width:120px;font-size:0.8rem;color:var(--gray-600);text-align:right;flex-shrink:0;">${a.agent}</div>
+            <div style="flex:1;height:22px;background:var(--gray-100);border-radius:4px;overflow:hidden;display:flex;">
+                <div style="height:100%;width:${pct}%;background:var(--red);border-radius:4px;"></div>
+            </div>
+            <div style="font-size:0.8rem;color:var(--gray-500);width:80px;flex-shrink:0;">${a.total} (${sr}%)</div>
+        </div>`;
+    }).join('');
+}
+
+function renderSuccessPie(success, fail) {
+    const container = document.getElementById('success-pie-chart');
+    const total = success + fail || 1;
+    const successPct = (success / total * 100).toFixed(1);
+    const failPct = (fail / total * 100).toFixed(1);
+    container.innerHTML = `
+        <div style="width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--green) 0deg ${successPct * 3.6}deg, var(--gray-200) ${successPct * 3.6}deg 360deg);flex-shrink:0;"></div>
+        <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--green);flex-shrink:0;"></span> Success: ${success} (${successPct}%)</div>
+            <div style="display:flex;align-items:center;gap:8px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--gray-200);flex-shrink:0;"></span> Failed: ${fail} (${failPct}%)</div>
+        </div>`;
+}
+
+function renderFailuresByTool(failures) {
+    const container = document.getElementById('failures-by-tool');
+    const entries = Object.entries(failures);
+    if (!entries.length) {
+        container.innerHTML = '<p class="empty">No failures recorded.</p>';
+        return;
+    }
+    const max = Math.max(...entries.map(([,v]) => v), 1);
+    container.innerHTML = entries.map(([tool, count]) => {
+        const pct = (count / max * 100) || 0;
+        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <div style="width:130px;font-size:0.8rem;color:var(--gray-600);flex-shrink:0;">${tool}</div>
+            <div style="flex:1;height:18px;background:var(--gray-100);border-radius:4px;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;background:#ef4444;border-radius:4px;"></div>
+            </div>
+            <div style="font-size:0.8rem;color:var(--gray-500);width:40px;">${count}</div>
+        </div>`;
+    }).join('');
+}
+
+function drillIntoClient(tenantId) {
+    document.getElementById('analytics-client-select').value = tenantId;
+    loadAdminAnalytics();
+}
+
+function exportAnalyticsCSV() {
+    const rows = [['Client', 'Leads', 'Tasks', 'Success Rate', 'Active Agents']];
+    (analyticsData.per_client || []).forEach(c => {
+        rows.push([c.tenant_id, c.leads, c.tasks, c.success_rate + '%', c.active_agents]);
+    });
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'analytics_export.csv';
+    a.click();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sel = document.getElementById('analytics-client-select');
+    fetch('/api/tenants')
+        .then(r => r.json())
+        .then(data => {
+            (data.direct_clients || []).forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                sel.appendChild(opt);
+            });
+            loadAdminAnalytics();
+        });
+});
+</script>

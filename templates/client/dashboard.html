@@ -88,6 +88,7 @@
             <a href="{{ url_for('client_dashboard') }}" class="active">My Dashboard</a>
             <a href="#submit-task" onclick="document.getElementById('nav-links').classList.remove('open')">Submit Task</a>
             <a href="#payments" onclick="document.getElementById('nav-links').classList.remove('open')">My Payments</a>
+            <a href="#client-analytics" onclick="loadClientAnalytics();document.getElementById('nav-links').classList.remove('open')">Analytics</a>
             <a href="{{ url_for('client_logout') }}" class="logout">Logout</a>
         </div>
     </nav>
@@ -166,6 +167,8 @@
             <div class="card-header"><h2>Download Contract</h2><p>View your signed agreement</p></div>
             <button class="btn btn-gray btn-sm" onclick="alert('Contract download will be available soon.')">Download Contract (PDF)</button>
         </div>
+
+        {% include 'client/analytics.html' %}
 
     </div>
 
