@@ -2555,6 +2555,60 @@ def admin_managed_page():
 
 
 # ---------------------------------------------------------------------------
+# Training Hub routes
+# ---------------------------------------------------------------------------
+
+from core.training_articles import ARTICLES as TRAINING_ARTICLES
+
+# Build slug-to-article lookup
+_TRAINING_BY_SLUG = {a["slug"]: a for a in TRAINING_ARTICLES}
+
+
+@app.route("/training")
+def training_hub():
+    """Serve the training hub landing page."""
+    import json
+    articles_json = json.dumps(TRAINING_ARTICLES)
+    return render_template("blog/training_hub.html", articles_json=articles_json)
+
+
+@app.route("/training/<slug>")
+def training_article(slug):
+    """Serve an individual training article."""
+    article = _TRAINING_BY_SLUG.get(slug)
+    if not article:
+        return redirect(url_for("training_hub"))
+
+    # Find related articles (same category, exclude current)
+    related = [
+        a for a in TRAINING_ARTICLES
+        if a["slug"] != slug and a["category"] == article["category"]
+    ][:3]
+
+    return render_template(
+        "blog/training_article.html",
+        article=article,
+        related=related,
+    )
+
+
+@app.route("/api/training/articles")
+def api_training_articles():
+    """Return the list of training articles (for search/filter)."""
+    return jsonify(TRAINING_ARTICLES)
+
+
+@app.route("/api/training/feedback", methods=["POST"])
+def api_training_feedback():
+    """Log training article feedback."""
+    data = request.json
+    slug = data.get("slug", "")
+    helpful = data.get("helpful")
+    logger.info("Training feedback: slug=%s helpful=%s", slug, helpful)
+    return jsonify({"success": True})
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 

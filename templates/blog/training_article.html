@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }} — Laval Digital Training</title>
+    <meta name="description" content="{{ article.description }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0f2b45; --red: #D42B2B; --red-dark: #A82323; --green: #059669;
+            --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-300: #d1d5db;
+            --gray-400: #9ca3af; --gray-500: #6b7280; --gray-600: #4b5563; --gray-700: #374151;
+            --gray-900: #111827; --white: #ffffff; --radius: 8px; --radius-lg: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06); --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--gray-50); color: var(--gray-900); line-height: 1.7; }
+        .top-nav { background: var(--navy); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; }
+        .top-nav .brand { display: flex; align-items: center; gap: 10px; color: var(--white); text-decoration: none; font-weight: 700; }
+        .top-nav .brand img { height: 32px; }
+        .top-nav ul { list-style: none; display: flex; gap: 4px; }
+        .top-nav ul li a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.85rem; font-weight: 500; padding: 8px 14px; border-radius: var(--radius); transition: all 0.15s; }
+        .top-nav ul li a:hover { color: var(--white); background: rgba(255,255,255,0.1); }
+        .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.5rem; cursor: pointer; }
+        .breadcrumb { padding: 16px 24px; font-size: 0.85rem; color: var(--gray-500); max-width: 1100px; margin: 0 auto; }
+        .breadcrumb a { color: var(--gray-500); text-decoration: none; }
+        .breadcrumb a:hover { color: var(--red); }
+        .breadcrumb span { color: var(--gray-400); margin: 0 6px; }
+        .article-layout { display: flex; gap: 32px; max-width: 1100px; margin: 0 auto; padding: 24px; }
+        .toc-sidebar { width: 240px; flex-shrink: 0; position: sticky; top: 24px; align-self: flex-start; max-height: calc(100vh - 48px); overflow-y: auto; }
+        .toc-sidebar h3 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-400); margin-bottom: 12px; }
+        .toc-sidebar ul { list-style: none; }
+        .toc-sidebar ul li { margin-bottom: 4px; }
+        .toc-sidebar ul li a { display: block; padding: 5px 10px; font-size: 0.82rem; color: var(--gray-600); text-decoration: none; border-radius: 4px; transition: all 0.15s; border-left: 2px solid transparent; }
+        .toc-sidebar ul li a:hover { color: var(--red); background: var(--gray-100); }
+        .toc-sidebar ul li a.active { color: var(--red); border-left-color: var(--red); font-weight: 600; }
+        .toc-sidebar ul li a.toc-h3 { padding-left: 20px; font-size: 0.78rem; color: var(--gray-400); }
+        .article-content { flex: 1; min-width: 0; }
+        .article-header { margin-bottom: 28px; }
+        .article-header .cat-tag { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; background: var(--gray-100); color: var(--gray-600); margin-bottom: 12px; }
+        .article-header h1 { font-size: 2rem; font-weight: 800; color: var(--gray-900); letter-spacing: -0.02em; line-height: 1.3; margin-bottom: 12px; }
+        .article-header .meta { font-size: 0.85rem; color: var(--gray-500); display: flex; gap: 16px; flex-wrap: wrap; }
+        .article-body { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow); border: 1px solid var(--gray-200); padding: 32px; margin-bottom: 24px; }
+        .article-body h2 { font-size: 1.4rem; font-weight: 700; color: var(--gray-900); margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); }
+        .article-body h2:first-child { margin-top: 0; }
+        .article-body h3 { font-size: 1.1rem; font-weight: 700; color: var(--gray-700); margin: 24px 0 12px; }
+        .article-body p { font-size: 0.95rem; color: var(--gray-600); margin-bottom: 16px; line-height: 1.8; }
+        .article-body ul, .article-body ol { margin-bottom: 16px; padding-left: 24px; }
+        .article-body li { font-size: 0.95rem; color: var(--gray-600); margin-bottom: 8px; line-height: 1.7; }
+        .article-body strong { color: var(--gray-900); font-weight: 600; }
+        .article-body code { background: var(--gray-100); padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; color: var(--red); }
+        .article-body pre { background: var(--gray-900); color: #e5e7eb; padding: 16px 20px; border-radius: var(--radius); overflow-x: auto; font-size: 0.85rem; line-height: 1.6; margin-bottom: 16px; }
+        .article-body img { max-width: 100%; border-radius: var(--radius); margin: 16px 0; border: 1px solid var(--gray-200); }
+        .article-body blockquote { border-left: 3px solid var(--red); padding: 12px 20px; margin: 16px 0; background: var(--gray-50); border-radius: 0 var(--radius) var(--radius) 0; color: var(--gray-600); font-style: italic; }
+        .article-body .step { display: flex; gap: 14px; margin-bottom: 16px; padding: 16px; background: var(--gray-50); border-radius: var(--radius); }
+        .article-body .step-num { width: 32px; height: 32px; border-radius: 50%; background: var(--red); color: var(--white); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+        .article-body .step-content { flex: 1; }
+        .article-body .step-content p { margin-bottom: 0; }
+        .article-body .tip { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius); padding: 16px 20px; margin: 16px 0; display: flex; gap: 10px; }
+        .article-body .tip .tip-icon { font-size: 1.2rem; flex-shrink: 0; }
+        .article-body .tip p { color: #1e40af; margin-bottom: 0; font-size: 0.9rem; }
+        .article-body .warning { background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius); padding: 16px 20px; margin: 16px 0; display: flex; gap: 10px; }
+        .article-body .warning .warn-icon { font-size: 1.2rem; flex-shrink: 0; }
+        .article-body .warning p { color: #92400e; margin-bottom: 0; font-size: 0.9rem; }
+
+        .feedback { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow); border: 1px solid var(--gray-200); padding: 24px; text-align: center; margin-bottom: 24px; }
+        .feedback h3 { font-size: 1rem; font-weight: 700; color: var(--gray-700); margin-bottom: 12px; }
+        .feedback .btns { display: flex; justify-content: center; gap: 12px; }
+        .feedback .btns button { padding: 10px 24px; border-radius: var(--radius); border: 1px solid var(--gray-300); background: var(--white); font-size: 1.1rem; cursor: pointer; transition: all 0.15s; }
+        .feedback .btns button:hover { border-color: var(--red); background: var(--gray-50); }
+        .feedback .btns button.selected { border-color: var(--green); background: #ecfdf5; }
+        .feedback #feedback-msg { font-size: 0.85rem; color: var(--green); margin-top: 8px; }
+        .cta-section { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow); border: 1px solid var(--gray-200); padding: 32px; text-align: center; margin-bottom: 32px; }
+        .cta-section h3 { font-size: 1.15rem; font-weight: 700; color: var(--gray-900); margin-bottom: 8px; }
+        .cta-section p { font-size: 0.9rem; color: var(--gray-500); margin-bottom: 16px; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; font-size: 0.9rem; font-weight: 600; font-family: inherit; border: none; border-radius: var(--radius); cursor: pointer; transition: all 0.15s; text-decoration: none; }
+        .btn-red { background: var(--red); color: var(--white); }
+        .btn-red:hover { background: var(--red-dark); }
+        .btn-gray { background: var(--gray-200); color: var(--gray-700); }
+        .btn-gray:hover { background: var(--gray-300); }
+
+        .related { margin-bottom: 40px; }
+        .related h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 16px; }
+        .related-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+        .related-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--gray-200); padding: 20px; text-decoration: none; color: inherit; transition: box-shadow 0.2s; }
+        .related-card:hover { box-shadow: var(--shadow-md); }
+        .related-card h4 { font-size: 0.9rem; font-weight: 700; color: var(--gray-900); margin-bottom: 6px; }
+        .related-card p { font-size: 0.8rem; color: var(--gray-500); line-height: 1.5; }
+        .related-card .meta { font-size: 0.75rem; color: var(--gray-400); margin-top: 8px; }
+
+        @media (max-width: 900px) {
+            .toc-sidebar { display: none; }
+            .article-layout { padding: 16px; }
+            .article-header h1 { font-size: 1.5rem; }
+            .article-body { padding: 20px; }
+        }
+        @media (max-width: 768px) {
+            .hamburger { display: block; }
+            .top-nav ul { display: none; flex-direction: column; position: absolute; top: 60px; left: 0; right: 0; background: var(--navy); padding: 12px; z-index: 10; }
+            .top-nav ul.open { display: flex; }
+            .related-grid { grid-template-columns: 1fr; }
+        }
+        @media print {
+            .top-nav, .toc-sidebar, .feedback, .cta-section { display: none; }
+            .article-body { box-shadow: none; border: none; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <a href="/" class="brand"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital"> <span>Laval Digital</span></a>
+        <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')">☰</button>
+        <ul id="nav-menu">
+            <li><a href="/">Home</a></li>
+            <li><a href="/blog">Blog</a></li>
+            <li><a href="/training">Training</a></li>
+        </ul>
+    </nav>
+
+    <div class="breadcrumb">
+        <a href="/">Home</a><span>&gt;</span><a href="/training">Training Hub</a><span>&gt;</span>{{ article.title }}
+    </div>
+
+    <div class="article-layout">
+        <aside class="toc-sidebar" id="toc-sidebar">
+            <h3>On This Page</h3>
+            <ul id="toc-list"></ul>
+        </aside>
+
+        <div class="article-content">
+            <div class="article-header">
+                <span class="cat-tag">{{ article.category_label or article.category }}</span>
+                <h1>{{ article.title }}</h1>
+                <div class="meta">
+                    <span>{{ article.read_time }} min read</span>
+                    <span>Published: {{ article.published_date }}</span>
+                </div>
+            </div>
+
+            <div class="article-body" id="article-body">
+                {{ article.content_html|safe }}
+            </div>
+
+            <div class="feedback" id="feedback-section">
+                <h3>Was this article helpful?</h3>
+                <div class="btns">
+                    <button onclick="sendFeedback(true)" id="fb-yes">👍 Yes</button>
+                    <button onclick="sendFeedback(false)" id="fb-no">👎 No</button>
+                </div>
+                <div id="feedback-msg"></div>
+            </div>
+
+            <div class="cta-section">
+                <h3>Need more help?</h3>
+                <p>Our managed services team can handle everything for you — approvals, publishing, support, and more.</p>
+                <a href="/client/managed-services" class="btn btn-red">Learn About Managed Services</a>
+            </div>
+
+            {% if related %}
+            <div class="related">
+                <h2>Related Articles</h2>
+                <div class="related-grid">
+                    {% for r in related %}
+                    <a class="related-card" href="/training/{{ r.slug }}">
+                        <h4>{{ r.title }}</h4>
+                        <p>{{ r.description }}</p>
+                        <div class="meta">{{ r.read_time }} min read</div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+    function buildTOC() {
+        const body = document.getElementById('article-body');
+        const headings = body.querySelectorAll('h2, h3');
+        const list = document.getElementById('toc-list');
+        if (!headings.length) { document.getElementById('toc-sidebar').style.display = 'none'; return; }
+
+        headings.forEach((h, i) => {
+            if (!h.id) h.id = 'section-' + i;
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = '#' + h.id;
+            a.textContent = h.textContent;
+            if (h.tagName === 'H3') a.className = 'toc-h3';
+            li.appendChild(a);
+            list.appendChild(li);
+        });
+
+        const links = list.querySelectorAll('a');
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    links.forEach(l => l.classList.remove('active'));
+                    const a = list.querySelector(`a[href="#${entry.target.id}"]`);
+                    if (a) a.classList.add('active');
+                }
+            });
+        }, { rootMargin: '-80px 0px -60% 0px' });
+        headings.forEach(h => observer.observe(h));
+    }
+
+    function sendFeedback(helpful) {
+        fetch('/api/training/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug: '{{ article.slug }}', helpful: helpful })
+        })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('fb-yes').disabled = true;
+            document.getElementById('fb-no').disabled = true;
+            document.getElementById('feedback-msg').textContent = 'Thanks for your feedback!';
+            if (helpful) document.getElementById('fb-yes').classList.add('selected');
+            else document.getElementById('fb-no').classList.add('selected');
+        })
+        .catch(() => {});
+    }
+
+    buildTOC();
+    </script>
+</body>
+</html>
