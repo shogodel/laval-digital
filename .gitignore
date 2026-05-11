@@ -44,6 +44,9 @@ memory/
 .DS_Store
 Thumbs.db
 
+# Tenant databases (runtime data)
+tenants/
+
 # Logs
 *.log
 logs/
