@@ -642,26 +642,40 @@ def handle_leads():
 
 @app.route("/api/agents", methods=["GET"])
 def get_agents():
-    """Get status and activity telemetry of all agents from the tenant database."""
+    """Get status and activity telemetry of all agents."""
     tenant_id = get_current_tenant()
-    if not tenant_id:
-        return jsonify({"agents": [], "error": "No tenant selected. Please select a client from the tenant list."})
 
     agents_status = []
-    activity = get_tenant_agent_activity(tenant_id)
-    for agent_id, agent in agent_registry.items():
-        act = activity.get(agent_id, {})
-        agents_status.append({
-            "agent_id": agent_id,
-            "enabled": agent.enabled,
-            "model": agent.model,
-            "status": act.get("status", "idle"),
-            "last_invoked": act.get("last_invoked"),
-            "task_count": act.get("task_count", 0),
-            "success_count": act.get("success_count", 0),
-            "failure_count": act.get("failure_count", 0),
-            "last_draft_preview": act.get("last_draft_preview"),
-        })
+
+    if tenant_id:
+        activity = get_tenant_agent_activity(tenant_id)
+        for agent_id, agent in agent_registry.items():
+            act = activity.get(agent_id, {})
+            agents_status.append({
+                "agent_id": agent_id,
+                "enabled": agent.enabled,
+                "model": agent.model,
+                "status": act.get("status", "idle"),
+                "last_invoked": act.get("last_invoked"),
+                "task_count": act.get("task_count", 0),
+                "success_count": act.get("success_count", 0),
+                "failure_count": act.get("failure_count", 0),
+                "last_draft_preview": act.get("last_draft_preview"),
+            })
+    else:
+        for agent_id, agent in agent_registry.items():
+            agents_status.append({
+                "agent_id": agent_id,
+                "enabled": agent.enabled,
+                "model": agent.model,
+                "status": "idle",
+                "last_invoked": None,
+                "task_count": 0,
+                "success_count": 0,
+                "failure_count": 0,
+                "last_draft_preview": None,
+            })
+
     return jsonify({"agents": agents_status})
 
 
@@ -674,16 +688,19 @@ def toggle_agent(agent_id):
     agent = agent_registry[agent_id]
     agent.enabled = not agent.enabled
 
-    # Persist toggle to tenant database
+    # Persist toggle to tenant database only if a tenant is selected
     tenant_id = get_current_tenant()
     if tenant_id:
-        conn = tenant_manager.get_connection(tenant_id)
-        cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE agents SET enabled = ? WHERE agent_id = ?",
-            (int(agent.enabled), agent_id),
-        )
-        conn.commit()
+        try:
+            conn = tenant_manager.get_connection(tenant_id)
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE agents SET enabled = ? WHERE agent_id = ?",
+                (int(agent.enabled), agent_id),
+            )
+            conn.commit()
+        except Exception:
+            pass
 
     return jsonify({"agent_id": agent_id, "enabled": agent.enabled})
 

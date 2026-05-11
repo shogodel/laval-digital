@@ -316,15 +316,9 @@ class ClientFactory:
             "{{ services }}": services_html,
         }
 
-        # Niche CSS <style> block injected just before </head>
-        niche_style = (
-            f"\n    <style>\n"
-            f"        :root {{\n"
-            f"            --primary: {colors['primary']};\n"
-            f"            --accent: {colors['accent']};\n"
-            f"        }}\n"
-            f"    </style>\n"
-            f"    <!-- End brand inject -->"
+        # Regex to find existing :root { ... } blocks in <style>
+        root_block_re = re.compile(
+            r"(:root\s*\{)([^}]*)(\})", re.IGNORECASE | re.DOTALL
         )
 
         url_for_re = re.compile(r"\{\{\s*url_for\('static',\s*filename='([^']+)'\)\s*\}\}")
@@ -353,9 +347,21 @@ class ClientFactory:
             for placeholder, value in replacements.items():
                 content = content.replace(placeholder, value)
 
-            # 5. Inject niche style before </head>
-            if "</head>" in content:
-                content = content.replace("</head>", niche_style + "\n</head>", 1)
+            # 5. Replace existing :root { } CSS variable values with niche colors
+            def _replace_root(m: re.Match) -> str:
+                block = m.group(2)
+                block = re.sub(
+                    r"--primary\s*:\s*[^;]+;",
+                    f"--primary: {colors['primary']};",
+                    block,
+                )
+                block = re.sub(
+                    r"--accent\s*:\s*[^;]+;",
+                    f"--accent: {colors['accent']};",
+                    block,
+                )
+                return m.group(1) + block + m.group(3)
+            content = root_block_re.sub(_replace_root, content)
 
             # 6. Remove any leftover Jinja2 {{ ... }} or {% ... %}
             content = re.sub(r"\{\{.*?\}\}", "", content, flags=re.DOTALL)
@@ -465,7 +471,7 @@ class ClientFactory:
     # Station 7: Provision SSL
     # ------------------------------------------------------------------
 
-    def provision_ssl(self, subdomain: str) -> bool:
+    def provision_ssl(self, subdomain: str, base_domain: str = "lavaldigital.ca") -> bool:
         """Run certbot to obtain a Let's Encrypt SSL certificate.
 
         Uses the ``--nginx`` authenticator non-interactively.
@@ -477,11 +483,17 @@ class ClientFactory:
 
         Args:
             subdomain: Client subdomain.
+            base_domain: Base domain to append (default ``lavaldigital.ca``).
 
         Returns:
             ``True`` if the certificate was obtained, ``False`` otherwise.
         """
-        domain = f"{subdomain}.lavaldigital.ca"
+        domain = f"{subdomain}.{base_domain}"
+
+        if not shutil.which("certbot"):
+            logger.warning("certbot not installed — SSL provisioning skipped for %s", domain)
+            return False
+
         try:
             result = subprocess.run(
                 [
@@ -501,8 +513,8 @@ class ClientFactory:
                 result.returncode, domain, result.stderr,
             )
             return False
-        except FileNotFoundError:
-            logger.warning("certbot not installed — skipping SSL for %s", domain)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"certbot failed for {domain}: {e.stderr}")
             return False
         except subprocess.TimeoutExpired:
             logger.warning("certbot timed out for %s — skipping SSL", domain)
