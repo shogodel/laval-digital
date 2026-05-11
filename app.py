@@ -1049,7 +1049,7 @@ def affiliate_signup_api():
         "timestamp": datetime.now().isoformat(),
     })
 
-    password = secrets.token_urlsafe(12)
+    password = secrets.token_urlsafe(12) + "A1!"
     try:
         tenant_manager.create_tenant_database(code, "direct")
         add_user_to_tenant(email, password, "affiliate", name, code, "direct")
@@ -1098,7 +1098,7 @@ def contract_submit():
     }
     leads.append(contract_data)
 
-    password = secrets.token_urlsafe(12)
+    password = secrets.token_urlsafe(12) + "A1!"
     subdomain = business.lower().replace(" ", "-").replace("'", "")[:40]
     try:
         tenant_manager.create_tenant_database(subdomain, "direct")
@@ -1113,13 +1113,53 @@ def contract_submit():
         }), 500
 
     logger.info("Contract submitted by %s (%s) — package: %s", name, email, contract_data["package"])
-    return jsonify({
+
+    # Credit affiliate if a valid referral code was attached
+    affiliate_info = None
+    affiliate_code = contract_data.get("affiliateCode", "")
+    if affiliate_code and affiliate_code in VALID_AFFILIATE_CODES:
+        commission = round(float(contract_data.get("deposit", 0)) * 0.10, 2)
+        try:
+            # Ensure the affiliate's tenant database exists
+            try:
+                aff_conn = tenant_manager.get_connection(affiliate_code)
+            except Exception:
+                tenant_manager.create_tenant_database(affiliate_code, "direct")
+                aff_conn = tenant_manager.get_connection(affiliate_code)
+            aff_cursor = aff_conn.cursor()
+            aff_cursor.execute(
+                "INSERT INTO affiliate_leads "
+                "(ref_code, lead_email, lead_name, status, commission, created_at) "
+                "VALUES (?, ?, ?, 'client', ?, ?)",
+                (affiliate_code, email, name, commission, datetime.now().isoformat()),
+            )
+            aff_conn.commit()
+            AFFILIATES[affiliate_code]["earnings"] += commission
+            affiliate_info = {
+                "code": affiliate_code,
+                "affiliate_name": AFFILIATES[affiliate_code]["name"],
+                "commission": commission,
+            }
+            logger.info(
+                "Affiliate %s credited $%.2f for referral %s",
+                affiliate_code, commission, email,
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to credit affiliate %s for %s: %s",
+                affiliate_code, email, e,
+            )
+
+    response_data = {
         "success": True,
         "contract_id": contract_data["id"],
         "password": password,
         "tenant_id": subdomain,
         "message": "Your account has been created. Please check your email for login credentials.",
-    }), 201
+    }
+    if affiliate_info:
+        response_data["affiliate"] = affiliate_info
+    return jsonify(response_data), 201
 
 
 @app.route("/api/reseller/apply", methods=["POST"])
@@ -1144,7 +1184,7 @@ def reseller_apply():
     }
     reseller_applications.append(application)
 
-    password = secrets.token_urlsafe(12)
+    password = secrets.token_urlsafe(12) + "A1!"
     agency_slug = agency.lower().replace(" ", "-").replace("'", "")[:40]
     try:
         tenant_manager.create_tenant_database(agency_slug, "reseller")
