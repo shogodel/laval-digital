@@ -68,6 +68,9 @@ VALID_AFFILIATE_CODES = set(AFFILIATES.keys())
 # In-memory lead tracking for affiliates
 affiliate_leads: list[dict] = []
 
+# In-memory reseller applications (replace with DB later)
+reseller_applications: list[dict] = []
+
 
 # ---------------------------------------------------------------------------
 # Tenant helpers
@@ -317,6 +320,12 @@ def reseller_program():
     return render_template("reseller.html")
 
 
+@app.route("/fr/reseller")
+def reseller_program_fr():
+    """Serve the French white-label reseller program page."""
+    return render_template("reseller_fr.html")
+
+
 @app.route("/contract")
 def contract():
     """Serve the contract/signup page."""
@@ -513,6 +522,94 @@ def affiliate_status():
             "affiliate_name": AFFILIATES.get(ref_code, {}).get("name", "Partner"),
         })
     return jsonify({"active": False, "discount": 0})
+
+
+@app.route("/api/affiliate/signup", methods=["POST"])
+def affiliate_signup_api():
+    """Register a new affiliate and return their referral code."""
+    data = request.json
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip()
+    phone = (data.get("phone") or "").strip()
+
+    if not name or not email:
+        return jsonify({"error": "Name and email are required"}), 400
+
+    code = "REF" + uuid.uuid4().hex[:6].upper()
+    AFFILIATES[code] = {"name": name, "code": code, "earnings": 0}
+    VALID_AFFILIATE_CODES.add(code)
+
+    affiliate_leads.append({
+        "ref_code": code,
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "timestamp": datetime.now().isoformat(),
+    })
+
+    return jsonify({
+        "success": True,
+        "code": code,
+        "referral_link": f"https://lavaldigital.ca/?ref={code}",
+    }), 201
+
+
+@app.route("/api/contract/submit", methods=["POST"])
+def contract_submit():
+    """Submit a signed agreement."""
+    data = request.json
+    name = (data.get("name") or "").strip()
+    business = (data.get("business") or "").strip()
+    email = (data.get("email") or "").strip()
+
+    if not name or not business or not email:
+        return jsonify({"error": "Name, business, and email are required"}), 400
+
+    contract_data = {
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "business": business,
+        "email": email,
+        "phone": data.get("phone", ""),
+        "address": data.get("address", ""),
+        "package": data.get("package", ""),
+        "packageName": data.get("packageName", ""),
+        "totalPrice": data.get("totalPrice", 0),
+        "deposit": data.get("deposit", 0),
+        "affiliateCode": data.get("affiliateCode", ""),
+        "signedAt": data.get("signedAt", datetime.now().isoformat()),
+        "created_at": datetime.now().isoformat(),
+    }
+    leads.append(contract_data)
+
+    logger.info("Contract submitted by %s (%s) — package: %s", name, email, contract_data["package"])
+    return jsonify({"success": True, "contract_id": contract_data["id"]}), 201
+
+
+@app.route("/api/reseller/apply", methods=["POST"])
+def reseller_apply():
+    """Submit a reseller application."""
+    data = request.json
+    agency = (data.get("agencyName") or "").strip()
+    contact = (data.get("contactName") or "").strip()
+    email = (data.get("email") or "").strip()
+
+    if not agency or not contact or not email:
+        return jsonify({"error": "Agency name, contact name, and email are required"}), 400
+
+    application = {
+        "id": str(uuid.uuid4()),
+        "agencyName": agency,
+        "contactName": contact,
+        "email": email,
+        "phone": data.get("phone", ""),
+        "clientCount": data.get("clientCount", ""),
+        "created_at": datetime.now().isoformat(),
+    }
+    reseller_applications.append(application)
+
+    logger.info("Reseller application received — %s (%s)", agency, email)
+    return jsonify({"success": True, "application_id": application["id"]}), 201
 
 
 # ---------------------------------------------------------------------------

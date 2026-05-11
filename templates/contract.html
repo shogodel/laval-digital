@@ -683,6 +683,12 @@ function signContract() {
     };
     localStorage.setItem('laval-agreement', JSON.stringify(agreement));
 
+    fetch('/api/contract/submit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(agreement),
+    }).catch(() => {});
+
     document.getElementById('form-section').style.display = 'none';
     document.getElementById('payment-section').style.display = 'block';
     document.getElementById('thank-you-msg').textContent = 'Thank you, ' + name + '! Your agreement has been recorded.';

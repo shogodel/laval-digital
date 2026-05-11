@@ -218,6 +218,19 @@
     </div>
 
     <script>
+        const AGENT_META = {
+            local_seo: { name: 'SEO Local', desc: 'Optimisation du profil Google Business, citations locales, contenu de mots-clés locaux, gestion des avis' },
+            social_media: { name: 'Médias Sociaux', desc: 'Publications sur les réseaux sociaux, création de contenu, calendriers de contenu, stratégies d\'engagement' },
+            lead_conversion: { name: 'Conversion de Prospects', desc: 'Séquences de suivi des prospects, intégration CRM, optimisation des conversions, campagnes courriel' },
+            paid_ads: { name: 'Annonces Payantes', desc: 'Campagnes Google & Meta, création de contenu publicitaire, stratégie de mots-clés, allocation budgétaire, tests A/B, ciblage d\'audience' },
+            growth_hacker: { name: 'Growth Hacker', desc: 'Audits de croissance, boucles virales, optimisation du taux de conversion, stratégies de partenariat, expériences basées sur les données' },
+            reputation: { name: 'Réputation', desc: 'Surveillance des avis en ligne, génération de réponses aux avis, campagnes de sollicitation d\'avis, audits de réputation, gestion de crise' },
+            email_marketing: { name: 'Marketing Courriel', desc: 'Campagnes infolettres, courriels promotionnels, séquences de nurturing, campagnes de réactivation, suivis post-service' },
+            tiktok: { name: 'TikTok', desc: 'Contenu vidéo court pour TikTok, Instagram Reels, YouTube Shorts, calendriers de contenu, scripts vidéo, adaptation aux tendances' },
+            outreach: { name: 'Prospection', desc: 'Courriels de prospection, recherche de prospects, séquences de campagnes, automatisation de suivi, prospection personnalisée à grande échelle' },
+            backlinks: { name: 'Backlinks', desc: 'Création de liens, prospection d\'articles invités, création de citations, analyse des écarts de backlinks, récupération de liens brisés, soumissions d\'annuaires' },
+        };
+
         function switchTenant() {
             const tenantId = document.getElementById('tenant-select').value;
             if (!tenantId) return;
@@ -262,6 +275,7 @@
                 .then(r => r.json())
                 .then(data => {
                     const html = data.agents.map(a => {
+                        const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '' };
                         const agentStatus = a.enabled ? a.status : 'disabled';
                         const statusLabels = {processing:'En cours',pending_approval:'Approbation en attente',idle:'Inactif',disabled:'Désactivé'};
                         const statusLabel = a.enabled ? (statusLabels[a.status] || 'Inactif') : 'Désactivé';
@@ -269,7 +283,8 @@
                         const draftPreview = a.last_draft_preview || '--';
                         return `
                         <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" id="agent-card-${a.agent_id}" data-agent-id="${a.agent_id}">
-                            <h3>${a.agent_id}</h3>
+                            <h3 style="margin-bottom:2px;">${meta.name}</h3>
+                            <p style="font-size:0.82rem;color:#666;margin-bottom:10px;font-style:italic;">${meta.desc}</p>
                             <p><strong>Modèle :</strong> ${a.model}</p>
                             <p><strong>Agent :</strong> <span class="status-badge status-${agentStatus}">${statusLabel}</span></p>
                             <p><strong>Tâches :</strong> ${a.task_count} (${a.success_count} ok / ${a.failure_count} échouées)</p>
@@ -365,9 +380,10 @@
                 .then(data => {
                     const select = document.getElementById('config-agent-select');
                     data.agents.forEach(a => {
+                        const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) };
                         const option = document.createElement('option');
                         option.value = a.agent_id;
-                        option.textContent = a.agent_id;
+                        option.textContent = meta.name;
                         select.appendChild(option);
                     });
                 });

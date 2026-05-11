@@ -599,7 +599,6 @@
             <p><a href="/demo">Live Demo</a></p>
             <p><a href="/blog">Blog</a></p>
             <p><a href="/affiliate">Affiliate Program</a></p>
-            <p><a href="/contract">Contract</a></p>
             <p><a href="/reseller">Reseller Program</a></p>
         </div>
     </div>
@@ -616,10 +615,35 @@
 
 <script>
 function handleSignup() {
-    const form = document.getElementById('signup-form');
-    const success = document.getElementById('success-message');
-    form.style.display = 'none';
-    success.style.display = 'block';
+    const name = document.getElementById('full-name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+
+    if (!name || !email) {
+        alert('Please enter your name and email address.');
+        return;
+    }
+
+    fetch('/api/affiliate/signup', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, email, phone}),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        const form = document.getElementById('signup-form');
+        const success = document.getElementById('success-message');
+        form.style.display = 'none';
+        success.style.display = 'block';
+        document.querySelector('#success-message .ref-link').textContent = data.referral_link;
+    })
+    .catch(() => {
+        alert('Something went wrong. Please try again.');
+    });
 }
 
 function dismissCookie() {

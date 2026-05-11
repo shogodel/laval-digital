@@ -583,7 +583,6 @@
             <p><a href="/fr/demo">Démo en Direct</a></p>
             <p><a href="/fr/blogue">Blogue</a></p>
             <p><a href="/fr/affiliate">Programme d'Affiliation</a></p>
-            <p><a href="/fr/contract">Contrat</a></p>
             <p><a href="/fr/reseller">Programme Revendeur</a></p>
         </div>
     </div>
@@ -600,10 +599,35 @@
 
 <script>
 function handleSignup() {
-    const form = document.getElementById('signup-form');
-    const success = document.getElementById('success-message');
-    form.style.display = 'none';
-    success.style.display = 'block';
+    const name = document.getElementById('full-name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+
+    if (!name || !email) {
+        alert('Veuillez entrer votre nom et votre adresse courriel.');
+        return;
+    }
+
+    fetch('/api/affiliate/signup', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, email, phone}),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        const form = document.getElementById('signup-form');
+        const success = document.getElementById('success-message');
+        form.style.display = 'none';
+        success.style.display = 'block';
+        document.querySelector('#success-message .ref-link').textContent = data.referral_link;
+    })
+    .catch(() => {
+        alert('Une erreur est survenue. Veuillez réessayer.');
+    });
 }
 
 function dismissCookie() {
