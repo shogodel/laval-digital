@@ -399,11 +399,18 @@ orchestrator_graph = None
 
 
 def get_orchestrator():
-    global orchestrator, orchestrator_graph
-    if orchestrator is None:
-        orchestrator = Orchestrator(llm_adapter, agent_registry)
-        orchestrator_graph = orchestrator.build_graph()
-    return orchestrator_graph
+    """Return a fresh orchestrator with the current global llm_adapter and agent_registry.
+
+    No caching — every call creates a new orchestrator instance so it always
+    uses the latest API key from llm_adapter.
+    """
+    global llm_adapter, agent_registry
+
+    key_preview = llm_adapter._api_key[:10] + "..." if llm_adapter._api_key else "None"
+    logger.info(f"Building orchestrator with API key: {key_preview}")
+
+    orchestrator = Orchestrator(llm_adapter, agent_registry)
+    return orchestrator.build_graph()
 
 
 # ---------------------------------------------------------------------------
@@ -1783,6 +1790,10 @@ def submit_task():
     thread_id = str(uuid.uuid4())
     now_iso = datetime.now().isoformat()
 
+    # Diagnostic: verify the LLM adapter has the current key
+    key_preview = llm_adapter._api_key[:10] + "..." if hasattr(llm_adapter, '_api_key') and llm_adapter._api_key else "None"
+    logger.info(f"Submitting task with llm_adapter key: {key_preview}")
+
     initial_state = {
         "user_request": user_request,
         "routed_agent": "",
@@ -1950,6 +1961,7 @@ def respond_approval(thread_id):
                     pass
 
             # If approved, execute via the ExecutionerAgent
+            exec_result = {}
             if approved:
                 state = result
                 agent_name = state.get("routed_agent")
@@ -2011,9 +2023,9 @@ def respond_approval(thread_id):
                             except Exception:
                                 pass
                     except Exception as exec_err:
-                        thread_data["state"][
-                            "final_result"
-                        ] = f"Execution error: {str(exec_err)}"
+                        error_msg = f"Execution error: {str(exec_err)}"
+                        thread_data["state"]["final_result"] = error_msg
+                        logger.error(error_msg)
                         if tenant_id:
                             try:
                                 update_tenant_agent_activity(
@@ -2035,6 +2047,10 @@ def respond_approval(thread_id):
                 "thread_id": thread_id,
                 "status": "completed",
                 "result": thread_data["state"].get("final_result"),
+                "execution": {
+                    "success": exec_result.get("success", False) if approved else None,
+                    "tool": exec_result.get("result", "") if approved else None,
+                }
             })
         except Exception as e:
             return jsonify({"error": str(e)}), 500
