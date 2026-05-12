@@ -1492,7 +1492,16 @@ def update_all_agents_config():
 
         _reinitialize_agent(agent_id, config)
 
-    global orchestrator, orchestrator_graph
+    # Also update the global llm_adapter so the orchestrator uses the new key
+    global llm_adapter, orchestrator, orchestrator_graph
+    if api_key:
+        llm_adapter = LLMAdapter(
+            model=model if model and model != "__keep__" and LLMAdapter.is_valid_model(model) else llm_adapter.model,
+            api_key=api_key,
+            api_base=api_base or llm_adapter._api_base,
+            temperature=llm_adapter._temperature,
+        )
+
     orchestrator = Orchestrator(llm_adapter, agent_registry)
     orchestrator_graph = orchestrator.build_graph()
 

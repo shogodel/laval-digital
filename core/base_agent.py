@@ -95,14 +95,27 @@ class BaseAgent(ABC):
                 "Install with: pip install litellm"
             )
 
+        model = self._model
+        api_key = self._credentials["api_key"]
+        api_base = self._credentials.get("api_base", "")
+
         llm_kwargs = {
-            "model": self._model,
-            "api_key": self._credentials["api_key"],
+            "model": model,
+            "api_key": api_key,
             "temperature": 0.7,
         }
 
-        if "api_base" in self._credentials and self._credentials["api_base"]:
-            llm_kwargs["api_base"] = self._credentials["api_base"]
+        # Force the correct API base and authentication format for known providers.
+        if model.startswith("deepseek"):
+            llm_kwargs["api_base"] = api_base or "https://api.deepseek.com/v1"
+            if "/" in llm_kwargs["model"]:
+                llm_kwargs["model"] = llm_kwargs["model"].split("/", 1)[1]
+        elif model.startswith("gpt-") or model.startswith("o1") or model.startswith("o3"):
+            llm_kwargs["api_base"] = api_base or "https://api.openai.com/v1"
+        elif model.startswith("claude-"):
+            llm_kwargs["api_base"] = api_base or "https://api.anthropic.com/v1"
+        elif api_base:
+            llm_kwargs["api_base"] = api_base
 
         return ChatLiteLLM(**llm_kwargs)
 
