@@ -890,11 +890,21 @@ function respondApproval(threadId, approved) {
     fetch('/api/approvals/' + threadId + '/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approved, feedback })
+        body: JSON.stringify({ approved: approved, feedback: feedback })
     })
     .then(r => r.json())
-    .then(() => { loadApprovals(); loadAgents(); })
-    .catch(err => alert('Error: ' + err.message));
+    .then(data => {
+        if (data.status === 'completed') {
+            alert('Approval ' + (approved ? 'approved' : 'rejected') + '!');
+            loadApprovals();
+            loadAgents();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(err => {
+        alert('Network error: ' + err.message);
+    });
 }
 
 /* ── Pending Confirmations ── */

@@ -1884,10 +1884,22 @@ def submit_task():
 
 @app.route("/api/approvals", methods=["GET"])
 def get_approvals():
-    """Get pending approvals from the tenant database."""
-    tenant_id = get_current_tenant()
+    """Get pending approvals from both the in-memory cache and tenant database."""
     approvals = []
 
+    # First, check the in-memory active_threads cache (these are from the current session)
+    for thread_id, thread_data in active_threads.items():
+        state = thread_data["state"]
+        if thread_data["status"] == "pending_approval" and state.get("agent_draft"):
+            approvals.append({
+                "thread_id": thread_id,
+                "agent": state.get("routed_agent", "unknown"),
+                "draft": state.get("agent_draft", ""),
+                "task": state.get("agent_task", ""),
+            })
+
+    # Also check the tenant database if a tenant is selected
+    tenant_id = get_current_tenant()
     if tenant_id:
         try:
             conn = tenant_manager.get_connection(tenant_id)
@@ -1901,17 +1913,19 @@ def get_approvals():
                   AND agent_draft != ''
                 """
             )
-            rows = cursor.fetchall()
-            for row in rows:
-                approvals.append({
-                    "thread_id": row["thread_id"],
-                    "agent": row["routed_agent"],
-                    "draft": row["agent_draft"],
-                    "task": row["agent_task"],
-                })
-        except Exception:
-            pass
+            for row in cursor.fetchall():
+                # Avoid duplicates if already in memory cache
+                if not any(a["thread_id"] == row["thread_id"] for a in approvals):
+                    approvals.append({
+                        "thread_id": row["thread_id"],
+                        "agent": row["routed_agent"],
+                        "draft": row["agent_draft"],
+                        "task": row["agent_task"],
+                    })
+        except Exception as e:
+            logger.error(f"Failed to read approvals from tenant DB: {e}")
 
+    logger.info(f"Returning {len(approvals)} pending approvals")
     return jsonify({"approvals": approvals})
 
 
@@ -1924,7 +1938,7 @@ def respond_approval(thread_id):
     now_iso = datetime.now().isoformat()
     tenant_id = get_current_tenant()
 
-    # Check if we have the thread in the in-memory orchestrator cache
+    # Find the thread in the in-memory orchestrator cache
     if thread_id in active_threads:
         thread_data = active_threads[thread_id]
         human_response = {"approved": approved, "feedback": feedback}
@@ -1961,7 +1975,7 @@ def respond_approval(thread_id):
                     pass
 
             # If approved, execute via the ExecutionerAgent
-            exec_result = {}
+            execution_result = None
             if approved:
                 state = result
                 agent_name = state.get("routed_agent")
@@ -1969,93 +1983,24 @@ def respond_approval(thread_id):
                 if agent_name and agent_name in agent_registry:
                     try:
                         exec_result = executioner.execute(agent_name, draft)
-
-                        thread_data["state"]["final_result"] = exec_result.get(
-                            "result", str(exec_result)
-                        )
-                        thread_data["state"]["execution_id"] = exec_result.get(
-                            "execution_id"
-                        )
-
-                        # Persist activity to tenant database
-                        if tenant_id:
-                            try:
-                                if exec_result.get("status") == "pending_confirmation":
-                                    update_tenant_agent_activity(
-                                        tenant_id,
-                                        agent_name,
-                                        status="pending_confirmation",
-                                        last_invoked=now_iso,
-                                        last_draft_preview=(
-                                            (draft[:120] + "...") if len(draft) > 120 else draft
-                                        ),
-                                    )
-                                elif exec_result.get("success"):
-                                    update_tenant_agent_activity(
-                                        tenant_id, agent_name, status="idle"
-                                    )
-                                else:
-                                    update_tenant_agent_activity(
-                                        tenant_id, agent_name, status="idle"
-                                    )
-
-                                # Log to execution_log table
-                                cursor = tenant_manager.get_connection(
-                                    tenant_id
-                                ).cursor()
-                                cursor.execute(
-                                    """
-                                    INSERT INTO execution_log
-                                        (execution_id, agent_name, draft_preview,
-                                         success, result, timestamp)
-                                    VALUES (?, ?, ?, ?, ?, ?)
-                                    """,
-                                    (
-                                        exec_result.get("execution_id", ""),
-                                        agent_name,
-                                        (draft[:120] + "...") if len(draft) > 120 else draft,
-                                        int(exec_result.get("success", False)),
-                                        str(exec_result.get("result", "")),
-                                        now_iso,
-                                    ),
-                                )
-                                cursor.connection.commit()
-                            except Exception:
-                                pass
+                        execution_result = {
+                            "success": exec_result.get("success", False),
+                            "tool": exec_result.get("result", "")
+                        }
                     except Exception as exec_err:
-                        error_msg = f"Execution error: {str(exec_err)}"
-                        thread_data["state"]["final_result"] = error_msg
-                        logger.error(error_msg)
-                        if tenant_id:
-                            try:
-                                update_tenant_agent_activity(
-                                    tenant_id, agent_name, status="idle"
-                                )
-                            except Exception:
-                                pass
-            else:
-                agent_name = thread_data["state"].get("routed_agent")
-                if agent_name and tenant_id:
-                    try:
-                        update_tenant_agent_activity(
-                            tenant_id, agent_name, status="idle"
-                        )
-                    except Exception:
-                        pass
+                        execution_result = {"success": False, "error": str(exec_err)}
 
             return jsonify({
                 "thread_id": thread_id,
                 "status": "completed",
                 "result": thread_data["state"].get("final_result"),
-                "execution": {
-                    "success": exec_result.get("success", False) if approved else None,
-                    "tool": exec_result.get("result", "") if approved else None,
-                }
+                "execution": execution_result,
             })
+
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    # Not in memory cache — try DB-only response (orchestrator resume unavailable)
+    # Not in memory cache — try DB-only response
     if tenant_id:
         try:
             conn = tenant_manager.get_connection(tenant_id)
@@ -2078,59 +2023,10 @@ def respond_approval(thread_id):
             )
             conn.commit()
 
-            agent_name = row["routed_agent"]
-            draft = row["agent_draft"] or ""
-
-            if approved and agent_name and agent_name in agent_registry:
-                try:
-                    exec_result = executioner.execute(agent_name, draft)
-                    if tenant_id:
-                        update_tenant_agent_activity(
-                            tenant_id, agent_name, status="idle",
-                        )
-                        cursor = tenant_manager.get_connection(tenant_id).cursor()
-                        cursor.execute(
-                            """
-                            INSERT INTO execution_log
-                                (execution_id, agent_name, draft_preview,
-                                 success, result, timestamp)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                            """,
-                            (
-                                exec_result.get("execution_id", ""),
-                                agent_name,
-                                (draft[:120] + "...") if len(draft) > 120 else draft,
-                                int(exec_result.get("success", False)),
-                                str(exec_result.get("result", "")),
-                                now_iso,
-                            ),
-                        )
-                        cursor.connection.commit()
-                    return jsonify({
-                        "thread_id": thread_id,
-                        "status": "completed",
-                        "result": exec_result.get("result", "Task executed"),
-                    })
-                except Exception as exec_err:
-                    if tenant_id:
-                        update_tenant_agent_activity(
-                            tenant_id, agent_name, status="idle"
-                        )
-                    return jsonify({
-                        "thread_id": thread_id,
-                        "status": "completed",
-                        "result": f"Execution error: {str(exec_err)}",
-                    })
-            else:
-                if agent_name and tenant_id:
-                    update_tenant_agent_activity(
-                        tenant_id, agent_name, status="idle"
-                    )
-                return jsonify({
-                    "thread_id": thread_id,
-                    "status": "completed",
-                    "result": "Task rejected." if not approved else "No agent assigned.",
-                })
+            return jsonify({
+                "thread_id": thread_id,
+                "status": "completed"
+            })
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
