@@ -563,6 +563,20 @@ def client_agent_chat(agent_id):
     )
 
 
+@app.route("/fr/client/agent/<agent_id>/chat")
+@client_required
+def client_agent_chat_fr(agent_id):
+    """Serve the French client agent chat interface."""
+    if agent_id not in agent_registry:
+        return "Agent introuvable", 404
+    return render_template(
+        "client/agent_chat_fr.html",
+        agent_id=agent_id,
+        agent=agent_registry[agent_id],
+        agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),
+    )
+
+
 @app.route("/client/dashboard")
 @client_required
 def client_dashboard():
@@ -993,6 +1007,21 @@ def admin_agent_chat(agent_id):
         return "Agent not found", 404
     return render_template(
         "admin/agent_chat.html",
+        agent_id=agent_id,
+        agent=agent_registry[agent_id],
+        agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),
+    )
+
+
+@app.route("/fr/admin/agent/<agent_id>/chat")
+def admin_agent_chat_fr(agent_id):
+    """Serve the French admin agent chat interface."""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login_fr"))
+    if agent_id not in agent_registry:
+        return "Agent introuvable", 404
+    return render_template(
+        "admin/agent_chat_fr.html",
         agent_id=agent_id,
         agent=agent_registry[agent_id],
         agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),

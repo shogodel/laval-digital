@@ -343,6 +343,7 @@
             <a href="#" data-tab="tasks"><span class="icon">📋</span> Tâches &amp; Approbations</a>
             <a href="#" data-tab="deploy"><span class="icon">🚀</span> Déployer un Client</a>
             <a href="#" data-tab="settings"><span class="icon">⚙️</span> Paramètres</a>
+            <a href="#" data-tab="users"><span class="icon">👤</span> Utilisateurs</a>
             <a href="#" data-tab="analytics"><span class="icon">📈</span> Analytiques</a>
             <a href="#" data-tab="reports"><span class="icon">📄</span> Rapports</a>
             <a href="#" data-tab="managed"><span class="icon">🔧</span> Clients Gérés</a>
@@ -568,18 +569,64 @@
                         <div class="form-group"><label><input type="checkbox" id="smtp-tls" checked> Utiliser TLS</label></div>
                     </div>
                     <div>
-                        <h3>Médias Sociaux</h3>
-                        <div class="form-group"><label>ID Page Facebook</label><input type="text" id="fb-page-id" placeholder="123456789"></div>
-                        <div class="form-group"><label>Jeton d'accès Facebook</label><input type="password" id="fb-token" placeholder="EAA..."></div>
-                        <div class="form-group"><label>ID Compte Instagram</label><input type="text" id="ig-account-id" placeholder="123456789"></div>
-                        <div class="form-group"><label>Jeton d'accès Instagram</label><input type="password" id="ig-token" placeholder="EAA..."></div>
+                        <h3>API Médias Sociaux Unifiée</h3>
+                        <p style="font-size:0.85em;color:var(--gray-500);margin-bottom:12px;">
+                            Connectez toutes vos plateformes sociales à la fois en utilisant une clé API unifiée (p. ex., SocialAPI, Buffer ou Hootsuite).
+                            Cette clé unique gère la publication sur Facebook, Instagram, TikTok, YouTube, LinkedIn, et plus encore.
+                        </p>
+                        <div class="form-group">
+                            <label>Fournisseur API</label>
+                            <select id="social-api-provider">
+                                <option value="socialapi">SocialAPI (Recommandé)</option>
+                                <option value="buffer">Buffer</option>
+                                <option value="hootsuite">Hootsuite</option>
+                                <option value="custom">Personnalisé/Multi-Plateforme</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Clé API Unifiée</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="password" id="unified-social-api-key" placeholder="Collez votre clé API unifiée ici">
+                                <button class="btn btn-gray btn-sm" onclick="validateSocialApiKey()">Tester la Connexion</button>
+                            </div>
+                            <div id="social-key-validation-result"></div>
+                        </div>
+                        <div id="connected-accounts-list" style="margin-top:16px;">
+                            <p style="font-size:0.85em;color:var(--gray-500);">Les comptes connectés apparaîtront ici après un test réussi.</p>
+                        </div>
                     </div>
                 </div>
-                <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
                     <button class="btn btn-gray" onclick="loadExecutionerSettings()">Recharger</button>
                     <button class="btn btn-green" onclick="saveExecutionerSettings()">Sauvegarder</button>
+                    <input type="email" id="smtp-test-email" placeholder="Votre courriel pour le test" style="width:auto;flex:1;min-width:160px;">
+                    <button class="btn btn-gray btn-sm" onclick="testSmtp(event)">📧 Envoyer un Courriel Test</button>
                     <span id="executioner-settings-result"></span>
                 </div>
+            </div>
+        </div>
+
+        <!-- TAB: Utilisateurs -->
+        <div class="tab-content" id="tab-users">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Gestion des Utilisateurs</h2>
+                    <p>Gérer les utilisateurs du client sélectionné</p>
+                </div>
+                {% if active_tenant %}
+                <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+                    <select id="user-role-filter" onchange="loadUsers()" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
+                        <option value="">Tous les rôles</option>
+                        <option value="client">Client</option>
+                        <option value="affiliate">Affilié</option>
+                        <option value="reseller">Revendeur</option>
+                    </select>
+                    <button class="btn btn-green btn-sm" onclick="showAddUser()">+ Ajouter</button>
+                </div>
+                <div id="users-list"><p class="empty">Chargement des utilisateurs...</p></div>
+                {% else %}
+                <p class="empty">Sélectionnez d'abord un client pour gérer les utilisateurs.</p>
+                {% endif %}
             </div>
         </div>
 
@@ -587,6 +634,38 @@
         {% include 'admin/reports.html' %}
         {% include 'admin/managed_clients.html' %}
     </main>
+
+    <!-- Modal Ajouter Utilisateur -->
+    <div id="user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+        <div style="background:var(--white);border-radius:var(--radius-lg);padding:32px;max-width:440px;width:90%;box-shadow:var(--shadow-lg);">
+            <h2 style="font-size:1.15rem;font-weight:700;margin-bottom:16px;color:var(--gray-900);">Ajouter un Utilisateur</h2>
+            <div class="form-group">
+                <label>Courriel</label>
+                <input type="email" id="new-user-email" placeholder="utilisateur@exemple.com">
+            </div>
+            <div class="form-group">
+                <label>Nom d'Affichage</label>
+                <input type="text" id="new-user-name" placeholder="Jean Tremblay">
+            </div>
+            <div class="form-group">
+                <label>Mot de Passe</label>
+                <input type="password" id="new-user-password" placeholder="Min 8 car., 1 chiffre, 1 spécial">
+            </div>
+            <div class="form-group">
+                <label>Rôle</label>
+                <select id="new-user-role">
+                    <option value="client">Client</option>
+                    <option value="affiliate">Affilié</option>
+                    <option value="reseller">Revendeur</option>
+                </select>
+            </div>
+            <div id="add-user-error" style="color:var(--red);font-size:0.85rem;margin-bottom:8px;"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button class="btn btn-gray" onclick="closeAddUser()">Annuler</button>
+                <button class="btn btn-red" onclick="addUser()">Créer</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -630,7 +709,7 @@ function switchTenant(tenantId) {
 }
 
 function refreshAll() {
-    loadAgents(); loadApprovals(); loadPendingExecutions(); loadExecutions(); updateDashboard();
+    loadAgents(); loadApprovals(); loadPendingExecutions(); loadExecutions(); updateDashboard(); loadUsers();
     if (typeof loadAdminAnalytics === 'function') loadAdminAnalytics();
 }
 
@@ -683,7 +762,8 @@ function loadAgents() {
                     <div class="row"><span class="label">Tâches</span><span class="value">${a.task_count} (${a.success_count} ok / ${a.failure_count} éch.)</span></div>
                     <div class="row"><span class="label">Dernière</span><span class="value">${lastInvoked}</span></div>
                     <div class="draft-preview">${a.last_draft_preview || '—'}</div>
-                    <div style="margin-top:10px;">
+                    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="btn btn-gray btn-xs" onclick="window.location.href='/fr/admin/agent/${a.agent_id}/chat'">💬 Discuter</button>
                         <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-btn" onclick="toggleAgent('${a.agent_id}')">
                             ${a.enabled ? 'Désactiver' : 'Activer'}
                         </button>
@@ -990,10 +1070,8 @@ function loadExecutionerSettings() {
             document.getElementById('smtp-password').value = s.smtp_password || '';
             document.getElementById('smtp-from').value = s.smtp_from_email || '';
             document.getElementById('smtp-tls').checked = s.smtp_use_tls !== false;
-            document.getElementById('fb-page-id').value = s.facebook_page_id || '';
-            document.getElementById('fb-token').value = s.facebook_access_token || '';
-            document.getElementById('ig-account-id').value = s.instagram_account_id || '';
-            document.getElementById('ig-token').value = s.instagram_access_token || '';
+            document.getElementById('social-api-provider').value = s.social_api_provider || 'socialapi';
+            document.getElementById('unified-social-api-key').value = s.social_api_key || '';
         })
         .catch(() => {});
 }
@@ -1006,10 +1084,8 @@ function saveExecutionerSettings() {
         smtp_password: document.getElementById('smtp-password').value,
         smtp_from_email: document.getElementById('smtp-from').value,
         smtp_use_tls: document.getElementById('smtp-tls').checked,
-        facebook_page_id: document.getElementById('fb-page-id').value,
-        facebook_access_token: document.getElementById('fb-token').value,
-        instagram_account_id: document.getElementById('ig-account-id').value,
-        instagram_access_token: document.getElementById('ig-token').value,
+        social_api_provider: document.getElementById('social-api-provider').value,
+        unified_social_api_key: document.getElementById('unified-social-api-key').value,
     };
     fetch('/api/executioner/settings', {
         method: 'PUT',
@@ -1023,6 +1099,72 @@ function saveExecutionerSettings() {
     })
     .catch(err => {
         document.getElementById('executioner-settings-result').innerHTML = '<span style="color:var(--red);">Erreur: ' + err.message + '</span>';
+    });
+}
+
+function testSmtp(event) {
+    const testEmail = document.getElementById('smtp-test-email').value;
+    if (!testEmail) return alert('Veuillez entrer une adresse courriel de test.');
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Envoi...';
+
+    fetch('/api/executioner/test-smtp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            to_email: testEmail,
+            smtp_host: document.getElementById('smtp-host').value,
+            smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
+            smtp_username: document.getElementById('smtp-username').value,
+            smtp_password: document.getElementById('smtp-password').value,
+            smtp_from_email: document.getElementById('smtp-from').value || document.getElementById('smtp-username').value,
+            smtp_use_tls: document.getElementById('smtp-tls').checked
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        const msg = data.success ? '✅ Courriel test envoyé! Vérifiez votre boîte de réception.' : '❌ Échec: ' + data.error;
+        document.getElementById('executioner-settings-result').innerHTML =
+            '<span style="color:' + (data.success ? 'var(--green)' : 'var(--red)') + ';">' + msg + '</span>';
+    })
+    .catch(err => {
+        document.getElementById('executioner-settings-result').innerHTML =
+            '<span style="color:var(--red);">Erreur: ' + err.message + '</span>';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = '📧 Envoyer un Courriel Test';
+    });
+}
+
+function validateSocialApiKey() {
+    const provider = document.getElementById('social-api-provider').value;
+    const apiKey = document.getElementById('unified-social-api-key').value;
+    if (!apiKey) return alert('Veuillez entrer votre clé API unifiée.');
+
+    const resultDiv = document.getElementById('social-key-validation-result');
+    resultDiv.innerHTML = '<span style="color:var(--blue);">Test de connexion...</span>';
+
+    fetch('/api/executioner/validate-social-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, api_key: apiKey })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            resultDiv.innerHTML = '<span style="color:var(--green);">✅ Connexion réussie!</span>';
+            const accountsHtml = (data.accounts || []).map(acc =>
+                `<div class="agent-card enabled" style="padding:10px;margin:4px 0;">
+                    <span style="font-weight:700;">${acc.platform || acc.name}</span> — ${acc.account_name}
+                    <span class="badge badge-idle">Connecté</span>
+                </div>`
+            ).join('');
+            document.getElementById('connected-accounts-list').innerHTML = accountsHtml;
+        } else {
+            resultDiv.innerHTML = '<span style="color:var(--red);">❌ Connexion échouée: ' + data.error + '</span>';
+        }
     });
 }
 
@@ -1062,6 +1204,87 @@ function deployClient() {
     });
 }
 
+/* ── Gestion des Utilisateurs ── */
+function loadUsers() {
+    const roleFilter = document.getElementById('user-role-filter')?.value || '';
+    const list = document.getElementById('users-list');
+    if (!list) return;
+    list.innerHTML = '<p class="empty">Chargement des utilisateurs...</p>';
+    fetch('/api/users?role=' + encodeURIComponent(roleFilter))
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { list.innerHTML = '<p class="empty">' + data.error + '</p>'; return; }
+            const users = data.users || [];
+            if (!users.length) {
+                list.innerHTML = '<p class="empty">Aucun utilisateur trouvé pour ce client.</p>'; return;
+            }
+            list.innerHTML = `
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Courriel</th><th>Nom</th><th>Rôle</th><th>Créé</th><th>Dernière Connexion</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        ${users.map(u => `
+                        <tr>
+                            <td>${u.email}</td>
+                            <td>${u.display_name || '—'}</td>
+                            <td><span class="badge badge-${u.role === 'client' ? 'blue' : u.role === 'affiliate' ? 'amber' : 'green'}">${u.role === 'client' ? 'Client' : u.role === 'affiliate' ? 'Affilié' : 'Revendeur'}</span></td>
+                            <td>${u.created_at ? u.created_at.slice(0,10) : '—'}</td>
+                            <td>${u.last_login ? u.last_login.slice(0,10) : '—'}</td>
+                            <td><button class="btn btn-gray btn-xs" onclick="deleteUser(${u.id})">Supprimer</button></td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+        })
+        .catch(() => { list.innerHTML = '<p class="empty">Échec du chargement des utilisateurs.</p>'; });
+}
+
+function showAddUser() {
+    document.getElementById('user-modal').style.display = 'flex';
+    document.getElementById('add-user-error').textContent = '';
+    document.getElementById('new-user-email').value = '';
+    document.getElementById('new-user-name').value = '';
+    document.getElementById('new-user-password').value = '';
+}
+
+function closeAddUser() {
+    document.getElementById('user-modal').style.display = 'none';
+}
+
+function addUser() {
+    const email = document.getElementById('new-user-email').value.trim();
+    const name = document.getElementById('new-user-name').value.trim();
+    const password = document.getElementById('new-user-password').value;
+    const role = document.getElementById('new-user-role').value;
+    const errorEl = document.getElementById('add-user-error');
+
+    if (!email || !password) { errorEl.textContent = 'Le courriel et le mot de passe sont requis.'; return; }
+
+    fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, display_name: name, password, role })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) { errorEl.textContent = data.error; return; }
+        closeAddUser();
+        loadUsers();
+    })
+    .catch(err => { errorEl.textContent = 'Erreur: ' + err.message; });
+}
+
+function deleteUser(userId) {
+    if (!confirm('Supprimer cet utilisateur?')) return;
+    fetch('/api/users/' + userId, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { alert(data.error); return; }
+            loadUsers();
+        })
+        .catch(err => { alert('Erreur: ' + err.message); });
+}
+
 /* ── Init ── */
 window.onload = function() {
     loadAgents();
@@ -1071,6 +1294,7 @@ window.onload = function() {
     loadExecutionerSettings();
     populateAgentSelect();
     updateDashboard();
+    loadUsers();
     document.getElementById('config-api-key').addEventListener('input', function() {
         document.getElementById('detect-btn').disabled = !this.value.trim();
     });
