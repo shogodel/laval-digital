@@ -552,18 +552,14 @@ def client_logout():
 @app.route("/client/agent/<agent_id>/chat")
 @client_required
 def client_agent_chat(agent_id):
-    """Serve the client-facing agent chat interface."""
+    """Serve the client agent chat interface."""
     if agent_id not in agent_registry:
         return "Agent not found", 404
-    agent = agent_registry[agent_id]
-    meta = AGENT_META.get(agent_id, {"name": agent_id, "desc": ""})
     return render_template(
         "client/agent_chat.html",
         agent_id=agent_id,
-        agent_name=meta.get("name", agent_id),
-        agent_desc=meta.get("desc", ""),
-        agent_model=agent.model,
-        agent_enabled=agent.enabled,
+        agent=agent_registry[agent_id],
+        agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),
     )
 
 
@@ -995,15 +991,11 @@ def admin_agent_chat(agent_id):
         return redirect(url_for("admin_login"))
     if agent_id not in agent_registry:
         return "Agent not found", 404
-    agent = agent_registry[agent_id]
-    meta = AGENT_META.get(agent_id, {"name": agent_id, "desc": ""})
     return render_template(
         "admin/agent_chat.html",
         agent_id=agent_id,
-        agent_name=meta.get("name", agent_id),
-        agent_desc=meta.get("desc", ""),
-        agent_model=agent.model,
-        agent_enabled=agent.enabled,
+        agent=agent_registry[agent_id],
+        agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),
     )
 
 
@@ -2112,60 +2104,109 @@ def invoke_agent(agent_id):
 
 @app.route("/api/agents/<agent_id>/chat", methods=["POST"])
 def agent_chat(agent_id):
-    """Send a message directly to a specific agent and get its response."""
+    """
+    Send a message directly to a specific agent and get its response.
+    Supports conversation threading -- pass an existing thread_id to continue
+    a conversation with full context.
+
+    Request body:
+    {
+        "message": "Write a blog post about winter plumbing tips",
+        "thread_id": "optional-existing-thread-uuid"
+    }
+
+    Response:
+    {
+        "agent_id": "local_seo",
+        "response": "Here's your blog post...",
+        "thread_id": "abc-123",
+        "thinking": "[Agent processed using deepseek-chat]",
+        "model": "deepseek-chat"
+    }
+    """
     if agent_id not in agent_registry:
-        return jsonify({"error": "Agent not found"}), 404
+        return jsonify({"error": f"Agent '{agent_id}' not found"}), 404
 
     agent = agent_registry[agent_id]
     if not agent.enabled:
         return jsonify({"error": "Agent is disabled"}), 403
 
     data = request.json
-    message = data.get("message", "")
-    thread_id = data.get("thread_id") or str(uuid.uuid4())
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    message = data.get("message", "").strip()
+    thread_id = data.get("thread_id", str(uuid.uuid4()))
 
     if not message:
         return jsonify({"error": "No message provided"}), 400
 
-    # Resolve tenant ID from session or current user
-    if session.get("admin_logged_in"):
-        tenant_id = session.get("active_tenant_id")
-    else:
-        tenant_id = getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    tenant_id = get_current_tenant()
+    now_iso = datetime.now().isoformat()
 
-    # Build conversation context from thread history
-    conversation_history = ""
+    # Build conversation context from previous messages in this thread
+    conversation_context = ""
     if tenant_id:
         try:
             conn = tenant_manager.get_connection(tenant_id)
             cursor = conn.cursor()
             cursor.execute(
-                ("SELECT agent_task, agent_draft FROM threads "
-                 "WHERE thread_id = ? AND status = 'chat' ORDER BY created_at ASC"),
-                (thread_id,),
+                "SELECT agent_task, agent_draft FROM threads WHERE thread_id = ? ORDER BY created_at ASC LIMIT 20",
+                (thread_id,)
             )
-            for row in cursor.fetchall():
-                conversation_history += f"User: {row['agent_task']}\nAssistant: {row['agent_draft']}\n"
+            history = cursor.fetchall()
+            if history:
+                conversation_context = "\n\n--- Previous conversation in this thread ---\n"
+                for row in history:
+                    conversation_context += f"User: {row['agent_task']}\nAgent: {row['agent_draft'][:300]}...\n"
+                conversation_context += "--- End of history ---\n\n"
         except Exception:
             pass
 
-    full_task = f"{conversation_history}\nUser: {message}" if conversation_history else message
+    # Build the full task with context
+    full_task = f"{conversation_context}Current request: {message}" if conversation_context else message
 
     try:
-        state = agent._draft_node({"task": full_task})
-        draft = state.get("draft_output", "")
+        # Use the agent's existing graph to generate a response
+        graph = agent.build_graph()
+        result = graph.invoke(
+            {
+                "task": full_task,
+                "draft_output": None,
+                "approved": None,
+                "feedback": None,
+                "result": None,
+            },
+            config={"configurable": {"thread_id": thread_id}}
+        )
 
+        draft = result.get("draft_output", "")
+
+        # Store the conversation turn in the tenant database
         if tenant_id:
             try:
                 conn = tenant_manager.get_connection(tenant_id)
                 cursor = conn.cursor()
                 cursor.execute(
-                    ("INSERT INTO threads "
-                     "(thread_id, routed_agent, agent_task, agent_draft, status, created_at) "
-                     "VALUES (?, ?, ?, ?, 'chat', ?)"),
-                    (thread_id, agent_id, message, draft, datetime.now().isoformat()),
+                    """INSERT INTO threads
+                       (thread_id, routed_agent, agent_task, agent_draft, status, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, 'chat', ?, ?)""",
+                    (thread_id, agent_id, message, draft, now_iso, now_iso)
                 )
                 conn.commit()
+            except Exception:
+                pass
+
+        # Update agent activity
+        if tenant_id:
+            try:
+                update_tenant_agent_activity(
+                    tenant_id,
+                    agent_id,
+                    status="idle",
+                    last_invoked=now_iso,
+                    last_draft_preview=(draft[:120] + "...") if len(draft) > 120 else draft,
+                )
             except Exception:
                 pass
 
@@ -2173,8 +2214,88 @@ def agent_chat(agent_id):
             "agent_id": agent_id,
             "response": draft,
             "thread_id": thread_id,
-            "thinking": f"[{AGENT_META.get(agent_id, {}).get('name', agent_id)} processed '{message[:60]}' using {agent.model}]",
+            "thinking": f"Agent '{agent_id}' processed your request using model '{agent.model}'. The agent applied its specialized system prompt to generate this response.",
+            "model": agent.model,
         })
+    except Exception as e:
+        logger.error(f"Agent chat failed for {agent_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/agents/<agent_id>/threads", methods=["GET"])
+def get_agent_threads(agent_id):
+    """
+    Get all chat threads for a specific agent in the current tenant.
+    Returns list of thread IDs with preview of the first message.
+    """
+    if agent_id not in agent_registry:
+        return jsonify({"error": f"Agent '{agent_id}' not found"}), 404
+
+    tenant_id = get_current_tenant()
+    if not tenant_id:
+        return jsonify({"threads": []})
+
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT DISTINCT thread_id,
+                      MIN(created_at) as started_at,
+                      (SELECT agent_task FROM threads t2 WHERE t2.thread_id = threads.thread_id ORDER BY created_at ASC LIMIT 1) as first_message
+               FROM threads
+               WHERE routed_agent = ? AND status = 'chat'
+               GROUP BY thread_id
+               ORDER BY started_at DESC LIMIT 30""",
+            (agent_id,)
+        )
+        threads = []
+        for row in cursor.fetchall():
+            threads.append({
+                "thread_id": row["thread_id"],
+                "started_at": row["started_at"],
+                "first_message": (row["first_message"] or "")[:80] + "..." if row["first_message"] and len(row["first_message"]) > 80 else (row["first_message"] or "New conversation"),
+            })
+        return jsonify({"threads": threads})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/agents/<agent_id>/threads/<thread_id>", methods=["GET"])
+def get_agent_thread_history(agent_id, thread_id):
+    """
+    Get the full conversation history for a specific thread.
+    Returns all messages in chronological order.
+    """
+    if agent_id not in agent_registry:
+        return jsonify({"error": f"Agent '{agent_id}' not found"}), 404
+
+    tenant_id = get_current_tenant()
+    if not tenant_id:
+        return jsonify({"messages": []})
+
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT agent_task, agent_draft, created_at
+               FROM threads
+               WHERE thread_id = ? AND routed_agent = ?
+               ORDER BY created_at ASC""",
+            (thread_id, agent_id)
+        )
+        messages = []
+        for row in cursor.fetchall():
+            messages.append({
+                "role": "user",
+                "content": row["agent_task"],
+                "timestamp": row["created_at"],
+            })
+            messages.append({
+                "role": "agent",
+                "content": row["agent_draft"],
+                "timestamp": row["created_at"],
+            })
+        return jsonify({"messages": messages, "thread_id": thread_id, "agent_id": agent_id})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

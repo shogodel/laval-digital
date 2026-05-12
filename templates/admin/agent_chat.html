@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat with {{ agent_name }} — Laval Digital Admin</title>
+    <title>Chat with {{ agent.agent_id }} — Laval Digital Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,273 +20,95 @@
             --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
         }
         html, body { height: 100%; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--gray-100);
-            color: var(--gray-900);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+        body { font-family: 'Inter', sans-serif; background: var(--gray-100); color: var(--gray-900); display: flex; flex-direction: column; overflow: hidden; }
         a { color: inherit; text-decoration: none; }
-        .topbar {
-            background: var(--navy);
-            color: var(--white);
-            padding: 0 20px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
-            gap: 12px;
-        }
+
+        /* ── Top Bar ── */
+        .topbar { background: var(--navy); color: var(--white); padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px; }
         .topbar-left { display: flex; align-items: center; gap: 12px; }
-        .topbar-left a {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: rgba(255,255,255,0.7);
-            font-size: 0.85rem;
-            font-weight: 500;
-            padding: 6px 12px;
-            border-radius: var(--radius);
-            transition: all 0.15s;
-        }
+        .topbar-left a { display: inline-flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 500; padding: 6px 12px; border-radius: var(--radius); transition: all 0.15s; }
         .topbar-left a:hover { background: rgba(255,255,255,0.1); color: var(--white); }
+        .topbar-center { display: flex; align-items: center; gap: 10px; }
         .topbar-center h2 { font-size: 1rem; font-weight: 700; }
-        .topbar-center .meta { font-size: 0.8rem; color: rgba(255,255,255,0.6); }
+        .topbar-center .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .topbar-center .status-dot.online { background: var(--green); }
+        .topbar-center .status-dot.offline { background: var(--gray-400); }
         .topbar-right { display: flex; align-items: center; gap: 10px; }
-        .topbar-right .model-badge {
-            font-size: 0.75rem;
-            background: rgba(255,255,255,0.12);
-            padding: 3px 10px;
-            border-radius: 20px;
-            color: rgba(255,255,255,0.85);
-        }
-        .topbar-right .status-dot {
-            width: 8px; height: 8px; border-radius: 50%; display: inline-block;
-        }
-        .topbar-right .status-dot.online { background: var(--green); }
-        .topbar-right .status-dot.offline { background: var(--gray-400); }
-        .chat-layout {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-        .sidebar-panel {
-            width: 240px;
-            background: var(--white);
-            border-right: 1px solid var(--gray-200);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            overflow-y: auto;
-        }
-        .sidebar-panel.right {
-            border-right: none;
-            border-left: 1px solid var(--gray-200);
-        }
-        .sidebar-header {
-            padding: 14px 16px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: var(--gray-500);
-            border-bottom: 1px solid var(--gray-200);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .sidebar-header button {
-            background: none;
-            border: 1px solid var(--gray-300);
-            border-radius: var(--radius);
-            padding: 2px 10px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            color: var(--gray-600);
-            font-family: inherit;
-            font-weight: 500;
-        }
-        .sidebar-header button:hover { background: var(--gray-100); }
-        .thread-item {
-            padding: 10px 16px;
-            font-size: 0.82rem;
-            color: var(--gray-700);
-            cursor: pointer;
-            border-bottom: 1px solid var(--gray-100);
-            transition: background 0.1s;
-            word-break: break-word;
-        }
+        .topbar-right .model-badge { font-size: 0.75rem; background: rgba(255,255,255,0.12); padding: 3px 10px; border-radius: 20px; color: rgba(255,255,255,0.85); }
+
+        /* ── Layout ── */
+        .chat-layout { display: flex; flex: 1; overflow: hidden; }
+
+        /* ── Left Sidebar ── */
+        .left-panel { width: 250px; background: var(--white); border-right: 1px solid var(--gray-200); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+        .left-panel .section-header { padding: 14px 16px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray-500); border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; }
+        .left-panel .section-header button { background: var(--red); color: var(--white); border: none; border-radius: var(--radius); padding: 4px 12px; font-size: 0.75rem; cursor: pointer; font-family: inherit; font-weight: 600; transition: background 0.12s; }
+        .left-panel .section-header button:hover { background: var(--red-dark); }
+        .thread-item { padding: 10px 16px; font-size: 0.82rem; color: var(--gray-700); cursor: pointer; border-bottom: 1px solid var(--gray-100); transition: background 0.1s; word-break: break-word; }
         .thread-item:hover { background: var(--gray-50); }
         .thread-item.active { background: var(--blue-bg); border-left: 3px solid var(--blue); }
         .thread-item .thread-date { font-size: 0.7rem; color: var(--gray-400); margin-top: 2px; }
-        .tool-btn {
-            display: block;
-            width: calc(100% - 16px);
-            margin: 6px 8px;
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            font-family: inherit;
-            font-weight: 500;
-            text-align: left;
-            border: 1px solid var(--gray-200);
-            border-radius: var(--radius);
-            background: var(--white);
-            color: var(--gray-700);
-            cursor: pointer;
-            transition: all 0.12s;
-        }
+        .tools-section { border-top: 1px solid var(--gray-200); padding: 8px 0; }
+        .tools-section .section-header { border-bottom: none; padding-bottom: 4px; }
+        .tool-btn { display: block; width: calc(100% - 16px); margin: 4px 8px; padding: 7px 12px; font-size: 0.78rem; font-family: inherit; font-weight: 500; text-align: left; border: 1px solid var(--gray-200); border-radius: var(--radius); background: var(--white); color: var(--gray-700); cursor: pointer; transition: all 0.12s; }
         .tool-btn:hover { background: var(--gray-50); border-color: var(--gray-300); }
-        .chat-main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            min-width: 0;
-        }
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .message {
-            max-width: 75%;
-            padding: 12px 16px;
-            border-radius: var(--radius-lg);
-            font-size: 0.9rem;
-            line-height: 1.55;
-            word-wrap: break-word;
-            white-space: pre-wrap;
-        }
-        .message.user {
-            align-self: flex-end;
-            background: var(--red);
-            color: var(--white);
-            border-bottom-right-radius: 4px;
-        }
-        .message.agent {
-            align-self: flex-start;
-            background: var(--white);
-            color: var(--gray-900);
-            box-shadow: var(--shadow);
-            border: 1px solid var(--gray-200);
-            border-bottom-left-radius: 4px;
-        }
-        .message .msg-sender {
-            font-size: 0.72rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            margin-bottom: 4px;
-        }
+
+        /* ── Center Chat ── */
+        .chat-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        .chat-header { padding: 12px 24px; background: var(--white); border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        .chat-header .agent-label { font-size: 0.85rem; font-weight: 600; color: var(--gray-700); }
+        .chat-header .agent-label span { font-weight: 400; color: var(--gray-500); }
+        .chat-header .thinking-toggle { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--gray-500); cursor: pointer; }
+        .chat-header .thinking-toggle input[type="checkbox"] { accent-color: var(--red); }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+        .message { max-width: 75%; padding: 12px 16px; border-radius: var(--radius-lg); font-size: 0.9rem; line-height: 1.55; word-wrap: break-word; white-space: pre-wrap; }
+        .message.user { align-self: flex-end; background: var(--blue); color: var(--white); border-bottom-right-radius: 4px; }
+        .message.agent { align-self: flex-start; background: var(--white); color: var(--gray-900); box-shadow: var(--shadow); border: 1px solid var(--gray-200); border-bottom-left-radius: 4px; }
+        .message .msg-sender { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
         .message.user .msg-sender { color: rgba(255,255,255,0.7); }
         .message.agent .msg-sender { color: var(--gray-500); }
-        .thinking-box {
-            background: var(--gray-50);
-            border: 1px dashed var(--gray-300);
-            border-radius: var(--radius);
-            padding: 10px 14px;
-            margin-top: 8px;
-            font-size: 0.8rem;
-            color: var(--gray-500);
-            font-style: italic;
-            line-height: 1.5;
-            display: none;
-        }
-        .thinking-box.visible { display: block; }
-        .empty-chat {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--gray-400);
-        }
+        .message .thinking-box { background: var(--gray-50); border: 1px dashed var(--gray-300); border-radius: var(--radius); padding: 10px 14px; margin-top: 8px; font-size: 0.8rem; color: var(--gray-500); font-style: italic; line-height: 1.5; display: none; }
+        .message .thinking-box.visible { display: block; }
+        .empty-chat { text-align: center; padding: 60px 20px; color: var(--gray-400); }
         .empty-chat p { font-size: 0.9rem; margin-top: 8px; }
         .empty-chat .big-icon { font-size: 3rem; }
-        .chat-input-area {
-            padding: 16px 24px;
-            background: var(--white);
-            border-top: 1px solid var(--gray-200);
-            display: flex;
-            gap: 10px;
-            align-items: flex-end;
-            flex-shrink: 0;
-        }
-        .chat-input-area textarea {
-            flex: 1;
-            padding: 10px 14px;
-            font-size: 0.9rem;
-            font-family: inherit;
-            border: 1px solid var(--gray-300);
-            border-radius: var(--radius-lg);
-            resize: none;
-            outline: none;
-            min-height: 44px;
-            max-height: 120px;
-            line-height: 1.5;
-            transition: border-color 0.15s;
-        }
-        .chat-input-area textarea:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(212,43,43,0.1); }
-        .chat-input-area button {
-            padding: 10px 24px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            font-family: inherit;
-            border: none;
-            border-radius: var(--radius-lg);
-            cursor: pointer;
-            transition: all 0.15s;
-            white-space: nowrap;
-            background: var(--red);
-            color: var(--white);
-            height: 44px;
-        }
-        .chat-input-area button:hover { background: var(--red-dark); }
-        .chat-input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .typing-indicator {
-            align-self: flex-start;
-            display: flex;
-            gap: 4px;
-            padding: 12px 16px;
-            background: var(--white);
-            border: 1px solid var(--gray-200);
-            border-radius: var(--radius-lg);
-            border-bottom-left-radius: 4px;
-            box-shadow: var(--shadow);
-        }
-        .typing-indicator span {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: var(--gray-400);
-            animation: typing 1.2s infinite;
-        }
+        .typing-indicator { align-self: flex-start; display: flex; gap: 4px; padding: 12px 16px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); border-bottom-left-radius: 4px; box-shadow: var(--shadow); }
+        .typing-indicator span { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-400); animation: typing 1.2s infinite; }
         .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
         .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes typing { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
-        .toggle-wrap {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.7);
-            cursor: pointer;
+        .chat-input-area { padding: 16px 24px; background: var(--white); border-top: 1px solid var(--gray-200); display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; }
+        .chat-input-area textarea { flex: 1; padding: 10px 14px; font-size: 0.9rem; font-family: inherit; border: 1px solid var(--gray-300); border-radius: var(--radius-lg); resize: none; outline: none; min-height: 44px; max-height: 120px; line-height: 1.5; transition: border-color 0.15s; }
+        .chat-input-area textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .chat-input-area button { padding: 10px 24px; font-size: 0.85rem; font-weight: 600; font-family: inherit; border: none; border-radius: var(--radius-lg); cursor: pointer; transition: all 0.15s; white-space: nowrap; background: var(--red); color: var(--white); height: 44px; }
+        .chat-input-area button:hover { background: var(--red-dark); }
+        .chat-input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── Right Sidebar ── */
+        .right-panel { width: 250px; background: var(--white); border-left: 1px solid var(--gray-200); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; padding: 0; }
+        .info-card { padding: 20px 16px; border-bottom: 1px solid var(--gray-200); }
+        .info-card h3 { font-size: 1rem; font-weight: 700; color: var(--gray-900); }
+        .info-card .info-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 5px 0; }
+        .info-card .info-row .label { color: var(--gray-500); }
+        .info-card .info-row .value { font-weight: 600; color: var(--gray-700); }
+        .quick-actions { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+        .quick-actions .qa-btn { padding: 8px 14px; font-size: 0.8rem; font-family: inherit; font-weight: 500; border: 1px solid var(--gray-200); border-radius: var(--radius); background: var(--white); color: var(--gray-700); cursor: pointer; transition: all 0.12s; text-align: left; }
+        .quick-actions .qa-btn:hover { background: var(--gray-50); border-color: var(--gray-300); }
+        .quick-actions .qa-btn.primary { background: var(--red); color: var(--white); border-color: var(--red); text-align: center; font-weight: 600; }
+        .quick-actions .qa-btn.primary:hover { background: var(--red-dark); border-color: var(--red-dark); }
+        .right-panel .back-link { padding: 16px; text-align: center; border-top: 1px solid var(--gray-200); margin-top: auto; }
+        .right-panel .back-link a { font-size: 0.85rem; color: var(--gray-500); font-weight: 500; }
+        .right-panel .back-link a:hover { color: var(--red); }
+
+        /* ── Responsive ── */
+        .sidebar-toggle { display: none; background: none; border: none; color: rgba(255,255,255,0.7); font-size: 1.3rem; cursor: pointer; padding: 4px; }
+        @media (max-width: 1024px) {
+            .right-panel { display: none; }
+            .right-panel.open { display: flex; position: fixed; top: 56px; right: 0; bottom: 0; z-index: 20; width: 280px; box-shadow: var(--shadow-md); }
         }
-        .toggle-wrap input[type="checkbox"] { accent-color: var(--red); }
-        .sidebar-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: rgba(255,255,255,0.7);
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 4px;
-        }
-        @media (max-width: 900px) {
-            .sidebar-panel { display: none; }
-            .sidebar-panel.open { display: flex; position: fixed; top: 56px; left: 0; bottom: 0; z-index: 20; width: 260px; box-shadow: var(--shadow-md); }
-            .sidebar-panel.right.open { left: auto; right: 0; }
+        @media (max-width: 768px) {
+            .left-panel { display: none; }
+            .left-panel.open { display: flex; position: fixed; top: 56px; left: 0; bottom: 0; z-index: 20; width: 280px; box-shadow: var(--shadow-md); }
             .sidebar-toggle { display: block; }
             .message { max-width: 90%; }
             .chat-messages { padding: 16px; }
@@ -294,45 +116,50 @@
         }
         @media (max-width: 480px) {
             .topbar-center h2 { font-size: 0.9rem; }
-            .topbar-center .meta { display: none; }
             .message { max-width: 95%; font-size: 0.85rem; }
         }
-        .error-shake { animation: shake 0.3s; }
-        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
     </style>
 </head>
 <body>
 
 <div class="topbar">
     <div class="topbar-left">
+        <button class="sidebar-toggle" onclick="togglePanel('left')" title="Threads">&#9776;</button>
         <a href="/admin">&larr; Admin</a>
-        <button class="sidebar-toggle" onclick="togglePanel('threads')" title="Threads">&#9776;</button>
     </div>
     <div class="topbar-center">
-        <h2>{{ agent_name }}</h2>
-        <div class="meta">{{ agent_desc }}</div>
+        <span class="status-dot {{ 'online' if agent.enabled else 'offline' }}"></span>
+        <h2 id="agent-display-name">{{ agent_name }}</h2>
     </div>
     <div class="topbar-right">
-        <span class="model-badge">{{ agent_model }}</span>
-        <span class="status-dot {{ 'online' if agent_enabled else 'offline' }}"></span>
-        <button class="sidebar-toggle" onclick="togglePanel('tools')" title="Tools">&#9881;</button>
-        <label class="toggle-wrap" title="Show agent's reasoning">
-            <input type="checkbox" id="show-thinking" onchange="toggleThinking()">
-            <span>Think</span>
-        </label>
+        <span class="model-badge">{{ agent.model }}</span>
+        <button class="sidebar-toggle" onclick="togglePanel('right')" title="Info">&#9432;</button>
     </div>
 </div>
 
 <div class="chat-layout">
-    <div class="sidebar-panel" id="panel-threads">
-        <div class="sidebar-header">
+    <!-- LEFT COLUMN: Threads + Tools -->
+    <div class="left-panel" id="panel-left">
+        <div class="section-header">
             Threads
-            <button onclick="newThread()">+ New</button>
+            <button onclick="startNewThread()">+ New</button>
         </div>
         <div id="thread-list"></div>
+        <div class="tools-section">
+            <div class="section-header">Quick Tools</div>
+            <div id="tool-list"></div>
+        </div>
     </div>
 
+    <!-- CENTER COLUMN: Chat -->
     <div class="chat-main">
+        <div class="chat-header">
+            <div class="agent-label">{{ agent_name }} <span>({{ agent.model }})</span></div>
+            <label class="thinking-toggle" title="Show agent's reasoning">
+                <input type="checkbox" id="show-thinking" onchange="toggleThinking()">
+                Show thinking
+            </label>
+        </div>
         <div class="chat-messages" id="chat-messages">
             <div class="empty-chat" id="empty-chat">
                 <div class="big-icon">&#129302;</div>
@@ -340,84 +167,95 @@
                 <p style="font-size:0.8rem;color:var(--gray-400);">Type a message below to begin.</p>
             </div>
         </div>
-
         <div class="chat-input-area">
             <textarea id="msg-input" rows="1" placeholder="Type your message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
             <button id="send-btn" onclick="sendMessage()">Send</button>
         </div>
     </div>
 
-    <div class="sidebar-panel right" id="panel-tools">
-        <div class="sidebar-header">Quick Tools</div>
-        <div id="tool-list"></div>
+    <!-- RIGHT COLUMN: Agent Info + Quick Actions -->
+    <div class="right-panel" id="panel-right">
+        <div class="info-card">
+            <h3 id="info-agent-name">{{ agent_name }}</h3>
+            <div class="info-row"><span class="label">Model</span><span class="value" id="info-model">{{ agent.model }}</span></div>
+            <div class="info-row"><span class="label">Status</span><span class="value" id="info-status">{{ 'Enabled' if agent.enabled else 'Disabled' }}</span></div>
+            <div class="info-row"><span class="label">Tasks</span><span class="value" id="info-tasks">--</span></div>
+            <div class="info-row"><span class="label">Success Rate</span><span class="value" id="info-rate">--</span></div>
+        </div>
+        <div class="quick-actions">
+            <button class="qa-btn" onclick="copyLastResponse()">&#128203; Copy Last Response</button>
+            <button class="qa-btn" onclick="startNewThread()">&#128260; New Thread</button>
+            <button class="qa-btn primary" onclick="window.location.href='/admin'">&#8592; Back to Admin</button>
+        </div>
+        <div class="back-link">
+            <a href="/admin">&larr; Back to Admin Panel</a>
+        </div>
     </div>
 </div>
 
-<div id="thinking-template" style="display:none;"><div class="thinking-box"></div></div>
-
 <script>
-const AGENT_ID = '{{ agent_id }}';
+const AGENT_ID = '{{ agent.agent_id }}';
+const AGENT_NAME = '{{ agent_name }}';
 let CURRENT_THREAD = null;
 let SHOW_THINKING = false;
 let LOADING = false;
+let LAST_RESPONSE = '';
+
 const TOOLS_MAP = {
-    local_seo: ["Research Keywords", "Audit GBP", "Generate Service Page"],
-    social_media: ["Create Post", "Generate Calendar", "Suggest Hashtags"],
-    lead_conversion: ["Design Chatbot Flow", "Write Follow-up Sequence"],
-    paid_ads: ["Create Ad Copy", "Suggest Keywords", "Set Budget"],
-    growth_hacker: ["Run Growth Audit", "Suggest Experiment", "Analyze Funnel"],
-    reputation: ["Generate Review Response", "Create Review Campaign"],
+    local_seo: ["Research Keywords", "Audit GBP", "Generate Service Page", "Analyze Competitor"],
+    social_media: ["Create Post", "Generate Weekly Calendar", "Suggest Hashtags", "Write Image Brief"],
+    lead_conversion: ["Design Chatbot Flow", "Write Follow-up Sequence", "Create Lead Scoring Rules"],
+    paid_ads: ["Create Ad Copy", "Suggest Keywords", "Set Budget", "A/B Test Ideas"],
+    growth_hacker: ["Run Growth Audit", "Suggest Experiment", "Analyze Funnel", "Find Growth Levers"],
+    reputation: ["Generate Review Response", "Create Review Campaign", "Audit Reputation"],
     email_marketing: ["Write Newsletter", "Create Sequence", "Design Automation"],
     tiktok: ["Write Script", "Suggest Hooks", "Create Content Calendar"],
-    outreach: ["Write Outreach Email", "Create Campaign Sequence"],
-    backlinks: ["Find Link Opportunities", "Write Guest Post Pitch"],
+    outreach: ["Write Outreach Email", "Create Campaign Sequence", "Find Prospects"],
+    backlinks: ["Find Link Opportunities", "Write Guest Post Pitch", "Audit Backlinks"],
 };
 
 function togglePanel(name) {
-    const el = document.getElementById('panel-' + name);
-    el.classList.toggle('open');
+    document.getElementById('panel-' + name).classList.toggle('open');
 }
 
 function toggleThinking() {
     SHOW_THINKING = document.getElementById('show-thinking').checked;
-    document.querySelectorAll('.thinking-box').forEach(b => {
-        b.classList.toggle('visible', SHOW_THINKING);
-    });
+    document.querySelectorAll('.thinking-box').forEach(b => b.classList.toggle('visible', SHOW_THINKING));
 }
 
+function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+}
+
+/* ── Tools ── */
 function loadTools() {
     const tools = TOOLS_MAP[AGENT_ID] || [];
-    const container = document.getElementById('tool-list');
-    container.innerHTML = tools.map(t =>
-        `<button class="tool-btn" onclick="useTool('${t}')">${t}</button>`
+    document.getElementById('tool-list').innerHTML = tools.map(t =>
+        `<button class="tool-btn" onclick="useTool('${t}')">${escapeHtml(t)}</button>`
     ).join('');
 }
 
 function useTool(tool) {
-    document.getElementById('msg-input').value = tool + ': ';
-    document.getElementById('msg-input').focus();
+    const input = document.getElementById('msg-input');
+    input.value = tool + ': ';
+    input.focus();
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
 }
 
-function newThread() {
-    CURRENT_THREAD = null;
-    document.getElementById('chat-messages').innerHTML = '';
-    const empty = document.getElementById('empty-chat').cloneNode(true);
-    document.getElementById('chat-messages').appendChild(empty);
-    document.querySelectorAll('.thread-item').forEach(el => el.classList.remove('active'));
-    document.getElementById('msg-input').value = '';
-    document.getElementById('msg-input').focus();
-}
-
+/* ── Threads ── */
 async function loadThreads() {
     try {
-        const r = await fetch('/api/threads?agent=' + AGENT_ID);
+        const r = await fetch('/api/agents/' + AGENT_ID + '/threads');
         if (!r.ok) return;
         const data = await r.json();
         const list = document.getElementById('thread-list');
         list.innerHTML = (data.threads || []).map(t =>
             `<div class="thread-item ${t.thread_id === CURRENT_THREAD ? 'active' : ''}" onclick="switchThread('${t.thread_id}')">
-                ${(t.agent_task || 'Chat').substring(0, 40)}
-                <div class="thread-date">${t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}</div>
+                ${escapeHtml((t.first_message || 'Chat').substring(0, 50))}
+                <div class="thread-date">${t.started_at ? new Date(t.started_at).toLocaleDateString() : ''}</div>
             </div>`
         ).join('');
     } catch (e) {}
@@ -426,7 +264,8 @@ async function loadThreads() {
 async function switchThread(threadId) {
     CURRENT_THREAD = threadId;
     document.querySelectorAll('.thread-item').forEach(el => el.classList.remove('active'));
-    document.querySelector(`.thread-item[onclick*="${threadId}"]`)?.classList.add('active');
+    const el = document.querySelector(`[onclick*="switchThread('${threadId}')"]`);
+    if (el) el.classList.add('active');
     await loadMessages(threadId);
     loadThreads();
 }
@@ -434,49 +273,45 @@ async function switchThread(threadId) {
 async function loadMessages(threadId) {
     const container = document.getElementById('chat-messages');
     try {
-        const r = await fetch('/api/threads/' + threadId + '/messages');
+        const r = await fetch('/api/agents/' + AGENT_ID + '/threads/' + threadId);
         if (!r.ok) throw new Error('Failed');
         const data = await r.json();
         const msgs = data.messages || [];
         container.innerHTML = '';
         if (msgs.length === 0) {
-            const empty = document.getElementById('empty-chat').cloneNode(true);
-            container.appendChild(empty);
+            container.appendChild(document.getElementById('empty-chat').cloneNode(true));
             return;
         }
-        msgs.forEach(m => {
-            appendMessage(m.role, m.content, m.thinking, false);
-        });
+        msgs.forEach(m => appendMessage(m.role, m.content, null, false));
         container.scrollTop = container.scrollHeight;
     } catch (e) {
         container.innerHTML = '<div class="empty-chat"><p style="color:var(--red);">Failed to load messages.</p></div>';
     }
 }
 
-function appendMessage(role, content, thinking, scroll = true) {
+/* ── Messages ── */
+function appendMessage(role, content, thinking, scroll) {
+    if (scroll === undefined) scroll = true;
     const container = document.getElementById('chat-messages');
     const empty = container.querySelector('.empty-chat');
     if (empty) empty.remove();
 
     const div = document.createElement('div');
     div.className = 'message ' + role;
-    div.innerHTML = `<div class="msg-sender">${role === 'user' ? 'You' : AGENT_ID.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</div>${escapeHtml(content)}`;
+    div.innerHTML = `<div class="msg-sender">${role === 'user' ? 'You' : AGENT_NAME}</div>${escapeHtml(content)}`;
     container.appendChild(div);
 
-    if (role === 'agent' && thinking) {
-        const tb = document.createElement('div');
-        tb.className = 'thinking-box' + (SHOW_THINKING ? ' visible' : '');
-        tb.textContent = 'Thinking: ' + escapeHtml(thinking);
-        container.appendChild(tb);
+    if (role === 'agent') {
+        if (content) LAST_RESPONSE = content;
+        if (thinking) {
+            const tb = document.createElement('div');
+            tb.className = 'thinking-box' + (SHOW_THINKING ? ' visible' : '');
+            tb.textContent = thinking;
+            div.querySelector('.msg-sender').insertAdjacentElement('afterend', tb);
+        }
     }
 
     if (scroll) container.scrollTop = container.scrollHeight;
-}
-
-function escapeHtml(text) {
-    const d = document.createElement('div');
-    d.textContent = text;
-    return d.innerHTML;
 }
 
 function showTyping() {
@@ -496,6 +331,17 @@ function hideTyping() {
     if (el) el.remove();
 }
 
+/* ── Send / New Thread ── */
+function startNewThread() {
+    CURRENT_THREAD = null;
+    LAST_RESPONSE = '';
+    document.getElementById('chat-messages').innerHTML = '';
+    document.getElementById('chat-messages').appendChild(document.getElementById('empty-chat').cloneNode(true));
+    document.querySelectorAll('.thread-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('msg-input').value = '';
+    document.getElementById('msg-input').focus();
+}
+
 async function sendMessage() {
     const input = document.getElementById('msg-input');
     const text = input.value.trim();
@@ -504,9 +350,9 @@ async function sendMessage() {
     LOADING = true;
     const btn = document.getElementById('send-btn');
     btn.disabled = true;
-    btn.textContent = '...';
+    btn.textContent = 'Sending...';
 
-    appendMessage('user', text, null);
+    appendMessage('user', text);
 
     input.value = '';
     input.style.height = 'auto';
@@ -516,16 +362,13 @@ async function sendMessage() {
         const r = await fetch('/api/agents/' + AGENT_ID + '/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: text,
-                thread_id: CURRENT_THREAD
-            })
+            body: JSON.stringify({ message: text, thread_id: CURRENT_THREAD })
         });
         const data = await r.json();
         hideTyping();
 
         if (data.error) {
-            appendMessage('agent', 'Error: ' + data.error, null);
+            appendMessage('agent', 'Error: ' + data.error);
         } else {
             CURRENT_THREAD = data.thread_id;
             appendMessage('agent', data.response, data.thinking || '');
@@ -533,7 +376,7 @@ async function sendMessage() {
         }
     } catch (e) {
         hideTyping();
-        appendMessage('agent', 'Network error. Please try again.', null);
+        appendMessage('agent', 'Network error. Please try again.');
     } finally {
         LOADING = false;
         btn.disabled = false;
@@ -541,10 +384,27 @@ async function sendMessage() {
     }
 }
 
+/* ── Quick Actions ── */
+function copyLastResponse() {
+    if (!LAST_RESPONSE) return alert('No response to copy yet.');
+    navigator.clipboard.writeText(LAST_RESPONSE).then(() => {
+        alert('Response copied to clipboard.');
+    });
+}
+
+/* ── Init ── */
 document.getElementById('msg-input').addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
+
+// Load agent stats
+fetch('/api/agents/' + AGENT_ID).then(r => r.json()).then(a => {
+    if (a.task_count !== undefined) document.getElementById('info-tasks').textContent = a.task_count;
+    if (a.success_count !== undefined && a.task_count > 0) {
+        document.getElementById('info-rate').textContent = Math.round(a.success_count / a.task_count * 100) + '%';
+    }
+}).catch(() => {});
 
 loadTools();
 loadThreads();
