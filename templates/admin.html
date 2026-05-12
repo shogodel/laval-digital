@@ -973,56 +973,52 @@ function populateAgentSelect() {
         .then(data => {
             const select = document.getElementById('config-agent-select');
             select.innerHTML = '<option value="">-- Choose an agent --</option>';
-            const allOpt = document.createElement('option');
-            allOpt.value = 'all';
-            allOpt.textContent = 'All Agents';
-            allOpt.style.fontWeight = '700';
-            allOpt.style.background = '#f3f4f6';
-            select.appendChild(allOpt);
+
+            const allOption = document.createElement('option');
+            allOption.value = '__all__';
+            allOption.textContent = '📦 All Agents (apply to all)';
+            allOption.style.fontWeight = 'bold';
+            select.appendChild(allOption);
+
             (data.agents || []).forEach(a => {
                 const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) };
                 const opt = document.createElement('option');
-                opt.value = a.agent_id; opt.textContent = meta.name;
+                opt.value = a.agent_id;
+                opt.textContent = meta.name;
                 select.appendChild(opt);
             });
         });
 }
 
 function loadAgentConfig() {
-    const agentId = document.getElementById('config-agent-select').value;
-    if (!agentId) {
-        document.getElementById('agent-config-form').style.display = 'none';
-        return;
-    }
-    document.getElementById('agent-config-form').style.display = 'block';
-    document.getElementById('config-model').innerHTML = '<option value="">-- Enter API key and click Detect --</option>';
-    document.getElementById('detect-result').textContent = '';
+    const selectedValue = document.getElementById('config-agent-select').value;
 
-    const label = document.querySelector('label[for="config-agent-select"]') || document.querySelector('.form-group label');
-    const badge = document.getElementById('config-badge');
-    if (agentId === 'all') {
+    if (selectedValue === '__all__' || selectedValue === 'all') {
+        document.getElementById('agent-config-form').style.display = 'block';
+        document.getElementById('config-model').innerHTML = '<option value="">-- Select model (or leave blank to keep current) --</option>';
         document.getElementById('config-api-key').value = '';
         document.getElementById('config-api-base').value = '';
         document.getElementById('detect-btn').disabled = true;
-        if (!badge) {
-            const b = document.createElement('span');
-            b.id = 'config-badge';
-            b.className = 'config-badge';
-            b.textContent = 'applying to all agents';
-            const container = document.querySelector('.form-group label');
-            if (container) container.after(b);
-        }
-    } else {
-        if (badge) badge.remove();
-        fetch('/api/agents/' + agentId + '/config')
-            .then(r => r.json())
-            .then(data => {
-                document.getElementById('config-api-key').value = data.api_key || '';
-                document.getElementById('config-api-base').value = data.api_base || '';
-                document.getElementById('detect-btn').disabled = !data.api_key;
-            })
-            .catch(() => {});
+        document.getElementById('detect-result').textContent = '';
+        return;
     }
+
+    if (!selectedValue) {
+        document.getElementById('agent-config-form').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('agent-config-form').style.display = 'block';
+    document.getElementById('config-model').innerHTML = '<option value="">-- Enter API key and click Detect --</option>';
+    document.getElementById('detect-result').textContent = '';
+    fetch('/api/agents/' + selectedValue + '/config')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('config-api-key').value = data.api_key || '';
+            document.getElementById('config-api-base').value = data.api_base || '';
+            document.getElementById('detect-btn').disabled = !data.api_key;
+        })
+        .catch(() => {});
 }
 
 function detectModels() {
@@ -1062,44 +1058,51 @@ function detectModels() {
 }
 
 function saveAgentConfig() {
-    const agentId = document.getElementById('config-agent-select').value;
+    const agentSelect = document.getElementById('config-agent-select');
+    const selectedValue = agentSelect.value;
     const model = document.getElementById('config-model').value;
     const apiKey = document.getElementById('config-api-key').value;
     const apiBase = document.getElementById('config-api-base').value;
-    const resultEl = document.getElementById('config-save-result');
 
-    if (agentId === 'all') {
-        const agentIds = Object.keys(AGENT_META);
-        resultEl.innerHTML = '<span style="color:var(--blue);">Saving to all agents...</span>';
-        fetch('/api/agents/config/bulk', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ agent_ids: agentIds, model, api_key: apiKey, api_base: apiBase })
-        })
-        .then(r => r.json())
-        .then(data => {
-            const msg = `Updated ${data.updated.length} agent(s)${data.errors.length ? ', ' + data.errors.length + ' error(s)' : ''}`;
-            resultEl.innerHTML = '<span style="color:var(--green);">' + msg + '</span>';
-            setTimeout(() => { resultEl.textContent = ''; }, 4000);
-        })
-        .catch(() => {
-            resultEl.innerHTML = '<span style="color:var(--red);">Error saving</span>';
-        });
-    } else {
-        fetch('/api/agents/' + agentId + '/config', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model, api_key: apiKey, api_base: apiBase })
-        })
-        .then(r => r.json())
-        .then(() => {
-            resultEl.innerHTML = '<span style="color:var(--green);">Saved!</span>';
-            setTimeout(() => { resultEl.textContent = ''; }, 3000);
-        })
-        .catch(() => {
-            resultEl.innerHTML = '<span style="color:var(--red);">Error saving</span>';
-        });
+    if (!selectedValue) {
+        alert('Please select an agent.');
+        return;
     }
+
+    const payload = { api_key: apiKey, api_base: apiBase };
+    if (model) payload.model = model;
+
+    let endpoint;
+    if (selectedValue === '__all__' || selectedValue === 'all') {
+        endpoint = '/api/agents/bulk/config';
+    } else {
+        endpoint = '/api/agents/' + selectedValue + '/config';
+    }
+
+    const resultDiv = document.getElementById('config-save-result');
+    resultDiv.innerHTML = '<span style="color:var(--blue);">Saving...</span>';
+
+    fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success || data.message) {
+            const count = data.updated || 'all';
+            resultDiv.innerHTML = '<span style="color:var(--green);">✓ ' + count + ' agent(s) updated!</span>';
+            loadAgents();
+        } else {
+            resultDiv.innerHTML = '<span style="color:var(--red);">Error: ' + (data.error || 'Unknown') + '</span>';
+        }
+    })
+    .catch(err => {
+        resultDiv.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>';
+    })
+    .finally(() => {
+        setTimeout(() => { resultDiv.textContent = ''; }, 5000);
+    });
 }
 
 /* ── Executioner Settings ── */

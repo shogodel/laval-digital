@@ -1458,6 +1458,56 @@ def update_agent_config(agent_id):
     })
 
 
+@app.route("/api/agents/bulk/config", methods=["POST"])
+def update_all_agents_config():
+    """Apply the same configuration to ALL agents at once."""
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    model = data.get("model")
+    api_key = data.get("api_key")
+    api_base = data.get("api_base")
+
+    updated_count = 0
+
+    for agent_id, config in AGENT_CONFIGS.items():
+        changed = False
+
+        if model and model != "__keep__":
+            if LLMAdapter.is_valid_model(model):
+                config["model"] = model
+                changed = True
+
+        if api_key:
+            config["credentials"]["api_key"] = api_key
+            changed = True
+
+        if api_base:
+            config["credentials"]["api_base"] = api_base
+            changed = True
+
+        if changed:
+            updated_count += 1
+
+        _reinitialize_agent(agent_id, config)
+
+    global orchestrator, orchestrator_graph
+    orchestrator = Orchestrator(llm_adapter, agent_registry)
+    orchestrator_graph = orchestrator.build_graph()
+
+    return jsonify({
+        "success": True,
+        "message": f"Updated {updated_count} agents",
+        "updated": updated_count,
+        "applied": {
+            "model": model or "(unchanged)",
+            "api_key": "****" + (api_key[-4:] if api_key and len(api_key) > 4 else "") if api_key else "(unchanged)",
+            "api_base": api_base or "(unchanged)"
+        }
+    })
+
+
 def _reinitialize_agent(agent_id: str, config: dict) -> None:
     """Re-initialize a single agent in the registry with a new config.
 
