@@ -212,7 +212,22 @@ class LLMAdapter:
             "temperature": self._temperature,
         }
 
-        if self._api_base:
+        # Force the correct API base and authentication format for known providers.
+        # This is the critical fix for the "Authentication Fails" error.
+        if self._model.startswith("deepseek"):
+            # DeepSeek requires its own API endpoint and the OpenAI-compatible auth format.
+            llm_kwargs["api_base"] = self._api_base or "https://api.deepseek.com/v1"
+            # Drop any litellm-specific provider prefix so it uses the correct adapter.
+            if "/" in llm_kwargs["model"]:
+                llm_kwargs["model"] = llm_kwargs["model"].split("/", 1)[1]
+        elif self._model.startswith("gpt-") or self._model.startswith("o1") or self._model.startswith("o3"):
+            # For OpenAI models, use the default OpenAI provider.
+            llm_kwargs["api_base"] = self._api_base or "https://api.openai.com/v1"
+        elif self._model.startswith("claude-"):
+            # For Anthropic models, use the default Anthropic provider.
+            llm_kwargs["api_base"] = self._api_base or "https://api.anthropic.com/v1"
+        elif self._api_base:
+            # For any other model with a custom api_base, pass it through.
             llm_kwargs["api_base"] = self._api_base
 
         try:

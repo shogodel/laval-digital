@@ -2523,14 +2523,19 @@ def switch_tenant():
 
     data = request.json
     tenant_id = data.get("tenant_id")
-    if not tenant_id:
-        return jsonify({"error": "tenant_id required"}), 400
 
-    session["active_tenant_id"] = tenant_id
-    return jsonify({
-        "active_tenant": tenant_id,
-        "message": f"Switched to tenant {tenant_id}",
-    })
+    if tenant_id:
+        session["active_tenant_id"] = tenant_id
+        return jsonify({
+            "active_tenant": tenant_id,
+            "message": f"Switched to {tenant_id}",
+        })
+    else:
+        session.pop("active_tenant_id", None)
+        return jsonify({
+            "active_tenant": None,
+            "message": "Client cleared",
+        })
 
 
 # ---------------------------------------------------------------------------

@@ -732,7 +732,6 @@ function toggleSidebar() {
 
 /* ── Tenant switching ── */
 function switchTenant(tenantId) {
-    if (!tenantId) return;
     const el = document.getElementById('tenant-switch-result');
     el.textContent = 'Switching...';
     fetch('/api/tenants/switch', {
@@ -743,8 +742,8 @@ function switchTenant(tenantId) {
     .then(r => r.json())
     .then(data => {
         el.textContent = data.message || 'Switched!';
-        document.getElementById('active-tenant-label').textContent = data.active_tenant;
-        document.querySelector('.tenant-pill .dot').className = 'dot active';
+        document.getElementById('active-tenant-label').textContent = data.active_tenant || 'No client selected';
+        document.querySelector('.tenant-pill .dot').className = data.active_tenant ? 'dot active' : 'dot inactive';
         refreshAll();
     })
     .catch(err => { el.textContent = 'Error: ' + err.message; });
