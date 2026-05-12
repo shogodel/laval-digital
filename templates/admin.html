@@ -385,12 +385,12 @@
             <div class="topbar-right">
                 <div class="tenant-pill">
                     <span class="dot {% if active_tenant %}active{% else %}inactive{% endif %}"></span>
-                    <span id="active-tenant-label">{% if active_tenant %}{{ active_tenant }}{% else %}No tenant{% endif %}</span>
+                    <span id="active-tenant-label">{% if active_tenant %}{{ active_tenant }}{% else %}No client selected{% endif %}</span>
                 </div>
                 <select id="tenant-select" onchange="switchTenant(this.value)" style="width:auto;min-width:140px;padding:6px 10px;font-size:0.85rem;">
-                    <option value="">Select tenant…</option>
+                    <option value="">Select a client…</option>
                     {% if tenants.direct_clients %}
-                    <optgroup label="Direct">
+                    <optgroup label="Direct Clients">
                         {% for t in tenants.direct_clients %}
                         <option value="{{ t }}"{% if active_tenant == t %} selected{% endif %}>{{ t }}</option>
                         {% endfor %}
@@ -573,7 +573,7 @@
             <div class="card">
                 <div class="card-header">
                     <h2>User Management</h2>
-                    <p>Manage users for the selected tenant</p>
+                    <p>Manage users for the selected client</p>
                 </div>
                 {% if active_tenant %}
                 <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
@@ -587,7 +587,7 @@
                 </div>
                 <div id="users-list"><p class="empty">Loading users...</p></div>
                 {% else %}
-                <p class="empty">Select a tenant first to manage users.</p>
+                <p class="empty">Select a client first to manage users.</p>
                 {% endif %}
             </div>
         </div>

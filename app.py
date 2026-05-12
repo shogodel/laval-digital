@@ -873,7 +873,7 @@ def api_list_users():
 
     tenant_id = session.get("active_tenant_id")
     if not tenant_id:
-        return jsonify({"error": "No tenant selected"}), 400
+        return jsonify({"error": "No client selected"}), 400
 
     role_filter = request.args.get("role", "").strip().lower()
 
@@ -905,7 +905,7 @@ def api_add_user():
 
     tenant_id = session.get("active_tenant_id")
     if not tenant_id:
-        return jsonify({"error": "No tenant selected"}), 400
+        return jsonify({"error": "No client selected"}), 400
 
     data = request.json
     email = (data.get("email") or "").strip()
@@ -937,7 +937,7 @@ def api_delete_user(user_id):
 
     tenant_id = session.get("active_tenant_id")
     if not tenant_id:
-        return jsonify({"error": "No tenant selected"}), 400
+        return jsonify({"error": "No client selected"}), 400
 
     try:
         conn = tenant_manager.get_connection(tenant_id)

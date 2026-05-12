@@ -368,7 +368,7 @@
                 <select id="tenant-select" onchange="switchTenant(this.value)" style="width:auto;min-width:140px;padding:6px 10px;font-size:0.85rem;">
                     <option value="">Sélectionner un client…</option>
                     {% if tenants.direct_clients %}
-                    <optgroup label="Directs">
+                    <optgroup label="Clients Directs">
                         {% for t in tenants.direct_clients %}
                         <option value="{{ t }}"{% if active_tenant == t %} selected{% endif %}>{{ t }}</option>
                         {% endfor %}
