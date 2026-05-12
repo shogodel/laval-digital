@@ -89,33 +89,37 @@ class BaseAgent(ABC):
         return self._system_prompt
 
     def _get_llm(self) -> BaseChatModel:
+        """Return a configured chat model instance.
+
+        DeepSeek models use ChatOpenAI pointed at the DeepSeek API — this is the
+        only reliable authentication method for DeepSeek.
+        All other models use ChatLiteLLM.
+        """
+        # DeepSeek: use ChatOpenAI (OpenAI-compatible endpoint)
+        if self._model.startswith("deepseek"):
+            from langchain_openai import ChatOpenAI
+
+            return ChatOpenAI(
+                model=self._model,
+                api_key=self._credentials["api_key"],
+                base_url=self._credentials.get("api_base", "https://api.deepseek.com/v1"),
+                temperature=0.7,
+            )
+
+        # All other models: use ChatLiteLLM
         if ChatLiteLLM is None:
             raise ImportError(
                 "litellm is required for multi-LLM support. "
                 "Install with: pip install litellm"
             )
 
-        model = self._model
-        api_key = self._credentials["api_key"]
-        api_base = self._credentials.get("api_base", "")
-
         llm_kwargs = {
-            "model": model,
-            "api_key": api_key,
+            "model": self._model,
+            "api_key": self._credentials["api_key"],
             "temperature": 0.7,
         }
-
-        # Force the correct API base and authentication format for known providers.
-        if model.startswith("deepseek"):
-            llm_kwargs["api_base"] = api_base or "https://api.deepseek.com/v1"
-            if "/" in llm_kwargs["model"]:
-                llm_kwargs["model"] = llm_kwargs["model"].split("/", 1)[1]
-        elif model.startswith("gpt-") or model.startswith("o1") or model.startswith("o3"):
-            llm_kwargs["api_base"] = api_base or "https://api.openai.com/v1"
-        elif model.startswith("claude-"):
-            llm_kwargs["api_base"] = api_base or "https://api.anthropic.com/v1"
-        elif api_base:
-            llm_kwargs["api_base"] = api_base
+        if "api_base" in self._credentials and self._credentials["api_base"]:
+            llm_kwargs["api_base"] = self._credentials["api_base"]
 
         return ChatLiteLLM(**llm_kwargs)
 

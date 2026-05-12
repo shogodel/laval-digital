@@ -193,14 +193,24 @@ class LLMAdapter:
         return {"provider": "unknown", "models": []}
 
     def _get_llm(self) -> BaseChatModel:
-        """Create and return a configured LiteLLM chat model instance.
+        """Return a configured chat model instance.
 
-        Returns:
-            ChatLiteLLM instance configured for the agent's model.
-
-        Raises:
-            LLMAdapterError: If litellm is not installed or configuration is invalid.
+        DeepSeek models use ChatOpenAI pointed at the DeepSeek API — this is the
+        only reliable authentication method for DeepSeek.
+        All other models use ChatLiteLLM.
         """
+        # DeepSeek: use ChatOpenAI (OpenAI-compatible endpoint)
+        if self._model.startswith("deepseek"):
+            from langchain_openai import ChatOpenAI
+
+            return ChatOpenAI(
+                model=self._model,
+                api_key=self._api_key,
+                base_url=self._api_base or "https://api.deepseek.com/v1",
+                temperature=self._temperature,
+            )
+
+        # All other models: use ChatLiteLLM
         if ChatLiteLLM is None:
             raise LLMAdapterError(
                 "litellm is required for multi-LLM support. Install with: pip install litellm"
@@ -212,22 +222,11 @@ class LLMAdapter:
             "temperature": self._temperature,
         }
 
-        # Force the correct API base and authentication format for known providers.
-        # This is the critical fix for the "Authentication Fails" error.
-        if self._model.startswith("deepseek"):
-            # DeepSeek requires its own API endpoint and the OpenAI-compatible auth format.
-            llm_kwargs["api_base"] = self._api_base or "https://api.deepseek.com/v1"
-            # Drop any litellm-specific provider prefix so it uses the correct adapter.
-            if "/" in llm_kwargs["model"]:
-                llm_kwargs["model"] = llm_kwargs["model"].split("/", 1)[1]
-        elif self._model.startswith("gpt-") or self._model.startswith("o1") or self._model.startswith("o3"):
-            # For OpenAI models, use the default OpenAI provider.
+        if self._model.startswith("gpt-") or self._model.startswith("o1") or self._model.startswith("o3"):
             llm_kwargs["api_base"] = self._api_base or "https://api.openai.com/v1"
         elif self._model.startswith("claude-"):
-            # For Anthropic models, use the default Anthropic provider.
             llm_kwargs["api_base"] = self._api_base or "https://api.anthropic.com/v1"
         elif self._api_base:
-            # For any other model with a custom api_base, pass it through.
             llm_kwargs["api_base"] = self._api_base
 
         try:
