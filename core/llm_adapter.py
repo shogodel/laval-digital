@@ -193,7 +193,7 @@ class LLMAdapter:
         return {"provider": "unknown", "models": []}
 
     def _get_llm(self) -> BaseChatModel:
-        """Return a configured chat model instance.
+        """Create and return a configured chat model instance.
 
         DeepSeek models use ChatOpenAI pointed at the DeepSeek API — this is the
         only reliable authentication method for DeepSeek.
@@ -221,12 +221,7 @@ class LLMAdapter:
             "api_key": self._api_key,
             "temperature": self._temperature,
         }
-
-        if self._model.startswith("gpt-") or self._model.startswith("o1") or self._model.startswith("o3"):
-            llm_kwargs["api_base"] = self._api_base or "https://api.openai.com/v1"
-        elif self._model.startswith("claude-"):
-            llm_kwargs["api_base"] = self._api_base or "https://api.anthropic.com/v1"
-        elif self._api_base:
+        if self._api_base:
             llm_kwargs["api_base"] = self._api_base
 
         try:
