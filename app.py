@@ -372,6 +372,20 @@ for agent_id, config in AGENT_CONFIGS.items():
     elif agent_id == "backlinks":
         agent_registry[agent_id] = BacklinksAgent(agent_id, config)
 
+# Agent display metadata for chat interfaces
+AGENT_META: Dict[str, Dict[str, str]] = {
+    "local_seo": {"name": "Local SEO", "desc": "Google Business Profile optimization, local citations, local keyword content, review management"},
+    "social_media": {"name": "Social Media", "desc": "Social media posts, content creation, content calendars, engagement strategies"},
+    "lead_conversion": {"name": "Lead Conversion", "desc": "Lead follow-up sequences, CRM integration, conversion optimization, email campaigns"},
+    "paid_ads": {"name": "Paid Ads", "desc": "Google & Meta ad campaigns, ad copy creation, keyword strategy, budget allocation, A/B testing, audience targeting"},
+    "growth_hacker": {"name": "Growth Hacker", "desc": "Growth audits, viral loops, conversion rate optimization, partnership strategies, data-driven experiments, creative low-cost tactics"},
+    "reputation": {"name": "Reputation", "desc": "Online review monitoring, review response generation, review generation campaigns, reputation audits, crisis response"},
+    "email_marketing": {"name": "Email Marketing", "desc": "Newsletter campaigns, promotional emails, lead nurture sequences, reactivation campaigns, post-service follow-ups"},
+    "tiktok": {"name": "TikTok", "desc": "Short-form video content for TikTok, Instagram Reels, YouTube Shorts, content calendars, video scripts, trend adaptation"},
+    "outreach": {"name": "Outreach", "desc": "Prospecting emails, lead finding, campaign sequences, follow-up automation, personalized outreach at scale"},
+    "backlinks": {"name": "Backlinks", "desc": "Link building, guest post prospecting, citation building, backlink gap analysis, broken link building, directory submissions"},
+}
+
 # Initialize ExecutionerAgent for approved draft execution
 executioner = ExecutionerAgent({
     "execution_log_path": "logs/executions.jsonl",
@@ -533,6 +547,24 @@ def client_logout():
     session.clear()
     flash("You have been logged out.", "success")
     return redirect(url_for("client_login"))
+
+
+@app.route("/client/agent/<agent_id>/chat")
+@client_required
+def client_agent_chat(agent_id):
+    """Serve the client-facing agent chat interface."""
+    if agent_id not in agent_registry:
+        return "Agent not found", 404
+    agent = agent_registry[agent_id]
+    meta = AGENT_META.get(agent_id, {"name": agent_id, "desc": ""})
+    return render_template(
+        "client/agent_chat.html",
+        agent_id=agent_id,
+        agent_name=meta.get("name", agent_id),
+        agent_desc=meta.get("desc", ""),
+        agent_model=agent.model,
+        agent_enabled=agent.enabled,
+    )
 
 
 @app.route("/client/dashboard")
@@ -953,6 +985,25 @@ def admin_panel_redirect():
         logo_uploaded=logo_status,
         tenants=tenants,
         active_tenant=active_tenant,
+    )
+
+
+@app.route("/admin/agent/<agent_id>/chat")
+def admin_agent_chat(agent_id):
+    """Serve the admin agent chat interface."""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+    if agent_id not in agent_registry:
+        return "Agent not found", 404
+    agent = agent_registry[agent_id]
+    meta = AGENT_META.get(agent_id, {"name": agent_id, "desc": ""})
+    return render_template(
+        "admin/agent_chat.html",
+        agent_id=agent_id,
+        agent_name=meta.get("name", agent_id),
+        agent_desc=meta.get("desc", ""),
+        agent_model=agent.model,
+        agent_enabled=agent.enabled,
     )
 
 
@@ -2057,6 +2108,191 @@ def invoke_agent(agent_id):
             except Exception:
                 pass
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/agents/<agent_id>/chat", methods=["POST"])
+def agent_chat(agent_id):
+    """Send a message directly to a specific agent and get its response."""
+    if agent_id not in agent_registry:
+        return jsonify({"error": "Agent not found"}), 404
+
+    agent = agent_registry[agent_id]
+    if not agent.enabled:
+        return jsonify({"error": "Agent is disabled"}), 403
+
+    data = request.json
+    message = data.get("message", "")
+    thread_id = data.get("thread_id") or str(uuid.uuid4())
+
+    if not message:
+        return jsonify({"error": "No message provided"}), 400
+
+    # Resolve tenant ID from session or current user
+    if session.get("admin_logged_in"):
+        tenant_id = session.get("active_tenant_id")
+    else:
+        tenant_id = getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+
+    # Build conversation context from thread history
+    conversation_history = ""
+    if tenant_id:
+        try:
+            conn = tenant_manager.get_connection(tenant_id)
+            cursor = conn.cursor()
+            cursor.execute(
+                ("SELECT agent_task, agent_draft FROM threads "
+                 "WHERE thread_id = ? AND status = 'chat' ORDER BY created_at ASC"),
+                (thread_id,),
+            )
+            for row in cursor.fetchall():
+                conversation_history += f"User: {row['agent_task']}\nAssistant: {row['agent_draft']}\n"
+        except Exception:
+            pass
+
+    full_task = f"{conversation_history}\nUser: {message}" if conversation_history else message
+
+    try:
+        state = agent._draft_node({"task": full_task})
+        draft = state.get("draft_output", "")
+
+        if tenant_id:
+            try:
+                conn = tenant_manager.get_connection(tenant_id)
+                cursor = conn.cursor()
+                cursor.execute(
+                    ("INSERT INTO threads "
+                     "(thread_id, routed_agent, agent_task, agent_draft, status, created_at) "
+                     "VALUES (?, ?, ?, ?, 'chat', ?)"),
+                    (thread_id, agent_id, message, draft, datetime.now().isoformat()),
+                )
+                conn.commit()
+            except Exception:
+                pass
+
+        return jsonify({
+            "agent_id": agent_id,
+            "response": draft,
+            "thread_id": thread_id,
+            "thinking": f"[{AGENT_META.get(agent_id, {}).get('name', agent_id)} processed '{message[:60]}' using {agent.model}]",
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/threads")
+def api_list_threads():
+    """List chat threads for the current tenant, optionally filtered by agent."""
+    if session.get("admin_logged_in"):
+        tenant_id = session.get("active_tenant_id")
+    else:
+        tenant_id = getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    if not tenant_id:
+        return jsonify({"threads": []})
+
+    agent_filter = request.args.get("agent", "")
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        if agent_filter:
+            cursor.execute(
+                ("SELECT thread_id, agent_task, created_at FROM threads "
+                 "WHERE status = 'chat' AND routed_agent = ? "
+                 "ORDER BY created_at DESC LIMIT 50"),
+                (agent_filter,),
+            )
+        else:
+            cursor.execute(
+                "SELECT thread_id, agent_task, created_at FROM threads WHERE status = 'chat' ORDER BY created_at DESC LIMIT 50"
+            )
+        rows = cursor.fetchall()
+        return jsonify({
+            "threads": [
+                {"thread_id": r["thread_id"], "agent_task": r["agent_task"], "created_at": r["created_at"]}
+                for r in rows
+            ]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/threads/<thread_id>/messages")
+def api_get_thread_messages(thread_id):
+    """Get all messages in a chat thread."""
+    if session.get("admin_logged_in"):
+        tenant_id = session.get("active_tenant_id")
+    else:
+        tenant_id = getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    if not tenant_id:
+        return jsonify({"messages": []})
+
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT agent_task, agent_draft, result FROM threads WHERE thread_id = ? AND status = 'chat' ORDER BY created_at ASC",
+            (thread_id,),
+        )
+        rows = cursor.fetchall()
+        messages = []
+        for r in rows:
+            messages.append({"role": "user", "content": r["agent_task"]})
+            messages.append({"role": "agent", "content": r["agent_draft"], "thinking": None})
+        return jsonify({"messages": messages})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/client/threads")
+@client_required
+def api_client_list_threads():
+    """List chat threads for the current client, optionally filtered by agent."""
+    tenant_id = current_user.tenant_id
+    agent_filter = request.args.get("agent", "")
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        if agent_filter:
+            cursor.execute(
+                ("SELECT thread_id, agent_task, created_at FROM threads "
+                 "WHERE status = 'chat' AND routed_agent = ? "
+                 "ORDER BY created_at DESC LIMIT 50"),
+                (agent_filter,),
+            )
+        else:
+            cursor.execute(
+                "SELECT thread_id, agent_task, created_at FROM threads WHERE status = 'chat' ORDER BY created_at DESC LIMIT 50"
+            )
+        rows = cursor.fetchall()
+        return jsonify({
+            "threads": [
+                {"thread_id": r["thread_id"], "agent_task": r["agent_task"], "created_at": r["created_at"]}
+                for r in rows
+            ]
+        })
+    except Exception:
+        return jsonify({"threads": []})
+
+
+@app.route("/api/client/threads/<thread_id>/messages")
+@client_required
+def api_client_get_thread_messages(thread_id):
+    """Get all messages in a chat thread for the current client."""
+    tenant_id = current_user.tenant_id
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT agent_task, agent_draft FROM threads WHERE thread_id = ? AND status = 'chat' ORDER BY created_at ASC",
+            (thread_id,),
+        )
+        rows = cursor.fetchall()
+        messages = []
+        for r in rows:
+            messages.append({"role": "user", "content": r["agent_task"]})
+            messages.append({"role": "agent", "content": r["agent_draft"]})
+        return jsonify({"messages": messages})
+    except Exception:
+        return jsonify({"messages": []})
 
 
 # ---------------------------------------------------------------------------

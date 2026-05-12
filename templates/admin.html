@@ -804,7 +804,8 @@ function loadAgents() {
                     <div class="row"><span class="label">Tasks</span><span class="value">${a.task_count} (${a.success_count} ok / ${a.failure_count} fail)</span></div>
                     <div class="row"><span class="label">Last</span><span class="value">${lastInvoked}</span></div>
                     <div class="draft-preview">${a.last_draft_preview || '—'}</div>
-                    <div style="margin-top:10px;">
+                    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="btn btn-gray btn-xs" onclick="window.location.href='/admin/agent/${a.agent_id}/chat'">💬 Chat</button>
                         <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-btn" onclick="toggleAgent('${a.agent_id}')">
                             ${a.enabled ? 'Disable' : 'Enable'}
                         </button>
