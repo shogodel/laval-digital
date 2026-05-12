@@ -560,6 +560,59 @@
                         <input type="checkbox" id="agree-payment" required>
                         I understand that a non-refundable deposit of 25-50% is required to begin work, and the remaining balance is split into installments tied to project milestones, with the final payment due upon project completion and launch.
                     </label>
+                    <div style="margin:16px 0;text-align:left;">
+                        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.85rem;color:var(--gray-700);line-height:1.5;">
+                            <input type="checkbox" id="accept-hosting-policy" required style="margin-top:3px;min-width:18px;min-height:18px;">
+                            <span>I understand that my website will be hosted on Laval Digital's managed cloud infrastructure, and that third-party hosting services are not supported. I understand that I retain full ownership of my domain name.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="background:var(--white); border:1px solid var(--gray-200); border-radius:12px; padding:28px 24px; margin:24px 0; text-align:left;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                        <span style="font-size:1.8rem;">☁️</span>
+                        <h3 style="font-size:1.1rem;font-weight:700;color:var(--gray-900);margin:0;">Managed Cloud Infrastructure — Included Free</h3>
+                    </div>
+                    <p style="font-size:0.9rem;color:var(--gray-600);line-height:1.7;margin-bottom:16px;">
+                        Your Laval Digital AI Suite runs on our secure, high-performance, fully managed cloud infrastructure. 
+                        This is not shared hosting — it's enterprise-grade infrastructure that guarantees speed, security, and reliability.
+                    </p>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">99.9% uptime guarantee</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">Automatic SSL certificate</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">Daily backups & monitoring</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">Global CDN for fast loading</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">Security updates included</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">You own your domain name</span>
+                        </div>
+                    </div>
+                    <div style="background:var(--blue-bg);border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-top:12px;">
+                        <p style="font-size:0.85rem;color:#1e40af;line-height:1.6;margin:0;">
+                            <strong>📌 Important:</strong> Our platform is engineered specifically for our managed infrastructure. 
+                            We are unable to install or maintain the suite on third-party hosting services (e.g., Hostinger, Bluehost, GoDaddy). 
+                            This policy ensures your site maintains its guaranteed performance, security, and reliability at all times.
+                        </p>
+                    </div>
+                    <p style="font-size:0.8rem;color:var(--gray-400);margin-top:12px;">
+                        Domain name registration is not included. You retain 100% ownership of your domain. We point it to your live website free of charge.
+                    </p>
                 </div>
 
                 <div class="flexibility-box">
@@ -656,6 +709,7 @@ function signContract() {
     const address = document.getElementById('address').value.trim();
     const agreeTerms = document.getElementById('agree-terms').checked;
     const agreePayment = document.getElementById('agree-payment').checked;
+    const acceptHosting = document.getElementById('accept-hosting-policy').checked;
 
     if (!name || !business || !email || !phone || !address) {
         alert('Please fill in all required fields.');
@@ -663,6 +717,10 @@ function signContract() {
     }
     if (!agreeTerms || !agreePayment) {
         alert('Please agree to the terms and payment schedule.');
+        return;
+    }
+    if (!acceptHosting) {
+        alert('Please accept the Managed Cloud Infrastructure Policy to continue.');
         return;
     }
 

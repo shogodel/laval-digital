@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 import smtplib
 import threading
@@ -40,15 +41,12 @@ class ExecutionerAgent:
         "smtp_password": "",
         "smtp_from_email": "",
         "smtp_use_tls": True,
-        "facebook_page_id": "",
-        "facebook_access_token": "",
-        "instagram_account_id": "",
-        "instagram_access_token": "",
+        "social_api_provider": "socialapi",
+        "social_api_key": "",
         "confirm_tools": [
             "send_email",
             "send_sms",
-            "post_to_facebook",
-            "post_to_instagram",
+            "post_to_social",
         ],
     }
 
@@ -129,8 +127,8 @@ class ExecutionerAgent:
         """Register the built-in tool implementations."""
         self.register_tool("publish_blog_post", self._publish_blog_post)
         self.register_tool("update_gmb", self._update_gmb)
-        self.register_tool("post_to_facebook", self._post_to_facebook)
-        self.register_tool("post_to_instagram", self._post_to_instagram)
+        self.register_tool("post_to_social", self._post_to_social)
+        self.register_tool("post_to_social_unified", self._post_to_social_unified)
         self.register_tool("send_email", self._send_email)
         self.register_tool("send_sms", self._send_sms)
 
@@ -158,7 +156,7 @@ class ExecutionerAgent:
             tool_name: Explicit tool name. When ``None``, the tool is
                 auto-selected based on ``agent_name``:
                 - ``local_seo`` → ``publish_blog_post``
-                - ``social_media`` → ``post_to_facebook``
+                - ``social_media`` → ``post_to_social``
                 - ``lead_conversion`` → ``send_email``
             force: If ``True``, bypass the confirmation queue and run
                 immediately.
@@ -401,7 +399,7 @@ class ExecutionerAgent:
         """
         mapping = {
             "local_seo": "publish_blog_post",
-            "social_media": "post_to_facebook",
+            "social_media": "post_to_social",
             "lead_conversion": "send_email",
         }
         tool = mapping.get(agent_name)
@@ -483,11 +481,12 @@ class ExecutionerAgent:
         except OSError as exc:
             return {"success": False, "result": "", "error": str(exc)}
 
-    def _post_to_facebook(self, draft: str) -> Dict[str, Any]:
-        """Post content to Facebook or queue for manual review.
+    def _post_to_social(self, draft: str) -> Dict[str, Any]:
+        """Post content to all connected social platforms via unified API.
 
-        When ``facebook_access_token`` is configured, posts via the
-        Facebook Graph API. Otherwise queues to a JSONL file.
+        Uses the configured ``social_api_key`` with the chosen provider
+        (SocialAPI, Buffer, Hootsuite, or Custom). Falls back to queuing
+        to a JSONL file when no API key is configured.
 
         Args:
             draft: Social media post content.
@@ -495,122 +494,119 @@ class ExecutionerAgent:
         Returns:
             Result dict.
         """
-        token = self._settings.get("facebook_access_token", "")
-        page_id = self._settings.get("facebook_page_id", "")
+        provider = self._settings.get("social_api_provider", "socialapi")
+        api_key = self._settings.get("social_api_key", "")
 
-        if token and page_id:
+        if api_key:
             try:
                 import requests as req
 
-                url = f"https://graph.facebook.com/v19.0/{page_id}/feed"
-                resp = req.post(
-                    url,
-                    data={"message": draft, "access_token": token},
-                    timeout=15,
-                )
-                data = resp.json()
-                if resp.status_code == 200 and data.get("id"):
-                    logger.info("Facebook post published (id=%s)", data["id"])
-                    return {
-                        "success": True,
-                        "result": f"Facebook post published (id={data['id']})",
-                        "error": None,
-                    }
-                error_msg = data.get("error", {}).get("message", resp.text)
-                return {"success": False, "result": "", "error": f"Facebook API error: {error_msg}"}
-            except Exception as exc:
-                return {"success": False, "result": "", "error": f"Facebook request failed: {exc}"}
+                if provider == "socialapi":
+                    resp = req.post(
+                        "https://api.socialapi.com/v1/posts",
+                        headers={"Authorization": f"Bearer {api_key}"},
+                        json={"message": draft},
+                        timeout=15,
+                    )
+                    data = resp.json()
+                    if resp.status_code == 200 and data.get("success"):
+                        logger.info("Social post published via SocialAPI")
+                        return {"success": True, "result": "Posted via SocialAPI", "error": None}
+                    error_msg = data.get("error", resp.text)
+                    return {"success": False, "result": "", "error": f"SocialAPI error: {error_msg}"}
 
+                elif provider == "buffer":
+                    resp = req.post(
+                        "https://api.bufferapp.com/1/updates/create.json",
+                        data={"access_token": api_key, "text": draft, "profile_ids[]": []},
+                        timeout=15,
+                    )
+                    data = resp.json()
+                    if resp.status_code == 200 and data.get("success"):
+                        return {"success": True, "result": "Posted via Buffer", "error": None}
+                    return {"success": False, "result": "", "error": f"Buffer error: {data}"}
+
+                elif provider == "hootsuite":
+                    resp = req.post(
+                        "https://platform.hootsuite.com/v1/messages",
+                        headers={
+                            "Authorization": f"Bearer {api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={"text": draft, "socialProfiles": []},
+                        timeout=15,
+                    )
+                    data = resp.json()
+                    if resp.status_code in (200, 201) and data.get("id"):
+                        return {"success": True, "result": "Posted via Hootsuite", "error": None}
+                    return {"success": False, "result": "", "error": f"Hootsuite error: {data}"}
+
+                else:
+                    # Custom/Generic — user provides their own API endpoint via env
+                    custom_url = os.getenv("SOCIAL_API_CUSTOM_URL", "")
+                    if custom_url:
+                        resp = req.post(
+                            custom_url,
+                            headers={
+                                "Authorization": f"Bearer {api_key}",
+                                "Content-Type": "application/json",
+                            },
+                            json={"message": draft},
+                            timeout=15,
+                        )
+                        data = resp.json()
+                        if resp.status_code in (200, 201):
+                            return {"success": True, "result": "Posted via custom API", "error": None}
+                        return {"success": False, "result": "", "error": f"Custom API error: {data}"}
+
+                    return {"success": False, "result": "", "error": "No custom API URL configured (set SOCIAL_API_CUSTOM_URL)"}
+
+            except Exception as exc:
+                return {"success": False, "result": "", "error": f"Social API request failed: {exc}"}
+
+        # Fallback: queue to JSONL file for manual review
         try:
             social_dir = Path("content/social")
             social_dir.mkdir(parents=True, exist_ok=True)
-            fb_file = social_dir / "facebook_posts.jsonl"
+            social_file = social_dir / "social_posts.jsonl"
 
             record = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "content": draft,
+                "provider": provider,
                 "status": "pending_review",
             }
 
             with self._io_lock:
-                with open(fb_file, "a", encoding="utf-8") as f:
+                with open(social_file, "a", encoding="utf-8") as f:
                     f.write(json.dumps(record) + "\n")
 
-            return {"success": True, "result": "Facebook post queued to file", "error": None}
+            return {"success": True, "result": "Social post queued to file", "error": None}
         except OSError as exc:
             return {"success": False, "result": "", "error": str(exc)}
 
-    def _post_to_instagram(self, draft: str) -> Dict[str, Any]:
-        """Post content to Instagram or queue for manual review.
+    def _post_to_social_unified(self, draft: str) -> Dict[str, Any]:
+        """Post to multiple social platforms using the configured unified API."""
+        provider = self._settings.get("social_api_provider", "")
+        api_key = self._settings.get("social_api_key", "")
 
-        When ``instagram_access_token`` is configured, posts via the
-        Instagram Graph API. Otherwise queues to a JSONL file.
-
-        Args:
-            draft: Instagram post content (caption + optional hashtags).
-
-        Returns:
-            Result dict.
-        """
-        token = self._settings.get("instagram_access_token", "")
-        account_id = self._settings.get("instagram_account_id", "")
-
-        if token and account_id:
-            try:
-                import requests as req
-
-                url = f"https://graph.facebook.com/v19.0/{account_id}/media"
-                resp = req.post(
-                    url,
-                    data={"caption": draft, "access_token": token},
-                    timeout=15,
-                )
-                creation_data = resp.json()
-                if resp.status_code != 200 or not creation_data.get("id"):
-                    error_msg = creation_data.get("error", {}).get("message", resp.text)
-                    return {"success": False, "result": "", "error": f"Instagram API error: {error_msg}"}
-
-                media_id = creation_data["id"]
-                publish_url = f"https://graph.facebook.com/v19.0/{account_id}/media_publish"
-                pub_resp = req.post(
-                    publish_url,
-                    data={"creation_id": media_id, "access_token": token},
-                    timeout=15,
-                )
-                pub_data = pub_resp.json()
-                if pub_resp.status_code == 200 and pub_data.get("id"):
-                    logger.info("Instagram post published (id=%s)", pub_data["id"])
-                    return {
-                        "success": True,
-                        "result": f"Instagram post published (id={pub_data['id']})",
-                        "error": None,
-                    }
-                return {
-                    "success": False,
-                    "result": "",
-                    "error": f"Instagram publish failed: {pub_data}",
-                }
-            except Exception as exc:
-                return {"success": False, "result": "", "error": f"Instagram request failed: {exc}"}
+        if not api_key:
+            return {"success": False, "result": "", "error": "No unified social API key configured."}
 
         try:
-            social_dir = Path("content/social")
-            social_dir.mkdir(parents=True, exist_ok=True)
-            ig_file = social_dir / "instagram_posts.jsonl"
+            if provider == "socialapi":
+                from socialapi import SocialAPI
+                client = SocialAPI(api_key=api_key)
 
-            record = {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "content": draft,
-                "status": "pending_review",
-            }
+                accounts = client.accounts.list()
+                platforms = [{"platform": a.platform, "account_id": a.id} for a in accounts]
 
-            with self._io_lock:
-                with open(ig_file, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(record) + "\n")
-
-            return {"success": True, "result": "Instagram post queued to file", "error": None}
-        except OSError as exc:
-            return {"success": False, "result": "", "error": str(exc)}
+                post = client.publishing.create(text=draft, platforms=platforms)
+                return {"success": True, "result": f"Published to {len(platforms)} platforms.", "error": None}
+            else:
+                return {"success": False, "result": "", "error": f"Provider '{provider}' is not yet supported."}
+        except Exception as e:
+            return {"success": False, "result": "", "error": str(e)}
 
     def _send_email(self, draft: str) -> Dict[str, Any]:
         """Send an email via SMTP or queue to file.
@@ -872,7 +868,7 @@ Call us today at (450) 555-0199 to schedule your inspection!"""
     fb_result = agent.execute(
         agent_name="social_media",
         approved_draft="Big news! 24/7 plumbing in Laval. Call (450) 555-0199!",
-        tool_name="post_to_facebook",
+        tool_name="post_to_social",
     )
     print(f"\nFacebook (needs confirmation): {json.dumps(fb_result, indent=2)}")
 

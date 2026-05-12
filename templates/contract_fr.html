@@ -542,6 +542,59 @@
                         <input type="checkbox" id="agree-payment" required>
                         Je comprends que le premier paiement de 40 % est dû lors de la signature, et que le solde restant est divisé en 2 versements égaux dus 14 et 30 jours après le déploiement.
                     </label>
+                    <div style="margin:16px 0;text-align:left;">
+                        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.85rem;color:var(--gray-700);line-height:1.5;">
+                            <input type="checkbox" id="accept-hosting-policy" required style="margin-top:3px;min-width:18px;min-height:18px;">
+                            <span>Je comprends que mon site Web sera hébergé sur l'infrastructure cloud gérée de Laval Digital et que les services d'hébergement tiers ne sont pas pris en charge. Je comprends que je conserve la pleine propriété de mon nom de domaine.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="background:var(--white); border:1px solid var(--gray-200); border-radius:12px; padding:28px 24px; margin:24px 0; text-align:left;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                        <span style="font-size:1.8rem;">☁️</span>
+                        <h3 style="font-size:1.1rem;font-weight:700;color:var(--gray-900);margin:0;">Infrastructure Cloud Gérée — Incluse Gratuitement</h3>
+                    </div>
+                    <p style="font-size:0.9rem;color:var(--gray-600);line-height:1.7;margin-bottom:16px;">
+                        Votre Suite IA Laval Digital fonctionne sur notre infrastructure cloud sécurisée, haute performance et entièrement gérée. 
+                        Il ne s'agit pas d'un hébergement partagé — c'est une infrastructure de qualité professionnelle qui garantit vitesse, sécurité et fiabilité.
+                    </p>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">Garantie de disponibilité 99,9 %</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">Certificat SSL automatique</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">Sauvegardes quotidiennes et surveillance</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">CDN mondial pour un chargement rapide</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">Mises à jour de sécurité incluses</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="color:#059669;font-weight:700;">✓</span>
+                            <span style="font-size:0.85rem;color:var(--gray-700);">Vous possédez votre nom de domaine</span>
+                        </div>
+                    </div>
+                    <div style="background:var(--blue-bg);border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-top:12px;">
+                        <p style="font-size:0.85rem;color:#1e40af;line-height:1.6;margin:0;">
+                            <strong>📌 Important :</strong> Notre plateforme est conçue spécifiquement pour notre infrastructure gérée. 
+                            Nous ne pouvons pas installer ni maintenir la suite sur des services d'hébergement tiers (ex. : Hostinger, Bluehost, GoDaddy). 
+                            Cette politique garantit que votre site conserve ses performances, sa sécurité et sa fiabilité en tout temps.
+                        </p>
+                    </div>
+                    <p style="font-size:0.8rem;color:var(--gray-400);margin-top:12px;">
+                        L'enregistrement du nom de domaine n'est pas inclus. Vous conservez 100 % de la propriété de votre domaine. Nous le pointons vers votre site Web en ligne gratuitement.
+                    </p>
                 </div>
 
                 <input type="hidden" id="affiliate-code-input" value="">
@@ -632,6 +685,7 @@ function signContract() {
     const address = document.getElementById('address').value.trim();
     const agreeTerms = document.getElementById('agree-terms').checked;
     const agreePayment = document.getElementById('agree-payment').checked;
+    const acceptHosting = document.getElementById('accept-hosting-policy').checked;
 
     if (!name || !business || !email || !phone || !address) {
         alert('Veuillez remplir tous les champs obligatoires.');
@@ -639,6 +693,10 @@ function signContract() {
     }
     if (!agreeTerms || !agreePayment) {
         alert('Veuillez accepter les conditions et l\'échéancier de paiement.');
+        return;
+    }
+    if (!acceptHosting) {
+        alert('Veuillez accepter la politique d\'infrastructure cloud gérée pour continuer.');
         return;
     }
 

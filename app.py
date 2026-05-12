@@ -1524,6 +1524,80 @@ def handle_executioner_settings():
     return jsonify(executioner.get_settings())
 
 
+@app.route("/api/executioner/test-smtp", methods=["POST"])
+def test_smtp():
+    """Send a test email to verify SMTP configuration."""
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    to_email = data.get("to_email", "")
+    if not to_email:
+        return jsonify({"error": "No recipient email provided"}), 400
+
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+
+        msg = MIMEText("This is a test email from your Laval Digital platform. Your SMTP configuration is working correctly! 🚀")
+        msg["Subject"] = "Laval Digital — SMTP Test Email"
+        msg["From"] = data.get("smtp_from_email", "")
+        msg["To"] = to_email
+
+        server = smtplib.SMTP(data.get("smtp_host", "smtp.gmail.com"),
+                              int(data.get("smtp_port", 587)), timeout=15)
+        if data.get("smtp_use_tls", True):
+            server.starttls()
+        server.login(data.get("smtp_username", ""), data.get("smtp_password", ""))
+        server.send_message(msg)
+        server.quit()
+
+        return jsonify({"success": True, "message": "Test email sent"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/executioner/validate-social-key", methods=["POST"])
+def validate_social_key():
+    """Validate a unified social media API key and return connected accounts."""
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    provider = data.get("provider", "socialapi")
+    api_key = data.get("api_key", "")
+
+    if not api_key:
+        return jsonify({"error": "No API key provided"}), 400
+
+    try:
+        if provider == "socialapi":
+            from socialapi import SocialAPI
+            client = SocialAPI(api_key=api_key)
+            accounts = client.accounts.list()
+            return jsonify({
+                "success": True,
+                "accounts": [{"platform": a.platform, "account_name": a.account_name} for a in accounts]
+            })
+        else:
+            return jsonify({"success": False, "error": f"Provider '{provider}' is not yet supported."})
+    except ImportError:
+        return jsonify({"success": False, "error": "socialapi package is not installed. Run: pip install socialapi"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/executioner/social-settings", methods=["POST"])
+def save_social_settings():
+    """Save the unified social media settings to the Executioner."""
+    data = request.json
+    executioner.update_settings({
+        "social_api_provider": data.get("provider", "socialapi"),
+        "social_api_key": data.get("api_key", ""),
+    })
+    return jsonify({"success": True, "message": "Social media settings saved."})
+
+
 @app.route("/api/executioner/pending", methods=["GET"])
 def get_pending_executions():
     """Get all executions awaiting confirmation."""
