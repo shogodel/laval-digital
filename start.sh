@@ -1,4 +1,4 @@
 #!/bin/bash
 cd /var/www/laval-digital
 source venv/bin/activate
-python app.py > /tmp/flask.log 2>&1
+exec gunicorn -w 1 --threads 4 --bind 127.0.0.1:5000 app:app

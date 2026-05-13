@@ -83,6 +83,39 @@
         .chat-input-area button { padding: 10px 24px; font-size: 0.85rem; font-weight: 600; font-family: inherit; border: none; border-radius: var(--radius-lg); cursor: pointer; transition: all 0.15s; white-space: nowrap; background: var(--red); color: var(--white); height: 44px; }
         .chat-input-area button:hover { background: var(--red-dark); }
         .chat-input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .chat-input-area .mic-btn { padding: 10px 14px; font-size: 1.1rem; background: var(--gray-100); color: var(--gray-700); min-width: 44px; text-align: center; }
+        .chat-input-area .mic-btn:hover { background: var(--gray-200); color: var(--gray-900); }
+        .chat-input-area .mic-btn.recording { background: var(--red); color: var(--white); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .msg-speak-btn { display: inline-block; margin-top: 8px; margin-left: 4px; font-size: 0.72rem; cursor: pointer; background: none; border: 1px solid var(--gray-300); border-radius: var(--radius); padding: 4px 10px; transition: all 0.12s; font-family: inherit; color: var(--gray-500); }
+        .msg-speak-btn:hover { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
+        .msg-speak-btn.speaking { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+        .panic-btn { background: #dc2626; color: white; border: none; border-radius: var(--radius); padding: 4px 12px; font-size: 0.78rem; font-weight: 700; cursor: pointer; animation: pulse 0.8s infinite; font-family: inherit; }
+        .panic-btn.active { display: inline-flex !important; align-items: center; gap: 4px; }
+        .panic-btn:hover { background: #b91c1c; }
+        .autonomy-badge { font-size: 0.68rem; background: rgba(255,255,255,0.12); padding: 2px 8px; border-radius: 12px; color: rgba(255,255,255,0.7); }
+        .autonomy-badge.auto { background: rgba(5,150,105,0.3); color: #6ee7b7; }
+        .autonomy-badge.suggest { background: rgba(217,119,6,0.3); color: #fcd34d; }
+        .autonomy-badge.silent { background: rgba(99,102,241,0.3); color: #a5b4fc; }
+        .autonomy-badge.manual { background: rgba(107,114,128,0.3); color: #d1d5db; }
+        .autonomy-controls { padding: 12px 16px; border-bottom: 1px solid var(--gray-200); }
+        .autonomy-controls label { font-size: 0.78rem; color: var(--gray-500); display: block; margin-bottom: 2px; }
+        .autonomy-controls select, .autonomy-controls input[type="range"] { width: 100%; margin-top: 2px; margin-bottom: 8px; font-family: inherit; }
+        .autonomy-controls select { padding: 4px 8px; font-size: 0.82rem; border: 1px solid var(--gray-300); border-radius: var(--radius); background: var(--white); }
+        .autonomy-controls .threshold-value { font-size: 0.8rem; font-weight: 600; color: var(--gray-700); }
+        .activity-item { padding: 8px 16px; font-size: 0.75rem; color: var(--gray-600); border-bottom: 1px solid var(--gray-100); line-height: 1.4; }
+        .activity-item .act-agent { font-weight: 600; color: var(--gray-800); }
+        .activity-item .act-action { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 0.65rem; font-weight: 600; }
+        .activity-item .act-action.auto_executed { background: var(--green-bg); color: var(--green); }
+        .activity-item .act-action.approved { background: var(--blue-bg); color: var(--blue); }
+        .activity-item .act-action.rejected { background: #fef2f2; color: #dc2626; }
+        .activity-item .act-time { font-size: 0.65rem; color: var(--gray-400); margin-top: 2px; }
+        .confidence-indicator { font-size: 0.7rem; color: var(--gray-400); margin-top: 2px; }
+        .confidence-indicator .bar { display: inline-block; height: 4px; width: 40px; border-radius: 2px; margin-left: 4px; vertical-align: middle; background: var(--gray-200); }
+        .confidence-indicator .bar .fill { height: 100%; border-radius: 2px; }
+        .confidence-indicator .bar .fill.high { background: var(--green); }
+        .confidence-indicator .bar .fill.medium { background: var(--amber); }
+        .confidence-indicator .bar .fill.low { background: var(--red); }
         .msg-execute-btn { display: inline-block; margin-top: 8px; font-size: 0.72rem; font-weight: 600; color: var(--gray-500); cursor: pointer; background: none; border: 1px solid var(--gray-300); border-radius: var(--radius); padding: 4px 10px; transition: all 0.12s; font-family: inherit; }
         .msg-execute-btn:hover { background: var(--red); color: var(--white); border-color: var(--red); }
 
@@ -124,20 +157,22 @@
 </head>
 <body>
 
-<div class="topbar">
-    <div class="topbar-left">
-        <button class="sidebar-toggle" onclick="togglePanel('left')" title="Threads">&#9776;</button>
-        <a href="/admin">&larr; Admin</a>
+    <div class="topbar">
+        <div class="topbar-left">
+            <button class="sidebar-toggle" onclick="togglePanel('left')" title="Threads">&#9776;</button>
+            <a href="/admin">&larr; Admin</a>
+            <button id="panic-btn" class="panic-btn" onclick="togglePanic()" title="Emergency stop" style="display:none;">&#9888; Stop</button>
+        </div>
+        <div class="topbar-center">
+            <span class="status-dot {{ 'online' if agent.enabled else 'offline' }}" id="agent-status-dot"></span>
+            <h2 id="agent-display-name">{{ agent_name }}</h2>
+            <span class="autonomy-badge" id="autonomy-badge"></span>
+        </div>
+        <div class="topbar-right">
+            <span class="model-badge">{{ agent.model }}</span>
+            <button class="sidebar-toggle" onclick="togglePanel('right')" title="Info">&#9432;</button>
+        </div>
     </div>
-    <div class="topbar-center">
-        <span class="status-dot {{ 'online' if agent.enabled else 'offline' }}"></span>
-        <h2 id="agent-display-name">{{ agent_name }}</h2>
-    </div>
-    <div class="topbar-right">
-        <span class="model-badge">{{ agent.model }}</span>
-        <button class="sidebar-toggle" onclick="togglePanel('right')" title="Info">&#9432;</button>
-    </div>
-</div>
 
 <div class="chat-layout">
     <!-- LEFT COLUMN: Threads + Tools -->
@@ -147,6 +182,10 @@
             <button onclick="startNewThread()">+ New</button>
         </div>
         <div id="thread-list"></div>
+        <div class="tools-section" id="activity-section" style="display:none;">
+            <div class="section-header">&#9889; Recent Activity</div>
+            <div id="activity-list"></div>
+        </div>
         <div class="tools-section">
             <div class="section-header">Quick Tools</div>
             <div id="tool-list"></div>
@@ -171,28 +210,52 @@
         </div>
         <div class="chat-input-area">
             <textarea id="msg-input" rows="1" placeholder="Type your message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+            <button id="mic-btn" class="mic-btn" onclick="toggleMic()" title="Voice input">&#127908;</button>
             <button id="send-btn" onclick="sendMessage()">Send</button>
         </div>
     </div>
 
-    <!-- RIGHT COLUMN: Agent Info + Quick Actions -->
-    <div class="right-panel" id="panel-right">
-        <div class="info-card">
-            <h3 id="info-agent-name">{{ agent_name }}</h3>
-            <div class="info-row"><span class="label">Model</span><span class="value" id="info-model">{{ agent.model }}</span></div>
-            <div class="info-row"><span class="label">Status</span><span class="value" id="info-status">{{ 'Enabled' if agent.enabled else 'Disabled' }}</span></div>
-            <div class="info-row"><span class="label">Tasks</span><span class="value" id="info-tasks">--</span></div>
-            <div class="info-row"><span class="label">Success Rate</span><span class="value" id="info-rate">--</span></div>
+        <!-- RIGHT COLUMN: Agent Info + Autonomy + Speech + Quick Actions -->
+        <div class="right-panel" id="panel-right">
+            <div class="info-card">
+                <h3 id="info-agent-name">{{ agent_name }}</h3>
+                <div class="info-row"><span class="label">Model</span><span class="value" id="info-model">{{ agent.model }}</span></div>
+                <div class="info-row"><span class="label">Status</span><span class="value" id="info-status">{{ 'Enabled' if agent.enabled else 'Disabled' }}</span></div>
+                <div class="info-row"><span class="label">Tasks</span><span class="value" id="info-tasks">--</span></div>
+                <div class="info-row"><span class="label">Success Rate</span><span class="value" id="info-rate">--</span></div>
+            </div>
+            <div class="autonomy-controls">
+                <h3 style="font-size:0.85rem;margin-bottom:6px;">&#9889; Autonomy</h3>
+                <label for="autonomy-select">Mode</label>
+                <select id="autonomy-select" onchange="updateAutonomy()">
+                    <option value="manual">Manual — ask before every action</option>
+                    <option value="suggest">Suggest — execute if confident, else ask</option>
+                    <option value="auto">Auto — execute everything, notify me</option>
+                    <option value="silent">Silent — execute, log only</option>
+                </select>
+                <label for="confidence-slider">Confidence threshold: <span class="threshold-value" id="threshold-display">70%</span></label>
+                <input type="range" id="confidence-slider" min="0" max="100" value="70" oninput="updateThreshold(this.value); updateAutonomy();">
+            </div>
+            <div class="info-card">
+                <h3 style="font-size:0.85rem;margin-bottom:6px;">&#127908; Speech</h3>
+                <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer;">
+                    <input type="checkbox" id="speech-toggle" onchange="toggleSpeech()">
+                    Enable voice
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer;margin-top:6px;">
+                    <input type="checkbox" id="auto-speak-toggle">
+                    Auto-speak replies
+                </label>
+            </div>
+            <div class="quick-actions">
+                <button class="qa-btn" onclick="copyLastResponse()">&#128203; Copy Last Response</button>
+                <button class="qa-btn" onclick="startNewThread()">&#128260; New Thread</button>
+                <button class="qa-btn primary" onclick="window.location.href='/admin'">&#8592; Back to Admin</button>
+            </div>
+            <div class="back-link">
+                <a href="/admin">&larr; Back to Admin Panel</a>
+            </div>
         </div>
-        <div class="quick-actions">
-            <button class="qa-btn" onclick="copyLastResponse()">&#128203; Copy Last Response</button>
-            <button class="qa-btn" onclick="startNewThread()">&#128260; New Thread</button>
-            <button class="qa-btn primary" onclick="window.location.href='/admin'">&#8592; Back to Admin</button>
-        </div>
-        <div class="back-link">
-            <a href="/admin">&larr; Back to Admin Panel</a>
-        </div>
-    </div>
 </div>
 
 <script>
@@ -292,7 +355,7 @@ async function loadMessages(threadId) {
 }
 
 /* ── Messages ── */
-function appendMessage(role, content, thinking, scroll) {
+function appendMessage(role, content, thinking, scroll, meta) {
     if (scroll === undefined) scroll = true;
     const container = document.getElementById('chat-messages');
     const empty = container.querySelector('.empty-chat');
@@ -316,6 +379,26 @@ function appendMessage(role, content, thinking, scroll) {
         execBtn.textContent = '\u{1F680} Execute';
         execBtn.onclick = function(e) { executeAgentResponse(content); };
         div.appendChild(execBtn);
+
+        const speakBtn = document.createElement('button');
+        speakBtn.className = 'msg-speak-btn';
+        speakBtn.textContent = '\u{1F50A} Speak';
+        speakBtn.onclick = function(e) { speakText(content); };
+        div.appendChild(speakBtn);
+    }
+
+    // Show autonomy + confidence on auto/silent executed messages
+    if (role === 'agent' && arguments[4]) {
+        const meta = arguments[4];
+        if (meta.autonomy && meta.autonomy !== 'manual') {
+            const ci = document.createElement('div');
+            ci.className = 'confidence-indicator';
+            const pct = Math.round((meta.confidence || 0) * 100);
+            const cls = pct >= 80 ? 'high' : pct >= 50 ? 'medium' : 'low';
+            ci.innerHTML = `<span style="text-transform:capitalize;">${meta.autonomy}</span> \u00B7 ${pct}% confident
+                <span class="bar"><span class="fill ${cls}" style="width:${pct}%"></span></span>`;
+            div.appendChild(ci);
+        }
     }
 
     if (scroll) container.scrollTop = container.scrollHeight;
@@ -378,8 +461,12 @@ async function sendMessage() {
             appendMessage('agent', 'Error: ' + data.error);
         } else {
             CURRENT_THREAD = data.thread_id;
-            appendMessage('agent', data.response, data.thinking || '');
+            appendMessage('agent', data.response, data.thinking || '', true, {
+                autonomy: data.autonomy,
+                confidence: data.confidence,
+            });
             loadThreads();
+            loadActivity();
         }
     } catch (e) {
         hideTyping();
@@ -422,6 +509,107 @@ function executeAgentResponse(content) {
     });
 }
 
+/* ── Panic / Resume ── */
+async function togglePanic() {
+    const btn = document.getElementById('panic-btn');
+    try {
+        if (btn.classList.contains('active')) {
+            const r = await fetch('/api/orchestrator/resume', { method: 'POST' });
+            const d = await r.json();
+            btn.classList.remove('active');
+            btn.style.display = 'none';
+        } else {
+            const r = await fetch('/api/orchestrator/panic', { method: 'POST' });
+            const d = await r.json();
+            btn.classList.add('active');
+            btn.textContent = '\u26A0\uFE0F Panicked — Resume';
+        }
+    } catch (e) { console.error('Panic toggle failed', e); }
+}
+
+async function checkPanicStatus() {
+    try {
+        const r = await fetch('/api/orchestrator/status');
+        const d = await r.json();
+        const btn = document.getElementById('panic-btn');
+        if (d.panicked) {
+            btn.classList.add('active');
+            btn.style.display = 'inline-flex';
+            btn.textContent = '\u26A0\uFE0F Panicked — Resume';
+        } else {
+            btn.classList.remove('active');
+            btn.style.display = 'none';
+        }
+    } catch (e) {}
+}
+
+/* ── Activity Feed ── */
+async function loadActivity() {
+    try {
+        const r = await fetch('/api/orchestrator/activity?limit=20');
+        const d = await r.json();
+        const list = document.getElementById('activity-list');
+        const section = document.getElementById('activity-section');
+        if (!d.activities || d.activities.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        section.style.display = 'block';
+        list.innerHTML = d.activities.map(a => {
+            const actionLabel = a.action === 'auto_executed' ? 'Auto' : a.action;
+            const actionClass = a.action;
+            const time = a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : '';
+            const icon = a.success === true ? '\u2705' : a.success === false ? '\u274C' : '\u23F3';
+            return `<div class="activity-item">
+                <span class="act-agent">${escapeHtml(a.agent || '?')}</span>
+                <span class="act-action ${actionClass}">${actionLabel}</span>
+                ${a.confidence ? `<span style="font-size:0.65rem;color:var(--gray-400);">${Math.round(a.confidence * 100)}%</span>` : ''}
+                <div style="font-size:0.7rem;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.draft_preview || '')}</div>
+                <div class="act-time">${time}</div>
+            </div>`;
+        }).join('');
+    } catch (e) {}
+}
+
+/* ── Autonomy ── */
+async function loadAutonomy() {
+    try {
+        const r = await fetch('/api/agents/' + AGENT_ID + '/autonomy');
+        if (!r.ok) return;
+        const d = await r.json();
+        document.getElementById('autonomy-select').value = d.autonomy || 'manual';
+        const threshold = Math.round((d.confidence_threshold || 0.7) * 100);
+        document.getElementById('confidence-slider').value = threshold;
+        document.getElementById('threshold-display').textContent = threshold + '%';
+        updateAutonomyBadge(d.autonomy || 'manual');
+    } catch (e) {}
+}
+
+function updateAutonomyBadge(mode) {
+    const badge = document.getElementById('autonomy-badge');
+    const labels = { manual: 'Manual', suggest: 'Suggest', auto: 'Auto', silent: 'Silent' };
+    badge.textContent = labels[mode] || mode;
+    badge.className = 'autonomy-badge ' + mode;
+}
+
+function updateThreshold(val) {
+    document.getElementById('threshold-display').textContent = val + '%';
+}
+
+async function updateAutonomy() {
+    const select = document.getElementById('autonomy-select');
+    const mode = select.value;
+    const threshold = parseInt(document.getElementById('confidence-slider').value) / 100;
+    updateAutonomyBadge(mode);
+    try {
+        await fetch('/api/agents/' + AGENT_ID + '/autonomy', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ autonomy: mode, confidence_threshold: threshold }),
+        });
+    } catch (e) {}
+}
+
 /* ── Quick Actions ── */
 function copyLastResponse() {
     if (!LAST_RESPONSE) return alert('No response to copy yet.');
@@ -429,6 +617,151 @@ function copyLastResponse() {
         alert('Response copied to clipboard.');
     });
 }
+
+/* ── Speech (optional, browser-native with server fallback) ── */
+let SPEECH_ENABLED = false;
+let RECOGNITION = null;
+let IS_RECORDING = false;
+let MEDIA_RECORDER = null;
+let AUDIO_CHUNKS = [];
+
+function getLangCode() {
+    return (document.documentElement.lang || 'en').substring(0, 2);
+}
+
+function getSpeechLang() {
+    const c = getLangCode();
+    return c === 'fr' ? 'fr-FR' : 'en-US';
+}
+
+/* Browser-native Speech Recognition (Chrome/Edge) */
+function initRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    RECOGNITION = new SpeechRecognition();
+    RECOGNITION.continuous = false;
+    RECOGNITION.interimResults = false;
+    RECOGNITION.lang = getSpeechLang();
+    RECOGNITION.onresult = function(e) {
+        const text = e.results[0][0].transcript;
+        document.getElementById('msg-input').value = text;
+        IS_RECORDING = false;
+        document.getElementById('mic-btn').classList.remove('recording');
+        sendMessage();
+    };
+    RECOGNITION.onerror = function() {
+        IS_RECORDING = false;
+        document.getElementById('mic-btn').classList.remove('recording');
+    };
+    RECOGNITION.onend = function() {
+        IS_RECORDING = false;
+        document.getElementById('mic-btn').classList.remove('recording');
+    };
+}
+
+/* Fallback: Server-side STT via MediaRecorder */
+async function startServerSTT() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        AUDIO_CHUNKS = [];
+        MEDIA_RECORDER = new MediaRecorder(stream);
+        MEDIA_RECORDER.ondataavailable = function(e) {
+            if (e.data.size > 0) AUDIO_CHUNKS.push(e.data);
+        };
+        MEDIA_RECORDER.onstop = async function() {
+            const blob = new Blob(AUDIO_CHUNKS, { type: 'audio/webm' });
+            const formData = new FormData();
+            formData.append('audio', blob, 'recording.webm');
+            formData.append('language', getLangCode());
+            try {
+                const r = await fetch('/api/speech/stt', { method: 'POST', body: formData });
+                const data = await r.json();
+                if (data.text) {
+                    document.getElementById('msg-input').value = data.text;
+                    sendMessage();
+                }
+            } catch (e) {
+                console.error('STT failed:', e);
+            }
+            stream.getTracks().forEach(t => t.stop());
+        };
+        MEDIA_RECORDER.start();
+        return true;
+    } catch (e) {
+        console.error('MediaRecorder error:', e);
+        return false;
+    }
+}
+
+/* Toggle microphone */
+async function toggleMic() {
+    if (!SPEECH_ENABLED) {
+        alert('Enable voice in the right panel first.');
+        return;
+    }
+    if (IS_RECORDING) {
+        if (MEDIA_RECORDER && MEDIA_RECORDER.state === 'recording') {
+            MEDIA_RECORDER.stop();
+        }
+        if (RECOGNITION) RECOGNITION.stop();
+        IS_RECORDING = false;
+        document.getElementById('mic-btn').classList.remove('recording');
+        return;
+    }
+    IS_RECORDING = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    /* Try browser SpeechRecognition first, fall back to server STT */
+    if (RECOGNITION) {
+        try {
+            RECOGNITION.lang = getSpeechLang();
+            RECOGNITION.start();
+            return;
+        } catch (e) {}
+    }
+    /* Fallback: server-side STT */
+    const ok = await startServerSTT();
+    if (!ok) {
+        IS_RECORDING = false;
+        document.getElementById('mic-btn').classList.remove('recording');
+    }
+}
+
+/* Browser-native Text-to-Speech */
+function speakText(text) {
+    if (!SPEECH_ENABLED || !text) return;
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const lang = getLangCode();
+    utterance.lang = lang === 'fr' ? 'fr-FR' : 'en-US';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+}
+
+/* Toggle speech on/off */
+function toggleSpeech() {
+    SPEECH_ENABLED = document.getElementById('speech-toggle').checked;
+    if (SPEECH_ENABLED) {
+        initRecognition();
+        fetch('/api/speech/settings').then(r => r.json()).then(s => {
+            if (s.speech_enabled) {
+                document.getElementById('auto-speak-toggle').checked = !!s.auto_speak;
+            }
+        }).catch(() => {});
+    } else {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+    }
+}
+
+/* Auto-speak agent responses if enabled */
+const origAppendMessage = appendMessage;
+appendMessage = function(role, content, thinking, scroll) {
+    origAppendMessage(role, content, thinking, scroll);
+    if (role === 'agent' && content && document.getElementById('auto-speak-toggle')?.checked) {
+        speakText(content);
+    }
+};
 
 /* ── Init ── */
 document.getElementById('msg-input').addEventListener('input', function() {
@@ -446,6 +779,11 @@ fetch('/api/agents/' + AGENT_ID).then(r => r.json()).then(a => {
 
 loadTools();
 loadThreads();
+loadAutonomy();
+checkPanicStatus();
+loadActivity();
+setInterval(loadActivity, 10000); // poll activity every 10s
+setInterval(checkPanicStatus, 5000); // poll panic every 5s
 </script>
 </body>
 </html>

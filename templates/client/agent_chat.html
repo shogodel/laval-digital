@@ -87,8 +87,23 @@
         .error-msg p { font-size: 0.85rem; color: #991b1b; margin-bottom: 8px; }
         .error-msg .retry-btn { background: none; border: 1px solid #fca5a5; border-radius: var(--radius); padding: 5px 16px; font-size: 0.8rem; font-family: inherit; font-weight: 500; color: #991b1b; cursor: pointer; transition: background 0.12s; }
         .error-msg .retry-btn:hover { background: #fee2e2; }
-        .msg-execute-btn { display: inline-block; margin-top: 8px; font-size: 0.72rem; font-weight: 600; color: var(--gray-500); cursor: pointer; background: none; border: 1px solid var(--gray-300); border-radius: var(--radius); padding: 4px 10px; transition: all 0.12s; font-family: inherit; }
+        .msg-execute-btn { display: inline-block; margin-top: 8px; margin-right: 4px; font-size: 0.72rem; font-weight: 600; color: var(--gray-500); cursor: pointer; background: none; border: 1px solid var(--gray-300); border-radius: var(--radius); padding: 4px 10px; transition: all 0.12s; font-family: inherit; }
         .msg-execute-btn:hover { background: var(--red); color: var(--white); border-color: var(--red); }
+        .msg-speak-btn { display: inline-block; margin-top: 8px; font-size: 0.72rem; cursor: pointer; background: none; border: 1px solid var(--gray-300); border-radius: var(--radius); padding: 4px 10px; transition: all 0.12s; font-family: inherit; color: var(--gray-500); }
+        .msg-speak-btn:hover { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
+        .mic-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--gray-200); background: var(--white); color: var(--gray-500); font-size: 1rem; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.12s; }
+        .mic-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+        .mic-btn.recording { background: var(--red); color: var(--white); border-color: var(--red); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .activity-item { padding: 8px 16px; font-size: 0.75rem; color: var(--gray-600); border-bottom: 1px solid var(--gray-100); line-height: 1.4; }
+        .activity-item .act-agent { font-weight: 600; color: var(--gray-800); }
+        .activity-item .act-time { font-size: 0.65rem; color: var(--gray-400); margin-top: 2px; }
+        .confidence-indicator { font-size: 0.7rem; color: var(--gray-400); margin-top: 2px; }
+        .confidence-indicator .bar { display: inline-block; height: 4px; width: 40px; border-radius: 2px; margin-left: 4px; vertical-align: middle; background: var(--gray-200); }
+        .confidence-indicator .bar .fill { height: 100%; border-radius: 2px; }
+        .confidence-indicator .bar .fill.high { background: var(--green); }
+        .confidence-indicator .bar .fill.medium { background: var(--amber); }
+        .confidence-indicator .bar .fill.low { background: var(--red); }
 
         /* ── Mobile ── */
         .sidebar-toggle { display: none; background: none; border: none; color: rgba(255,255,255,0.7); font-size: 1.3rem; cursor: pointer; padding: 4px; }
@@ -104,19 +119,19 @@
 </head>
 <body>
 
-<div class="nav">
-    <div class="nav-left">
-        <button class="sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')" title="Conversations">&#9776;</button>
-        <a href="/client/dashboard">&larr; Dashboard</a>
+    <div class="nav">
+        <div class="nav-left">
+            <button class="sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')" title="Conversations">&#9776;</button>
+            <a href="/client/dashboard">&larr; Dashboard</a>
+        </div>
+        <div class="nav-center">
+            <h2>{{ agent_name }} <span id="client-autonomy-badge" style="font-size:0.65rem;background:rgba(255,255,255,0.12);padding:1px 6px;border-radius:8px;color:rgba(255,255,255,0.6);vertical-align:middle;"></span></h2>
+            <div class="sub">AI Marketing Agent</div>
+        </div>
+        <div class="nav-right">
+            <span class="model-badge">AI</span>
+        </div>
     </div>
-    <div class="nav-center">
-        <h2>{{ agent_name }}</h2>
-        <div class="sub">AI Marketing Agent</div>
-    </div>
-    <div class="nav-right">
-        <span class="model-badge">AI</span>
-    </div>
-</div>
 
 <div class="chat-layout">
     <div class="sidebar" id="sidebar">
@@ -125,6 +140,10 @@
             <button class="new-btn" onclick="startNewChat()">+ New</button>
         </div>
         <div id="thread-list"></div>
+        <div id="client-activity-section" style="display:none;border-top:1px solid var(--gray-200);">
+            <div style="padding:10px 16px;font-size:0.75rem;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.04em;">&#9889; Activity</div>
+            <div id="client-activity-list"></div>
+        </div>
         <div class="sidebar-footer">
             <a href="/client/dashboard">&larr; Back to Dashboard</a>
         </div>
@@ -144,6 +163,7 @@
                 <textarea id="msg-input" rows="1" placeholder="Type your message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.ctrlKey){event.preventDefault();sendMessage()}"></textarea>
                 <button class="send-btn" id="send-btn" onclick="sendMessage()">&#10148;</button>
             </div>
+            <button class="mic-btn" id="mic-btn" onclick="toggleMic()" title="Voice input">&#127908;</button>
             <div class="char-count" id="char-count"></div>
         </div>
     </div>
@@ -227,7 +247,7 @@ async function loadMessages(threadId) {
 }
 
 /* ── Messages ── */
-function appendMessage(role, content, timestamp, scroll) {
+function appendMessage(role, content, timestamp, scroll, meta) {
     if (scroll === undefined) scroll = true;
     const container = document.getElementById('chat-messages');
     const empty = container.querySelector('.empty-chat');
@@ -246,6 +266,21 @@ function appendMessage(role, content, timestamp, scroll) {
         execBtn.textContent = '\u{1F680} Execute';
         execBtn.onclick = function(e) { executeAgentResponse(content); };
         div.appendChild(execBtn);
+        const speakBtn = document.createElement('button');
+        speakBtn.className = 'msg-speak-btn';
+        speakBtn.textContent = '\u{1F50A} Speak';
+        speakBtn.onclick = function(e) { speakText(content); };
+        div.appendChild(speakBtn);
+    }
+
+    if (role === 'agent' && meta && meta.autonomy && meta.autonomy !== 'manual') {
+        const ci = document.createElement('div');
+        ci.className = 'confidence-indicator';
+        const pct = Math.round((meta.confidence || 0) * 100);
+        const cls = pct >= 80 ? 'high' : pct >= 50 ? 'medium' : 'low';
+        ci.innerHTML = `<span style="text-transform:capitalize;">${meta.autonomy}</span> \u00B7 ${pct}% confident
+            <span class="bar"><span class="fill ${cls}" style="width:${pct}%"></span></span>`;
+        div.appendChild(ci);
     }
 
     if (scroll) container.scrollTop = container.scrollHeight;
@@ -307,8 +342,12 @@ async function sendMessage() {
             appendMessage('agent', "Sorry, the AI couldn't process that. Try rephrasing your request?");
         } else {
             CURRENT_THREAD = data.thread_id;
-            appendMessage('agent', data.response);
+            appendMessage('agent', data.response, null, true, {
+                autonomy: data.autonomy,
+                confidence: data.confidence,
+            });
             loadThreads();
+            loadClientActivity();
         }
     } catch (e) {
         hideTyping();
@@ -356,6 +395,124 @@ function updateCharCount() {
     document.getElementById('char-count').textContent = len > 200 ? len + '/2000' : '';
 }
 
+/* ── Speech (optional, browser-native with server fallback) ── */
+let SPEECH_ENABLED = true;
+let RECOGNITION = null;
+let IS_RECORDING = false;
+let MEDIA_RECORDER = null;
+let AUDIO_CHUNKS = [];
+
+function getLangCode() {
+    return (document.documentElement.lang || 'en').substring(0, 2);
+}
+function getSpeechLang() {
+    return getLangCode() === 'fr' ? 'fr-FR' : 'en-US';
+}
+
+function initRecognition() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    RECOGNITION = new SR();
+    RECOGNITION.continuous = false;
+    RECOGNITION.interimResults = false;
+    RECOGNITION.lang = getSpeechLang();
+    RECOGNITION.onresult = function(e) {
+        document.getElementById('msg-input').value = e.results[0][0].transcript;
+        IS_RECORDING = false;
+        document.getElementById('mic-btn').classList.remove('recording');
+        sendMessage();
+    };
+    RECOGNITION.onerror = function() { stopMic(); };
+    RECOGNITION.onend = function() { stopMic(); };
+}
+
+function stopMic() {
+    IS_RECORDING = false;
+    const btn = document.getElementById('mic-btn');
+    if (btn) btn.classList.remove('recording');
+    if (MEDIA_RECORDER && MEDIA_RECORDER.state === 'recording') MEDIA_RECORDER.stop();
+}
+
+async function startServerSTT() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        AUDIO_CHUNKS = [];
+        MEDIA_RECORDER = new MediaRecorder(stream);
+        MEDIA_RECORDER.ondataavailable = function(e) {
+            if (e.data.size > 0) AUDIO_CHUNKS.push(e.data);
+        };
+        MEDIA_RECORDER.onstop = async function() {
+            const blob = new Blob(AUDIO_CHUNKS, { type: 'audio/webm' });
+            const fd = new FormData();
+            fd.append('audio', blob, 'recording.webm');
+            fd.append('language', getLangCode());
+            try {
+                const r = await fetch('/api/speech/stt', { method: 'POST', body: fd });
+                const d = await r.json();
+                if (d.text) { document.getElementById('msg-input').value = d.text; sendMessage(); }
+            } catch (e) { console.error('STT fallback failed'); }
+            stream.getTracks().forEach(t => t.stop());
+        };
+        MEDIA_RECORDER.start();
+        return true;
+    } catch (e) { return false; }
+}
+
+async function toggleMic() {
+    if (IS_RECORDING) { stopMic(); return; }
+    IS_RECORDING = true;
+    const btn = document.getElementById('mic-btn');
+    btn.classList.add('recording');
+    if (RECOGNITION) { try { RECOGNITION.lang = getSpeechLang(); RECOGNITION.start(); return; } catch (e) {} }
+    const ok = await startServerSTT();
+    if (!ok) stopMic();
+}
+
+function speakText(text) {
+    if (!text || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = getLangCode() === 'fr' ? 'fr-FR' : 'en-US';
+    u.rate = 1.0;
+    window.speechSynthesis.speak(u);
+}
+
+initRecognition();
+
+/* ── Autonomy & Activity (client) ── */
+async function loadClientAutonomy() {
+    try {
+        const r = await fetch('/api/agents/' + AGENT_ID + '/autonomy');
+        if (!r.ok) return;
+        const d = await r.json();
+        const badge = document.getElementById('client-autonomy-badge');
+        if (badge && d.autonomy && d.autonomy !== 'manual') {
+            badge.textContent = d.autonomy;
+        }
+    } catch (e) {}
+}
+
+async function loadClientActivity() {
+    try {
+        const r = await fetch('/api/orchestrator/activity?limit=10');
+        if (!r.ok) return;
+        const d = await r.json();
+        const section = document.getElementById('client-activity-section');
+        const list = document.getElementById('client-activity-list');
+        if (!d.activities || d.activities.length === 0) { section.style.display = 'none'; return; }
+        section.style.display = 'block';
+        list.innerHTML = d.activities.map(a => {
+            const time = a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : '';
+            return `<div class="activity-item">
+                <span class="act-agent">${escapeHtml(a.agent || '?')}</span>
+                ${a.confidence ? `<span style="font-size:0.65rem;color:var(--gray-400);">${Math.round(a.confidence * 100)}%</span>` : ''}
+                <div style="font-size:0.7rem;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(a.draft_preview || '')}</div>
+                <div class="act-time">${time}</div>
+            </div>`;
+        }).join('');
+    } catch (e) {}
+}
+
 /* ── Init ── */
 document.getElementById('msg-input').addEventListener('input', function() {
     this.style.height = 'auto';
@@ -364,6 +521,9 @@ document.getElementById('msg-input').addEventListener('input', function() {
 });
 
 loadThreads();
+loadClientAutonomy();
+loadClientActivity();
+setInterval(loadClientActivity, 15000);
 </script>
 </body>
 </html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Dashboard — Laval Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
+            --green: #059669; --green-bg: #ecfdf5; --amber: #d97706; --amber-bg: #fffbeb;
+            --blue: #2563eb; --blue-bg: #eff6ff; --gray-50: #f9fafb; --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb; --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+            --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937; --gray-900: #111827;
+            --white: #ffffff; --radius: 8px; --radius-lg: 12px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        html, body { height: 100%; }
+        body { font-family: 'Inter', sans-serif; background: var(--gray-100); color: var(--gray-900); display: flex; flex-direction: column; overflow: hidden; }
+        a { color: inherit; text-decoration: none; }
+        .topbar { background: var(--navy); height: 56px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
+        .topbar-left a { display: inline-flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 500; padding: 6px 12px; border-radius: var(--radius); transition: 0.15s; }
+        .topbar-left a:hover { background: rgba(255,255,255,0.1); color: var(--white); }
+        .topbar-center h1 { font-size: 1.05rem; font-weight: 700; color: var(--white); display: flex; align-items: center; gap: 10px; }
+        .topbar-center h1 span { font-size: 0.75rem; font-weight: 400; color: rgba(255,255,255,0.5); }
+        .topbar-right { display: flex; align-items: center; gap: 10px; }
+        .panic-btn { background: #dc2626; color: white; border: none; border-radius: var(--radius); padding: 6px 16px; font-size: 0.78rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: 0.12s; display: none; align-items: center; gap: 4px; }
+        .panic-btn.active { display: inline-flex; animation: pulse 1s infinite; }
+        .panic-btn:hover { background: #b91c1c; }
+        .panic-btn.resume { background: var(--green); animation: none; }
+        .panic-btn.resume:hover { background: #047857; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+        .dashboard-layout { display: flex; flex: 1; overflow: hidden; gap: 0; }
+        .main-panel { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .feed-panel { width: 380px; background: var(--white); border-left: 1px solid var(--gray-200); display: flex; flex-direction: column; flex-shrink: 0; }
+        .feed-header { padding: 14px 16px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        .feed-header h2 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray-500); }
+        .feed-header .badge { font-size: 0.7rem; background: var(--red); color: white; border-radius: 12px; padding: 2px 8px; font-weight: 600; }
+        .feed-header .filter-group { display: flex; gap: 4px; }
+        .feed-header .filter-group button { font-size: 0.68rem; padding: 3px 8px; border: 1px solid var(--gray-200); border-radius: 10px; background: var(--white); color: var(--gray-500); cursor: pointer; font-family: inherit; transition: 0.12s; }
+        .feed-header .filter-group button.active { background: var(--blue); color: white; border-color: var(--blue); }
+        .feed-list { flex: 1; overflow-y: auto; }
+        .feed-item { padding: 10px 16px; font-size: 0.78rem; border-bottom: 1px solid var(--gray-100); line-height: 1.45; transition: background 0.1s; }
+        .feed-item:hover { background: var(--gray-50); }
+        .feed-item .fi-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+        .feed-item .fi-agent { font-weight: 700; color: var(--gray-800); font-size: 0.82rem; }
+        .feed-item .fi-type { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; }
+        .feed-item .fi-type.agent_executed { background: var(--green-bg); color: var(--green); }
+        .feed-item .fi-type.agent_failed { background: #fef2f2; color: #dc2626; }
+        .feed-item .fi-type.agent_processing { background: var(--blue-bg); color: var(--blue); }
+        .feed-item .fi-type.approval_needed { background: var(--amber-bg); color: var(--amber); }
+        .feed-item .fi-type.approval_responded { background: var(--gray-100); color: var(--gray-600); }
+        .feed-item .fi-draft { font-size: 0.72rem; color: var(--gray-500); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .feed-item .fi-conf { font-size: 0.65rem; color: var(--gray-400); }
+        .feed-item .fi-time { font-size: 0.62rem; color: var(--gray-400); margin-left: auto; }
+        .feed-empty { padding: 40px 20px; text-align: center; color: var(--gray-400); font-size: 0.85rem; }
+        .stats-row { display: flex; gap: 16px; flex-wrap: wrap; }
+        .stat-card { background: var(--white); border-radius: var(--radius-lg); padding: 16px 20px; flex: 1; min-width: 140px; box-shadow: var(--shadow); }
+        .stat-card .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--gray-900); line-height: 1.2; }
+        .stat-card .stat-label { font-size: 0.75rem; color: var(--gray-500); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.03em; }
+        .stat-card .stat-value.green { color: var(--green); }
+        .stat-card .stat-value.red { color: #dc2626; }
+        .stat-card .stat-value.blue { color: var(--blue); }
+        .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+        .agent-card { background: var(--white); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow); border: 1px solid var(--gray-200); transition: 0.15s; }
+        .agent-card:hover { border-color: var(--gray-300); box-shadow: var(--shadow-md); }
+        .agent-card .ac-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .agent-card .ac-name { font-weight: 700; font-size: 0.9rem; color: var(--gray-800); }
+        .agent-card .ac-status { width: 8px; height: 8px; border-radius: 50%; }
+        .agent-card .ac-status.idle { background: var(--green); }
+        .agent-card .ac-status.processing { background: var(--blue); animation: pulse 1s infinite; }
+        .agent-card .ac-status.failed { background: #dc2626; }
+        .agent-card .ac-desc { font-size: 0.72rem; color: var(--gray-500); margin-bottom: 8px; line-height: 1.4; }
+        .agent-card .ac-stats { display: flex; gap: 12px; font-size: 0.72rem; color: var(--gray-500); }
+        .agent-card .ac-stats span { display: flex; align-items: center; gap: 3px; }
+        .agent-card .ac-autonomy { font-size: 0.65rem; padding: 2px 6px; border-radius: 8px; }
+        .agent-card .ac-autonomy.auto { background: var(--green-bg); color: var(--green); }
+        .agent-card .ac-autonomy.suggest { background: var(--amber-bg); color: var(--amber); }
+        .agent-card .ac-autonomy.silent { background: var(--blue-bg); color: var(--blue); }
+        .agent-card .ac-autonomy.manual { background: var(--gray-100); color: var(--gray-500); }
+        .agent-card .ac-last { font-size: 0.65rem; color: var(--gray-400); margin-top: 6px; }
+        @media (max-width: 900px) { .feed-panel { display: none; } .agent-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 600px) { .agent-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="topbar">
+    <div class="topbar-left">
+        <a href="/admin">&larr; Admin Panel</a>
+        <a href="/admin/analytics">Analytics</a>
+    </div>
+    <div class="topbar-center">
+        <h1>&#9889; Agent Command Center <span>live</span></h1>
+    </div>
+    <div class="topbar-right">
+        <button id="panic-btn" class="panic-btn" onclick="togglePanic()">&#9888; Stop All</button>
+        <span id="connection-status" style="font-size:0.7rem;color:rgba(255,255,255,0.4);padding:3px 8px;border-radius:10px;background:rgba(255,255,255,0.08);">connecting...</span>
+    </div>
+</div>
+
+<div class="dashboard-layout">
+    <div class="main-panel">
+        <div class="stats-row" id="stats-row">
+            <div class="stat-card"><div class="stat-value blue" id="stat-total">--</div><div class="stat-label">Total Events</div></div>
+            <div class="stat-card"><div class="stat-value green" id="stat-executed">--</div><div class="stat-label">Executed</div></div>
+            <div class="stat-card"><div class="stat-value red" id="stat-failed">--</div><div class="stat-label">Failed</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-pending">--</div><div class="stat-label">Pending Approval</div></div>
+        </div>
+        <div class="agent-grid" id="agent-grid">
+            {% for aid, meta in agents.items() %}
+            <div class="agent-card" id="card-{{ aid }}">
+                <div class="ac-header">
+                    <span class="ac-name">{{ meta.name }}</span>
+                    <span class="ac-status idle" id="status-{{ aid }}"></span>
+                </div>
+                <div class="ac-desc">{{ meta.desc[:100] }}</div>
+                <div class="ac-stats">
+                    <span>&#9889; <span id="exec-{{ aid }}">0</span></span>
+                    <span>&#10003; <span id="ok-{{ aid }}">0</span></span>
+                    <span>&#10007; <span id="fail-{{ aid }}">0</span></span>
+                </div>
+                <div class="ac-autonomy manual" id="autonomy-{{ aid }}">manual</div>
+                <div class="ac-last" id="last-{{ aid }}">waiting...</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="feed-panel">
+        <div class="feed-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <h2>Live Feed</h2>
+                <span class="badge" id="feed-count">0</span>
+            </div>
+            <div class="filter-group">
+                <button class="active" data-filter="all" onclick="setFilter('all', this)">All</button>
+                <button data-filter="agent_executed" onclick="setFilter('agent_executed', this)">Ok</button>
+                <button data-filter="agent_failed" onclick="setFilter('agent_failed', this)">Fail</button>
+            </div>
+        </div>
+        <div class="feed-list" id="feed-list">
+            <div class="feed-empty">Waiting for events...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+let EVENT_FILTER = 'all';
+let EVENT_COUNT = 0;
+
+/* ── SSE Connection ── */
+function connectSSE() {
+    const es = new EventSource('/api/events/stream');
+    const statusEl = document.getElementById('connection-status');
+
+    es.onopen = function() {
+        statusEl.textContent = 'connected';
+        statusEl.style.background = 'rgba(5,150,105,0.2)';
+        statusEl.style.color = '#6ee7b7';
+    };
+
+    es.onerror = function() {
+        statusEl.textContent = 'reconnecting...';
+        statusEl.style.background = 'rgba(217,119,6,0.2)';
+        statusEl.style.color = '#fcd34d';
+    };
+
+    es.addEventListener('heartbeat', function() {
+        // keep-alive, no action needed
+    });
+
+    es.addEventListener('agent_executed', function(e) { handleEvent(JSON.parse(e.data)); });
+    es.addEventListener('agent_failed', function(e) { handleEvent(JSON.parse(e.data)); });
+    es.addEventListener('agent_processing', function(e) { handleEvent(JSON.parse(e.data)); });
+    es.addEventListener('approval_needed', function(e) { handleEvent(JSON.parse(e.data)); });
+    es.addEventListener('approval_responded', function(e) { handleEvent(JSON.parse(e.data)); });
+}
+
+/* ── Handle Incoming Event ── */
+function handleEvent(event) {
+    EVENT_COUNT++;
+    document.getElementById('feed-count').textContent = EVENT_COUNT;
+
+    // Update agent card
+    const agent = event.agent;
+    const type = event.type;
+
+    if (agent !== 'orchestrator') {
+        const statusEl = document.getElementById('status-' + agent);
+        if (statusEl) {
+            if (type === 'agent_processing') statusEl.className = 'ac-status processing';
+            else if (type === 'agent_failed') statusEl.className = 'ac-status failed';
+            else statusEl.className = 'ac-status idle';
+        }
+
+        if (type === 'agent_executed') {
+            const execEl = document.getElementById('exec-' + agent);
+            if (execEl) execEl.textContent = parseInt(execEl.textContent || '0') + 1;
+            const okEl = document.getElementById('ok-' + agent);
+            if (okEl && event.data && event.data.success) okEl.textContent = parseInt(okEl.textContent || '0') + 1;
+            const lastEl = document.getElementById('last-' + agent);
+            if (lastEl) lastEl.textContent = new Date().toLocaleTimeString();
+        } else if (type === 'agent_failed') {
+            const failEl = document.getElementById('fail-' + agent);
+            if (failEl) failEl.textContent = parseInt(failEl.textContent || '0') + 1;
+            const lastEl = document.getElementById('last-' + agent);
+            if (lastEl) lastEl.textContent = new Date().toLocaleTimeString() + ' (failed)';
+        }
+    }
+
+    // Add to feed
+    addFeedItem(event);
+    updateStats();
+}
+
+/* ── Feed ── */
+function addFeedItem(event) {
+    if (EVENT_FILTER !== 'all' && event.type !== EVENT_FILTER) return;
+
+    const list = document.getElementById('feed-list');
+    const empty = list.querySelector('.feed-empty');
+    if (empty) empty.remove();
+
+    const div = document.createElement('div');
+    div.className = 'feed-item';
+
+    const agent = event.agent || '?';
+    const type = event.type || '?';
+    const preview = (event.data && event.data.draft_preview) || '';
+    const confidence = event.data && event.data.confidence;
+    const time = event.timestamp ? new Date(event.timestamp).toLocaleTimeString() : '';
+
+    div.innerHTML = '<div class="fi-top">' +
+        '<span class="fi-agent">' + escapeHtml(agent) + '</span>' +
+        '<span class="fi-type ' + type + '">' + type.replace('agent_', '').replace('_', ' ') + '</span>' +
+        (confidence ? '<span class="fi-conf">' + Math.round(confidence * 100) + '%</span>' : '') +
+        '<span class="fi-time">' + time + '</span>' +
+        '</div>' +
+        (preview ? '<div class="fi-draft">' + escapeHtml(preview.substring(0, 120)) + '</div>' : '');
+
+    list.insertBefore(div, list.firstChild);
+
+    // Keep max 200 items
+    while (list.children.length > 200) {
+        list.removeChild(list.lastChild);
+    }
+}
+
+/* ── Filter ── */
+function setFilter(filter, btn) {
+    EVENT_FILTER = filter;
+    document.querySelectorAll('.filter-group button').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    // Re-apply filter to existing items
+    document.querySelectorAll('.feed-item').forEach(item => {
+        const typeEl = item.querySelector('.fi-type');
+        if (!typeEl) return;
+        const cls = typeEl.className.split(' ');
+        const evType = cls.find(c => c.startsWith('agent_') || c.startsWith('approval_'));
+        if (filter === 'all' || evType === filter) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+/* ── Stats ── */
+async function updateStats() {
+    try {
+        const r = await fetch('/api/events/stats');
+        const d = await r.json();
+        document.getElementById('stat-total').textContent = d.total_events || 0;
+        document.getElementById('stat-executed').textContent = d.total_executed || 0;
+        document.getElementById('stat-failed').textContent = d.total_failed || 0;
+    } catch (e) {}
+    try {
+        const r = await fetch('/api/orchestrator/status');
+        const d = await r.json();
+        document.getElementById('stat-pending').textContent = d.pending_drafts || 0;
+        const btn = document.getElementById('panic-btn');
+        if (d.panicked) {
+            btn.className = 'panic-btn active resume';
+            btn.textContent = '\u25B6 Resume';
+        }
+    } catch (e) {}
+}
+
+/* ── Panic ── */
+async function togglePanic() {
+    const btn = document.getElementById('panic-btn');
+    try {
+        if (btn.classList.contains('resume')) {
+            const r = await fetch('/api/orchestrator/resume', { method: 'POST' });
+            const d = await r.json();
+            btn.className = 'panic-btn';
+            btn.textContent = '\u26A0\uFE0F Stop All';
+        } else {
+            const r = await fetch('/api/orchestrator/panic', { method: 'POST' });
+            const d = await r.json();
+            btn.className = 'panic-btn active resume';
+            btn.textContent = '\u25B6 Resume';
+        }
+    } catch (e) {}
+}
+
+/* ── Bootstrap ── */
+async function bootstrap() {
+    // Load event history
+    try {
+        const r = await fetch('/api/events/history?limit=100');
+        const d = await r.json();
+        if (d.events) {
+            d.events.forEach(e => addFeedItem(e));
+            EVENT_COUNT = d.events.length;
+            document.getElementById('feed-count').textContent = EVENT_COUNT;
+        }
+    } catch (e) {}
+
+    // Load autonomy settings
+    try {
+        const r = await fetch('/api/agents/autonomy/bulk');
+        const d = await r.json();
+        if (d.autonomy) {
+            Object.entries(d.autonomy).forEach(([aid, cfg]) => {
+                const el = document.getElementById('autonomy-' + aid);
+                if (el) {
+                    el.textContent = cfg.autonomy || 'manual';
+                    el.className = 'ac-autonomy ' + (cfg.autonomy || 'manual');
+                }
+            });
+        }
+    } catch (e) {}
+
+    // Load stats
+    await updateStats();
+    setInterval(updateStats, 5000);
+}
+
+function escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+}
+
+connectSSE();
+bootstrap();
+</script>
+</body>
+</html>

@@ -102,9 +102,21 @@ class ExecutionerAgent:
         """Return a copy of the current settings.
 
         Returns:
-            Dict of all current settings.
+            Dict of all current settings including secrets.
+            Intended for internal use only.
         """
         return dict(self._settings)
+
+    def get_public_settings(self) -> Dict[str, Any]:
+        """Return settings safe for external API responses (secrets removed).
+
+        Returns:
+            Dict with ``smtp_password`` replaced by a masked placeholder.
+        """
+        public = dict(self._settings)
+        if public.get("smtp_password"):
+            public["smtp_password"] = "********"
+        return public
 
     # ------------------------------------------------------------------
     # Tool registration
@@ -181,7 +193,7 @@ class ExecutionerAgent:
         confirm_tools: List[str] = self._settings.get("confirm_tools", [])
         needs_confirmation = resolved_tool in confirm_tools and not force
 
-        execution_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")
+        execution_id = uuid.uuid4().hex
 
         if needs_confirmation:
             with self._pending_lock:
@@ -417,6 +429,22 @@ class ExecutionerAgent:
             )
         return tool
 
+    def get_available_tools(self, agent_name: str) -> list:
+        """Return all tools available for a given agent, including alternatives.
+
+        Args:
+            agent_name: Name of the agent.
+
+        Returns:
+            List of registered tool name strings.
+        """
+        alternatives = {
+            "local_seo": ["update_gmb"],
+        }
+        primary = self._select_tool(agent_name)
+        extra = alternatives.get(agent_name, [])
+        return [primary] + extra
+
     # ------------------------------------------------------------------
     # Built-in tool implementations
     # ------------------------------------------------------------------
@@ -458,7 +486,8 @@ class ExecutionerAgent:
 
             return {"success": True, "result": str(filepath), "error": None}
         except OSError as exc:
-            return {"success": False, "result": "", "error": f"Failed to write blog post: {exc}"}
+            logger.error("Blog post write failed: %s", exc)
+            return {"success": False, "result": "", "error": "Failed to write blog post."}
 
     def _update_gmb(self, draft: str) -> Dict[str, Any]:
         """Record a Google Business Profile update to a JSONL audit log.
@@ -486,7 +515,8 @@ class ExecutionerAgent:
 
             return {"success": True, "result": "GMB update recorded", "error": None}
         except OSError as exc:
-            return {"success": False, "result": "", "error": str(exc)}
+            logger.error("GMB update failed: %s", exc)
+            return {"success": False, "result": "", "error": "Failed to record GMB update."}
 
     def _post_to_social(self, draft: str) -> Dict[str, Any]:
         """Post content to all connected social platforms via unified API.
@@ -590,7 +620,8 @@ class ExecutionerAgent:
 
             return {"success": True, "result": "Social post queued to file", "error": None}
         except OSError as exc:
-            return {"success": False, "result": "", "error": str(exc)}
+            logger.error("Social post queue failed: %s", exc)
+            return {"success": False, "result": "", "error": "Failed to queue social post."}
 
     def _post_to_social_unified(self, draft: str) -> Dict[str, Any]:
         """Post to multiple social platforms using the configured unified API."""
@@ -613,7 +644,8 @@ class ExecutionerAgent:
             else:
                 return {"success": False, "result": "", "error": f"Provider '{provider}' is not yet supported."}
         except Exception as e:
-            return {"success": False, "result": "", "error": str(e)}
+            logger.error("Unified social post failed: %s", e, exc_info=True)
+            return {"success": False, "result": "", "error": "Social post failed."}
 
     def _send_email(self, draft: str) -> Dict[str, Any]:
         """Send an email via SMTP or queue to file.
@@ -622,10 +654,11 @@ class ExecutionerAgent:
         the email via ``smtplib``. Otherwise appends to the sent-mail JSONL
         log as a queued item.
 
-        The subject is extracted from a ``Subject:`` line in the draft body.
+        The subject is extracted from a ``Subject:`` line and the recipient
+        from a ``To:`` line in the draft body.
 
         Args:
-            draft: Email content (may include a ``Subject:`` header line).
+            draft: Email content (may include ``Subject:`` and ``To:`` header lines).
 
         Returns:
             Result dict.
@@ -635,23 +668,30 @@ class ExecutionerAgent:
         )
         subject = subject_match.group(1).strip() if subject_match else "(no subject)"
 
+        to_match = re.search(
+            r"^(?:#\s*)?To\s*:\s*(.+)$", draft, re.MULTILINE | re.IGNORECASE
+        )
+        recipient = to_match.group(1).strip() if to_match else ""
+
         smtp_host = self._settings.get("smtp_host", "")
 
         if smtp_host:
-            return self._send_email_smtp(draft, subject)
+            return self._send_email_smtp(draft, subject, recipient)
 
-        return self._queue_email(draft, subject)
+        return self._queue_email(draft, subject, recipient)
 
-    def _send_email_smtp(self, draft: str, subject: str) -> Dict[str, Any]:
+    def _send_email_smtp(self, draft: str, subject: str, recipient: str) -> Dict[str, Any]:
         """Send email via SMTP using configured credentials.
 
         Args:
             draft: Full email body.
             subject: Extracted subject line.
+            recipient: Recipient email address from draft ``To:`` header.
 
         Returns:
             Result dict.
         """
+        smtp_host = self._settings.get("smtp_host", "")
         smtp_port = int(self._settings.get("smtp_port", 587))
         smtp_user = self._settings.get("smtp_username", "")
         smtp_pass = self._settings.get("smtp_password", "")
@@ -665,11 +705,18 @@ class ExecutionerAgent:
                 "error": "SMTP username not configured",
             }
 
+        if not recipient:
+            return {
+                "success": False,
+                "result": "",
+                "error": "No recipient email found. Add a 'To: email@example.com' line to the draft.",
+            }
+
         try:
             msg = MIMEText(draft, _charset="utf-8")
             msg["Subject"] = subject
             msg["From"] = smtp_from
-            msg["To"] = smtp_from
+            msg["To"] = recipient
 
             server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
             if use_tls:
@@ -679,22 +726,23 @@ class ExecutionerAgent:
             server.send_message(msg)
             server.quit()
 
-            logger.info("Email sent via SMTP (subject=%s)", subject)
+            logger.info("Email sent via SMTP (to=%s, subject=%s)", recipient, subject)
             return {
                 "success": True,
-                "result": f"Email sent via SMTP: {subject}",
+                "result": f"Email sent to {recipient}: {subject}",
                 "error": None,
             }
         except Exception as exc:
             logger.error("SMTP send failed: %s", exc)
             return {"success": False, "result": "", "error": f"SMTP send failed: {exc}"}
 
-    def _queue_email(self, draft: str, subject: str) -> Dict[str, Any]:
+    def _queue_email(self, draft: str, subject: str, recipient: str) -> Dict[str, Any]:
         """Queue an email to the sent-mail JSONL log.
 
         Args:
             draft: Full email body.
             subject: Extracted subject line.
+            recipient: Recipient email address from draft ``To:`` header.
 
         Returns:
             Result dict.
@@ -707,6 +755,7 @@ class ExecutionerAgent:
             record = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "subject": subject,
+                "to": recipient,
                 "body": draft,
                 "status": "queued",
             }
@@ -717,7 +766,8 @@ class ExecutionerAgent:
 
             return {"success": True, "result": f"Email queued: {subject}", "error": None}
         except OSError as exc:
-            return {"success": False, "result": "", "error": str(exc)}
+            logger.error("Email queue failed: %s", exc)
+            return {"success": False, "result": "", "error": "Failed to queue email."}
 
     def _send_sms(self, draft: str) -> Dict[str, Any]:
         """Queue an SMS to the SMS log.
@@ -729,7 +779,7 @@ class ExecutionerAgent:
             Result dict.
         """
         try:
-            sms_dir = Path("content/emails")
+            sms_dir = Path("content/sms")
             sms_dir.mkdir(parents=True, exist_ok=True)
             sms_file = sms_dir / "sms.jsonl"
 
@@ -745,7 +795,8 @@ class ExecutionerAgent:
 
             return {"success": True, "result": "SMS queued", "error": None}
         except OSError as exc:
-            return {"success": False, "result": "", "error": str(exc)}
+            logger.error("SMS queue failed: %s", exc)
+            return {"success": False, "result": "", "error": "Failed to queue SMS."}
 
     # ------------------------------------------------------------------
     # Execution log

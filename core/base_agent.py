@@ -1,4 +1,5 @@
 import threading
+import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TypedDict
@@ -16,6 +17,19 @@ try:
 except ImportError:
     ChatLiteLLM = None
 
+FRENCH_KEYWORDS = [
+    'bonjour', 'salut', 'bjr', 'allo',
+    'je', 'tu', 'il', 'elle', 'on', 'nous', 'vous', 'ils', 'elles',
+    'le', 'la', 'les', 'un', 'une', 'des', 'du', 'ce', 'ces',
+    'mon', 'ton', 'son', 'ma', 'ta', 'sa',
+    'est', 'sont', 'dans', 'avec', 'pour', 'sur', 'par',
+    'comment', 'français', 'parle', 'parler', 'parlez',
+    'aide', 'aidez', 'merci', 'svp', 's\'il vous plaît',
+    'peux', 'peut', 'veux', 'veut', 'fait', 'faire',
+    'quoi', 'qui', 'où', 'quand', 'pourquoi', 'combien',
+    'ça', 'cela', 'notre', 'votre', 'leur',
+]
+
 
 class AgentState(TypedDict):
     task: str
@@ -23,6 +37,8 @@ class AgentState(TypedDict):
     approved: Optional[bool]
     feedback: Optional[str]
     result: Optional[str]
+    language: Optional[str]
+    confidence: Optional[float]
 
 
 class BaseAgent(ABC):
@@ -123,15 +139,66 @@ class BaseAgent(ABC):
 
         return ChatLiteLLM(**llm_kwargs)
 
+    @staticmethod
+    def _detect_language(task: str) -> str:
+        text_lower = task.lower()
+        french_count = sum(1 for kw in FRENCH_KEYWORDS if kw in text_lower)
+        return "fr" if french_count >= 3 else "en"
+
+    @staticmethod
+    def _get_language_instruction(task: str) -> str:
+        lang = BaseAgent._detect_language(task)
+        if lang == "fr":
+            return "IMPORTANT: The user is communicating in French. You MUST respond entirely in French. Use proper French grammar and vocabulary."
+        return "IMPORTANT: Respond in English."
+
+    @staticmethod
+    def _parse_confidence(draft: str) -> float:
+        """Extract confidence score from the end of an agent's draft.
+
+        Expects the draft to end with ``CONFIDENCE: <0-100>`` (optionally
+        followed by a ``REASONING:`` line). Returns 0.0 if not found.
+        """
+        match = re.search(r'CONFIDENCE\s*:\s*(\d{1,3})', draft)
+        if match:
+            score = int(match.group(1))
+            return max(0.0, min(1.0, score / 100.0))
+        return 0.0
+
+    @staticmethod
+    def _strip_confidence_metadata(draft: str) -> str:
+        """Remove CONFIDENCE and REASONING metadata lines from the end of a draft."""
+        lines = draft.rstrip().split("\n")
+        cleaned = [l for l in lines if not re.match(
+            r'^\s*(CONFIDENCE|REASONING)\s*:', l
+        )]
+        return "\n".join(cleaned).strip()
+
     def _draft_node(self, state: AgentState) -> AgentState:
         llm = self._get_llm()
+        language_instruction = self._get_language_instruction(state["task"])
+        confidence_instruction = (
+            "When you finish your response, end with two lines:\n"
+            "CONFIDENCE: <0-100>\n"
+            "REASONING: <brief explanation of your confidence level>\n"
+            "The confidence score represents how sure you are that this "
+            "output is correct, complete, and ready to execute."
+        )
+        system_content = (
+            f"{self._system_prompt}\n\n"
+            f"{language_instruction}\n\n"
+            f"{confidence_instruction}"
+        )
         messages = [
-            SystemMessage(content=self._system_prompt),
+            SystemMessage(content=system_content),
             HumanMessage(content=state["task"]),
         ]
 
         response = llm.invoke(messages)
-        state["draft_output"] = response.content
+        raw = response.content
+        state["draft_output"] = self._strip_confidence_metadata(raw)
+        state["confidence"] = self._parse_confidence(raw)
+        state["language"] = self._detect_language(state["task"])
         return state
 
     def _approval_node(self, state: AgentState) -> AgentState:

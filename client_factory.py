@@ -77,12 +77,14 @@ class ClientFactory:
         self.deploy_base.mkdir(parents=True, exist_ok=True)
         self.log_file.parent.mkdir(parents=True, exist_ok=True)
 
-        file_handler = logging.FileHandler(str(self.log_file))
-        file_handler.setLevel(logging.INFO)
-        file_handler.setFormatter(
-            logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-        )
-        logger.addHandler(file_handler)
+        logger.setLevel(logging.INFO)
+        if not any(isinstance(h, logging.FileHandler) and h.baseFilename == str(self.log_file) for h in logger.handlers):
+            file_handler = logging.FileHandler(str(self.log_file))
+            file_handler.setLevel(logging.INFO)
+            file_handler.setFormatter(
+                logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+            )
+            logger.addHandler(file_handler)
 
     # ------------------------------------------------------------------
     # Station 1: Validate config

@@ -109,7 +109,9 @@ class TenantManager:
                     failure_count INTEGER DEFAULT 0,
                     last_invoked TEXT,
                     last_draft_preview TEXT,
-                    status TEXT DEFAULT 'idle'
+                    status TEXT DEFAULT 'idle',
+                    autonomy TEXT DEFAULT 'manual',
+                    confidence_threshold REAL DEFAULT 0.7
                 )
             """,
             "threads": """
@@ -258,7 +260,7 @@ class TenantManager:
 
         try:
             db_path.parent.mkdir(parents=True, exist_ok=True)
-            conn = sqlite3.connect(str(db_path))
+            conn = sqlite3.connect(str(db_path), check_same_thread=False)
             cursor = conn.cursor()
 
             # Create all tables
@@ -330,7 +332,7 @@ class TenantManager:
             if not db_path.exists():
                 self.create_tenant_database(tenant_id, tenant_type, reseller_id)
 
-            conn = sqlite3.connect(str(db_path))
+            conn = sqlite3.connect(str(db_path), check_same_thread=False)
             conn.row_factory = sqlite3.Row
             conn.execute("PRAGMA foreign_keys = ON")
 
@@ -340,6 +342,18 @@ class TenantManager:
                 conn.commit()
             except sqlite3.Error as e:
                 logger.warning("Migration failed for users table in %s: %s", db_path, e)
+
+            # Migrate: add autonomy columns to agents table
+            try:
+                conn.execute("ALTER TABLE agents ADD COLUMN autonomy TEXT DEFAULT 'manual'")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE agents ADD COLUMN confidence_threshold REAL DEFAULT 0.7")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
 
             self._active_connections[cache_key] = conn
             self._last_used[cache_key] = datetime.now(timezone.utc).isoformat()
@@ -465,3 +479,54 @@ class TenantManager:
             self._active_connections.clear()
             self._last_used.clear()
             logger.info("All tenant connections closed")
+
+    def get_agent_autonomy(self, tenant_id: str) -> Dict[str, Dict[str, Any]]:
+        """Load autonomy settings for all agents in a tenant.
+
+        Args:
+            tenant_id: The tenant identifier.
+
+        Returns:
+            Dict mapping agent_id -> {autonomy, confidence_threshold}
+        """
+        try:
+            conn = self.get_connection(tenant_id)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT agent_id, autonomy, confidence_threshold FROM agents"
+            )
+            result = {}
+            for row in cursor.fetchall():
+                result[row["agent_id"]] = {
+                    "autonomy": row["autonomy"] or "manual",
+                    "confidence_threshold": row["confidence_threshold"] or 0.7,
+                }
+            return result
+        except Exception as e:
+            logger.error("Failed to load autonomy for %s: %s", tenant_id, e)
+            return {}
+
+    def set_agent_autonomy(
+        self, tenant_id: str, agent_id: str,
+        autonomy: str, confidence_threshold: float,
+    ) -> None:
+        """Update autonomy settings for a single agent in a tenant.
+
+        Args:
+            tenant_id: The tenant identifier.
+            agent_id: The agent identifier.
+            autonomy: One of ``manual``, ``suggest``, ``auto``, ``silent``.
+            confidence_threshold: Minimum confidence for auto-execution (0.0-1.0).
+        """
+        try:
+            conn = self.get_connection(tenant_id)
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE agents SET autonomy = ?, confidence_threshold = ? WHERE agent_id = ?",
+                (autonomy, confidence_threshold, agent_id),
+            )
+            conn.commit()
+        except Exception as e:
+            logger.error(
+                "Failed to set autonomy for %s/%s: %s", tenant_id, agent_id, e
+            )

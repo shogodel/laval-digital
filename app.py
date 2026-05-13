@@ -4,10 +4,18 @@ import uuid
 import secrets
 import warnings
 import logging
-from datetime import datetime, timedelta
+import requests
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_error(e: Exception, status: int = 500):
+    """Log the real error and return a generic response to the client."""
+    logger.error("Internal error: %s", e, exc_info=True)
+    return jsonify({"error": "An internal error occurred."}), status
+
 
 # Suppress warnings before any imports that might trigger them
 warnings.filterwarnings("ignore", module="langgraph")
@@ -29,11 +37,22 @@ if not os.getenv("FLASK_SECRET_KEY"):
         "FLASK_SECRET_KEY environment variable is required. "
         "Create a .env file with FLASK_SECRET_KEY=your-random-secret"
     )
+if not os.getenv("ADMIN_USERNAME"):
+    raise RuntimeError(
+        "ADMIN_USERNAME environment variable is required. "
+        "Create a .env file with ADMIN_USERNAME=your-admin-username"
+    )
+if not os.getenv("ADMIN_PASSWORD"):
+    raise RuntimeError(
+        "ADMIN_PASSWORD environment variable is required. "
+        "Create a .env file with ADMIN_PASSWORD=your-secure-password"
+    )
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from core.orchestrator import Orchestrator
 from core.llm_adapter import LLMAdapter
+from core.events import get_event_bus
 from core.tenant_manager import TenantManager
 from agents.local_seo_agent import LocalSEOAgent
 from agents.social_media_agent import SocialMediaAgent
@@ -393,23 +412,32 @@ executioner = ExecutionerAgent({
     "retry_delay": 5,
 })
 
-# Initialize Orchestrator (deferred to first use)
+# Initialize SpeechEngine for optional speech-to-text and text-to-speech
+from core.speech import SpeechEngine
+speech_engine = SpeechEngine()
+
+
+# Initialize Orchestrator (cached singleton — shared pending_drafts)
 orchestrator = None
 orchestrator_graph = None
 
 
 def get_orchestrator():
-    """Return a fresh orchestrator with the current global llm_adapter and agent_registry.
+    """Return the cached orchestrator singleton.
 
-    No caching — every call creates a new orchestrator instance so it always
-    uses the latest API key from llm_adapter.
+    Keeps the same instance across requests so in-memory state
+    (_pending_drafts) persists. Rebuilds only if the API key changes.
     """
-    global llm_adapter, agent_registry
+    global llm_adapter, agent_registry, orchestrator, orchestrator_graph
+
+    if orchestrator is not None:
+        return orchestrator
 
     key_preview = llm_adapter._api_key[:10] + "..." if llm_adapter._api_key else "None"
     logger.info(f"Building orchestrator with API key: {key_preview}")
 
-    return Orchestrator(llm_adapter, agent_registry)
+    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner)
+    return orchestrator
 
 
 # ---------------------------------------------------------------------------
@@ -900,7 +928,7 @@ def api_list_users():
         users = [dict(row) for row in cursor.fetchall()]
         return jsonify({"users": users})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 @app.route("/api/users", methods=["POST"])
@@ -930,9 +958,9 @@ def api_add_user():
         result = add_user_to_tenant(email, password, role, display_name, tenant_id)
         return jsonify(result), 201
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return _safe_error(e, 400)
     except RuntimeError as e:
-        return jsonify({"error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 @app.route("/api/users/<int:user_id>", methods=["DELETE"])
@@ -954,7 +982,7 @@ def api_delete_user(user_id):
             return jsonify({"error": "User not found"}), 404
         return jsonify({"success": True, "message": "User deleted"})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 # ---------------------------------------------------------------------------
@@ -967,8 +995,8 @@ def admin_login():
     if request.method == "POST":
         username = request.form.get("username", "")
         password = request.form.get("password", "")
-        expected_user = os.getenv("ADMIN_USERNAME", "laval")
-        expected_pass = os.getenv("ADMIN_PASSWORD", "digital2026!")
+        expected_user = os.getenv("ADMIN_USERNAME")
+        expected_pass = os.getenv("ADMIN_PASSWORD")
         if username == expected_user and password == expected_pass:
             session["admin_logged_in"] = True
             return redirect(url_for("admin_panel_redirect"))
@@ -1040,8 +1068,8 @@ def admin_login_fr():
     if request.method == "POST":
         username = request.form.get("username", "")
         password = request.form.get("password", "")
-        expected_user = os.getenv("ADMIN_USERNAME", "laval")
-        expected_pass = os.getenv("ADMIN_PASSWORD", "digital2026!")
+        expected_user = os.getenv("ADMIN_USERNAME")
+        expected_pass = os.getenv("ADMIN_PASSWORD")
         if username == expected_user and password == expected_pass:
             session["admin_logged_in"] = True
             return redirect(url_for("admin_panel_redirect_fr"))
@@ -1169,7 +1197,7 @@ def affiliate_signup_api():
         logger.error("Failed to create affiliate user for %s: %s", email, e)
         return jsonify({
             "success": False,
-            "error": f"Account creation failed: {str(e)}",
+            "error": "Account creation failed. Please try again later.",
         }), 500
 
     return jsonify({
@@ -1219,7 +1247,7 @@ def contract_submit():
         logger.error("Failed to create client user for %s: %s", email, e)
         return jsonify({
             "success": False,
-            "error": f"Account creation failed: {str(e)}",
+            "error": "Account creation failed. Please try again later.",
             "contract_id": contract_data["id"],
         }), 500
 
@@ -1305,7 +1333,7 @@ def reseller_apply():
         logger.error("Failed to create reseller user for %s: %s", email, e)
         return jsonify({
             "success": False,
-            "error": f"Account creation failed: {str(e)}",
+            "error": "Account creation failed. Please try again later.",
             "application_id": application["id"],
         }), 500
 
@@ -1454,7 +1482,7 @@ def update_agent_config(agent_id):
 
     # Rebuild orchestrator with updated agent
     global orchestrator, orchestrator_graph
-    orchestrator = Orchestrator(llm_adapter, agent_registry)
+    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner)
     orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
@@ -1508,7 +1536,7 @@ def update_all_agents_config():
             temperature=llm_adapter._temperature,
         )
 
-    orchestrator = Orchestrator(llm_adapter, agent_registry)
+    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner)
     orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
@@ -1604,7 +1632,7 @@ def bulk_update_agent_config():
     # Rebuild orchestrator if any agent was updated
     if results["updated"]:
         global orchestrator, orchestrator_graph
-        orchestrator = Orchestrator(llm_adapter, agent_registry)
+        orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner)
         orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
@@ -1641,8 +1669,9 @@ def detect_models():
         result = LLMAdapter.detect_models(api_key)
         return jsonify(result)
     except Exception as e:
+        logger.error("Model detection failed: %s", e, exc_info=True)
         return jsonify({
-            "provider": "unknown", "models": [], "error": str(e)
+            "provider": "unknown", "models": [], "error": "Model detection failed."
         }), 500
 
 
@@ -1657,8 +1686,8 @@ def handle_executioner_settings():
         data = request.json
         if data:
             executioner.update_settings(data)
-        return jsonify(executioner.get_settings())
-    return jsonify(executioner.get_settings())
+        return jsonify(executioner.get_public_settings())
+    return jsonify(executioner.get_public_settings())
 
 
 @app.route("/api/executioner/test-smtp", methods=["POST"])
@@ -1691,7 +1720,7 @@ def test_smtp():
 
         return jsonify({"success": True, "message": "Test email sent"})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
 
 
 @app.route("/api/executioner/validate-social-key", methods=["POST"])
@@ -1721,7 +1750,7 @@ def validate_social_key():
     except ImportError:
         return jsonify({"success": False, "error": "socialapi package is not installed. Run: pip install socialapi"})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
 
 
 @app.route("/api/executioner/social-settings", methods=["POST"])
@@ -1748,7 +1777,7 @@ def confirm_execution(execution_id):
         result = executioner.confirm_execution(execution_id)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return _safe_error(e, 400)
 
 
 @app.route("/api/executioner/reject/<execution_id>", methods=["POST"])
@@ -1758,7 +1787,7 @@ def reject_execution(execution_id):
         result = executioner.reject_execution(execution_id)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return _safe_error(e, 400)
 
 
 @app.route("/api/executioner/execute-chat", methods=["POST"])
@@ -1778,7 +1807,7 @@ def execute_chat_response():
         result = executioner.execute(agent_id, content)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 @app.route("/api/executions", methods=["GET"])
@@ -1787,6 +1816,94 @@ def get_executions():
     limit = request.args.get("limit", 50, type=int)
     history = executioner.get_execution_history(limit)
     return jsonify({"executions": history})
+
+
+# ---------------------------------------------------------------------------
+# API: speech (optional speech-to-text & text-to-speech)
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/speech/settings", methods=["GET"])
+def get_speech_settings():
+    """Get current speech engine settings (public, no secrets)."""
+    return jsonify(speech_engine.get_public_settings())
+
+
+@app.route("/api/speech/settings", methods=["PUT"])
+def update_speech_settings():
+    """Update speech engine settings."""
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    speech_engine.update_settings(data)
+    return jsonify(speech_engine.get_public_settings())
+
+
+@app.route("/api/speech/stt", methods=["POST"])
+def speech_to_text():
+    """Transcribe uploaded audio to text.
+
+    Expects multipart form with an 'audio' file field.
+    Optional 'language' field (default 'en').
+    """
+    if "audio" not in request.files:
+        return jsonify({"error": "No audio file provided"}), 400
+
+    audio_file = request.files["audio"]
+    language = request.form.get("language", "en")
+
+    try:
+        text = speech_engine.transcribe(audio_file.read(), language)
+        return jsonify({"text": text, "language": language})
+    except Exception as e:
+        logger.error("Speech-to-text failed: %s", e)
+        return _safe_error(e, 500)
+
+
+@app.route("/api/speech/tts", methods=["POST"])
+def text_to_speech():
+    """Synthesize speech from text and return audio.
+
+    Expects JSON with 'text' and optional 'language' (default 'en').
+    Returns audio/mpeg bytes.
+    """
+    data = request.json
+    if not data or not data.get("text"):
+        return jsonify({"error": "No text provided"}), 400
+
+    text = data["text"]
+    language = data.get("language", "en")
+
+    try:
+        audio_bytes = speech_engine.synthesize(text, language)
+        return (audio_bytes, 200, {"Content-Type": "audio/mpeg"})
+    except Exception as e:
+        logger.error("Text-to-speech failed: %s", e)
+        return _safe_error(e, 500)
+
+
+@app.route("/api/speech/voices", methods=["GET"])
+def get_speech_voices():
+    """Return available voices for the configured TTS provider."""
+    provider = speech_engine.get_settings().get("tts_provider", "browser")
+    if provider == "openai":
+        return jsonify({"voices": ["alloy", "echo", "fable", "nova", "shimmer"]})
+    elif provider == "elevenlabs":
+        api_key = speech_engine.get_settings().get("elevenlabs_api_key", "")
+        if not api_key:
+            return jsonify({"voices": []})
+        try:
+            resp = requests.get(
+                "https://api.elevenlabs.io/v1/voices",
+                headers={"xi-api-key": api_key},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            voices = [{"id": v["voice_id"], "name": v["name"]} for v in resp.json().get("voices", [])]
+            return jsonify({"voices": voices})
+        except Exception:
+            return jsonify({"voices": []})
+    return jsonify({"voices": []})
 
 
 # ---------------------------------------------------------------------------
@@ -1803,16 +1920,28 @@ def submit_task():
         return jsonify({"error": "No request provided"}), 400
 
     thread_id = data.get("thread_id", str(uuid.uuid4()))
+    language = data.get("language", "")
 
     try:
-        orchestrator = get_orchestrator()
-        result = orchestrator.process_message(user_request, thread_id)
+        orch = get_orchestrator()
+
+        # Load autonomy settings if tenant is active
+        autonomy_config = None
+        tenant_id = get_current_tenant()
+        if tenant_id:
+            autonomy_config = tenant_manager.get_agent_autonomy(tenant_id)
+
+        result = orch.process_message(
+            user_request, thread_id,
+            language=language or None,
+            autonomy_config=autonomy_config,
+        )
 
         return jsonify(result)
     except Exception as e:
-        logger.error(f"Task failed: {e}")
+        logger.error("Task failed: %s", e, exc_info=True)
         return jsonify({
-            "response": f"Error processing your request: {str(e)}",
+            "response": "I had trouble processing that request. Please try again.",
             "agent": "error",
             "status": "error",
             "thread_id": thread_id,
@@ -1823,9 +1952,9 @@ def submit_task():
 @app.route("/api/approvals", methods=["GET"])
 def get_approvals():
     """Get pending approvals from the orchestrator's in-memory store."""
-    orchestrator = get_orchestrator()
+    orch = get_orchestrator()
     approvals = []
-    for thread_id, draft_info in orchestrator._pending_drafts.items():
+    for thread_id, draft_info in orch._pending_drafts.items():
         approvals.append({
             "thread_id": thread_id,
             "agent": draft_info.get("agent", "unknown"),
@@ -1836,6 +1965,173 @@ def get_approvals():
     return jsonify({"approvals": approvals})
 
 
+@app.route("/api/orchestrator/welcome", methods=["POST"])
+def api_orchestrator_welcome():
+    """Get a welcome message from the orchestrator."""
+    data = request.json or {}
+    language = data.get("language", "en")
+    orch = get_orchestrator()
+    return jsonify(orch.get_welcome(language))
+
+
+@app.route("/api/orchestrator/suggestions", methods=["POST"])
+def api_orchestrator_suggestions():
+    """Get proactive suggestions from the orchestrator."""
+    data = request.json or {}
+    language = data.get("language", "en")
+    orch = get_orchestrator()
+    return jsonify(orch.get_suggestions(language))
+
+
+# ---------------------------------------------------------------------------
+# API: autonomy & panic
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/orchestrator/panic", methods=["POST"])
+def api_panic():
+    """Stop all auto-executions immediately."""
+    orch = get_orchestrator()
+    orch.panic()
+    return jsonify({"status": "panicked", "message": "All agents stopped."})
+
+
+@app.route("/api/orchestrator/resume", methods=["POST"])
+def api_resume():
+    """Resume auto-executions after a panic."""
+    orch = get_orchestrator()
+    orch.clear_panic()
+    return jsonify({"status": "active", "message": "Agents resumed."})
+
+
+@app.route("/api/orchestrator/status", methods=["GET"])
+def api_orchestrator_status():
+    """Return orchestrator status (panicked, pending drafts, activity count)."""
+    orch = get_orchestrator()
+    return jsonify({
+        "panicked": orch.is_panicked,
+        "pending_drafts": len(orch._pending_drafts),
+        "activity_count": len(orch._activity_feed),
+    })
+
+
+@app.route("/api/orchestrator/activity", methods=["GET"])
+def api_activity():
+    """Return the orchestrator's activity feed."""
+    limit = request.args.get("limit", 50, type=int)
+    orch = get_orchestrator()
+    return jsonify({"activities": orch.get_activity_feed(limit)})
+
+
+@app.route("/api/events/stream")
+def api_events_stream():
+    """Server-Sent Events stream for real-time agent dashboard.
+
+    Yields SSE-formatted events as they happen. The client reconnects
+    automatically on disconnect (built into EventSource API).
+    """
+    event_bus = get_event_bus()
+    q = event_bus.subscribe()
+
+    def generate():
+        from queue import Empty as _QueueEmpty
+        try:
+            while True:
+                try:
+                    event = q.get(timeout=10)
+                    yield f"event: {event['type']}\ndata: {json.dumps(event)}\n\n"
+                except _QueueEmpty:
+                    yield f"event: heartbeat\ndata: {{\"ts\": \"{datetime.now(timezone.utc).isoformat()}\"}}\n\n"
+        except GeneratorExit:
+            event_bus.unsubscribe(q)
+
+    return app.response_class(
+        generate(),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.route("/api/events/history", methods=["GET"])
+def api_events_history():
+    """Return recent event history for dashboard bootstrapping."""
+    limit = request.args.get("limit", 100, type=int)
+    event_type = request.args.get("type", "").strip() or None
+    agent = request.args.get("agent", "").strip() or None
+    events = get_event_bus().get_history(limit=limit, event_type=event_type, agent=agent)
+    return jsonify({"events": events})
+
+
+@app.route("/api/events/stats", methods=["GET"])
+def api_events_stats():
+    """Return aggregate event stats for the dashboard."""
+    return jsonify(get_event_bus().get_stats())
+
+
+@app.route("/admin/dashboard")
+def admin_dashboard():
+    """Serve the real-time agent dashboard."""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+    tenants = {
+        "direct_clients": tenant_manager.list_tenants("direct"),
+        "resellers": tenant_manager.list_tenants("reseller"),
+    }
+    active_tenant = session.get("active_tenant_id")
+    return render_template(
+        "admin/dashboard.html",
+        tenants=tenants,
+        active_tenant=active_tenant,
+        agents=AGENT_META,
+    )
+
+
+@app.route("/api/agents/<agent_id>/autonomy", methods=["GET", "PUT"])
+def api_agent_autonomy(agent_id):
+    """Get or update autonomy settings for an agent in the current tenant."""
+    tenant_id = get_current_tenant()
+    if not tenant_id:
+        return jsonify({"error": "No tenant selected"}), 400
+
+    if request.method == "PUT":
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        autonomy = data.get("autonomy", "manual")
+        threshold = float(data.get("confidence_threshold", 0.7))
+
+        if autonomy not in ("manual", "suggest", "auto", "silent"):
+            return jsonify({"error": f"Invalid autonomy '{autonomy}'. Must be one of: manual, suggest, auto, silent"}), 400
+
+        tenant_manager.set_agent_autonomy(tenant_id, agent_id, autonomy, threshold)
+        return jsonify({"agent_id": agent_id, "autonomy": autonomy, "confidence_threshold": threshold})
+
+    # GET: return current settings
+    configs = tenant_manager.get_agent_autonomy(tenant_id)
+    cfg = configs.get(agent_id, {"autonomy": "manual", "confidence_threshold": 0.7})
+    return jsonify({"agent_id": agent_id, **cfg})
+
+
+@app.route("/api/agents/autonomy/bulk", methods=["GET"])
+def api_all_agent_autonomy():
+    """Get autonomy settings for all agents in the current tenant."""
+    tenant_id = get_current_tenant()
+    if not tenant_id:
+        return jsonify({"error": "No tenant selected"}), 400
+    configs = tenant_manager.get_agent_autonomy(tenant_id)
+    return jsonify({"autonomy": configs})
+
+
+# ---------------------------------------------------------------------------
+# API: approvals
+# ---------------------------------------------------------------------------
+
+
 @app.route("/api/approvals/<thread_id>/respond", methods=["POST"])
 def respond_approval(thread_id):
     """Respond to an approval request using the chat orchestrator."""
@@ -1844,29 +2140,16 @@ def respond_approval(thread_id):
     now_iso = datetime.now().isoformat()
     tenant_id = get_current_tenant()
 
-    orchestrator = get_orchestrator()
+    orch = get_orchestrator()
 
-    if thread_id in orchestrator._pending_drafts:
-        draft_info = orchestrator._pending_drafts.pop(thread_id)
-
-        execution_result = None
-        if approved:
-            agent_name = draft_info.get("agent", "")
-            draft = draft_info.get("draft", "")
-            if agent_name and agent_name in agent_registry:
-                try:
-                    exec_result = executioner.execute(agent_name, draft)
-                    execution_result = {
-                        "success": exec_result.get("success", False),
-                        "tool": exec_result.get("result", "")
-                    }
-                except Exception as exec_err:
-                    execution_result = {"success": False, "error": str(exec_err)}
-
+    # Delegate to orchestrator which now handles execution internally
+    if thread_id in orch._pending_drafts:
+        result = orch._handle_approval(thread_id, approved=approved)
         return jsonify({
             "thread_id": thread_id,
             "status": "completed" if approved else "rejected",
-            "execution": execution_result,
+            "execution": result.get("execution"),
+            "response": result.get("response"),
         })
 
     # Fallback: check tenant database if no in-memory draft found
@@ -1901,7 +2184,7 @@ def respond_approval(thread_id):
                     exec_result = executioner.execute(agent_name, draft)
                     execution_result = {
                         "success": exec_result.get("success", False),
-                        "tool": exec_result.get("result", "")
+                        "result": exec_result.get("result", "")
                     }
                 except Exception as exec_err:
                     execution_result = {"success": False, "error": str(exec_err)}
@@ -1912,7 +2195,7 @@ def respond_approval(thread_id):
                 "execution": execution_result
             })
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return _safe_error(e, 500)
 
     return jsonify({"error": "Thread not found"}), 404
 
@@ -1983,7 +2266,7 @@ def invoke_agent(agent_id):
                 )
             except Exception:
                 pass
-        return jsonify({"error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 @app.route("/api/agents/<agent_id>/chat", methods=["POST"])
@@ -2021,9 +2304,14 @@ def agent_chat(agent_id):
 
     message = data.get("message", "").strip()
     thread_id = data.get("thread_id", str(uuid.uuid4()))
+    language = data.get("language", "")
 
     if not message:
         return jsonify({"error": "No message provided"}), 400
+
+    if not language:
+        from core.base_agent import BaseAgent
+        language = BaseAgent._detect_language(message)
 
     tenant_id = get_current_tenant()
     now_iso = datetime.now().isoformat()
@@ -2098,12 +2386,13 @@ def agent_chat(agent_id):
             "agent_id": agent_id,
             "response": draft,
             "thread_id": thread_id,
+            "language": language,
             "thinking": f"Agent '{agent_id}' processed your request using model '{agent.model}'. The agent applied its specialized system prompt to generate this response.",
             "model": agent.model,
         })
     except Exception as e:
         logger.error(f"Agent chat failed for {agent_id}: {e}")
-        return jsonify({"error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 @app.route("/api/agents/<agent_id>/threads", methods=["GET"])
@@ -2141,7 +2430,7 @@ def get_agent_threads(agent_id):
             })
         return jsonify({"threads": threads})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 @app.route("/api/agents/<agent_id>/threads/<thread_id>", methods=["GET"])
@@ -2181,7 +2470,7 @@ def get_agent_thread_history(agent_id, thread_id):
             })
         return jsonify({"messages": messages, "thread_id": thread_id, "agent_id": agent_id})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 @app.route("/api/threads")
@@ -2217,7 +2506,7 @@ def api_list_threads():
             ]
         })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 @app.route("/api/threads/<thread_id>/messages")
@@ -2244,7 +2533,7 @@ def api_get_thread_messages(thread_id):
             messages.append({"role": "agent", "content": r["agent_draft"], "thinking": None})
         return jsonify({"messages": messages})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 @app.route("/api/client/threads")
@@ -2367,7 +2656,7 @@ def deploy_client():
         return jsonify(result), 200 if result.get("success") else 500
     except Exception as e:
         logger.error(f"Client deployment failed: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
 
 
 # ---------------------------------------------------------------------------
@@ -2630,7 +2919,7 @@ def api_analytics_email_report():
         return jsonify({"success": True, "message": f"Report emailed to {client_email}"})
     except Exception as e:
         logger.error("Failed to email report: %s", e)
-        return jsonify({"success": False, "error": str(e)}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
 
 
 @app.route("/admin/analytics")
@@ -2734,7 +3023,7 @@ def api_managed_upgrade():
         return jsonify({"success": True, "message": "Upgraded to Managed Services"})
     except Exception as e:
         logger.error("Failed to upgrade %s: %s", tenant_id, e)
-        return jsonify({"success": False, "error": str(e)}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
 
 
 @app.route("/api/managed/cancel", methods=["POST"])
@@ -2765,7 +3054,7 @@ def api_managed_cancel():
         return jsonify({"success": True, "message": "Cancellation requested"})
     except Exception as e:
         logger.error("Failed to cancel managed for %s: %s", tenant_id, e)
-        return jsonify({"success": False, "error": str(e)}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
 
 
 @app.route("/api/managed/clients")
@@ -2877,7 +3166,7 @@ def api_managed_pause():
         logger.info("Admin paused Managed Services for %s", tenant_id)
         return jsonify({"success": True, "message": "Managed services paused"})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
 
 
 @app.route("/api/managed/resume", methods=["POST"])
@@ -2901,7 +3190,7 @@ def api_managed_resume():
         logger.info("Admin resumed Managed Services for %s", tenant_id)
         return jsonify({"success": True, "message": "Managed services resumed"})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
 
 
 @app.route("/api/managed/bulk-approve", methods=["POST"])
@@ -2960,7 +3249,7 @@ def api_managed_bulk_approve():
         })
     except Exception as e:
         logger.error("Bulk approve failed for %s: %s", tenant_id, e)
-        return jsonify({"success": False, "error": str(e)}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
 
 
 @app.route("/api/managed/mrr")

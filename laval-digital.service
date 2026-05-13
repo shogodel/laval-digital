@@ -1,5 +1,5 @@
 [Unit]
-Description=Laval Digital Flask App
+Description=Laval Digital Gunicorn App
 After=network.target
 
 [Service]
@@ -7,7 +7,7 @@ Type=simple
 User=root
 WorkingDirectory=/var/www/laval-digital
 Environment="PATH=/var/www/laval-digital/venv/bin"
-ExecStart=/var/www/laval-digital/venv/bin/python /var/www/laval-digital/app.py
+ExecStart=/var/www/laval-digital/venv/bin/gunicorn -w 1 --threads 4 --bind 127.0.0.1:5000 app:app
 Restart=always
 
 [Install]
