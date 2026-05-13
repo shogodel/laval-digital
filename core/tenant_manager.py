@@ -209,6 +209,24 @@ class TenantManager:
                     applied_at TEXT NOT NULL
                 )
             """,
+            "deployments": """
+                CREATE TABLE IF NOT EXISTS deployments (
+                    id TEXT PRIMARY KEY,
+                    business_name TEXT,
+                    subdomain TEXT,
+                    niche TEXT,
+                    package TEXT,
+                    status TEXT DEFAULT 'running',
+                    stations_completed TEXT,
+                    error TEXT,
+                    site_url TEXT,
+                    admin_url TEXT,
+                    ssl_provisioned INTEGER DEFAULT 0,
+                    email_sent INTEGER DEFAULT 0,
+                    created_at TEXT,
+                    completed_at TEXT
+                )
+            """,
         }
 
     # ------------------------------------------------------------------

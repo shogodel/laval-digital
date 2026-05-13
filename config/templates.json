@@ -1,0 +1,10 @@
+{
+  "_default": "https://github.com/shogodel/laval-digital.git",
+  "plumber": "https://github.com/shogodel/laval-digital.git",
+  "electrician": "https://github.com/shogodel/laval-digital.git",
+  "landscaper": "https://github.com/shogodel/laval-digital.git",
+  "roofer": "https://github.com/shogodel/laval-digital.git",
+  "hvac": "https://github.com/shogodel/laval-digital.git",
+  "cleaner": "https://github.com/shogodel/laval-digital.git",
+  "painter": "https://github.com/shogodel/laval-digital.git"
+}

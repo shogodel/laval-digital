@@ -1,0 +1,44 @@
+{
+  "plumber": {
+    "primary": "#1a3a5c",
+    "accent": "#D42B2B",
+    "hero_img": "plumbing-bg.jpg",
+    "label": "Plumber"
+  },
+  "electrician": {
+    "primary": "#1a3a5c",
+    "accent": "#ffd166",
+    "hero_img": "electrical-bg.jpg",
+    "label": "Electrician"
+  },
+  "landscaper": {
+    "primary": "#2d5a27",
+    "accent": "#f4a261",
+    "hero_img": "landscaping-bg.jpg",
+    "label": "Landscaper"
+  },
+  "roofer": {
+    "primary": "#4a4a4a",
+    "accent": "#e63946",
+    "hero_img": "roofing-bg.jpg",
+    "label": "Roofer"
+  },
+  "hvac": {
+    "primary": "#003049",
+    "accent": "#fcbf49",
+    "hero_img": "hvac-bg.jpg",
+    "label": "HVAC"
+  },
+  "cleaner": {
+    "primary": "#264653",
+    "accent": "#2a9d8f",
+    "hero_img": "cleaning-bg.jpg",
+    "label": "Cleaner"
+  },
+  "painter": {
+    "primary": "#3d405b",
+    "accent": "#e07a5f",
+    "hero_img": "painting-bg.jpg",
+    "label": "Painter"
+  }
+}

@@ -65,7 +65,7 @@ from agents.tiktok_agent import TikTokAgent
 from agents.outreach_agent import OutreachAgent
 from agents.backlinks_agent import BacklinksAgent
 from agents.executioner_agent import ExecutionerAgent
-from client_factory import ClientFactory
+from client_factory import ClientFactory, deploy as client_factory_deploy, deploy_async as client_factory_deploy_async, get_deploy_status as client_factory_get_deploy_status
 from core.auth import (
     init_auth, User, find_user_by_email, add_user_to_tenant,
     client_required, affiliate_required, reseller_required,
@@ -2640,8 +2640,8 @@ def switch_tenant():
 def deploy_client():
     """Deploy a new client website via the Client Factory.
 
-    Requires admin login. Creates tenant database, clones template,
-    injects brand, deploys to subdomain, and sends welcome email.
+    Supports both synchronous (default) and async (``?async=1``) modes.
+    In async mode returns a deployment ID for status polling.
     """
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
@@ -2650,13 +2650,28 @@ def deploy_client():
     if not config:
         return jsonify({"success": False, "error": "No configuration provided"}), 400
 
+    async_mode = request.args.get("async", "").strip() in ("1", "true", "yes")
+
     try:
-        factory = ClientFactory()
-        result = factory.deploy(config)
+        if async_mode:
+            deploy_id = client_factory_deploy_async(config)
+            return jsonify({"deploy_id": deploy_id, "status": "running"}), 202
+        result = client_factory_deploy(config)
         return jsonify(result), 200 if result.get("success") else 500
     except Exception as e:
-        logger.error(f"Client deployment failed: {e}")
-        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
+        logger.error("Client deployment failed: %s", e, exc_info=True)
+        return jsonify({"success": False, "error": "An internal error occurred."}), 500
+
+
+@app.route("/api/clients/deploy/<deploy_id>/status", methods=["GET"])
+def deploy_status(deploy_id):
+    """Poll the status of an async deployment."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    status = client_factory_get_deploy_status(deploy_id)
+    if not status:
+        return jsonify({"error": "Deployment not found"}), 404
+    return jsonify(status)
 
 
 # ---------------------------------------------------------------------------
