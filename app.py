@@ -32,7 +32,7 @@ if not os.getenv("FLASK_SECRET_KEY"):
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from core.orchestrator import Orchestrator, OrchestratorState
+from core.orchestrator import Orchestrator
 from core.llm_adapter import LLMAdapter
 from core.tenant_manager import TenantManager
 from agents.local_seo_agent import LocalSEOAgent
@@ -409,8 +409,7 @@ def get_orchestrator():
     key_preview = llm_adapter._api_key[:10] + "..." if llm_adapter._api_key else "None"
     logger.info(f"Building orchestrator with API key: {key_preview}")
 
-    orchestrator = Orchestrator(llm_adapter, agent_registry)
-    return orchestrator.build_graph()
+    return Orchestrator(llm_adapter, agent_registry)
 
 
 # ---------------------------------------------------------------------------
@@ -1796,231 +1795,81 @@ def get_executions():
 
 @app.route("/api/tasks", methods=["POST"])
 def submit_task():
-    """Submit a task to the orchestrator.
-
-    Stores the agent draft and thread in both the in-memory cache
-    (for orchestrator resume) and the tenant database (for persistence).
-    """
+    """Submit a task to the chat orchestrator for immediate response."""
     data = request.json
-    user_request = data.get("request")
+    user_request = data.get("request", "").strip()
 
     if not user_request:
         return jsonify({"error": "No request provided"}), 400
 
-    thread_id = str(uuid.uuid4())
-    now_iso = datetime.now().isoformat()
-
-    # Diagnostic: verify the LLM adapter has the current key
-    key_preview = llm_adapter._api_key[:10] + "..." if hasattr(llm_adapter, '_api_key') and llm_adapter._api_key else "None"
-    logger.info(f"Submitting task with llm_adapter key: {key_preview}")
-
-    initial_state = {
-        "user_request": user_request,
-        "routed_agent": "",
-        "agent_task": "",
-        "agent_draft": None,
-        "approved": None,
-        "feedback": None,
-        "final_result": None,
-        "messages": [],
-    }
-
-    config = {"configurable": {"thread_id": thread_id}}
+    thread_id = data.get("thread_id", str(uuid.uuid4()))
 
     try:
-        graph = get_orchestrator()
-        result = graph.invoke(initial_state, config)
+        orchestrator = get_orchestrator()
+        result = orchestrator.process_message(user_request, thread_id)
 
-        has_draft = bool(result.get("agent_draft"))
-        has_final = bool(result.get("final_result"))
-        status = (
-            "completed"
-            if has_final
-            else ("pending_approval" if has_draft else "error")
-        )
-
-        # Cache in memory for orchestrator resume
-        active_threads[thread_id] = {
-            "state": result,
-            "config": config,
-            "status": status,
-        }
-
-        # Persist to tenant database
-        tenant_id = get_current_tenant()
-        if tenant_id:
-            try:
-                conn = tenant_manager.get_connection(tenant_id)
-                cursor = conn.cursor()
-                cursor.execute(
-                    """
-                    INSERT INTO threads
-                        (thread_id, routed_agent, agent_task, agent_draft,
-                         status, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        thread_id,
-                        result.get("routed_agent", ""),
-                        result.get("agent_task", ""),
-                        result.get("agent_draft", ""),
-                        status,
-                        now_iso,
-                        now_iso,
-                    ),
-                )
-                conn.commit()
-            except Exception:
-                pass
-
-        # Persist agent activity
-        agent_name = result.get("routed_agent", "")
-        if agent_name and tenant_id:
-            try:
-                draft_preview = None
-                if has_draft:
-                    draft = result.get("agent_draft", "")
-                    draft_preview = (
-                        (draft[:120] + "...") if len(draft) > 120 else draft
-                    )
-                update_tenant_agent_activity(
-                    tenant_id,
-                    agent_name,
-                    status="idle" if status == "completed" else "pending_approval",
-                    last_invoked=now_iso,
-                    last_draft_preview=draft_preview,
-                )
-            except Exception:
-                pass
-
-        return jsonify({
-            "thread_id": thread_id,
-            "status": status,
-            "result": result,
-        })
+        return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Task failed: {e}")
+        return jsonify({
+            "response": f"Error processing your request: {str(e)}",
+            "agent": "error",
+            "status": "error",
+            "thread_id": thread_id,
+            "pending_approval": False
+        }), 500
 
 
 @app.route("/api/approvals", methods=["GET"])
 def get_approvals():
-    """Get pending approvals from both the in-memory cache and tenant database."""
+    """Get pending approvals from the orchestrator's in-memory store."""
+    orchestrator = get_orchestrator()
     approvals = []
-
-    # First, check the in-memory active_threads cache (these are from the current session)
-    for thread_id, thread_data in active_threads.items():
-        state = thread_data["state"]
-        if thread_data["status"] == "pending_approval" and state.get("agent_draft"):
-            approvals.append({
-                "thread_id": thread_id,
-                "agent": state.get("routed_agent", "unknown"),
-                "draft": state.get("agent_draft", ""),
-                "task": state.get("agent_task", ""),
-            })
-
-    # Also check the tenant database if a tenant is selected
-    tenant_id = get_current_tenant()
-    if tenant_id:
-        try:
-            conn = tenant_manager.get_connection(tenant_id)
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT thread_id, routed_agent, agent_draft, agent_task
-                FROM threads
-                WHERE status = 'pending_approval'
-                  AND agent_draft IS NOT NULL
-                  AND agent_draft != ''
-                """
-            )
-            for row in cursor.fetchall():
-                # Avoid duplicates if already in memory cache
-                if not any(a["thread_id"] == row["thread_id"] for a in approvals):
-                    approvals.append({
-                        "thread_id": row["thread_id"],
-                        "agent": row["routed_agent"],
-                        "draft": row["agent_draft"],
-                        "task": row["agent_task"],
-                    })
-        except Exception as e:
-            logger.error(f"Failed to read approvals from tenant DB: {e}")
-
+    for thread_id, draft_info in orchestrator._pending_drafts.items():
+        approvals.append({
+            "thread_id": thread_id,
+            "agent": draft_info.get("agent", "unknown"),
+            "draft": draft_info.get("draft", ""),
+            "task": draft_info.get("task", "")
+        })
     logger.info(f"Returning {len(approvals)} pending approvals")
     return jsonify({"approvals": approvals})
 
 
 @app.route("/api/approvals/<thread_id>/respond", methods=["POST"])
 def respond_approval(thread_id):
-    """Respond to an approval request and execute agent if approved."""
+    """Respond to an approval request using the chat orchestrator."""
     data = request.json
     approved = data.get("approved", False)
-    feedback = data.get("feedback", "")
     now_iso = datetime.now().isoformat()
     tenant_id = get_current_tenant()
 
-    # Find the thread in the in-memory orchestrator cache
-    if thread_id in active_threads:
-        thread_data = active_threads[thread_id]
-        human_response = {"approved": approved, "feedback": feedback}
+    orchestrator = get_orchestrator()
 
-        try:
-            graph = get_orchestrator()
-            result = graph.invoke(human_response, thread_data["config"])
+    if thread_id in orchestrator._pending_drafts:
+        draft_info = orchestrator._pending_drafts.pop(thread_id)
 
-            thread_data["state"] = result
-            thread_data["status"] = "completed"
-
-            # Update the threads table in the tenant database
-            if tenant_id:
+        execution_result = None
+        if approved:
+            agent_name = draft_info.get("agent", "")
+            draft = draft_info.get("draft", "")
+            if agent_name and agent_name in agent_registry:
                 try:
-                    conn = tenant_manager.get_connection(tenant_id)
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        """
-                        UPDATE threads
-                        SET approved = ?, feedback = ?, final_result = ?,
-                            status = 'completed', updated_at = ?
-                        WHERE thread_id = ?
-                        """,
-                        (
-                            int(approved),
-                            feedback,
-                            result.get("final_result", ""),
-                            now_iso,
-                            thread_id,
-                        ),
-                    )
-                    conn.commit()
-                except Exception:
-                    pass
+                    exec_result = executioner.execute(agent_name, draft)
+                    execution_result = {
+                        "success": exec_result.get("success", False),
+                        "tool": exec_result.get("result", "")
+                    }
+                except Exception as exec_err:
+                    execution_result = {"success": False, "error": str(exec_err)}
 
-            # If approved, execute via the ExecutionerAgent
-            execution_result = None
-            if approved:
-                state = result
-                agent_name = state.get("routed_agent")
-                draft = state.get("agent_draft", "")
-                if agent_name and agent_name in agent_registry:
-                    try:
-                        exec_result = executioner.execute(agent_name, draft)
-                        execution_result = {
-                            "success": exec_result.get("success", False),
-                            "tool": exec_result.get("result", "")
-                        }
-                    except Exception as exec_err:
-                        execution_result = {"success": False, "error": str(exec_err)}
+        return jsonify({
+            "thread_id": thread_id,
+            "status": "completed" if approved else "rejected",
+            "execution": execution_result,
+        })
 
-            return jsonify({
-                "thread_id": thread_id,
-                "status": "completed",
-                "result": thread_data["state"].get("final_result"),
-                "execution": execution_result,
-            })
-
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
-    # Not in memory cache — try DB-only response
+    # Fallback: check tenant database if no in-memory draft found
     if tenant_id:
         try:
             conn = tenant_manager.get_connection(tenant_id)
@@ -2033,24 +1882,39 @@ def respond_approval(thread_id):
             if not row:
                 return jsonify({"error": "Thread not found"}), 404
 
+            agent_name = row["routed_agent"]
+            draft = row["agent_draft"]
+            execution_result = None
+
             cursor.execute(
                 """
                 UPDATE threads
-                SET approved = ?, feedback = ?, status = 'completed', updated_at = ?
+                SET approved = ?, status = 'completed', updated_at = ?
                 WHERE thread_id = ?
                 """,
-                (int(approved), feedback, now_iso, thread_id),
+                (int(approved), now_iso, thread_id),
             )
             conn.commit()
 
+            if approved and agent_name and agent_name in agent_registry:
+                try:
+                    exec_result = executioner.execute(agent_name, draft)
+                    execution_result = {
+                        "success": exec_result.get("success", False),
+                        "tool": exec_result.get("result", "")
+                    }
+                except Exception as exec_err:
+                    execution_result = {"success": False, "error": str(exec_err)}
+
             return jsonify({
                 "thread_id": thread_id,
-                "status": "completed"
+                "status": "completed",
+                "execution": execution_result
             })
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    return jsonify({"error": "Thread not found and no tenant context"}), 404
+    return jsonify({"error": "Thread not found"}), 404
 
 
 # ---------------------------------------------------------------------------
