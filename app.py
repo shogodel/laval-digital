@@ -83,6 +83,10 @@ tenant_manager = TenantManager()
 from core.affiliates import AffiliateManager
 affiliate_manager = AffiliateManager(tenant_manager)
 
+# Initialize Reseller Manager (persistent DB-backed reseller system)
+from core.resellers import ResellerManager
+reseller_manager = ResellerManager(tenant_manager)
+
 # Initialize Flask-Login auth with tenant manager reference
 login_manager = init_auth(app, tenant_manager)
 
@@ -91,31 +95,6 @@ active_threads: Dict[str, Dict[str, Any]] = {}
 
 # In-memory lead storage (replace with database in production)
 leads: list[Dict[str, Any]] = []
-
-# In-memory reseller applications (replace with DB later)
-reseller_applications: list[dict] = []
-
-# Reseller MAP (Minimum Advertised Price) enforcement
-RESELLER_PRICING = {
-    "core_suite": {
-        "wholesale": 4500,
-        "map": 8500,
-        "suggested": 9500,
-        "your_direct_price": 8500,
-    },
-    "growth_suite": {
-        "wholesale": 7000,
-        "map": 12500,
-        "suggested": 13500,
-        "your_direct_price": 12500,
-    },
-    "full_empire": {
-        "wholesale": 9500,
-        "map": 16500,
-        "suggested": 17500,
-        "your_direct_price": 16500,
-    },
-}
 
 RESELLER_MAP_POLICY = """
 Resellers agree to the following:
@@ -828,56 +807,38 @@ def reseller_dashboard():
     """Serve the reseller white-label dashboard."""
     tenant_id = current_user.tenant_id
 
-    clients = []
-    stats = {"total_clients": 0, "monthly_recurring": 0, "pending_deployments": 0, "live_sites": 0}
-    agency_name = ""
+    reseller_stats = reseller_manager.get_reseller_stats(tenant_id)
 
+    agency_name = ""
     try:
         conn = tenant_manager.get_connection(tenant_id, "reseller")
         cursor = conn.cursor()
-
-        # Get agency settings
         cursor.execute(
             "SELECT business_name FROM client_details WHERE business_name IS NOT NULL LIMIT 1"
         )
         row = cursor.fetchone()
         if row:
             agency_name = row["business_name"]
-
-        # Get reseller's clients (stored as reseller_client type under this reseller)
-        reseller_clients = tenant_manager.list_tenants("reseller_client", tenant_id)
-        for cid in reseller_clients:
-            try:
-                cconn = tenant_manager.get_connection(cid, "reseller_client", tenant_id)
-                ccursor = cconn.cursor()
-                ccursor.execute(
-                    "SELECT business_name, package, created_at, site_url, payment_status "
-                    "FROM client_details LIMIT 1"
-                )
-                crow = ccursor.fetchone()
-                if crow:
-                    cdict = dict(crow)
-                    cdict["status"] = "live" if cdict.get("site_url") else "pending"
-                    clients.append(cdict)
-                    stats["total_clients"] += 1
-                    if cdict["status"] == "live":
-                        stats["live_sites"] += 1
-                    else:
-                        stats["pending_deployments"] += 1
-            except Exception:
-                continue
     except Exception:
         pass
 
-    stats["monthly_recurring"] = stats["total_clients"] * 2500
+    tier = reseller_stats.get("tier", "standard")
+    pricing = reseller_manager.get_pricing(tier)
 
     return render_template(
         "reseller/dashboard.html",
-        clients=clients,
-        stats=stats,
+        clients=reseller_stats.get("clients", []),
+        stats={
+            "total_clients": reseller_stats.get("total_clients", 0),
+            "monthly_recurring": reseller_stats.get("monthly_recurring", 0),
+            "pending_deployments": reseller_stats.get("pending_deployments", 0),
+            "live_sites": reseller_stats.get("live_sites", 0),
+        },
         agency_name=agency_name,
-        map_pricing=RESELLER_PRICING,
+        map_pricing=pricing,
         map_policy=RESELLER_MAP_POLICY,
+        tier_name=tier,
+        mrr_per_client=reseller_stats.get("mrr_per_client", 1500),
     )
 
 
@@ -1264,6 +1225,73 @@ def api_admin_process_payout(code):
     return jsonify({"error": "Payout not found or already processed"}), 404
 
 
+# ---------------------------------------------------------------------------
+# API: reseller admin
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/admin/reseller/tiers", methods=["GET"])
+def api_admin_reseller_tiers():
+    """Return all reseller tiers (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    return jsonify({"tiers": reseller_manager.get_tiers()})
+
+
+@app.route("/api/admin/reseller/tiers/<tier>", methods=["PUT"])
+def api_admin_update_tier(tier):
+    """Update a reseller tier (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data"}), 400
+    ok = reseller_manager.update_tier(tier, **data)
+    return jsonify({"success": ok})
+
+
+@app.route("/api/admin/reseller/pricing", methods=["GET"])
+def api_admin_reseller_pricing():
+    """Return pricing for all tiers (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    tier = request.args.get("tier", "standard")
+    return jsonify({"pricing": reseller_manager.get_pricing(tier)})
+
+
+@app.route("/api/admin/reseller/pricing/<tier>/<package>", methods=["PUT"])
+def api_admin_update_pricing(tier, package):
+    """Update pricing for a specific tier + package (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data"}), 400
+    ok = reseller_manager.update_pricing(tier, package, **data)
+    return jsonify({"success": ok})
+
+
+@app.route("/api/admin/reseller/applications", methods=["GET"])
+def api_admin_reseller_applications():
+    """Return reseller applications (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    status = request.args.get("status", "").strip() or None
+    return jsonify({"applications": reseller_manager.get_applications(status)})
+
+
+@app.route("/api/admin/reseller/applications/<app_id>/process", methods=["POST"])
+def api_admin_process_application(app_id):
+    """Approve or reject a reseller application (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    status = data.get("status", "approved") if data else "approved"
+    tier = data.get("tier", "standard") if data else "standard"
+    ok = reseller_manager.process_application(app_id, status, tier)
+    return jsonify({"success": ok})
+
+
 @app.route("/api/contract/submit", methods=["POST"])
 def contract_submit():
     """Submit a signed agreement and create a user account."""
@@ -1357,16 +1385,15 @@ def reseller_apply():
     if not agency or not contact or not email:
         return jsonify({"error": "Agency name, contact name, and email are required"}), 400
 
-    application = {
-        "id": str(uuid.uuid4()),
-        "agencyName": agency,
-        "contactName": contact,
-        "email": email,
-        "phone": data.get("phone", ""),
-        "clientCount": data.get("clientCount", ""),
-        "created_at": datetime.now().isoformat(),
-    }
-    reseller_applications.append(application)
+    try:
+        application = reseller_manager.create_application(
+            agency, contact, email,
+            phone=data.get("phone", ""),
+            client_count=data.get("clientCount", ""),
+        )
+    except Exception as e:
+        logger.error("Failed to create reseller application: %s", e)
+        return jsonify({"success": False, "error": "Application failed. Please try again."}), 500
 
     password = secrets.token_urlsafe(12) + "A1!"
     agency_slug = agency.lower().replace(" ", "-").replace("'", "")[:40]
