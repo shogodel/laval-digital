@@ -79,6 +79,10 @@ app.permanent_session_lifetime = timedelta(days=30)
 # Initialize Tenant Manager for multi-tenant database isolation
 tenant_manager = TenantManager()
 
+# Initialize Affiliate Manager (persistent DB-backed affiliate system)
+from core.affiliates import AffiliateManager
+affiliate_manager = AffiliateManager(tenant_manager)
+
 # Initialize Flask-Login auth with tenant manager reference
 login_manager = init_auth(app, tenant_manager)
 
@@ -87,17 +91,6 @@ active_threads: Dict[str, Dict[str, Any]] = {}
 
 # In-memory lead storage (replace with database in production)
 leads: list[Dict[str, Any]] = []
-
-# In-memory affiliate store (replace with DB later)
-AFFILIATES = {
-    "MIKE15": {"name": "Mike", "code": "MIKE15", "earnings": 0},
-    "SARAH10": {"name": "Sarah", "code": "SARAH10", "earnings": 0},
-}
-
-VALID_AFFILIATE_CODES = set(AFFILIATES.keys())
-
-# In-memory lead tracking for affiliates
-affiliate_leads: list[dict] = []
 
 # In-memory reseller applications (replace with DB later)
 reseller_applications: list[dict] = []
@@ -205,23 +198,16 @@ def get_current_tenant() -> Optional[str]:
 def capture_affiliate_referral():
     """Capture ?ref= parameter into a cookie and store lead info."""
     ref_code = request.args.get("ref")
-    if ref_code and ref_code in VALID_AFFILIATE_CODES:
+    if ref_code and affiliate_manager.is_valid_code(ref_code):
         session.permanent = True
         session["affiliate_ref"] = ref_code
         session["affiliate_discount"] = 500
-
-        if not any(
-            lead.get("ref_code") == ref_code
-            and lead.get("ip") == request.remote_addr
-            for lead in affiliate_leads
-        ):
-            affiliate_leads.append({
-                "ref_code": ref_code,
-                "ip": request.remote_addr,
-                "user_agent": request.headers.get("User-Agent"),
-                "landing_page": request.path,
-                "timestamp": datetime.now().isoformat(),
-            })
+        affiliate_manager.track_lead(
+            ref_code=ref_code,
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", ""),
+            landing_page=request.path,
+        )
 
 
 @login_manager.request_loader
@@ -738,27 +724,25 @@ def affiliate_dashboard():
     """Serve the affiliate referral dashboard."""
     tenant_id = current_user.tenant_id
 
-    # Gather affiliate stats from tenant database
-    stats = {"total_clicks": 0, "total_leads": 0, "total_clients": 0, "total_commissions": 0}
-    referrals = []
-    payouts = []
+    # Gather affiliate profile from platform DB
+    aff = affiliate_manager.get_affiliate(tenant_id)
+    profile = aff or {}
 
-    try:
-        conn = tenant_manager.get_connection(tenant_id)
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id, ref_code, lead_name, lead_email, status, commission, created_at "
-            "FROM affiliate_leads ORDER BY created_at DESC"
-        )
-        for row in cursor.fetchall():
-            referrals.append(dict(row))
-            if row["status"] == "client":
-                stats["total_clients"] += 1
-                stats["total_commissions"] += row["commission"] or 0
-            else:
-                stats["total_leads"] += 1
-    except Exception:
-        pass
+    # Gather leads from affiliate's tenant DB
+    referrals = affiliate_manager.get_leads(tenant_id)
+    stats = {"total_clicks": 0, "total_leads": 0, "total_clients": 0, "total_commissions": 0}
+    for r in referrals:
+        if r.get("status") == "client":
+            stats["total_clients"] += 1
+            stats["total_commissions"] += r.get("commission") or 0
+        else:
+            stats["total_leads"] += 1
+
+    # Gather commissions from platform DB
+    commissions = affiliate_manager.get_commissions(tenant_id)
+
+    # Gather payouts
+    payouts = affiliate_manager.get_payouts(tenant_id)
 
     # Build referral link
     referral_link = f"https://lavaldigital.ca/?ref={tenant_id}"
@@ -768,6 +752,8 @@ def affiliate_dashboard():
         stats=stats,
         referrals=referrals,
         payouts=payouts,
+        commissions=commissions,
+        profile=profile,
         referral_link=referral_link,
     )
 
@@ -1155,13 +1141,15 @@ def inject_logo():
 def affiliate_status():
     """Return current affiliate status for the visitor."""
     ref_code = session.get("affiliate_ref")
-    if ref_code and ref_code in VALID_AFFILIATE_CODES:
-        return jsonify({
-            "active": True,
-            "code": ref_code,
-            "discount": 500,
-            "affiliate_name": AFFILIATES.get(ref_code, {}).get("name", "Partner"),
-        })
+    if ref_code and affiliate_manager.is_valid_code(ref_code):
+        aff = affiliate_manager.get_affiliate(ref_code)
+        if aff:
+            return jsonify({
+                "active": True,
+                "code": ref_code,
+                "discount": 500,
+                "affiliate_name": aff.get("name", "Partner"),
+            })
     return jsonify({"active": False, "discount": 0})
 
 
@@ -1176,37 +1164,104 @@ def affiliate_signup_api():
     if not name or not email:
         return jsonify({"error": "Name and email are required"}), 400
 
-    code = "REF" + uuid.uuid4().hex[:6].upper()
-    AFFILIATES[code] = {"name": name, "code": code, "earnings": 0}
-    VALID_AFFILIATE_CODES.add(code)
+    try:
+        aff = affiliate_manager.create_affiliate(name, email, phone)
+        code = aff["code"]
 
-    affiliate_leads.append({
-        "ref_code": code,
-        "name": name,
-        "email": email,
-        "phone": phone,
-        "timestamp": datetime.now().isoformat(),
+        password = secrets.token_urlsafe(12) + "A1!"
+        try:
+            add_user_to_tenant(email, password, "affiliate", name, code, "direct")
+            logger.info("Affiliate user created: %s (tenant=%s)", email, code)
+        except Exception as e:
+            logger.error("Failed to create affiliate user for %s: %s", email, e)
+            return jsonify({
+                "success": False,
+                "error": "Account creation failed. Please try again later.",
+            }), 500
+
+        return jsonify({
+            "success": True,
+            "code": code,
+            "referral_link": f"https://lavaldigital.ca/?ref={code}",
+            "password": password,
+            "message": "Your login credentials have been created. Please check your email for your password.",
+        }), 201
+    except Exception as e:
+        logger.error("Affiliate signup failed: %s", e, exc_info=True)
+        return jsonify({"success": False, "error": "Signup failed. Please try again."}), 500
+
+
+# ---------------------------------------------------------------------------
+# API: affiliate payouts
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/affiliate/commissions", methods=["GET"])
+@affiliate_required
+def api_affiliate_commissions():
+    """Return the current affiliate's commission history."""
+    tenant_id = current_user.tenant_id
+    commissions = affiliate_manager.get_commissions(tenant_id)
+    total_pending = sum(c["amount"] for c in commissions if c["status"] == "pending")
+    total_paid = sum(c["amount"] for c in commissions if c["status"] == "paid")
+    return jsonify({
+        "commissions": commissions,
+        "total_pending": total_pending,
+        "total_paid": total_paid,
     })
 
-    password = secrets.token_urlsafe(12) + "A1!"
-    try:
-        tenant_manager.create_tenant_database(code, "direct")
-        add_user_to_tenant(email, password, "affiliate", name, code, "direct")
-        logger.info("Affiliate user created: %s (tenant=%s)", email, code)
-    except Exception as e:
-        logger.error("Failed to create affiliate user for %s: %s", email, e)
-        return jsonify({
-            "success": False,
-            "error": "Account creation failed. Please try again later.",
-        }), 500
 
+@app.route("/api/affiliate/payouts", methods=["GET"])
+@affiliate_required
+def api_affiliate_payouts():
+    """Return the current affiliate's payout history."""
+    tenant_id = current_user.tenant_id
+    return jsonify({"payouts": affiliate_manager.get_payouts(tenant_id)})
+
+
+@app.route("/api/affiliate/payouts", methods=["POST"])
+@affiliate_required
+def api_request_payout():
+    """Request a payout for the current affiliate's pending commissions."""
+    tenant_id = current_user.tenant_id
+    commissions = affiliate_manager.get_commissions(tenant_id)
+    total_pending = sum(c["amount"] for c in commissions if c["status"] == "pending")
+    if total_pending < 50:
+        return jsonify({"error": "Minimum payout is $50. You have $" + str(round(total_pending, 2))}), 400
+    payout_id = affiliate_manager.create_payout(tenant_id, total_pending)
+    if payout_id:
+        return jsonify({"success": True, "payout_id": payout_id, "amount": total_pending})
+    return jsonify({"error": "Failed to create payout"}), 500
+
+
+@app.route("/api/admin/affiliates", methods=["GET"])
+def api_admin_affiliates():
+    """List all affiliates with stats (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    affiliates = affiliate_manager.get_all_affiliates()
+    commissions = affiliate_manager.get_all_commissions(limit=200)
+    payouts = affiliate_manager.get_payouts(limit=200)
     return jsonify({
-        "success": True,
-        "code": code,
-        "referral_link": f"https://lavaldigital.ca/?ref={code}",
-        "password": password,
-        "message": "Your login credentials have been created. Please check your email for your password.",
-    }), 201
+        "affiliates": affiliates,
+        "recent_commissions": commissions,
+        "recent_payouts": payouts,
+    })
+
+
+@app.route("/api/admin/affiliates/<code>/payout", methods=["POST"])
+def api_admin_process_payout(code):
+    """Process (approve) a payout for an affiliate (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    payout_id = data.get("payout_id", "")
+    if not payout_id:
+        return jsonify({"error": "payout_id required"}), 400
+    success = affiliate_manager.process_payout(payout_id)
+    if success:
+        return jsonify({"success": True, "message": "Payout processed"})
+    return jsonify({"error": "Payout not found or already processed"}), 404
 
 
 @app.route("/api/contract/submit", methods=["POST"])
@@ -1256,33 +1311,23 @@ def contract_submit():
     # Credit affiliate if a valid referral code was attached
     affiliate_info = None
     affiliate_code = contract_data.get("affiliateCode", "")
-    if affiliate_code and affiliate_code in VALID_AFFILIATE_CODES:
+    if affiliate_code and affiliate_manager.is_valid_code(affiliate_code):
         commission = round(float(contract_data.get("deposit", 0)) * 0.10, 2)
         try:
-            # Ensure the affiliate's tenant database exists
-            try:
-                aff_conn = tenant_manager.get_connection(affiliate_code)
-            except Exception:
-                tenant_manager.create_tenant_database(affiliate_code, "direct")
-                aff_conn = tenant_manager.get_connection(affiliate_code)
-            aff_cursor = aff_conn.cursor()
-            aff_cursor.execute(
-                "INSERT INTO affiliate_leads "
-                "(ref_code, lead_email, lead_name, status, commission, created_at) "
-                "VALUES (?, ?, ?, 'client', ?, ?)",
-                (affiliate_code, email, name, commission, datetime.now().isoformat()),
+            commission_id = affiliate_manager.add_commission(
+                affiliate_code, email, name, commission,
             )
-            aff_conn.commit()
-            AFFILIATES[affiliate_code]["earnings"] += commission
-            affiliate_info = {
-                "code": affiliate_code,
-                "affiliate_name": AFFILIATES[affiliate_code]["name"],
-                "commission": commission,
-            }
-            logger.info(
-                "Affiliate %s credited $%.2f for referral %s",
-                affiliate_code, commission, email,
-            )
+            if commission_id:
+                aff = affiliate_manager.get_affiliate(affiliate_code)
+                affiliate_info = {
+                    "code": affiliate_code,
+                    "affiliate_name": aff.get("name", "Partner") if aff else "Partner",
+                    "commission": commission,
+                }
+                logger.info(
+                    "Affiliate %s credited $%.2f for referral %s",
+                    affiliate_code, commission, email,
+                )
         except Exception as e:
             logger.error(
                 "Failed to credit affiliate %s for %s: %s",

@@ -240,6 +240,41 @@ class TenantManager:
                     completed_at TEXT
                 )
             """,
+            "affiliates": """
+                CREATE TABLE IF NOT EXISTS affiliates (
+                    code TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    phone TEXT DEFAULT '',
+                    total_earnings REAL DEFAULT 0,
+                    paid_earnings REAL DEFAULT 0,
+                    status TEXT DEFAULT 'active',
+                    created_at TEXT NOT NULL,
+                    last_login TEXT
+                )
+            """,
+            "commissions": """
+                CREATE TABLE IF NOT EXISTS commissions (
+                    id TEXT PRIMARY KEY,
+                    affiliate_code TEXT NOT NULL,
+                    client_email TEXT,
+                    client_name TEXT,
+                    amount REAL NOT NULL,
+                    status TEXT DEFAULT 'pending',
+                    created_at TEXT NOT NULL,
+                    paid_at TEXT
+                )
+            """,
+            "payouts": """
+                CREATE TABLE IF NOT EXISTS payouts (
+                    id TEXT PRIMARY KEY,
+                    affiliate_code TEXT NOT NULL,
+                    amount REAL NOT NULL,
+                    status TEXT DEFAULT 'pending',
+                    created_at TEXT NOT NULL,
+                    processed_at TEXT
+                )
+            """,
         }
 
     # ------------------------------------------------------------------
