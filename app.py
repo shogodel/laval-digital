@@ -2090,6 +2090,232 @@ def admin_dashboard():
     )
 
 
+# ---------------------------------------------------------------------------
+# Connector page (bookmarklet + email bridge setup)
+# ---------------------------------------------------------------------------
+
+
+@app.route("/admin/connector")
+def admin_connector():
+    """Serve the connector setup page (bookmarklet + email bridge)."""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+    tenant_id = session.get("active_tenant_id", "your-tenant")
+    bookmarklet_code = (
+        'javascript:(function(){var s=document.createElement("script");'
+        's.src="https://lavaldigital.ca/static/bookmarklet.js";'
+        "document.body.appendChild(s);})()"
+    )
+    return render_template(
+        "admin/connector.html",
+        bookmarklet_code=bookmarklet_code,
+        tenant_id=tenant_id,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Pending actions API (for bookmarklet + email bridge)
+# ---------------------------------------------------------------------------
+
+
+def _get_pending_actions(tenant_id: str, status: str = "pending") -> list:
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, agent_name, tool_name, provider, content, subject, status, created_at "
+            "FROM pending_actions WHERE status = ? ORDER BY created_at DESC LIMIT 50",
+            (status,),
+        )
+        return [dict(row) for row in cursor.fetchall()]
+    except Exception as e:
+        logger.error("Failed to get pending actions for %s: %s", tenant_id, e)
+        return []
+
+
+def _add_pending_action(
+    tenant_id: str, agent_name: str, tool_name: str,
+    content: str, provider: str = "web", subject: str = "",
+) -> str:
+    action_id = uuid.uuid4().hex[:12]
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO pending_actions (id, agent_name, tool_name, provider, content, subject, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)",
+            (action_id, agent_name, tool_name, provider, content, subject, datetime.now(timezone.utc).isoformat()),
+        )
+        conn.commit()
+        return action_id
+    except Exception as e:
+        logger.error("Failed to add pending action: %s", e)
+        return ""
+
+
+def _confirm_pending_action(tenant_id: str, action_id: str) -> Dict[str, Any]:
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, agent_name, tool_name, content FROM pending_actions WHERE id = ? AND status = 'pending'",
+            (action_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return {"success": False, "error": "Action not found or already completed"}
+        # Execute via executioner
+        from agents.executioner_agent import ExecutionerError
+        try:
+            exec_result = executioner.execute(row["agent_name"], row["content"], tool_name=row["tool_name"])
+            cursor.execute(
+                "UPDATE pending_actions SET status = 'completed', completed_at = ? WHERE id = ?",
+                (datetime.now(timezone.utc).isoformat(), action_id),
+            )
+            conn.commit()
+            return {"success": True, "result": exec_result.get("result", "Done"), "action_id": action_id}
+        except ExecutionerError as ee:
+            return {"success": False, "error": str(ee)}
+    except Exception as e:
+        logger.error("Failed to confirm action %s: %s", action_id, e)
+        return {"success": False, "error": "Internal error"}
+
+
+@app.route("/api/actions/pending", methods=["GET"])
+def api_pending_actions():
+    """Return pending actions for the current tenant (used by bookmarklet)."""
+    tenant_id = session.get("active_tenant_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    if not tenant_id:
+        return jsonify({"actions": []})
+    actions = _get_pending_actions(tenant_id)
+    return jsonify({"actions": actions})
+
+
+@app.route("/api/actions/<action_id>/confirm", methods=["POST"])
+def api_confirm_action(action_id):
+    """Confirm and execute a pending action (called by bookmarklet or email bridge)."""
+    tenant_id = session.get("active_tenant_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    if not tenant_id:
+        return jsonify({"error": "No tenant context"}), 400
+    result = _confirm_pending_action(tenant_id, action_id)
+    return jsonify(result)
+
+
+@app.route("/api/actions/<action_id>/skip", methods=["POST"])
+def api_skip_action(action_id):
+    """Skip/discard a pending action without executing."""
+    tenant_id = session.get("active_tenant_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    if not tenant_id:
+        return jsonify({"error": "No tenant context"}), 400
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE pending_actions SET status = 'skipped', completed_at = ? WHERE id = ? AND status = 'pending'",
+            (datetime.now(timezone.utc).isoformat(), action_id),
+        )
+        conn.commit()
+        return jsonify({"success": True, "action_id": action_id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/actions/bridge/email", methods=["POST"])
+def api_set_email_bridge():
+    """Configure the email bridge for the current user."""
+    if not current_user.is_authenticated:
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    # Store email bridge settings in the tenant DB
+    tenant_id = current_user.tenant_id
+    settings = {
+        "imap_host": data.get("imap_host", "imap.gmail.com"),
+        "imap_port": int(data.get("imap_port", 993)),
+        "username": data.get("email", ""),
+        "password": data.get("password", ""),
+    }
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR REPLACE INTO client_details (id, email, services) "
+            "VALUES (1, COALESCE((SELECT email FROM client_details WHERE id=1), ?), ?)",
+            (settings["username"], json.dumps({"email_bridge": settings})),
+        )
+        conn.commit()
+        # Restart bridge with new settings
+        bridge = _get_email_bridge()
+        bridge.stop()
+        bridge2 = EmailBridge(
+            imap_host=settings["imap_host"],
+            imap_port=settings["imap_port"],
+            username=settings["username"],
+            password=settings["password"],
+        )
+        bridge2.set_handler(lambda action, subj, body: _email_bridge_handler(action, subj, body, tenant_id))
+        bridge2.start()
+        _set_email_bridge(bridge2)
+        return jsonify({"success": True, "message": "Email bridge configured"})
+    except Exception as e:
+        logger.error("Email bridge setup failed: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Email bridge handler
+def _email_bridge_handler(action: str, subject: str, body: str, tenant_id: str) -> None:
+    if action == "approve":
+        actions = _get_pending_actions(tenant_id)
+        if actions:
+            _confirm_pending_action(tenant_id, actions[0]["id"])
+            logger.info("Email bridge approved action %s for %s", actions[0]["id"], tenant_id)
+    elif action == "reject":
+        actions = _get_pending_actions(tenant_id)
+        if actions:
+            try:
+                conn = tenant_manager.get_connection(tenant_id)
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE pending_actions SET status = 'skipped', completed_at = ? WHERE id = ?",
+                    (datetime.now(timezone.utc).isoformat(), actions[0]["id"]),
+                )
+                conn.commit()
+            except Exception:
+                pass
+
+
+_email_bridge_instance = None
+
+
+def _get_email_bridge():
+    global _email_bridge_instance
+    if _email_bridge_instance is None:
+        from core.email_bridge import EmailBridge
+        _email_bridge_instance = EmailBridge()
+        _email_bridge_instance.set_handler(lambda a, s, b: _email_bridge_handler(a, s, b, ""))
+    return _email_bridge_instance
+
+
+def _set_email_bridge(bridge):
+    global _email_bridge_instance
+    _email_bridge_instance = bridge
+
+
+# Start email bridge on boot (if configured in env)
+if os.getenv("EMAIL_BRIDGE_USER") and os.getenv("EMAIL_BRIDGE_PASS"):
+    _bridge = EmailBridge(
+        imap_host=os.getenv("EMAIL_BRIDGE_HOST", "imap.gmail.com"),
+        imap_port=int(os.getenv("EMAIL_BRIDGE_PORT", "993")),
+        username=os.getenv("EMAIL_BRIDGE_USER"),
+        password=os.getenv("EMAIL_BRIDGE_PASS"),
+    )
+    _bridge.set_handler(lambda a, s, b: _email_bridge_handler(a, s, b, ""))
+
+    import threading
+    threading.Thread(target=_bridge.start, daemon=True).start()
+
+
 @app.route("/api/agents/<agent_id>/autonomy", methods=["GET", "PUT"])
 def api_agent_autonomy(agent_id):
     """Get or update autonomy settings for an agent in the current tenant."""

@@ -227,6 +227,19 @@ class TenantManager:
                     completed_at TEXT
                 )
             """,
+            "pending_actions": """
+                CREATE TABLE IF NOT EXISTS pending_actions (
+                    id TEXT PRIMARY KEY,
+                    agent_name TEXT NOT NULL,
+                    tool_name TEXT NOT NULL,
+                    provider TEXT DEFAULT 'web',
+                    content TEXT NOT NULL,
+                    subject TEXT,
+                    status TEXT DEFAULT 'pending',
+                    created_at TEXT NOT NULL,
+                    completed_at TEXT
+                )
+            """,
         }
 
     # ------------------------------------------------------------------
@@ -371,6 +384,13 @@ class TenantManager:
                 conn.execute("ALTER TABLE agents ADD COLUMN confidence_threshold REAL DEFAULT 0.7")
                 conn.commit()
             except sqlite3.OperationalError:
+                pass
+
+            # Migrate: ensure pending_actions table exists
+            try:
+                conn.execute(self._schema_sql()["pending_actions"])
+                conn.commit()
+            except sqlite3.Error:
                 pass
 
             self._active_connections[cache_key] = conn

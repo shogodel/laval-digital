@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connector Setup — Laval Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; color: #1f2937; padding: 40px 20px; }
+        .wrapper { max-width: 720px; margin: 0 auto; }
+        h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+        .sub { color: #6b7280; font-size: 0.9rem; margin-bottom: 32px; }
+        .card { background: #fff; border-radius: 12px; padding: 28px 32px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .card p { font-size: 0.88rem; color: #6b7280; line-height: 1.6; margin-bottom: 16px; }
+        .card .step { display: flex; gap: 14px; margin-bottom: 14px; }
+        .card .step-num { width: 28px; height: 28px; border-radius: 50%; background: #0f2b45; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+        .card .step-content { font-size: 0.88rem; line-height: 1.5; }
+        .card .step-content strong { color: #1f2937; }
+        .card .step-content code { background: #f3f4f6; padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+        .bookmarklet-link { display: inline-block; background: #0f2b45; color: #fff; padding: 12px 28px; border-radius: 10px; font-weight: 700; font-size: 1rem; text-decoration: none; margin: 8px 0 16px; cursor: move; transition: 0.15s; }
+        .bookmarklet-link:hover { background: #1a3a5c; transform: scale(1.02); }
+        .bookmarklet-hint { font-size: 0.8rem; color: #9ca3af; text-align: center; }
+        .info-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 18px; font-size: 0.84rem; color: #1e40af; margin-top: 12px; }
+        .info-box strong { color: #1e3a8a; }
+        .email-form { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+        .email-form label { font-size: 0.82rem; font-weight: 600; color: #374151; }
+        .email-form input { padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.9rem; font-family: inherit; outline: none; }
+        .email-form input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .email-form button { background: #D42B2B; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; font-size: 0.9rem; cursor: pointer; font-family: inherit; align-self: flex-start; }
+        .email-form button:hover { background: #A82323; }
+        .email-form .status-msg { font-size: 0.82rem; padding: 8px; border-radius: 6px; }
+        .email-form .status-msg.ok { background: #ecfdf5; color: #059669; }
+        .email-form .status-msg.err { background: #fef2f2; color: #dc2626; }
+        .back-link { display: inline-block; margin-top: 16px; color: #6b7280; font-size: 0.85rem; text-decoration: none; }
+        .back-link:hover { color: #D42B2B; }
+        .gen-code { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; font-size: 0.78rem; color: #6b7280; word-break: break-all; margin-top: 8px; user-select: all; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <h1>&#128279; Connector Setup</h1>
+    <p class="sub">Connect your browser and email so Laval Digital can publish content on your behalf — no API keys needed.</p>
+
+    <!-- Method 1: Bookmarklet -->
+    <div class="card">
+        <h2>&#128279; Method 1: Bookmarklet <span style="font-size:0.7rem;background:#059669;color:#fff;padding:2px 8px;border-radius:8px;">Recommended</span></h2>
+        <p>Drag the button below to your bookmarks bar. Then click it when you're on Facebook, Google, or any site where you want to publish content.</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content"><strong>Drag this to your bookmarks bar:</strong></div>
+        </div>
+        <div style="text-align:center;">
+            <a class="bookmarklet-link" href="{{ bookmarklet_code }}">&#9889; Laval Digital</a>
+        </div>
+        <div class="bookmarklet-hint">&#8593; Drag this into your bookmarks bar</div>
+
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content"><strong>Go to any site</strong> (Facebook, Google, your website, etc.) and click the bookmarklet.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content"><strong>A panel appears</strong> showing your pending actions. Click <strong>"Execute Now"</strong> to publish.</div>
+        </div>
+
+        <div class="info-box">
+            <strong>&#128274; No API keys needed.</strong> The bookmarklet runs inside your browser using your own login session. You stay in control.
+        </div>
+    </div>
+
+    <!-- Method 2: Email Bridge -->
+    <div class="card">
+        <h2>&#9993; Method 2: Reply-to-Execute Email</h2>
+        <p>Get notified by email when there's a pending action. Just reply with "PUBLISH" to execute it. Works from any device, no bookmarklet needed.</p>
+
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content"><strong>Create an app password</strong> for your email (Gmail: Google Account → Security → App Passwords).</div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content"><strong>Enter your email and app password below:</strong></div>
+        </div>
+
+        <div class="email-form" id="email-form">
+            <label for="bridge-email">Email address</label>
+            <input type="email" id="bridge-email" placeholder="you@gmail.com">
+            <label for="bridge-pass">App password</label>
+            <input type="password" id="bridge-pass" placeholder="16-character app password">
+            <label for="bridge-host">IMAP server <span style="font-weight:400;color:#9ca3af;">(leave as default for Gmail)</span></label>
+            <input type="text" id="bridge-host" value="imap.gmail.com">
+            <button onclick="setupEmailBridge()">Connect</button>
+            <div id="bridge-status"></div>
+        </div>
+
+        <div class="step" style="margin-top:16px;">
+            <div class="step-num">3</div>
+            <div class="step-content"><strong>Done.</strong> When a post is ready, we email you. Reply "PUBLISH" to post it.</div>
+        </div>
+
+        <div class="info-box">
+            <strong>&#128231; No OAuth, no API.</strong> We use IMAP to read your replies. Your password is stored encrypted and never shared.
+        </div>
+    </div>
+
+    <!-- Bookmarklet code (advanced) -->
+    <div class="card">
+        <h2>&#128295; Advanced: Manual Install</h2>
+        <p>If you can't drag the bookmarklet, create a new bookmark and paste this code as the URL:</p>
+        <div class="gen-code">{{ bookmarklet_code }}</div>
+    </div>
+
+    <a href="/admin" class="back-link">&larr; Back to Admin Panel</a>
+</div>
+
+<script>
+async function setupEmailBridge() {
+    const email = document.getElementById('bridge-email').value.trim();
+    const password = document.getElementById('bridge-pass').value.trim();
+    const host = document.getElementById('bridge-host').value.trim() || 'imap.gmail.com';
+    const status = document.getElementById('bridge-status');
+
+    if (!email || !password) {
+        status.className = 'status-msg err';
+        status.textContent = 'Please fill in email and app password.';
+        return;
+    }
+
+    status.className = 'status-msg';
+    status.textContent = 'Connecting...';
+
+    try {
+        const r = await fetch('/api/actions/bridge/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: password, imap_host: host, imap_port: 993 }),
+        });
+        const data = await r.json();
+        if (data.success) {
+            status.className = 'status-msg ok';
+            status.textContent = '\u2705 Connected! We\'ll now monitor your inbox for replies.';
+        } else {
+            status.className = 'status-msg err';
+            status.textContent = 'Connection failed: ' + (data.error || 'Unknown error');
+        }
+    } catch (e) {
+        status.className = 'status-msg err';
+        status.textContent = 'Network error. Please try again.';
+    }
+}
+</script>
+</body>
+</html>
