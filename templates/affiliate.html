@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Affiliate Program — Laval Digital</title>
-    <meta name="description" content="Join the Laval Digital affiliate program. Earn $800–$1,600 per referral. Your friends save $500. 10% commission.">
+    <meta name="description" content="Join the Laval Digital affiliate program. Earn $800–$1,600 per referral. Your friends save $500. 10% commission. Proudly Canadian.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -38,8 +38,6 @@
             -webkit-font-smoothing: antialiased;
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-
-        /* Navigation (identical to home.html) */
         nav {
             background: var(--navy);
             padding: 0;
@@ -96,8 +94,6 @@
             border-color: var(--white);
         }
         .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.8rem; cursor: pointer; padding: 4px 8px; }
-
-        /* Hero */
         .hero {
             background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 50%, #0d2137 100%);
             color: var(--white);
@@ -164,8 +160,6 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(212,43,43,0.35);
         }
-
-        /* Section shared */
         .section { padding: 90px 0; }
         .section-title {
             text-align: center;
@@ -183,8 +177,6 @@
             margin: 0 auto 48px;
             line-height: 1.7;
         }
-
-        /* How It Works - 3 steps */
         .steps-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -205,23 +197,9 @@
             box-shadow: var(--shadow-md);
             transform: translateY(-4px);
         }
-        .step-card .icon {
-            font-size: 2.5rem;
-            margin-bottom: 16px;
-        }
-        .step-card h3 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--navy);
-            margin-bottom: 10px;
-        }
-        .step-card p {
-            font-size: 0.9rem;
-            color: var(--mid-gray);
-            line-height: 1.7;
-        }
-
-        /* Commission Table */
+        .step-card .icon { font-size: 2.5rem; margin-bottom: 16px; }
+        .step-card h3 { font-size: 1.1rem; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+        .step-card p { font-size: 0.9rem; color: var(--mid-gray); line-height: 1.7; }
         .commission-bg { background: var(--off-white); }
         .commission-grid {
             display: grid;
@@ -239,33 +217,11 @@
             border: 1px solid rgba(0,0,0,0.04);
         }
         .commission-card:hover { box-shadow: var(--shadow-md); }
-        .commission-card h3 {
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: var(--navy);
-            margin-bottom: 16px;
-        }
-        .commission-card .client-pays {
-            font-size: 0.95rem;
-            color: var(--mid-gray);
-            margin-bottom: 4px;
-        }
-        .commission-card .client-pays strong {
-            color: var(--dark);
-        }
-        .commission-card .you-earn {
-            font-size: 2rem;
-            font-weight: 900;
-            color: var(--green);
-            margin-top: 8px;
-        }
-        .commission-card .you-earn-label {
-            font-size: 0.85rem;
-            color: var(--mid-gray);
-            margin-top: 2px;
-        }
-
-        /* Sign-Up Form */
+        .commission-card h3 { font-size: 1.15rem; font-weight: 800; color: var(--navy); margin-bottom: 16px; }
+        .commission-card .client-pays { font-size: 0.95rem; color: var(--mid-gray); margin-bottom: 4px; }
+        .commission-card .client-pays strong { color: var(--dark); }
+        .commission-card .you-earn { font-size: 2rem; font-weight: 900; color: var(--green); margin-top: 8px; }
+        .commission-card .you-earn-label { font-size: 0.85rem; color: var(--mid-gray); margin-top: 2px; }
         .form-bg { background: var(--white); }
         .form-box {
             max-width: 560px;
@@ -276,169 +232,60 @@
             padding: 48px 44px;
             border: 1px solid rgba(0,0,0,0.04);
         }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 6px;
-        }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 0.9rem; font-weight: 600; color: var(--dark); margin-bottom: 6px; }
         .form-group input {
-            width: 100%;
-            padding: 12px 16px;
-            font-size: 1rem;
-            font-family: inherit;
-            border: 1px solid #d1d5db;
-            border-radius: 10px;
-            background: var(--white);
-            color: var(--dark);
-            transition: border-color 0.2s, box-shadow 0.2s;
-            outline: none;
+            width: 100%; padding: 12px 16px; font-size: 1rem; font-family: inherit;
+            border: 1px solid #d1d5db; border-radius: 10px; background: var(--white);
+            color: var(--dark); transition: border-color 0.2s, box-shadow 0.2s; outline: none;
         }
-        .form-group input:focus {
-            border-color: var(--orange);
-            box-shadow: 0 0 0 3px var(--orange-glow);
-        }
-        .form-group input::placeholder {
-            color: #9ca3af;
-        }
-        .form-box .btn {
-            width: 100%;
-            justify-content: center;
-            margin-top: 8px;
-        }
-        .success-message {
-            display: none;
-            text-align: center;
-            padding: 24px;
-        }
-        .success-message .check {
-            font-size: 3rem;
-            margin-bottom: 16px;
-        }
-        .success-message h3 {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--navy);
-            margin-bottom: 8px;
-        }
-        .success-message p {
-            font-size: 0.95rem;
-            color: var(--mid-gray);
-            margin-bottom: 12px;
-        }
+        .form-group input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-glow); }
+        .form-group input::placeholder { color: #9ca3af; }
+        .form-box .btn { width: 100%; justify-content: center; margin-top: 8px; }
+        .success-message { display: none; text-align: center; padding: 24px; }
+        .success-message .check { font-size: 3rem; margin-bottom: 16px; }
+        .success-message h3 { font-size: 1.3rem; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+        .success-message p { font-size: 0.95rem; color: var(--mid-gray); margin-bottom: 12px; }
         .success-message .ref-link {
-            display: inline-block;
-            background: var(--off-white);
-            padding: 12px 24px;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--orange);
-            word-break: break-all;
-            border: 1px solid #e5e7eb;
+            display: inline-block; background: var(--off-white); padding: 12px 24px;
+            border-radius: 10px; font-size: 1rem; font-weight: 700; color: var(--orange);
+            word-break: break-all; border: 1px solid #e5e7eb;
         }
-
-        /* FAQ */
         .faq-bg { background: var(--off-white); }
-        .faq-list {
-            max-width: 720px;
-            margin: 0 auto;
-        }
+        .faq-list { max-width: 720px; margin: 0 auto; }
         .faq-item {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 24px 28px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(0,0,0,0.04);
+            background: var(--white); border-radius: var(--radius); padding: 24px 28px;
+            margin-bottom: 16px; box-shadow: var(--shadow-sm); border: 1px solid rgba(0,0,0,0.04);
         }
-        .faq-item h4 {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--navy);
-            margin-bottom: 8px;
-        }
-        .faq-item p {
-            font-size: 0.9rem;
-            color: var(--mid-gray);
-            line-height: 1.7;
-        }
-
-        /* Footer (identical to home.html) */
+        .faq-item h4 { font-size: 1rem; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+        .faq-item p { font-size: 0.9rem; color: var(--mid-gray); line-height: 1.7; }
         footer {
-            background: #0a1e33;
-            color: var(--white);
-            padding: 48px 0 32px;
+            background: #0a1e33; color: var(--white); padding: 48px 0 32px;
         }
-        footer .container {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            gap: 48px;
-            text-align: left;
-        }
-        footer h4 {
-            margin-bottom: 16px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: rgba(255,255,255,0.5);
-        }
+        footer .container { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; text-align: left; }
+        footer h4 { margin-bottom: 16px; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); }
         footer p { font-size: 0.9rem; line-height: 1.8; color: rgba(255,255,255,0.65); }
         footer a { color: rgba(255,255,255,0.75); text-decoration: none; transition: color 0.2s; }
         footer a:hover { color: var(--white); }
-        .footer-bottom {
-            text-align: center;
-            padding-top: 28px;
-            margin-top: 40px;
-            border-top: 1px solid rgba(255,255,255,0.06);
-            font-size: 0.85rem;
-            color: rgba(255,255,255,0.4);
-        }
-
-        /* Mobile */
+        .footer-bottom { text-align: center; padding-top: 28px; margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.85rem; color: rgba(255,255,255,0.4); }
         @media (max-width: 768px) {
             .hamburger { display: block; }
             nav .container { height: 64px; }
-            nav ul {
-                display: none;
-                flex-direction: column;
-                width: 100%;
-                gap: 0;
-                padding: 16px 0;
-                border-top: 1px solid rgba(255,255,255,0.08);
-                margin-top: 0;
-                background: var(--navy);
-                position: absolute;
-                top: 64px;
-                left: 0;
-                right: 0;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            }
+            nav ul { display: none; flex-direction: column; width: 100%; gap: 0; padding: 16px 0; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 0; background: var(--navy); position: absolute; top: 64px; left: 0; right: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
             nav ul.open { display: flex; }
             nav ul li { text-align: center; padding: 4px 0; }
             nav ul li a { font-size: 1rem; padding: 12px 20px; display: block; }
             .lang-toggle { margin-left: 0; margin-top: 8px; display: inline-block; }
-
             .hero { padding: 64px 0 56px; }
             .hero h1 { font-size: 2rem; }
             .hero p { font-size: 1rem; }
-
             .section-title { font-size: 1.8rem; }
             .section-subtitle { font-size: 1rem; }
-
             .steps-row { grid-template-columns: 1fr; gap: 20px; }
             .commission-grid { grid-template-columns: 1fr; gap: 20px; }
-
             .form-box { padding: 36px 24px; }
-
             footer .container { grid-template-columns: 1fr; gap: 32px; }
         }
-
         @media (max-width: 480px) {
             .hero h1 { font-size: 1.7rem; }
             .container { padding: 0 16px; }
@@ -447,7 +294,6 @@
 </head>
 <body>
 
-<!-- Navigation (identical to home.html) -->
 <nav>
     <div class="container">
         <a href="/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48"></a>
@@ -464,47 +310,44 @@
     </div>
 </nav>
 
-<!-- Hero -->
 <section class="hero">
     <div class="container">
         <h1>Earn <span>$800–$1,600</span> Per Referral</h1>
-        <p>Share your unique link. Your friends save $500 on any AI marketing suite. You earn 10% commission. No limit.</p>
+        <p>🍁 Proudly Canadian. Share your unique link. Your friends save $500 on any AI marketing suite. You earn 10% commission. No limit, no cap, no funny business.</p>
         <div class="hero-buttons">
             <a href="#signup" class="btn btn-primary">Get Your Referral Link</a>
         </div>
     </div>
 </section>
 
-<!-- How It Works -->
 <section class="section" id="how-it-works">
     <div class="container">
         <h2 class="section-title">How It Works</h2>
-        <p class="section-subtitle">Three simple steps to start earning.</p>
+        <p class="section-subtitle">Three simple steps to start earning — from any province, eh.</p>
         <div class="steps-row">
             <div class="step-card">
                 <div class="icon">🔗</div>
                 <h3>Get Your Link</h3>
-                <p>Sign up below and receive your unique referral URL instantly.</p>
+                <p>Sign up below and receive your unique referral URL instantly. Takes 30 seconds.</p>
             </div>
             <div class="step-card">
                 <div class="icon">📤</div>
                 <h3>Share It</h3>
-                <p>Text it, post it, email it. Anyone who uses your link gets $500 OFF.</p>
+                <p>Text it, post it, email it. Anyone who uses your link gets $500 OFF their suite.</p>
             </div>
             <div class="step-card">
                 <div class="icon">💰</div>
                 <h3>Get Paid</h3>
-                <p>When they sign a contract, we send your commission via e-Transfer within 48 hours.</p>
+                <p>When they sign a contract, we send your commission via Interac e-Transfer within 48 hours.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Commission Table -->
 <section class="section commission-bg" id="commission">
     <div class="container">
         <h2 class="section-title">What You Earn</h2>
-        <p class="section-subtitle">10% commission on every package — paid within 48 hours.</p>
+        <p class="section-subtitle">10% commission on every package — paid within 48 hours. Simple as that.</p>
         <div class="commission-grid">
             <div class="commission-card">
                 <h3>Core Suite</h3>
@@ -528,7 +371,6 @@
     </div>
 </section>
 
-<!-- Sign-Up Form -->
 <section class="section form-bg" id="signup">
     <div class="container">
         <h2 class="section-title">Get Your Referral Link</h2>
@@ -560,33 +402,35 @@
     </div>
 </section>
 
-<!-- FAQ -->
 <section class="section faq-bg" id="faq">
     <div class="container">
         <h2 class="section-title">Frequently Asked Questions</h2>
         <div class="faq-list">
             <div class="faq-item">
                 <h4>How do I know if someone used my link?</h4>
-                <p>We'll email you every time a lead signs a contract using your code.</p>
+                <p>We'll email you every time a new client signs a contract using your code. You can also check your affiliate dashboard anytime.</p>
             </div>
             <div class="faq-item">
                 <h4>When do I get paid?</h4>
-                <p>Within 48 hours of the client making their first payment.</p>
+                <p>Within 48 hours of the client making their first payment. We send it via Interac e-Transfer — the Canadian way.</p>
             </div>
             <div class="faq-item">
                 <h4>Can I refer myself or my own business?</h4>
-                <p>Unfortunately no. The program is for referring new clients only.</p>
+                <p>Unfortunately no. The program is for referring new clients only. But you can sign up as a client yourself — just don't use your own code!</p>
+            </div>
+            <div class="faq-item">
+                <h4>Is there a limit on how many people I can refer?</h4>
+                <p>Nope. Refer one or refer one hundred. No cap, no ceiling. The more you refer, the more you earn.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Footer (identical to home.html) -->
 <footer>
     <div class="container">
         <div>
-            <h4>Laval Digital</h4>
-            <p>AI-powered digital agency for local businesses in Laval and surrounding areas. We replace your entire marketing department with intelligent software — for a single one-time fee.</p>
+            <h4>🍁 Laval Digital</h4>
+            <p>Proudly Canadian. AI-powered digital agency for local businesses from coast to coast. We replace your entire marketing department with intelligent software — for a single one-time fee.</p>
         </div>
         <div>
             <h4>Contact</h4>
@@ -603,7 +447,7 @@
         </div>
     </div>
     <div class="footer-bottom container">
-        <p>&copy; 2026 Laval Digital. All rights reserved.</p>
+        <p>&copy; 2026 Laval Digital. Proudly Canadian. 🍁</p>
     </div>
 </footer>
 
@@ -618,12 +462,7 @@ function handleSignup() {
     const name = document.getElementById('full-name').value.trim();
     const email = document.getElementById('email').value.trim();
     const phone = document.getElementById('phone').value.trim();
-
-    if (!name || !email) {
-        alert('Please enter your name and email address.');
-        return;
-    }
-
+    if (!name || !email) { alert('Please enter your name and email address.'); return; }
     fetch('/api/affiliate/signup', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -631,111 +470,47 @@ function handleSignup() {
     })
     .then(r => r.json())
     .then(data => {
-        if (data.error) {
-            alert(data.error);
-            return;
-        }
-        const form = document.getElementById('signup-form');
-        const success = document.getElementById('success-message');
-        form.style.display = 'none';
-        success.style.display = 'block';
+        if (data.error) { alert(data.error); return; }
+        document.getElementById('signup-form').style.display = 'none';
+        document.getElementById('success-message').style.display = 'block';
         document.querySelector('#success-message .ref-link').textContent = data.referral_link;
     })
-    .catch(() => {
-        alert('Something went wrong. Please try again.');
-    });
+    .catch(() => { alert('Something went wrong. Please try again.'); });
 }
-
 function dismissCookie() {
-    const notice = document.getElementById('cookie-notice');
-    notice.classList.remove('show');
+    document.getElementById('cookie-notice').classList.remove('show');
     localStorage.setItem('cookie-notice-dismissed', '1');
 }
-
 (function() {
     if (!localStorage.getItem('cookie-notice-dismissed')) {
-        setTimeout(function() {
-            const notice = document.getElementById('cookie-notice');
-            if (notice) {
-                notice.classList.add('show');
-            }
-        }, 800);
+        setTimeout(function() { document.getElementById('cookie-notice').classList.add('show'); }, 800);
     }
 })();
 </script>
 
 <style>
 #cookie-notice {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    z-index: 9999;
-    background: rgba(15, 43, 69, 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 18px 24px;
-    max-width: 480px;
-    width: calc(100% - 48px);
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-    opacity: 0;
-    pointer-events: none;
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    z-index: 9999; background: rgba(15, 43, 69, 0.92); backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 18px 24px; max-width: 480px; width: calc(100% - 48px);
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3); opacity: 0; pointer-events: none;
     transition: opacity 0.5s ease, transform 0.5s ease;
 }
-#cookie-notice.show {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateX(-50%) translateY(0);
-}
-#cookie-notice .cookie-icon {
-    font-size: 1.5rem;
-    flex-shrink: 0;
-}
-#cookie-notice .cookie-text {
-    flex: 1;
-    font-size: 0.85rem;
-    color: rgba(255,255,255,0.85);
-    line-height: 1.5;
-}
-#cookie-notice .cookie-text strong {
-    color: var(--white);
-}
+#cookie-notice.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+#cookie-notice .cookie-icon { font-size: 1.5rem; flex-shrink: 0; }
+#cookie-notice .cookie-text { flex: 1; font-size: 0.85rem; color: rgba(255,255,255,0.85); line-height: 1.5; }
+#cookie-notice .cookie-text strong { color: var(--white); }
 #cookie-notice .cookie-btn {
-    flex-shrink: 0;
-    background: var(--orange);
-    color: var(--white);
-    border: none;
-    border-radius: 10px;
-    padding: 10px 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.2s;
-    white-space: nowrap;
+    flex-shrink: 0; background: var(--orange); color: var(--white); border: none;
+    border-radius: 10px; padding: 10px 20px; font-size: 0.85rem; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: background 0.2s, transform 0.2s; white-space: nowrap;
 }
-#cookie-notice .cookie-btn:hover {
-    background: var(--orange-dark);
-    transform: scale(1.03);
-}
+#cookie-notice .cookie-btn:hover { background: var(--orange-dark); transform: scale(1.03); }
 @media (max-width: 480px) {
-    #cookie-notice {
-        flex-wrap: wrap;
-        gap: 12px;
-        padding: 16px 20px;
-        bottom: 16px;
-        width: calc(100% - 32px);
-        border-radius: 14px;
-    }
-    #cookie-notice .cookie-btn {
-        width: 100%;
-        text-align: center;
-    }
+    #cookie-notice { flex-wrap: wrap; gap: 12px; padding: 16px 20px; bottom: 16px; width: calc(100% - 32px); border-radius: 14px; }
+    #cookie-notice .cookie-btn { width: 100%; text-align: center; }
 }
 </style>
 
