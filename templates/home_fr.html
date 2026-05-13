@@ -757,7 +757,7 @@
         }
 
         @media (max-width: 768px) {
-            .hamburger { display: block; }
+            .hamburger { display: block; padding: 8px; }
             nav .container { height: 64px; }
             nav ul {
                 display: none;
@@ -788,7 +788,8 @@
 
             .pricing-grid { grid-template-columns: 1fr; gap: 24px; }
             .pricing-card { padding: 32px 24px; }
-            .pricing-card.recommended { transform: none; }
+            .pricing-card.recommended { transform: none; margin-top: 4px; }
+            .pricing-card.recommended .badge-popular { top: -8px; font-size: 0.65rem; padding: 4px 18px; }
             .price-monthly { font-size: 2.4rem; }
 
             .comparison-grid { grid-template-columns: 1fr; gap: 20px; }
@@ -798,6 +799,8 @@
             .comparison-total-block .total-amount { font-size: 1.5rem; }
 
             .steps-grid { grid-template-columns: 1fr; }
+            .step-card { padding: 24px 20px; }
+            .step-number { font-size: 1.8rem; }
             .cards { grid-template-columns: 1fr; }
 
             .example-grid { grid-template-columns: 1fr; }
@@ -811,10 +814,26 @@
             footer .container { grid-template-columns: 1fr; gap: 32px; }
         }
 
+        @media (min-width: 481px) and (max-width: 768px) {
+            .cards { grid-template-columns: repeat(2, 1fr); }
+            .get-found .cards { grid-template-columns: repeat(2, 1fr); }
+        }
+
         @media (max-width: 480px) {
             .hero h1 { font-size: 1.7rem; }
             .hero-buttons .btn { width: 100%; justify-content: center; }
+            .hero-buttons .btn-secondary { width: 48%; flex: none; }
             .container { padding: 0 16px; }
+            .comparison-list li { flex-direction: column; align-items: flex-start; gap: 2px; }
+            .comparison-list .price { text-align: left; }
+        }
+
+        @media (max-width: 400px) {
+            #affiliate-banner { font-size: 0.8rem; padding: 10px 8px; }
+        }
+
+        @media (max-height: 700px) {
+            #cookie-notice { bottom: 8px; padding: 12px 16px; }
         }
 
         /* Pricing shine & utilities */
