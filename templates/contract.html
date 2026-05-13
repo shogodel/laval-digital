@@ -262,6 +262,12 @@
             color: var(--green);
             margin-left: 8px;
         }
+        .package-option label .pkg-sub {
+            display: block;
+            margin-top: 2px;
+            font-size: 0.85rem;
+            color: var(--mid-gray);
+        }
         .price-note {
             font-size: 0.85rem;
             color: var(--mid-gray);
@@ -498,6 +504,7 @@
                             <span id="core-price">$8,500</span>
                             <span class="discount-note" id="core-discount" style="display:none;">with referral discount</span>
                         </span>
+                        <span class="pkg-sub">— or 12 monthly payments of $708/mo</span>
                     </label>
                 </div>
 
@@ -510,6 +517,7 @@
                             <span id="growth-price">$12,500</span>
                             <span class="discount-note" id="growth-discount" style="display:none;">with referral discount</span>
                         </span>
+                        <span class="pkg-sub">— or 12 monthly payments of $1,042/mo</span>
                     </label>
                 </div>
 
@@ -522,11 +530,14 @@
                             <span id="empire-price">$16,500</span>
                             <span class="discount-note" id="empire-discount" style="display:none;">with referral discount</span>
                         </span>
+                        <span class="pkg-sub">— or 12 monthly payments of $1,375/mo</span>
                     </label>
                 </div>
 
-                <p class="price-note">Price reflects any applicable referral discount.</p>
-                <p style="font-size:0.9rem;color:var(--mid-gray);margin-top:16px;padding:16px 20px;background:var(--off-white);border-radius:var(--radius);">All packages include flexible milestone-based payments. We'll design a schedule around your budget.</p>
+                <div style="margin-top:20px;padding:16px 20px;background:var(--off-white);border-radius:var(--radius);font-size:0.9rem;color:var(--mid-gray);">
+                    <p><strong>20% upfront deposit required to begin.</strong> Remaining balance spread over 11 monthly payments.</p>
+                    <p style="margin-top:8px;">💰 <strong>Save with one-time payment:</strong> Core <strong>$7,497</strong> / Growth <strong>$11,247</strong> / Empire <strong>$14,997</strong></p>
+                </div>
 
                 <h3 style="margin-top:32px;">2. Your Information</h3>
 
@@ -558,7 +569,7 @@
                     </label>
                     <label>
                         <input type="checkbox" id="agree-payment" required>
-                        I understand that a non-refundable deposit of 25-50% is required to begin work, and the remaining balance is split into installments tied to project milestones, with the final payment due upon project completion and launch.
+                        I understand that a 20% upfront deposit is required to begin, with the remaining balance split into 11 monthly installments.
                     </label>
                     <div style="margin:16px 0;text-align:left;">
                         <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.85rem;color:var(--gray-700);line-height:1.5;">
@@ -617,10 +628,37 @@
 
                 <div class="flexibility-box">
                     <strong>Payment Flexibility:</strong>
-                    We believe in aligning our success with yours. That's why we offer flexible payment milestones that match project progress, not arbitrary calendar dates. Our goal is to create a plan that fits your cash flow. A typical schedule is a 30% deposit to secure your slot, 40% upon seeing your development site live, and 30% at final launch, but we'll tailor this to your needs.
+                    We offer a simple 12-month payment plan. A <strong>20% upfront deposit</strong> secures your slot, and the remaining balance is split into <strong>11 equal monthly installments</strong>. You can also choose to pay in full at once and save.
                 </div>
 
                 <input type="hidden" id="affiliate-code-input" value="">
+
+                <div id="affiliate-banner" style="display:none;background:var(--green-bg);border:1px solid #a7f3d0;border-radius:var(--radius);padding:16px 20px;margin:16px 0;align-items:center;gap:12px;">
+                    <span style="font-size:1.3rem;">🎉</span>
+                    <div>
+                        <p style="font-weight:600;color:#065f46;margin:0;font-size:0.95rem;">
+                            You're saving $500 thanks to <span id="affiliate-name-display"></span>'s referral!
+                        </p>
+                        <p style="font-size:0.85rem;color:#047857;margin:4px 0 0;">
+                            Your referral discount is reflected in the prices above.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:12px;margin:16px 0;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid #e5e7eb;border-radius:var(--radius);transition:all 0.2s;flex:1;justify-content:center;" id="pay-monthly-label">
+                        <input type="radio" name="payment-type" id="pay-monthly" value="monthly" checked onchange="showPaymentDetails()">
+                        <span style="font-weight:600;font-size:0.9rem;">12 Monthly Payments</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid #e5e7eb;border-radius:var(--radius);transition:all 0.2s;flex:1;justify-content:center;" id="pay-onetime-label">
+                        <input type="radio" name="payment-type" id="pay-one-time" value="onetime" onchange="showPaymentDetails()">
+                        <span style="font-weight:600;font-size:0.9rem;">Pay One-Time & Save</span>
+                    </label>
+                </div>
+
+                <div id="payment-details-breakdown" style="font-size:0.9rem;color:var(--navy);padding:12px 16px;background:var(--off-white);border-radius:var(--radius);margin:12px 0;"></div>
+                <div id="tax-line" style="font-size:0.8rem;color:var(--mid-gray);margin:8px 0 16px;"></div>
+
                 <button class="btn btn-primary" onclick="signContract()" id="sign-btn" style="width:100%;justify-content:center;">Sign &amp; Continue</button>
             </div>
 
@@ -633,8 +671,9 @@
                             <p>Our payment process is simple and secure. To get started, send your deposit via <strong>Interac e-Transfer</strong> to:</p>
                             <p style="font-size:1.1rem;font-weight:700;color:var(--navy);margin:8px 0;">lavaldigital@gmail.com</p>
                             <p style="font-size:0.9rem;color:var(--gray-500);margin-bottom:12px;">Laval Digital is registered for <strong>Interac Autodeposit</strong>. There is no need for a security question; your payment will be deposited instantly and securely.</p>
-                            <p class="label">Deposit amount:</p>
+                            <p class="label" id="payment-label">Deposit amount:</p>
                             <div class="amount" id="payment-amount">$0.00</div>
+                            <p id="payment-instructions" class="label">Please send your deposit via Interac e-Transfer to the address below. Once received, we will begin work on your project.</p>
                             <p class="label">Please include <strong>"[Your Business Name] - Laval Digital"</strong> in the message.</p>
                         </div>
                         <div class="payment-note">
@@ -665,12 +704,13 @@
 
 <script>
 const PKG_PRICES = {
-    core: { normal: 8500, discount: 8000, name: 'Core Suite' },
-    growth: { normal: 12500, discount: 12000, name: 'Growth Suite' },
-    empire: { normal: 16500, discount: 16000, name: 'Full Empire' },
+    core: { normal: 8500, discount: 8000, onetime: 7497, monthly: 708, deposit: 1700, installments: 11, name: 'Core Suite' },
+    growth: { normal: 12500, discount: 12000, onetime: 11247, monthly: 1042, deposit: 2500, installments: 11, name: 'Growth Suite' },
+    empire: { normal: 16500, discount: 16000, onetime: 14997, monthly: 1375, deposit: 3300, installments: 11, name: 'Full Empire' },
 };
 
 let affiliateActive = false;
+let affiliateName = '';
 let currentPrice = 8500;
 
 function getSelectedPackage() {
@@ -681,6 +721,7 @@ function getSelectedPackage() {
 function updatePrices(data) {
     if (data.active && data.discount > 0) {
         affiliateActive = true;
+        affiliateName = data.name || 'your referrer';
         document.getElementById('affiliate-code-input').value = data.code || '';
 
         for (const [key, pkg] of Object.entries(PKG_PRICES)) {
@@ -691,6 +732,8 @@ function updatePrices(data) {
             if (origEl) origEl.style.display = 'inline';
             if (discountEl) discountEl.style.display = 'inline';
         }
+        document.getElementById('affiliate-banner').style.display = 'flex';
+        document.getElementById('affiliate-name-display').textContent = affiliateName;
     }
     updatePaymentAmount();
 }
@@ -699,6 +742,32 @@ function updatePaymentAmount() {
     const pkg = getSelectedPackage();
     const prices = PKG_PRICES[pkg];
     currentPrice = affiliateActive ? prices.discount : prices.normal;
+}
+
+function isOneTimeSelected() {
+    return document.getElementById('pay-one-time') && document.getElementById('pay-one-time').checked;
+}
+
+function showPaymentDetails() {
+    const pkg = getSelectedPackage();
+    const prices = PKG_PRICES[pkg];
+    const total = affiliateActive ? prices.discount : prices.normal;
+    const detailEl = document.getElementById('payment-details-breakdown');
+    const taxLineEl = document.getElementById('tax-line');
+
+    if (isOneTimeSelected()) {
+        const oneTimePrice = affiliateActive ? Math.round(prices.discount * 0.882) : prices.onetime;
+        detailEl.innerHTML = '<strong>One-time payment:</strong> $' + oneTimePrice.toLocaleString();
+        taxLineEl.textContent = '+ applicable taxes (GST/QST/HST) based on your province.';
+    } else {
+        const depositAmt = Math.round(total * 0.2);
+        const installmentAmt = Math.round((total - depositAmt) / 11);
+        const pct = affiliateActive ? ' with referral discount' : '';
+        detailEl.innerHTML =
+            '<strong>Setup fee (20%):</strong> $' + depositAmt.toLocaleString() + '<br>' +
+            '<strong>11 monthly payments of</strong> $' + installmentAmt.toLocaleString() + pct;
+        taxLineEl.textContent = '+ applicable taxes (GST/QST/HST) based on your province. Quebec clients: 14.975%, Ontario: 13%, Alberta: 5%.';
+    }
 }
 
 function signContract() {
@@ -725,7 +794,17 @@ function signContract() {
     }
 
     updatePaymentAmount();
-    const deposit = Math.round(currentPrice * 0.4);
+    const prices = PKG_PRICES[getSelectedPackage()];
+    const total = affiliateActive ? prices.discount : prices.normal;
+
+    let depositAmt, isOneTime;
+    if (isOneTimeSelected()) {
+        depositAmt = affiliateActive ? Math.round(prices.discount * 0.882) : prices.onetime;
+        isOneTime = true;
+    } else {
+        depositAmt = Math.round(total * 0.2);
+        isOneTime = false;
+    }
 
     const agreement = {
         name: name,
@@ -734,9 +813,10 @@ function signContract() {
         phone: phone,
         address: address,
         package: getSelectedPackage(),
-        packageName: PKG_PRICES[getSelectedPackage()].name,
-        totalPrice: currentPrice,
-        deposit: deposit,
+        packageName: prices.name,
+        totalPrice: total,
+        deposit: depositAmt,
+        isOneTime: isOneTime,
         affiliateCode: document.getElementById('affiliate-code-input').value,
         signedAt: new Date().toISOString(),
     };
@@ -751,7 +831,14 @@ function signContract() {
     document.getElementById('form-section').style.display = 'none';
     document.getElementById('payment-section').style.display = 'block';
     document.getElementById('thank-you-msg').textContent = 'Thank you, ' + name + '! Your agreement has been recorded.';
-    document.getElementById('payment-amount').textContent = '$' + deposit.toLocaleString() + ' CAD';
+
+    if (isOneTime) {
+        document.getElementById('payment-amount').textContent = '$' + depositAmt.toLocaleString() + ' CAD';
+        document.getElementById('payment-instructions').textContent = 'Please send your one-time payment via Interac e-Transfer to the address below. Once received, we will begin work on your project immediately.';
+    } else {
+        document.getElementById('payment-amount').textContent = '$' + depositAmt.toLocaleString() + ' CAD';
+        document.getElementById('payment-instructions').textContent = 'Please send your 20% deposit via Interac e-Transfer to the address below. Once received, we will begin work on your project. You will be billed for the remaining 11 monthly installments as they come due.';
+    }
 }
 
 function dismissCookie() {
@@ -774,8 +861,9 @@ function dismissCookie() {
     }
 
     document.querySelectorAll('input[name="package"]').forEach(el => {
-        el.addEventListener('change', updatePaymentAmount);
+        el.addEventListener('change', function() { updatePaymentAmount(); showPaymentDetails(); });
     });
+    showPaymentDetails();
 })();
 </script>
 

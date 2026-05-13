@@ -262,6 +262,12 @@
             color: var(--green);
             margin-left: 8px;
         }
+        .package-option label .pkg-sub {
+            display: block;
+            margin-top: 2px;
+            font-size: 0.85rem;
+            color: var(--mid-gray);
+        }
         .price-note {
             font-size: 0.85rem;
             color: var(--mid-gray);
@@ -475,40 +481,46 @@
                 <div class="package-option">
                     <input type="radio" name="package" id="pkg-core" value="core" checked>
                     <label for="pkg-core">
-                        <span class="pkg-name">Offre de Base</span>
+                        <span class="pkg-name">Suite Core</span>
                         <span class="pkg-price">
                             <span class="orig" id="core-orig">8 500 $</span>
                             <span id="core-price">8 500 $</span>
                             <span class="discount-note" id="core-discount" style="display:none;">avec rabais de parrainage</span>
                         </span>
+                        <span class="pkg-sub">— ou 12 paiements mensuels de 708 $/mois</span>
                     </label>
                 </div>
 
                 <div class="package-option">
                     <input type="radio" name="package" id="pkg-growth" value="growth">
                     <label for="pkg-growth">
-                        <span class="pkg-name">Offre Croissance <span class="pkg-badge">Le Plus Populaire</span></span>
+                        <span class="pkg-name">Suite Croissance <span class="pkg-badge">Le Plus Populaire</span></span>
                         <span class="pkg-price">
                             <span class="orig" id="growth-orig">12 500 $</span>
                             <span id="growth-price">12 500 $</span>
                             <span class="discount-note" id="growth-discount" style="display:none;">avec rabais de parrainage</span>
                         </span>
+                        <span class="pkg-sub">— ou 12 paiements mensuels de 1 042 $/mois</span>
                     </label>
                 </div>
 
                 <div class="package-option">
                     <input type="radio" name="package" id="pkg-empire" value="empire">
                     <label for="pkg-empire">
-                        <span class="pkg-name">Offre Complète</span>
+                        <span class="pkg-name">Suite Complète</span>
                         <span class="pkg-price">
                             <span class="orig" id="empire-orig">16 500 $</span>
                             <span id="empire-price">16 500 $</span>
                             <span class="discount-note" id="empire-discount" style="display:none;">avec rabais de parrainage</span>
                         </span>
+                        <span class="pkg-sub">— ou 12 paiements mensuels de 1 375 $/mois</span>
                     </label>
                 </div>
 
-                <p class="price-note">Le prix reflète tout rabais de parrainage applicable.</p>
+                <div style="margin-top:20px;padding:16px 20px;background:var(--off-white);border-radius:var(--radius);font-size:0.9rem;color:var(--mid-gray);">
+                    <p><strong>Acompte de 20 % requis.</strong> Solde restant réparti sur 11 mensualités.</p>
+                    <p style="margin-top:8px;">💰 <strong>Économisez avec un paiement unique :</strong> Core <strong>7 497 $</strong> / Croissance <strong>11 247 $</strong> / Complète <strong>14 997 $</strong></p>
+                </div>
 
                 <h3 style="margin-top:32px;">2. Vos Informations</h3>
 
@@ -540,7 +552,7 @@
                     </label>
                     <label>
                         <input type="checkbox" id="agree-payment" required>
-                        Je comprends que le premier paiement de 40 % est dû lors de la signature, et que le solde restant est divisé en 2 versements égaux dus 14 et 30 jours après le déploiement.
+                        Je comprends qu'un acompte de 20 % est requis pour commencer, le solde restant étant réparti sur 11 mensualités.
                     </label>
                     <div style="margin:16px 0;text-align:left;">
                         <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:0.85rem;color:var(--gray-700);line-height:1.5;">
@@ -598,6 +610,33 @@
                 </div>
 
                 <input type="hidden" id="affiliate-code-input" value="">
+
+                <div id="affiliate-banner" style="display:none;background:var(--green-bg);border:1px solid #a7f3d0;border-radius:var(--radius);padding:16px 20px;margin:16px 0;align-items:center;gap:12px;">
+                    <span style="font-size:1.3rem;">🎉</span>
+                    <div>
+                        <p style="font-weight:600;color:#065f46;margin:0;font-size:0.95rem;">
+                            Vous économisez 500 $ grâce au parrainage de <span id="affiliate-name-display"></span>!
+                        </p>
+                        <p style="font-size:0.85rem;color:#047857;margin:4px 0 0;">
+                            Votre rabais de parrainage est reflété dans les prix ci-dessus.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:12px;margin:16px 0;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid #e5e7eb;border-radius:var(--radius);transition:all 0.2s;flex:1;justify-content:center;" id="pay-monthly-label">
+                        <input type="radio" name="payment-type" id="pay-monthly" value="monthly" checked onchange="showPaymentDetails()">
+                        <span style="font-weight:600;font-size:0.9rem;">12 Paiements Mensuels</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border:2px solid #e5e7eb;border-radius:var(--radius);transition:all 0.2s;flex:1;justify-content:center;" id="pay-onetime-label">
+                        <input type="radio" name="payment-type" id="pay-one-time" value="onetime" onchange="showPaymentDetails()">
+                        <span style="font-weight:600;font-size:0.9rem;">Paiement Unique & Économisez</span>
+                    </label>
+                </div>
+
+                <div id="payment-details-breakdown" style="font-size:0.9rem;color:var(--navy);padding:12px 16px;background:var(--off-white);border-radius:var(--radius);margin:12px 0;"></div>
+                <div id="tax-line" style="font-size:0.8rem;color:var(--mid-gray);margin:8px 0 16px;"></div>
+
                 <button class="btn btn-primary" onclick="signContract()" id="sign-btn" style="width:100%;justify-content:center;">Signer &amp; Continuer</button>
             </div>
 
@@ -610,8 +649,9 @@
                             <p>Notre processus de paiement est simple et sécurisé. Pour commencer, envoyez votre premier versement par <strong>Interac e-Transfer</strong> à :</p>
                             <p style="font-size:1.1rem;font-weight:700;color:var(--navy);margin:8px 0;">lavaldigital@gmail.com</p>
                             <p style="font-size:0.9rem;color:var(--gray-500);margin-bottom:12px;">Laval Digital est inscrit pour <strong>Interac Autodeposit</strong>. Aucune question de sécurité n'est nécessaire; votre paiement sera déposé instantanément et en toute sécurité.</p>
-                            <p class="label">Montant à envoyer :</p>
+                            <p class="label" id="payment-label">Montant à envoyer :</p>
                             <div class="amount" id="payment-amount">0,00 $</div>
+                            <p id="payment-instructions" class="label">Veuillez envoyer votre acompte par Interac e-Transfert à l'adresse ci-dessous. Dès réception, nous commencerons votre projet.</p>
                             <p class="label">Dans le message, veuillez inclure <strong>"[Nom de votre entreprise] - Laval Digital"</strong>.</p>
                         </div>
                         <div class="payment-note">
@@ -642,12 +682,13 @@
 
 <script>
 const PKG_PRICES = {
-    core: { normal: 8500, discount: 8000, name: 'Offre de Base' },
-    growth: { normal: 12500, discount: 12000, name: 'Offre Croissance' },
-    empire: { normal: 16500, discount: 16000, name: 'Offre Complète' },
+    core: { normal: 8500, discount: 8000, onetime: 7497, monthly: 708, deposit: 1700, installments: 11, name: 'Suite Core' },
+    growth: { normal: 12500, discount: 12000, onetime: 11247, monthly: 1042, deposit: 2500, installments: 11, name: 'Suite Croissance' },
+    empire: { normal: 16500, discount: 16000, onetime: 14997, monthly: 1375, deposit: 3300, installments: 11, name: 'Suite Complète' },
 };
 
 let affiliateActive = false;
+let affiliateName = '';
 let currentPrice = 8500;
 
 function getSelectedPackage() {
@@ -658,6 +699,7 @@ function getSelectedPackage() {
 function updatePrices(data) {
     if (data.active && data.discount > 0) {
         affiliateActive = true;
+        affiliateName = data.name || 'votre parrain';
         document.getElementById('affiliate-code-input').value = data.code || '';
 
         for (const [key, pkg] of Object.entries(PKG_PRICES)) {
@@ -668,6 +710,8 @@ function updatePrices(data) {
             if (origEl) origEl.style.display = 'inline';
             if (discountEl) discountEl.style.display = 'inline';
         }
+        document.getElementById('affiliate-banner').style.display = 'flex';
+        document.getElementById('affiliate-name-display').textContent = affiliateName;
     }
     updatePaymentAmount();
 }
@@ -676,6 +720,32 @@ function updatePaymentAmount() {
     const pkg = getSelectedPackage();
     const prices = PKG_PRICES[pkg];
     currentPrice = affiliateActive ? prices.discount : prices.normal;
+}
+
+function isOneTimeSelected() {
+    return document.getElementById('pay-one-time') && document.getElementById('pay-one-time').checked;
+}
+
+function showPaymentDetails() {
+    const pkg = getSelectedPackage();
+    const prices = PKG_PRICES[pkg];
+    const total = affiliateActive ? prices.discount : prices.normal;
+    const detailEl = document.getElementById('payment-details-breakdown');
+    const taxLineEl = document.getElementById('tax-line');
+
+    if (isOneTimeSelected()) {
+        const oneTimePrice = affiliateActive ? Math.round(prices.discount * 0.882) : prices.onetime;
+        detailEl.innerHTML = '<strong>Paiement unique :</strong> ' + oneTimePrice.toLocaleString('fr-CA', {style:'currency',currency:'CAD',minimumFractionDigits:0});
+        taxLineEl.textContent = '+ taxes applicables (TPS/TVQ/TVH) selon votre province.';
+    } else {
+        const depositAmt = Math.round(total * 0.2);
+        const installmentAmt = Math.round((total - depositAmt) / 11);
+        const pct = affiliateActive ? ' avec rabais de parrainage' : '';
+        detailEl.innerHTML =
+            '<strong>Acompte (20 %) :</strong> ' + depositAmt.toLocaleString('fr-CA', {style:'currency',currency:'CAD',minimumFractionDigits:0}) + '<br>' +
+            '<strong>11 mensualités de</strong> ' + installmentAmt.toLocaleString('fr-CA', {style:'currency',currency:'CAD',minimumFractionDigits:0}) + pct;
+        taxLineEl.textContent = '+ taxes applicables (TPS/TVQ/TVH) selon votre province. Clients du Québec : 14,975 %, Ontario : 13 %, Alberta : 5 %.';
+    }
 }
 
 function signContract() {
@@ -702,7 +772,17 @@ function signContract() {
     }
 
     updatePaymentAmount();
-    const deposit = Math.round(currentPrice * 0.4);
+    const prices = PKG_PRICES[getSelectedPackage()];
+    const total = affiliateActive ? prices.discount : prices.normal;
+
+    let depositAmt, isOneTime;
+    if (isOneTimeSelected()) {
+        depositAmt = affiliateActive ? Math.round(prices.discount * 0.882) : prices.onetime;
+        isOneTime = true;
+    } else {
+        depositAmt = Math.round(total * 0.2);
+        isOneTime = false;
+    }
 
     const agreement = {
         name: name,
@@ -711,9 +791,10 @@ function signContract() {
         phone: phone,
         address: address,
         package: getSelectedPackage(),
-        packageName: PKG_PRICES[getSelectedPackage()].name,
-        totalPrice: currentPrice,
-        deposit: deposit,
+        packageName: prices.name,
+        totalPrice: total,
+        deposit: depositAmt,
+        isOneTime: isOneTime,
         affiliateCode: document.getElementById('affiliate-code-input').value,
         signedAt: new Date().toISOString(),
     };
@@ -728,7 +809,14 @@ function signContract() {
     document.getElementById('form-section').style.display = 'none';
     document.getElementById('payment-section').style.display = 'block';
     document.getElementById('thank-you-msg').textContent = 'Merci, ' + name + '! Votre entente a été enregistrée.';
-    document.getElementById('payment-amount').textContent = deposit.toLocaleString('fr-CA', {style:'currency',currency:'CAD',minimumFractionDigits:0}) + ' CAD';
+
+    if (isOneTime) {
+        document.getElementById('payment-amount').textContent = depositAmt.toLocaleString('fr-CA', {style:'currency',currency:'CAD',minimumFractionDigits:0}) + ' CAD';
+        document.getElementById('payment-instructions').textContent = 'Veuillez envoyer votre paiement unique par Interac e-Transfert à l\'adresse ci-dessous. Dès réception, nous commencerons votre projet.';
+    } else {
+        document.getElementById('payment-amount').textContent = depositAmt.toLocaleString('fr-CA', {style:'currency',currency:'CAD',minimumFractionDigits:0}) + ' CAD';
+        document.getElementById('payment-instructions').textContent = 'Veuillez envoyer votre acompte de 20 % par Interac e-Transfert à l\'adresse ci-dessous. Dès réception, nous commencerons votre projet. Les 11 mensualités restantes vous seront facturées à mesure qu\'elles deviennent exigibles.';
+    }
 }
 
 function dismissCookie() {
@@ -751,8 +839,9 @@ function dismissCookie() {
     }
 
     document.querySelectorAll('input[name="package"]').forEach(el => {
-        el.addEventListener('change', updatePaymentAmount);
+        el.addEventListener('change', function() { updatePaymentAmount(); showPaymentDetails(); });
     });
+    showPaymentDetails();
 })();
 </script>
 

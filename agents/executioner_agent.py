@@ -399,13 +399,13 @@ class ExecutionerAgent:
         """
         mapping = {
             "local_seo": "publish_blog_post",
-            "social_media": "post_to_facebook",
+            "social_media": "post_to_social",
             "lead_conversion": "send_email",
-            "paid_ads": "post_to_facebook",
+            "paid_ads": "post_to_social",
             "growth_hacker": "publish_blog_post",
             "reputation": "send_email",
             "email_marketing": "send_email",
-            "tiktok": "post_to_facebook",
+            "tiktok": "post_to_social",
             "outreach": "send_email",
             "backlinks": "publish_blog_post",
         }

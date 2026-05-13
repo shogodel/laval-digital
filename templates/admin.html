@@ -852,6 +852,7 @@ function loadApprovals() {
     fetch('/api/approvals')
         .then(r => r.json())
         .then(data => {
+            console.log('Approvals received:', data.approvals ? data.approvals.length : 0, 'items');
             const approvals = data.approvals || [];
             const list = document.getElementById('approvals-list');
             if (!approvals.length) {
@@ -882,28 +883,52 @@ function loadApprovals() {
 }
 
 function showRejectForm(threadId) {
-    document.getElementById('reject-form-' + threadId).style.display = 'block';
+    var form = document.getElementById('reject-form-' + threadId);
+    if (form) {
+        form.style.display = 'block';
+    }
 }
 
 function respondApproval(threadId, approved) {
-    const feedback = document.getElementById('feedback-' + threadId)?.value || '';
+    var feedback = '';
+    var feedbackEl = document.getElementById('feedback-' + threadId);
+    if (feedbackEl) {
+        feedback = feedbackEl.value || '';
+    }
+    
+    var payload = {
+        approved: approved,
+        feedback: feedback
+    };
+    
     fetch('/api/approvals/' + threadId + '/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approved: approved, feedback: feedback })
+        body: JSON.stringify(payload)
     })
-    .then(r => r.json())
-    .then(data => {
+    .then(function(r) {
+        if (!r.ok) {
+            throw new Error('Server returned ' + r.status);
+        }
+        return r.json();
+    })
+    .then(function(data) {
         if (data.status === 'completed') {
             alert('Approval ' + (approved ? 'approved' : 'rejected') + '!');
             loadApprovals();
             loadAgents();
+            loadPendingExecutions();
+            updateDashboard();
+        } else if (data.error) {
+            alert('Error: ' + data.error);
         } else {
-            alert('Error: ' + (data.error || 'Unknown error'));
+            alert('Unexpected response from server. Check console for details.');
+            console.log('Approval response:', data);
         }
     })
-    .catch(err => {
-        alert('Network error: ' + err.message);
+    .catch(function(err) {
+        alert('Network error: ' + err.message + '. Check that Flask is running and you are logged in.');
+        console.error('Approval error:', err);
     });
 }
 

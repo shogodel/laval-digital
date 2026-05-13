@@ -83,6 +83,8 @@
         .chat-input-area button { padding: 10px 24px; font-size: 0.85rem; font-weight: 600; font-family: inherit; border: none; border-radius: var(--radius-lg); cursor: pointer; transition: all 0.15s; white-space: nowrap; background: var(--red); color: var(--white); height: 44px; }
         .chat-input-area button:hover { background: var(--red-dark); }
         .chat-input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .msg-execute-btn { display: inline-block; margin-top: 8px; font-size: 0.72rem; font-weight: 600; color: var(--gray-500); cursor: pointer; background: none; border: 1px solid var(--gray-300); border-radius: var(--radius); padding: 4px 10px; transition: all 0.12s; font-family: inherit; }
+        .msg-execute-btn:hover { background: var(--red); color: var(--white); border-color: var(--red); }
 
         /* ── Right Sidebar ── */
         .right-panel { width: 250px; background: var(--white); border-left: 1px solid var(--gray-200); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; padding: 0; }
@@ -309,6 +311,11 @@ function appendMessage(role, content, thinking, scroll) {
             tb.textContent = thinking;
             div.querySelector('.msg-sender').insertAdjacentElement('afterend', tb);
         }
+        const execBtn = document.createElement('button');
+        execBtn.className = 'msg-execute-btn';
+        execBtn.textContent = '\u{1F680} Execute';
+        execBtn.onclick = function(e) { executeAgentResponse(content); };
+        div.appendChild(execBtn);
     }
 
     if (scroll) container.scrollTop = container.scrollHeight;
@@ -382,6 +389,37 @@ async function sendMessage() {
         btn.disabled = false;
         btn.textContent = 'Send';
     }
+}
+
+/* ── Execute Agent Response ── */
+function executeAgentResponse(content) {
+    if (!content) return alert('No content to execute.');
+    if (!confirm('Send this response to the Executioner for publishing? It will be saved to the appropriate file (blog, social queue, or email queue).')) return;
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    fetch('/api/executioner/execute-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent_id: AGENT_ID, content: content })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('Sent to Executioner: ' + (data.result || 'Done'));
+        } else {
+            alert('Execution failed: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(err => {
+        alert('Network error: ' + err.message);
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = '\u{1F680} Execute';
+    });
 }
 
 /* ── Quick Actions ── */

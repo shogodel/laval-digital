@@ -1762,6 +1762,26 @@ def reject_execution(execution_id):
         return jsonify({"error": str(e)}), 400
 
 
+@app.route("/api/executioner/execute-chat", methods=["POST"])
+def execute_chat_response():
+    """Execute an agent response directly from the chat interface."""
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    agent_id = data.get("agent_id", "")
+    content = data.get("content", "")
+
+    if not agent_id or not content:
+        return jsonify({"error": "Agent ID and content are required"}), 400
+
+    try:
+        result = executioner.execute(agent_id, content)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/executions", methods=["GET"])
 def get_executions():
     """Get recent execution history."""

@@ -12,9 +12,9 @@
         :root {
             --navy: #0f2b45;
             --navy-light: #1a3a5c;
-            --orange: #D4A017;
-            --orange-dark: #B38600;
-            --orange-glow: rgba(212,160,23,0.15);
+            --orange: #1D4ED8;
+            --orange-dark: #1E3A8A;
+            --orange-glow: rgba(29,78,216,0.15);
             --white: #ffffff;
             --off-white: #f7f8fa;
             --light-gray: #eef0f3;
@@ -194,7 +194,27 @@
             line-height: 1.7;
         }
 
-        .pricing { background: var(--off-white); }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+            max-width: 1060px;
+            margin: 0 auto;
+            align-items: stretch;
+        }
+        .pricing {
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 30%, #fafafa 70%, #eff6ff 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .pricing::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 20% 0%, rgba(29,78,216,0.05) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 100%, rgba(29,78,216,0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
         .pricing-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -205,66 +225,127 @@
         }
         .pricing-card {
             background: var(--white);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
             padding: 40px 32px 36px;
             text-align: center;
-            border: 2px solid transparent;
+            border: 1px solid rgba(0,0,0,0.04);
             position: relative;
             display: flex;
             flex-direction: column;
-            transition: box-shadow 0.3s, transform 0.3s;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
-        .pricing-card:hover { box-shadow: var(--shadow-md); }
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--orange), #3B82F6, var(--orange));
+            opacity: 0.6;
+            transition: opacity 0.3s;
+            border-radius: 20px 20px 0 0;
+        }
+        .pricing-card:hover::before { opacity: 1; }
+        .pricing-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 24px 80px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.06);
+        }
         .pricing-card.recommended {
             border-color: var(--orange);
-            box-shadow: 0 0 0 1px var(--orange), var(--shadow-md);
+            box-shadow: 0 0 0 2px var(--orange), 0 8px 32px rgba(212,43,43,0.12);
             transform: scale(1.03);
             z-index: 1;
         }
-        .pricing-card.recommended:hover { box-shadow: 0 0 0 1px var(--orange), var(--shadow-lg); }
+        .pricing-card.recommended::before {
+            opacity: 1;
+            background: linear-gradient(90deg, var(--orange), #2563EB, var(--orange));
+            height: 5px;
+            border-radius: 20px 20px 0 0;
+        }
+        .pricing-card.recommended:hover {
+            box-shadow: 0 0 0 2px var(--orange), 0 24px 80px rgba(212,43,43,0.15);
+        }
         .badge-popular {
             position: absolute;
             top: -12px;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--orange);
+            background: linear-gradient(135deg, var(--orange), #3B82F6);
             color: var(--white);
-            padding: 4px 20px;
+            padding: 5px 24px;
             border-radius: 20px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 700;
             letter-spacing: 0.05em;
             text-transform: uppercase;
             white-space: nowrap;
+            box-shadow: 0 4px 14px rgba(29,78,216,0.35);
+            border: 1px solid rgba(255,255,255,0.2);
         }
         .pricing-card h3 {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             font-weight: 800;
             color: var(--navy);
             margin-bottom: 16px;
+            letter-spacing: -0.02em;
         }
-        .original-price { text-decoration: line-through; color: #9ca3af; font-size: 1.1rem; font-weight: 500; }
-        .discount-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, var(--orange), var(--orange-dark));
-            color: var(--white);
-            padding: 5px 18px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.8rem;
-            margin: 8px 0 6px;
-        }
-        .final-price {
-            font-size: 2.8rem;
+        .price-monthly {
+            font-size: 3rem;
             font-weight: 900;
-            color: var(--navy);
-            margin: 10px 0 2px;
-            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--orange), #3B82F6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             line-height: 1;
+            letter-spacing: -0.03em;
+            margin-top: 8px;
         }
-        .final-price small { font-size: 1rem; font-weight: 500; color: var(--mid-gray); }
-        .savings { color: var(--green); font-weight: 600; font-size: 0.9rem; }
+        .price-monthly small {
+            font-size: 1rem;
+            font-weight: 500;
+            -webkit-text-fill-color: var(--mid-gray);
+            color: var(--mid-gray);
+        }
+        .price-sub {
+            font-size: 0.85rem;
+            color: var(--mid-gray);
+            margin-top: 4px;
+        }
+        .price-once-area {
+            margin-top: 12px;
+            padding: 12px 10px;
+            background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        .price-once-area .label { font-size: 0.8rem; color: var(--mid-gray); font-weight: 500; }
+        .price-once {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--navy);
+        }
+        .price-once s { color: #9ca3af; font-weight: 500; }
+        .save-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: var(--white);
+            padding: 3px 14px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-left: 6px;
+            box-shadow: 0 2px 8px rgba(5,150,105,0.3);
+        }
+        .financing-plan {
+            font-size: 0.8rem;
+            color: #1e3a8a;
+            margin-top: 12px;
+            padding: 10px 12px;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border-radius: 10px;
+            line-height: 1.5;
+            font-weight: 600;
+        }
         .pricing-card .features {
             list-style: none;
             text-align: left;
@@ -279,43 +360,34 @@
             line-height: 1.5;
         }
         .pricing-card .features li::before {
-            content: "✅";
+            content: "✨";
             position: absolute;
             left: 0;
         }
         .pricing-card .features li:last-child { border-bottom: none; }
         .pricing-card .features li strong { color: var(--navy); }
-        .features-sub {
-            font-size: 0.8rem;
-            color: var(--mid-gray);
-            font-style: italic;
-            margin-top: -8px;
-            margin-bottom: 8px;
-        }
-        .financing {
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-            padding: 14px 16px;
-            border-radius: 10px;
-            margin-top: 20px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #92400e;
-        }
         .pricing-card .btn {
             margin-top: 16px;
             width: 100%;
             justify-content: center;
+            background: linear-gradient(135deg, var(--orange), #3B82F6);
+            box-shadow: 0 4px 16px rgba(29,78,216,0.3);
+            transition: all 0.3s;
+        }
+        .pricing-card .btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 24px rgba(29,78,216,0.4);
         }
         .referral-box {
             max-width: 720px;
             margin: 36px auto 0;
-            background: #fff3cd;
-            border: 1px solid #fde68a;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border: 1px solid #bfdbfe;
             border-radius: var(--radius);
             padding: 24px 28px;
             text-align: center;
             font-size: 0.95rem;
-            color: #92400e;
+            color: #1e3a8a;
             line-height: 1.7;
         }
         .referral-box a {
@@ -326,61 +398,129 @@
         }
         .referral-box a:hover { opacity: 0.8; }
 
+        /* Comparison — Enhanced */
+        .comparison-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            position: relative;
+        }
+        .comparison-section::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 25% 50%, rgba(239,68,68,0.04) 0%, transparent 50%),
+                        radial-gradient(ellipse at 75% 50%, rgba(5,150,105,0.04) 0%, transparent 50%);
+            pointer-events: none;
+        }
         .comparison-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 32px;
-            max-width: 860px;
+            max-width: 960px;
             margin: 0 auto;
-        }
-        .comparison-card {
-            padding: 36px 32px;
-            border-radius: var(--radius-lg);
-            text-align: center;
-        }
-        .comparison-card.old {
-            background: var(--red-bg);
-            border: 1px solid #fecaca;
-        }
-        .comparison-card.new {
-            background: var(--green-bg);
-            border: 1px solid #a7f3d0;
             position: relative;
         }
-        .comparison-card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 20px;
+        .comparison-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .comparison-card:hover {
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+        }
+        .comparison-card.old { border-top: 4px solid #ef4444; }
+        .comparison-card.new { border-top: 4px solid var(--green); }
+        .comparison-header {
+            padding: 24px 28px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .comparison-header .icon { font-size: 1.6rem; line-height: 1; }
+        .comparison-header h3 {
+            font-size: 1.1rem;
             font-weight: 700;
-        }
-        .comparison-card.old h3 { color: var(--orange); }
-        .comparison-card.new h3 { color: var(--green); }
-        .comparison-card p { font-size: 0.95rem; line-height: 2.1; color: #374151; }
-        .comparison-total {
-            display: block;
-            margin-top: 8px;
-            font-size: 1.3rem !important;
-            font-weight: 800;
-            letter-spacing: -0.01em;
-        }
-        .comparison-total.old { color: var(--orange); }
-        .comparison-total.new { color: var(--green); font-size: 1.6rem !important; }
-        .comparison-footnote {
-            font-size: 0.85rem;
-            color: var(--mid-gray);
-            display: block;
-            margin-top: 2px;
-        }
-        .comparison-closer {
-            text-align: center;
-            margin-top: 32px;
-            font-size: 1.15rem;
             color: var(--dark);
-            max-width: 640px;
-            margin-left: auto;
-            margin-right: auto;
+            margin: 0;
+        }
+        .comparison-card.old .comparison-header { background: #fef2f2; }
+        .comparison-card.new .comparison-header { background: #f0fdf4; }
+        .comparison-body { padding: 4px 28px 20px; }
+        .comparison-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .comparison-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 0;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 0.88rem;
+            gap: 16px;
+        }
+        .comparison-list li:last-child { border-bottom: none; }
+        .comparison-list .label { color: #374151; font-weight: 500; flex-shrink: 0; }
+        .comparison-list .price { font-weight: 700; color: var(--dark); text-align: right; white-space: nowrap; }
+        .comparison-list .price.green { color: #059669; }
+        .comparison-list .price.red { color: #dc2626; }
+        .popular-tag {
+            font-size: 0.62rem;
+            color: var(--orange);
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            margin-left: 3px;
+            white-space: nowrap;
+        }
+        .comparison-total-block {
+            padding: 18px 28px;
+            text-align: center;
+            border-top: 2px dashed #e5e7eb;
+        }
+        .comparison-card.old .comparison-total-block { background: #fef2f2; }
+        .comparison-card.new .comparison-total-block { background: #f0fdf4; }
+        .comparison-total-block .total-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--mid-gray);
+            margin-bottom: 4px;
+        }
+        .comparison-total-block .total-amount {
+            display: block;
+            font-size: 1.9rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+        }
+        .comparison-card.old .total-amount { color: #dc2626; }
+        .comparison-card.new .total-amount { color: #059669; }
+        .comparison-total-block .total-sub {
+            display: block;
+            font-size: 0.82rem;
+            color: var(--mid-gray);
+            margin-top: 3px;
+        }
+        .savings-callout {
+            text-align: center;
+            max-width: 600px;
+            margin: 32px auto 0;
+            padding: 16px 28px;
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border: 1px solid #a7f3d0;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            color: #065f46;
             font-weight: 500;
             line-height: 1.6;
         }
+        .savings-callout strong { font-weight: 700; }
 
         .how-bg { background: var(--off-white); }
         .steps-grid {
@@ -649,11 +789,13 @@
             .pricing-grid { grid-template-columns: 1fr; gap: 24px; }
             .pricing-card { padding: 32px 24px; }
             .pricing-card.recommended { transform: none; }
-            .final-price { font-size: 2.4rem; }
+            .price-monthly { font-size: 2.4rem; }
 
             .comparison-grid { grid-template-columns: 1fr; gap: 20px; }
-            .comparison-card { padding: 28px 20px; }
-            .comparison-total.new { font-size: 1.3rem !important; }
+            .comparison-body { padding: 4px 20px 16px; }
+            .comparison-header { padding: 20px 20px 14px; }
+            .comparison-total-block { padding: 14px 20px; }
+            .comparison-total-block .total-amount { font-size: 1.5rem; }
 
             .steps-grid { grid-template-columns: 1fr; }
             .cards { grid-template-columns: 1fr; }
@@ -673,6 +815,49 @@
             .hero h1 { font-size: 1.7rem; }
             .hero-buttons .btn { width: 100%; justify-content: center; }
             .container { padding: 0 16px; }
+        }
+
+        /* Pricing shine & utilities */
+        @keyframes shine {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        .own-banner {
+            display: inline-block;
+            background: linear-gradient(90deg, #eff6ff, #dbeafe, #eff6ff);
+            background-size: 200% auto;
+            animation: shine 3s ease-in-out infinite;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #1e3a8a;
+            margin-bottom: 20px;
+            border: 1px solid #bfdbfe;
+        }
+        .price-sub {
+            font-size: 0.85rem;
+            color: var(--mid-gray);
+            margin-top: 4px;
+        }
+        .tax-note {
+            text-align: center;
+            font-size: 1.1rem;
+            color: var(--mid-gray);
+            margin-top: 16px;
+            font-weight: 500;
+        }
+        .commitment-note {
+            text-align: center;
+            max-width: 720px;
+            margin: 24px auto 0;
+            font-size: 0.85rem;
+            color: #1e3a8a;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border: 1px solid #bfdbfe;
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            line-height: 1.6;
         }
 
         /* Cookie Notice */
@@ -790,108 +975,142 @@
 
 <section class="section pricing" id="pricing">
     <div class="container">
-        <h2 class="section-title fade-up">L'Offre — Ce Que Vous Obtenez</h2>
+        <h2 class="section-title fade-up">Choisissez Votre Plan</h2>
+        <p class="section-subtitle fade-up">Options de paiement flexibles — mensuel ou propriété directe.</p>
+        <div style="text-align:center;" class="fade-up">
+            <span class="own-banner">⚜️ Payez une fois, économisez jusqu'à 1 500 $ — offre limitée</span>
+        </div>
         <div class="pricing-grid fade-up">
             <div class="pricing-card">
                 <h3>Offre de Base</h3>
-                <p class="original-price">10 000 $</p>
-                <div class="discount-badge">☀️ Spécial Été — 15 % DE RABAIS</div>
-                <p class="final-price" id="core-price">8 500 $ <small>CAD</small></p>
-                <p class="savings savings-msg">Vous économisez 1 500 $</p>
-                <ul class="features">
-                    <li><strong>Site Web IA</strong> — optimisé mobile et SEO</li>
-                    <li><strong>Agent SEO Local</strong> — vous classe sur Google Maps et Recherche</li>
-                    <li><strong>Agent Médias Sociaux</strong> — publications Facebook/Instagram chaque semaine</li>
-                    <li><strong>Agent Conversion de Leads</strong> — chatbot qualifie les prospects 24/7</li>
-                    <li><strong>Tableau de Bord Admin</strong> — contrôle complet et approbations</li>
-                    <li><strong>Support Multi-LLM</strong> — DeepSeek, GPT-4, Claude</li>
-                </ul>
-                <div class="financing">
-                    💳 <strong>Financement Interne</strong> — 3 versements
+                <p class="price-monthly">567 $<small>/mois</small></p>
+                <p class="price-sub">Engagement de 12 mois</p>
+                <div class="price-once-area">
+                    <div class="label">Ou payez une fois</div>
+                    <div class="price-once"><s>8 500 $</s> 7 500 $ <span class="save-badge">Économisez 1 000 $</span></div>
                 </div>
-                <a href="/fr/contract" class="btn btn-primary">Obtenir Offre de Base — 8 500 $</a>
+                <ul class="features" style="margin-top:16px;">
+                    <li><strong>Agent SEO Local</strong> — classement Google Maps &amp; organique</li>
+                    <li><strong>Agent Médias Sociaux</strong> — publications et engagement hebdo</li>
+                    <li><strong>Chatbot de Conversion</strong> — qualification 24/7</li>
+                    <li><strong>Tableau de Bord Admin</strong> — contrôle et approbations</li>
+                    <li><strong>Site Web IA</strong> — optimisé mobile et SEO</li>
+                    <li><strong>Hébergement Inclus</strong> — sans frais supplémentaires</li>
+                </ul>
+                <div class="financing-plan">
+                    <strong>Plan 12 Mois :</strong> 20 % d'avance (1 700 $) + 11 paiements de 567 $/mois
+                </div>
+                <a href="/fr/contract" class="btn btn-primary">Obtenir Offre de Base — 567 $/mois</a>
             </div>
             <div class="pricing-card recommended">
                 <div class="badge-popular">⭐ LE PLUS POPULAIRE</div>
                 <h3>Offre Croissance</h3>
-                <p class="original-price">15 000 $</p>
-                <div class="discount-badge">☀️ Spécial Été — 17 % DE RABAIS</div>
-                <p class="final-price" id="growth-price">12 500 $ <small>CAD</small></p>
-                <p class="savings savings-msg">Vous économisez 2 500 $</p>
-                <ul class="features">
+                <p class="price-monthly">833 $<small>/mois</small></p>
+                <p class="price-sub">Engagement de 12 mois</p>
+                <div class="price-once-area">
+                    <div class="label">Ou payez une fois</div>
+                    <div class="price-once"><s>12 500 $</s> 11 000 $ <span class="save-badge">Économisez 1 500 $</span></div>
+                </div>
+                <ul class="features" style="margin-top:16px;">
                     <li><strong>Tout dans l'Offre de Base</strong></li>
                     <li><strong>Agent Publicités Payantes</strong> — campagnes Google et Meta</li>
                     <li><strong>Agent Growth Hacker</strong> — tests A/B et optimisation</li>
-                    <li><strong>Agent de Réputation</strong> — gère les avis en ligne</li>
-                    <li><strong>Agent Marketing Courriel</strong> — infolettres et séquences</li>
+                    <li><strong>Agent de Réputation</strong> — gestion des avis</li>
+                    <li><strong>Agent Marketing Courriel</strong> — campagnes automatisées</li>
                     <li><strong>Agent TikTok/Reels</strong> — contenu vidéo court</li>
                 </ul>
-                <div class="financing">
-                    💳 <strong>Financement Interne</strong> — 3 versements
+                <div class="financing-plan">
+                    <strong>Plan 12 Mois :</strong> 20 % d'avance (2 500 $) + 11 paiements de 833 $/mois
                 </div>
-                <a href="/fr/contract" class="btn btn-primary">Obtenir Offre Croissance — 12 500 $</a>
+                <a href="/fr/contract" class="btn btn-primary">Obtenir Offre Croissance — 833 $/mois</a>
             </div>
             <div class="pricing-card">
                 <h3>Offre Complète</h3>
-                <p class="original-price">20 000 $</p>
-                <div class="discount-badge">☀️ Spécial Été — 18 % DE RABAIS</div>
-                <p class="final-price" id="empire-price">16 500 $ <small>CAD</small></p>
-                <p class="savings savings-msg">Vous économisez 3 500 $</p>
-                <ul class="features">
-                    <li><strong>Tout dans l'Offre Croissance</strong></li>
-                    <li><strong>Support Prioritaire</strong> — réponse sous 24 heures</li>
-                    <li><strong>Rapports Mensuels</strong> — générés automatiquement par l'IA</li>
-                    <li><strong>Configuration Clés API</strong> — on configure tout pour vous</li>
-                    <li><strong>3 Mois de Gestion Clé en Main</strong></li>
-                </ul>
-                <div class="financing">
-                    💳 <strong>Financement Interne</strong> — 3 versements
+                <p class="price-monthly">1 100 $<small>/mois</small></p>
+                <p class="price-sub">Engagement de 12 mois</p>
+                <div class="price-once-area">
+                    <div class="label">Ou payez une fois</div>
+                    <div class="price-once"><s>16 500 $</s> 14 500 $ <span class="save-badge">Économisez 2 000 $</span></div>
                 </div>
-                <a href="/fr/contract" class="btn btn-primary">Obtenir Offre Complète — 16 500 $</a>
+                <ul class="features" style="margin-top:16px;">
+                    <li><strong>Tout dans l'Offre Croissance</strong></li>
+                    <li><strong>3 Mois de Gestion Clé en Main</strong></li>
+                    <li><strong>Support Prioritaire</strong> — réponse sous 12h</li>
+                    <li><strong>Rapports de Performance Mensuels</strong> — générés automatiquement</li>
+                    <li><strong>Configuration Clés API</strong> — on configure tout</li>
+                </ul>
+                <div class="financing-plan">
+                    <strong>Plan 12 Mois :</strong> 20 % d'avance (3 300 $) + 11 paiements de 1 100 $/mois
+                </div>
+                <a href="/fr/contract" class="btn btn-primary">Obtenir Offre Complète — 1 100 $/mois</a>
             </div>
         </div>
+        <p class="tax-note fade-up">+ taxes applicables selon votre province</p>
+        <div class="commitment-note fade-up">
+            🔒 Engagement de 12 Mois, 20 % d'Avance. Tous les plans incluent une entente de 12 mois avec 20 % dû comme frais de mise en place. Le solde restant est réparti sur 11 paiements mensuels. Annulez en tout temps après 12 mois.
+        </div>
         <div class="referral-box fade-up">
-            🔗 <strong>Vous avez un ami qui a une entreprise?</strong> Parrainez-le et vous économisez tous les deux. Ils obtiennent <strong>500 $ DE RABAIS</strong> supplémentaire sur toute offre avec votre lien de parrainage unique. Vous gagnez <strong>10 % en argent</strong> par client conclu. Aucune limite.<br>
-            <a href="/affiliate">Devenez un Affilié →</a>
+            🔗 <strong>Joignez Notre Réseau de Partenaires</strong><br>
+            Les affiliés gagnent <strong>20 % de commission</strong> par référencement — jusqu'à 3 300 $ par client. Les revendeurs gagnent <strong>35 %</strong> et obtiennent leur propre tableau de bord blanc.<br>
+            <a href="/fr/affiliate">Devenez un Affilié</a> &nbsp;|&nbsp; <a href="/fr/reseller">Devenez un Revendeur</a>
         </div>
     </div>
 </section>
 
 <!-- Comparison -->
-<section class="section" style="background: var(--white);">
+<section class="section comparison-section" id="comparison">
     <div class="container">
         <h2 class="section-title fade-up">Combien Payez-Vous en Ce Moment?</h2>
-        <p class="section-subtitle fade-up">Comparez ce qu'une agence traditionnelle coûte vs notre investissement unique.</p>
+        <p class="section-subtitle fade-up">Les agences traditionnelles facturent chaque service séparément. Nous vous offrons tout pour un tarif mensuel fixe.</p>
         <div class="comparison-grid fade-up">
             <div class="comparison-card old">
-                <h3>❌ Agence Traditionnelle</h3>
-                <p>
-                    Site web: <strong>2 000 $–5 000 $</strong><br>
-                    SEO mensuel: <strong>1 000 $–2 500 $</strong><br>
-                    Médias sociaux: <strong>800 $–2 000 $</strong><br>
-                    Gestion d'annonces: <strong>15–20 % des dépenses</strong><br>
-                    Marketing courriel: <strong>300 $–1 000 $/mois</strong><br>
-                    Gestion de réputation: <strong>500 $–1 500 $/mois</strong><br>
-                    Contenu TikTok: <strong>500 $–2 000 $/mois</strong>
-                </p>
-                <span class="comparison-total old">3 000 $–10 000 $+ / mois</span>
+                <div class="comparison-header">
+                    <span class="icon">📋</span>
+                    <h3>Agence Traditionnelle</h3>
+                </div>
+                <div class="comparison-body">
+                    <ul class="comparison-list">
+                        <li><span class="label">Site Web</span> <span class="price red">2 000 $–5 000 $</span></li>
+                        <li><span class="label">SEO Mensuel</span> <span class="price red">1 000 $–2 500 $/mois</span></li>
+                        <li><span class="label">Médias Sociaux</span> <span class="price red">800 $–2 000 $/mois</span></li>
+                        <li><span class="label">Gestion d'Annonces</span> <span class="price red">15–20 % des dépenses</span></li>
+                        <li><span class="label">Marketing Courriel</span> <span class="price red">300 $–1 000 $/mois</span></li>
+                        <li><span class="label">Gestion de Réputation</span> <span class="price red">500 $–1 500 $/mois</span></li>
+                        <li><span class="label">Contenu TikTok</span> <span class="price red">500 $–2 000 $/mois</span></li>
+                    </ul>
+                </div>
+                <div class="comparison-total-block">
+                    <span class="total-label">Coût Mensuel Estimé</span>
+                    <span class="total-amount">3 000 $–10 000 $+</span>
+                    <span class="total-sub">par mois + frais de configuration</span>
+                </div>
             </div>
             <div class="comparison-card new">
-                <h3>✅ Laval Digital</h3>
-                <p>
-                    Offre de Base: <strong>8 500 $</strong><br>
-                    Offre Croissance: <strong>12 500 $</strong> ⭐<br>
-                    Offre Complète: <strong>16 500 $</strong><br>
-                    Site web personnalisé: <strong>Inclus</strong><br>
-                    Tous les agents IA: <strong>Inclus</strong><br>
-                    Aucuns frais mensuels: <strong>0 $/mois</strong><br>
-                    Aucun abonnement: <strong>0 $/mois</strong>
-                </p>
-                <span class="comparison-total new">À partir de 8 500 $ — une seule fois</span>
-                <span class="comparison-footnote">Soit 1–2 mois de frais d'agence</span>
+                <div class="comparison-header">
+                    <span class="icon">🚀</span>
+                    <h3>Laval Digital</h3>
+                </div>
+                <div class="comparison-body">
+                    <ul class="comparison-list">
+                        <li><span class="label">Offre de Base</span> <span class="price green">567 $/mois</span></li>
+                        <li><span class="label">Offre Croissance <span class="popular-tag">⭐ POPULAIRE</span></span> <span class="price green">833 $/mois</span></li>
+                        <li><span class="label">Offre Complète</span> <span class="price green">1 100 $/mois</span></li>
+                        <li><span class="label">Site Web IA</span> <span class="price green">✅ Inclus</span></li>
+                        <li><span class="label">11 Agents IA</span> <span class="price green">✅ Inclus</span></li>
+                        <li><span class="label">Tableau de Bord</span> <span class="price green">✅ Inclus</span></li>
+                        <li><span class="label">Chatbot de Leads</span> <span class="price green">✅ Inclus</span></li>
+                    </ul>
+                </div>
+                <div class="comparison-total-block">
+                    <span class="total-label">Tarif Mensuel Fixe</span>
+                    <span class="total-amount">Dès 567 $</span>
+                    <span class="total-sub">par mois — tout inclus</span>
+                </div>
             </div>
         </div>
-        <p class="comparison-closer fade-up">Arrêtez de saigner de l'argent en abonnements mensuels. Possédez votre système marketing pour toujours avec un seul investissement.</p>
+        <div class="savings-callout fade-up">
+            💰 <strong>Économisez 75–90 %</strong> comparé aux agences traditionnelles — avec une IA qui travaille 24/7.
+        </div>
     </div>
 </section>
 
@@ -914,7 +1133,7 @@
             <div class="step-card">
                 <div class="step-number">3</div>
                 <h3>On Construit &amp; Lance</h3>
-                <p>On installe votre site web, on configure tous les 8 agents, on connecte vos comptes sociaux et on active votre tableau de bord. Vous recevez une formation complète.</p>
+                <p>On installe votre site web, on configure tous les 11 agents, on connecte vos comptes sociaux et on active votre tableau de bord. Vous recevez une formation complète.</p>
             </div>
             <div class="step-card">
                 <div class="step-number">4</div>
@@ -933,7 +1152,7 @@
 <section class="section what-you-get">
     <div class="container">
         <h2 class="section-title fade-up">Ce Que Vous Obtenez</h2>
-        <p class="section-subtitle fade-up">Neuf agents IA puissants qui travaillent ensemble pour faire croître votre entreprise.</p>
+        <p class="section-subtitle fade-up">Onze agents IA puissants qui travaillent ensemble pour faire croître votre entreprise.</p>
         <div class="cards fade-up">
             <div class="card">
                 <div class="card-icon">🔍</div>
@@ -1168,35 +1387,6 @@ fetch('/api/affiliate/status')
             banner.style.display = 'block';
             document.getElementById('affiliate-banner-text').textContent =
                 data.discount + ' $ DE RABAIS';
-
-            const corePrice = document.getElementById('core-price');
-            if (corePrice) {
-                corePrice.innerHTML = '8 000 $ <small>CAD</small>';
-                corePrice.style.color = '#28a745';
-            }
-
-            const growthPrice = document.getElementById('growth-price');
-            if (growthPrice) {
-                growthPrice.innerHTML = '12 000 $ <small>CAD</small>';
-                growthPrice.style.color = '#28a745';
-            }
-
-            const empirePrice = document.getElementById('empire-price');
-            if (empirePrice) {
-                empirePrice.innerHTML = '16 000 $ <small>CAD</small>';
-                empirePrice.style.color = '#28a745';
-            }
-
-            document.querySelectorAll('.savings-msg').forEach(el => {
-                el.textContent = 'Vous économisez 500 $ supplémentaires avec votre lien de parrainage!';
-                el.style.color = '#28a745';
-            });
-
-            const discountInput = document.createElement('input');
-            discountInput.type = 'hidden';
-            discountInput.id = 'affiliate-discount-value';
-            discountInput.value = data.discount;
-            document.body.appendChild(discountInput);
         }
     });
 </script>
