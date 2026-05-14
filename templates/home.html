@@ -38,6 +38,8 @@
             line-height: 1.6;
             background: var(--white);
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            width: 100%;
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
@@ -461,7 +463,7 @@
         }
         .comparison-list li:last-child { border-bottom: none; }
         .comparison-list .label { color: #374151; font-weight: 500; flex-shrink: 0; }
-        .comparison-list .price { font-weight: 700; color: var(--dark); text-align: right; white-space: nowrap; }
+        .comparison-list .price { font-weight: 700; color: var(--dark); text-align: right; }
         .comparison-list .price.green { color: #059669; }
         .comparison-list .price.red { color: #dc2626; }
         .popular-tag {
@@ -860,7 +862,7 @@
             .hero h1 { font-size: 1.5rem; }
             .hero p { font-size: 0.9rem; }
             .hero-buttons .btn { width: 100%; justify-content: center; padding: 11px 20px; font-size: 0.9rem; }
-            .hero-buttons .btn-secondary { width: 48%; flex: none; }
+            .hero-buttons .btn-secondary { width: 100%; }
             .container { padding: 0 16px; }
             .pricing-card { padding: 20px 16px; }
             .price-monthly { font-size: 1.8rem; }
@@ -935,7 +937,7 @@
         @media (max-width: 480px) {
             .hero h1 { font-size: 1.7rem; }
             .hero-buttons .btn { width: 100%; justify-content: center; }
-            .hero-buttons .btn-secondary { width: 48%; flex: none; }
+            .hero-buttons .btn-secondary { width: 100%; }
             .container { padding: 0 16px; }
             .comparison-list li { flex-direction: column; align-items: flex-start; gap: 2px; }
             .comparison-list .price { text-align: left; }
