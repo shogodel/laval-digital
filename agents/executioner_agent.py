@@ -147,6 +147,9 @@ class ExecutionerAgent:
         self.register_tool("save_technical_seo_report", self._save_technical_seo_report)
         self.register_tool("generate_schema_json", self._generate_schema_json)
         self.register_tool("save_report", self._save_report)
+        self.register_tool("save_cro_analysis", self._save_cro_analysis)
+        self.register_tool("save_video_script", self._save_video_script)
+        self.register_tool("save_sms_campaign", self._save_sms_campaign)
 
     # ------------------------------------------------------------------
     # Core execution
@@ -425,6 +428,9 @@ class ExecutionerAgent:
             "outreach": "send_email",
             "backlinks": "publish_blog_post",
             "content_strategy": "save_content_calendar",
+            "cro": "save_cro_analysis",
+            "video": "save_video_script",
+            "sms_marketing": "save_sms_campaign",
             "technical_seo": "save_technical_seo_report",
             "reporting": "save_report",
         }
@@ -862,6 +868,36 @@ class ExecutionerAgent:
         except OSError as exc:
             logger.error("Report save failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to save report."}
+
+    def _save_cro_analysis(self, draft: str) -> Dict[str, Any]:
+        try:
+            cd = Path("content/cro"); cd.mkdir(parents=True, exist_ok=True)
+            slug = self._slugify(draft.strip().split("\n")[0][:60]); ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            fp = cd / f"cro-{slug}-{ts}.md"; fp.write_text(draft.strip(), encoding="utf-8")
+            return {"success": True, "result": str(fp), "error": None}
+        except OSError as exc:
+            logger.error("CRO save failed: %s", exc)
+            return {"success": False, "result": "", "error": "Failed to save CRO analysis."}
+
+    def _save_video_script(self, draft: str) -> Dict[str, Any]:
+        try:
+            vd = Path("content/video"); vd.mkdir(parents=True, exist_ok=True)
+            slug = self._slugify(draft.strip().split("\n")[0][:60]); ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            fp = vd / f"video-{slug}-{ts}.md"; fp.write_text(draft.strip(), encoding="utf-8")
+            return {"success": True, "result": str(fp), "error": None}
+        except OSError as exc:
+            logger.error("Video save failed: %s", exc)
+            return {"success": False, "result": "", "error": "Failed to save video script."}
+
+    def _save_sms_campaign(self, draft: str) -> Dict[str, Any]:
+        try:
+            sd = Path("content/sms_campaigns"); sd.mkdir(parents=True, exist_ok=True)
+            slug = self._slugify(draft.strip().split("\n")[0][:60]); ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            fp = sd / f"sms-{slug}-{ts}.md"; fp.write_text(draft.strip(), encoding="utf-8")
+            return {"success": True, "result": str(fp), "error": None}
+        except OSError as exc:
+            logger.error("SMS campaign save failed: %s", exc)
+            return {"success": False, "result": "", "error": "Failed to save SMS campaign."}
 
     # ------------------------------------------------------------------
     # Execution log

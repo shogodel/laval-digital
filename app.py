@@ -70,6 +70,9 @@ from agents.backlinks_agent import BacklinksAgent
 from agents.content_strategy_agent import ContentStrategyAgent
 from agents.technical_seo_agent import TechnicalSEOAgent
 from agents.reporting_agent import ReportingAgent
+from agents.cro_agent import CROAgent
+from agents.video_agent import VideoAgent
+from agents.sms_marketing_agent import SMSMarketingAgent
 from agents.executioner_agent import ExecutionerAgent
 from client_factory import ClientFactory, deploy as client_factory_deploy, deploy_async as client_factory_deploy_async, get_deploy_status as client_factory_get_deploy_status
 from core.auth import (
@@ -363,6 +366,36 @@ AGENT_CONFIGS = {
             "api_base": "https://api.deepseek.com/v1",
         },
     },
+    "cro": {
+        "agent_id": "cro",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/cro.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1",
+        },
+    },
+    "video": {
+        "agent_id": "video",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/video.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1",
+        },
+    },
+    "sms_marketing": {
+        "agent_id": "sms_marketing",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/sms_marketing.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1",
+        },
+    },
 }
 
 # Initialize LLM Adapter for Orchestrator
@@ -401,6 +434,12 @@ for agent_id, config in AGENT_CONFIGS.items():
         agent_registry[agent_id] = TechnicalSEOAgent(agent_id, config)
     elif agent_id == "reporting":
         agent_registry[agent_id] = ReportingAgent(agent_id, config)
+    elif agent_id == "cro":
+        agent_registry[agent_id] = CROAgent(agent_id, config)
+    elif agent_id == "video":
+        agent_registry[agent_id] = VideoAgent(agent_id, config)
+    elif agent_id == "sms_marketing":
+        agent_registry[agent_id] = SMSMarketingAgent(agent_id, config)
 
 # Agent display metadata for chat interfaces
 AGENT_META: Dict[str, Dict[str, str]] = {
@@ -417,6 +456,9 @@ AGENT_META: Dict[str, Dict[str, str]] = {
     "content_strategy": {"name": "Content Strategist", "desc": "Editorial calendars, multi-channel content repurposing, content briefs, topic clusters, seasonal planning, voice and tone guidelines"},
     "technical_seo": {"name": "Technical SEO", "desc": "Schema markup, site speed optimization, crawl audits, XML sitemaps, core web vitals, mobile optimization, hreflang tags"},
     "reporting": {"name": "Analytics & Reports", "desc": "Cross-channel performance summaries, trend analysis, ROI calculations, executive briefs, monthly client reports"},
+    "cro": {"name": "CRO & Landing Pages", "desc": "Conversion rate optimization, A/B testing analysis, funnel optimization, landing page copy, heatmap interpretation, CTA strategy"},
+    "video": {"name": "Video Production", "desc": "YouTube scripts, explainer videos, ad video scripts, video SEO, content series planning, thumbnail strategy"},
+    "sms_marketing": {"name": "SMS Marketing", "desc": "SMS campaign planning, sequence design, CASL compliance, concise copywriting, timing strategy, list segmentation"},
 }
 
 # Initialize ExecutionerAgent for approved draft execution
@@ -1724,6 +1766,12 @@ def _reinitialize_agent(agent_id: str, config: dict) -> None:
         agent_registry[agent_id] = TechnicalSEOAgent(agent_id, config)
     elif agent_id == "reporting":
         agent_registry[agent_id] = ReportingAgent(agent_id, config)
+    elif agent_id == "cro":
+        agent_registry[agent_id] = CROAgent(agent_id, config)
+    elif agent_id == "video":
+        agent_registry[agent_id] = VideoAgent(agent_id, config)
+    elif agent_id == "sms_marketing":
+        agent_registry[agent_id] = SMSMarketingAgent(agent_id, config)
 
 
 @app.route("/api/agents/config/bulk", methods=["POST"])
@@ -2360,6 +2408,9 @@ AGENT_PERSONALITIES = {
     "content_strategy": {"emoji": "📝", "color": "#84cc16", "short": "Content", "short_fr": "Contenu"},
     "technical_seo": {"emoji": "⚙️", "color": "#06b6d4", "short": "Tech SEO", "short_fr": "SEO Tech"},
     "reporting": {"emoji": "📊", "color": "#a855f7", "short": "Reports", "short_fr": "Rapports"},
+    "cro": {"emoji": "📐", "color": "#f43f5e", "short": "CRO", "short_fr": "CRO"},
+    "video": {"emoji": "🎥", "color": "#eab308", "short": "Video", "short_fr": "Vidéo"},
+    "sms_marketing": {"emoji": "💬", "color": "#06b6d4", "short": "SMS", "short_fr": "SMS"},
     "executioner": {"emoji": "⚡", "color": "#64748b", "short": "Execute", "short_fr": "Exécution"},
 }
 

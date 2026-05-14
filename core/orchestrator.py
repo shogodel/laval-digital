@@ -44,6 +44,9 @@ Available agents:
 - **content_strategy**: Editorial calendars, multi-channel content repurposing, content briefs, topic clusters, seasonal planning
 - **technical_seo**: Schema markup, site speed optimization, crawl audits, XML sitemaps, core web vitals, mobile optimization
 - **reporting**: Cross-channel performance summaries, trend analysis, ROI calculations, executive briefs, monthly client reports
+- **cro**: Conversion rate optimization, A/B testing, funnel analysis, landing page copy, CTA strategy
+- **video**: YouTube scripting, explainer videos, ad video scripts, video SEO, content series
+- **sms_marketing**: SMS campaign planning, sequence design, CASL compliance, concise copywriting
 
 Your job:
 1. Analyze the user's request and determine which agent should handle it

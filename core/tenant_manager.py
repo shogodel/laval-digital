@@ -14,6 +14,7 @@ DEFAULT_AGENTS = [
     "growth_hacker", "reputation", "email_marketing", "tiktok",
     "outreach", "backlinks", "executioner",
     "content_strategy", "technical_seo", "reporting",
+    "cro", "video", "sms_marketing",
 ]
 
 
