@@ -400,6 +400,7 @@
         .comparison-section {
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             position: relative;
+            overflow: hidden;
         }
         .comparison-section::before {
             content: '';
@@ -598,36 +599,6 @@
             color: var(--mid-gray);
             line-height: 1.5;
         }
-        .card {
-            background: var(--white);
-            padding: 32px 28px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(0,0,0,0.04);
-            text-align: left;
-            transition: all 0.3s;
-        }
-        .card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-3px);
-        }
-        .card-icon {
-            font-size: 2.2rem;
-            margin-bottom: 16px;
-            line-height: 1;
-        }
-        .card h3 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--navy);
-            margin-bottom: 8px;
-        }
-        .card p {
-            font-size: 0.9rem;
-            color: var(--mid-gray);
-            line-height: 1.7;
-        }
-
         /* See It in Action */
         .real-world { background: var(--white); }
         .example-grid {
