@@ -1632,7 +1632,7 @@ def update_agent_config(agent_id):
     data = request.json
     config = AGENT_CONFIGS[agent_id]
 
-    if "model" in data:
+    if "model" in data and data["model"]:
         if not LLMAdapter.is_valid_model(data["model"]):
             return jsonify({"error": f"Invalid model '{data['model']}'"}), 400
         config["model"] = data["model"]

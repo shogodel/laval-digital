@@ -1146,7 +1146,7 @@ function saveAgentConfig() {
     }
 
     const payload = { api_key: apiKey, api_base: apiBase };
-    if (model) payload.model = model;
+    if (model && model !== '__keep__') payload.model = model;
 
     let endpoint;
     if (selectedValue === '__all__' || selectedValue === 'all') {
