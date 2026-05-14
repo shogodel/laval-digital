@@ -13,6 +13,7 @@ DEFAULT_AGENTS = [
     "local_seo", "social_media", "lead_conversion", "paid_ads",
     "growth_hacker", "reputation", "email_marketing", "tiktok",
     "outreach", "backlinks", "executioner",
+    "content_strategy", "technical_seo", "reporting",
 ]
 
 

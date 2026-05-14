@@ -65,6 +65,9 @@ from agents.email_marketing_agent import EmailMarketingAgent
 from agents.tiktok_agent import TikTokAgent
 from agents.outreach_agent import OutreachAgent
 from agents.backlinks_agent import BacklinksAgent
+from agents.content_strategy_agent import ContentStrategyAgent
+from agents.technical_seo_agent import TechnicalSEOAgent
+from agents.reporting_agent import ReportingAgent
 from agents.executioner_agent import ExecutionerAgent
 from client_factory import ClientFactory, deploy as client_factory_deploy, deploy_async as client_factory_deploy_async, get_deploy_status as client_factory_get_deploy_status
 from core.auth import (
@@ -327,6 +330,36 @@ AGENT_CONFIGS = {
             "api_base": "https://api.deepseek.com/v1",
         },
     },
+    "content_strategy": {
+        "agent_id": "content_strategy",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/content_strategy.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1",
+        },
+    },
+    "technical_seo": {
+        "agent_id": "technical_seo",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/technical_seo.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1",
+        },
+    },
+    "reporting": {
+        "agent_id": "reporting",
+        "enabled": True,
+        "model": "deepseek-chat",
+        "system_prompt_file": "prompts/reporting.md",
+        "credentials": {
+            "api_key": os.getenv("DEEPSEEK_API_KEY"),
+            "api_base": "https://api.deepseek.com/v1",
+        },
+    },
 }
 
 # Initialize LLM Adapter for Orchestrator
@@ -359,6 +392,12 @@ for agent_id, config in AGENT_CONFIGS.items():
         agent_registry[agent_id] = OutreachAgent(agent_id, config)
     elif agent_id == "backlinks":
         agent_registry[agent_id] = BacklinksAgent(agent_id, config)
+    elif agent_id == "content_strategy":
+        agent_registry[agent_id] = ContentStrategyAgent(agent_id, config)
+    elif agent_id == "technical_seo":
+        agent_registry[agent_id] = TechnicalSEOAgent(agent_id, config)
+    elif agent_id == "reporting":
+        agent_registry[agent_id] = ReportingAgent(agent_id, config)
 
 # Agent display metadata for chat interfaces
 AGENT_META: Dict[str, Dict[str, str]] = {
@@ -372,6 +411,9 @@ AGENT_META: Dict[str, Dict[str, str]] = {
     "tiktok": {"name": "TikTok", "desc": "Short-form video content for TikTok, Instagram Reels, YouTube Shorts, content calendars, video scripts, trend adaptation"},
     "outreach": {"name": "Outreach", "desc": "Prospecting emails, lead finding, campaign sequences, follow-up automation, personalized outreach at scale"},
     "backlinks": {"name": "Backlinks", "desc": "Link building, guest post prospecting, citation building, backlink gap analysis, broken link building, directory submissions"},
+    "content_strategy": {"name": "Content Strategist", "desc": "Editorial calendars, multi-channel content repurposing, content briefs, topic clusters, seasonal planning, voice and tone guidelines"},
+    "technical_seo": {"name": "Technical SEO", "desc": "Schema markup, site speed optimization, crawl audits, XML sitemaps, core web vitals, mobile optimization, hreflang tags"},
+    "reporting": {"name": "Analytics & Reports", "desc": "Cross-channel performance summaries, trend analysis, ROI calculations, executive briefs, monthly client reports"},
 }
 
 # Initialize ExecutionerAgent for approved draft execution
@@ -1673,6 +1715,12 @@ def _reinitialize_agent(agent_id: str, config: dict) -> None:
         agent_registry[agent_id] = OutreachAgent(agent_id, config)
     elif agent_id == "backlinks":
         agent_registry[agent_id] = BacklinksAgent(agent_id, config)
+    elif agent_id == "content_strategy":
+        agent_registry[agent_id] = ContentStrategyAgent(agent_id, config)
+    elif agent_id == "technical_seo":
+        agent_registry[agent_id] = TechnicalSEOAgent(agent_id, config)
+    elif agent_id == "reporting":
+        agent_registry[agent_id] = ReportingAgent(agent_id, config)
 
 
 @app.route("/api/agents/config/bulk", methods=["POST"])

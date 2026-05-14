@@ -143,6 +143,10 @@ class ExecutionerAgent:
         self.register_tool("post_to_social_unified", self._post_to_social_unified)
         self.register_tool("send_email", self._send_email)
         self.register_tool("send_sms", self._send_sms)
+        self.register_tool("save_content_calendar", self._save_content_calendar)
+        self.register_tool("save_technical_seo_report", self._save_technical_seo_report)
+        self.register_tool("generate_schema_json", self._generate_schema_json)
+        self.register_tool("save_report", self._save_report)
 
     # ------------------------------------------------------------------
     # Core execution
@@ -420,6 +424,9 @@ class ExecutionerAgent:
             "tiktok": "post_to_social",
             "outreach": "send_email",
             "backlinks": "publish_blog_post",
+            "content_strategy": "save_content_calendar",
+            "technical_seo": "save_technical_seo_report",
+            "reporting": "save_report",
         }
         tool = mapping.get(agent_name)
         if not tool:
@@ -797,6 +804,42 @@ class ExecutionerAgent:
         except OSError as exc:
             logger.error("SMS queue failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to queue SMS."}
+
+    def _save_content_calendar(self, draft: str) -> Dict[str, Any]:
+        try:
+            from agents.content_strategy_agent import ContentStrategyAgent
+            agent = ContentStrategyAgent("_tool", {"agent_id": "_tool", "model": "deepseek-chat", "system_prompt_file": "prompts/content_strategy.md", "credentials": {"api_key": ""}})
+            return agent.save_calendar(draft)
+        except Exception as e:
+            logger.error("Content calendar save failed: %s", e)
+            return {"success": False, "result": "", "error": "Failed to save content calendar."}
+
+    def _save_technical_seo_report(self, draft: str) -> Dict[str, Any]:
+        try:
+            from agents.technical_seo_agent import TechnicalSEOAgent
+            agent = TechnicalSEOAgent("_tool", {"agent_id": "_tool", "model": "deepseek-chat", "system_prompt_file": "prompts/technical_seo.md", "credentials": {"api_key": ""}})
+            return agent.save_report(draft)
+        except Exception as e:
+            logger.error("Technical SEO report save failed: %s", e)
+            return {"success": False, "result": "", "error": "Failed to save technical SEO report."}
+
+    def _generate_schema_json(self, draft: str) -> Dict[str, Any]:
+        try:
+            from agents.technical_seo_agent import TechnicalSEOAgent
+            agent = TechnicalSEOAgent("_tool", {"agent_id": "_tool", "model": "deepseek-chat", "system_prompt_file": "prompts/technical_seo.md", "credentials": {"api_key": ""}})
+            return agent.save_report(draft, report_type="schema")
+        except Exception as e:
+            logger.error("Schema save failed: %s", e)
+            return {"success": False, "result": "", "error": "Failed to save schema markup."}
+
+    def _save_report(self, draft: str) -> Dict[str, Any]:
+        try:
+            from agents.reporting_agent import ReportingAgent
+            agent = ReportingAgent("_tool", {"agent_id": "_tool", "model": "deepseek-chat", "system_prompt_file": "prompts/reporting.md", "credentials": {"api_key": ""}})
+            return agent.save_report(draft)
+        except Exception as e:
+            logger.error("Report save failed: %s", e)
+            return {"success": False, "result": "", "error": "Failed to save report."}
 
     # ------------------------------------------------------------------
     # Execution log
