@@ -27,6 +27,7 @@
             </div>
             <div id="frankie-input-area">
                 <input type="text" id="frankie-input" placeholder="Ask Frankie anything..." onkeydown="if(event.key==='Enter') frankie.ask()">
+                <button onclick="frankie.toggleVoice()" id="frankie-voice-btn" title="Toggle voice" style="background:none;border:1px solid var(--gray-300);border-radius:10px;padding:9px 10px;font-size:1rem;cursor:pointer;flex-shrink:0;transition:0.15s;">🎤</button>
                 <button onclick="frankie.ask()" id="frankie-send-btn">Send</button>
             </div>
         </div>
@@ -140,6 +141,24 @@
 window.frankie = {
     panel: null, bubble: null, messages: null, input: null,
     greeting: null, suggestions: null, status: null,
+    voiceEnabled: false,
+
+    toggleVoice: function() {
+        this.voiceEnabled = !this.voiceEnabled;
+        var btn = document.getElementById('frankie-voice-btn');
+        btn.style.background = this.voiceEnabled ? '#10b981' : '';
+        btn.style.borderColor = this.voiceEnabled ? '#10b981' : '';
+        btn.title = this.voiceEnabled ? 'Voice on' : 'Voice off';
+    },
+
+    speak: function(text) {
+        if (!this.voiceEnabled || !window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(text.replace(/<[^>]*>/g, ''));
+        u.rate = 1.0; u.pitch = 1.0;
+        u.lang = document.documentElement.lang === 'fr' ? 'fr-CA' : 'en-US';
+        window.speechSynthesis.speak(u);
+    },
 
     init: function() {
         this.panel = document.getElementById('frankie-panel');
@@ -225,6 +244,7 @@ window.frankie = {
                     + '</div>';
             }
             self.addMessage(msg, 'bot');
+            if (msg.length < 500) self.speak(msg);
         }).catch(function() {
             self.hideTyping();
             self.addMessage('I couldn\'t process that. Try asking about agents, approvals, or recent activity.', 'bot');

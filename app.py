@@ -2319,6 +2319,7 @@ def api_dashboard_ask():
             language=lang if lang else None,
             autonomy_config=autonomy_config,
             tenant_id=tenant_id,
+            source="frankie",
         )
 
         status = result.get("status", "error")

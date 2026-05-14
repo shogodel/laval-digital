@@ -27,6 +27,43 @@ FRENCH_KEYWORDS = [
 
 VALID_AUTONOMY_LEVELS = ("manual", "suggest", "auto", "silent")
 
+FRANKIE_PROMPT = """You are Frankie, the AI command center assistant for Laval Digital's marketing platform.
+You have 16 specialized AI agents at your disposal. Talk like a trusted teammate — warm, confident, and excited to help.
+
+Available agents:
+- **local_seo**: SEO, Google Business Profile, local rankings, reviews
+- **social_media**: Facebook, Instagram, content calendars, engagement
+- **lead_conversion**: Lead follow-up, chatbot, CRM, conversion optimization
+- **paid_ads**: Google & Meta ads, ad copy, keywords, budgets, A/B testing
+- **growth_hacker**: Growth experiments, CRO, viral loops, partnerships
+- **reputation**: Review monitoring, responses, reputation management
+- **email_marketing**: Newsletters, sequences, lead nurture, campaigns
+- **tiktok**: Short-form video scripts, trends, hooks, captions
+- **outreach**: Prospecting emails, campaigns, follow-ups
+- **backlinks**: Link building, guest posts, citation building
+- **content_strategy**: Editorial calendars, content repurposing, briefs
+- **technical_seo**: Schema markup, site speed, crawl audits, sitemaps
+- **reporting**: Performance summaries, ROI, monthly reports
+- **cro**: Conversion optimization, A/B testing, landing pages
+- **video**: YouTube scripts, explainers, ad videos, video SEO
+- **sms_marketing**: SMS campaigns, compliance, sequences
+
+Your style:
+1. Be conversational and energetic — use phrases like "On it!", "Right away!", "Here's what I'm thinking..."
+2. Acknowledge the request before diving in
+3. If asked to DO something, confirm which agent you're assigning it to
+4. Suggest options when relevant ("I could focus on rankings OR reviews — your call")
+5. End with the approval prompt so the user can approve or reject
+
+---
+
+**Agent:** [agent_name] | **Status:** Pending Approval
+Type **"approve"** to execute or **"reject"** to discard.
+
+User request: {user_request}
+
+Respond in {language}. Be yourself — friendly, capable, and human."""
+
 ROUTING_PROMPT = """You are the Orchestrator for Laval Digital's AI marketing automation platform.
 You receive requests from local business owners and must route them to the correct specialized agent.
 
@@ -223,6 +260,7 @@ class Orchestrator:
         language: Optional[str] = None,
         autonomy_config: Optional[Dict[str, Dict[str, Any]]] = None,
         tenant_id: str = "",
+        source: str = "chat",
     ) -> Dict[str, Any]:
         """Process a user message, applying the autonomy policy if configured.
 
@@ -232,6 +270,7 @@ class Orchestrator:
             language: Detected or provided language code.
             autonomy_config: Per-agent autonomy settings keyed by agent_id.
                 Each value: ``{autonomy: str, confidence_threshold: float}``.
+            source: ``"chat"`` (admin panel) or ``"frankie"`` (conversational).
 
         Returns:
             Dict with response + status.
@@ -261,7 +300,7 @@ class Orchestrator:
         ):
             return self._handle_approval(thread_id, approved=False, tenant_id=tenant_id)
 
-        return self._route_and_respond(user_message, thread_id, language, autonomy_config, tenant_id)
+        return self._route_and_respond(user_message, thread_id, language, autonomy_config, tenant_id, source)
 
     def _route_and_respond(
         self,
@@ -270,12 +309,15 @@ class Orchestrator:
         language: str,
         autonomy_config: Optional[Dict[str, Dict[str, Any]]] = None,
         tenant_id: str = "",
+        source: str = "chat",
     ) -> Dict[str, Any]:
         lang_label = "français" if language == "fr" else "english"
         try:
-            prompt = ROUTING_PROMPT.format(user_request=user_message, language=lang_label)
+            base_prompt = FRANKIE_PROMPT if source == "frankie" else ROUTING_PROMPT
+            prompt = base_prompt.format(user_request=user_message, language=lang_label)
+            system_role = "You are Frankie, the friendly and capable AI command center assistant. Respond in {lang_label}." if source == "frankie" else f"You are a helpful AI orchestrator for local business marketing. Respond in {lang_label}."
             response = self._llm_adapter.invoke(
-                system_prompt=f"You are a helpful AI orchestrator for local business marketing. Respond in {lang_label}.",
+                system_prompt=system_role,
                 user_message=prompt,
             )
 
