@@ -459,7 +459,6 @@ speech_engine = SpeechEngine()
 
 # Initialize Orchestrator (cached singleton — shared pending_drafts)
 orchestrator = None
-orchestrator_graph = None
 
 
 def get_orchestrator():
@@ -468,7 +467,7 @@ def get_orchestrator():
     Keeps the same instance across requests so in-memory state
     (_pending_drafts) persists. Rebuilds only if the API key changes.
     """
-    global llm_adapter, agent_registry, orchestrator, orchestrator_graph
+    global llm_adapter, agent_registry, orchestrator
 
     if orchestrator is not None:
         return orchestrator
@@ -1647,9 +1646,8 @@ def update_agent_config(agent_id):
     _reinitialize_agent(agent_id, config)
 
     # Rebuild orchestrator with updated agent
-    global orchestrator, orchestrator_graph
+    global orchestrator
     orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
-    orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
         "agent_id": agent_id,
@@ -1693,7 +1691,7 @@ def update_all_agents_config():
         _reinitialize_agent(agent_id, config)
 
     # Also update the global llm_adapter so the orchestrator uses the new key
-    global llm_adapter, orchestrator, orchestrator_graph
+    global llm_adapter, orchestrator
     if api_key:
         llm_adapter = LLMAdapter(
             model=model if model and model != "__keep__" and LLMAdapter.is_valid_model(model) else llm_adapter.model,
@@ -1703,7 +1701,6 @@ def update_all_agents_config():
         )
 
     orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
-    orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
         "success": True,
@@ -1774,9 +1771,8 @@ def bulk_update_agent_config():
 
     # Rebuild orchestrator if any agent was updated
     if results["updated"]:
-        global orchestrator, orchestrator_graph
+        global orchestrator
         orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
-        orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
         "updated": results["updated"],
