@@ -56,8 +56,6 @@ class GrowthHackerAgent(BaseAgent):
 
 
 if __name__ == "__main__":
-    import os
-    from core.llm_adapter import LLMAdapter
 
     config = {
         "agent_id": "growth_hacker_test",

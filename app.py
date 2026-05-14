@@ -2294,6 +2294,80 @@ def api_undo():
     return jsonify(result if result else {"success": False, "action": "nothing_to_undo"})
 
 
+@app.route("/api/frankie/inspect", methods=["GET"])
+def api_frankie_inspect():
+    """Frankie inspects the client's live website and returns actionable suggestions."""
+    tenant_id = get_current_tenant() or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    if not tenant_id:
+        return jsonify({"suggestions": [], "error": "No tenant"})
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        row = conn.execute("SELECT site_url, business_name, city, niche FROM client_details LIMIT 1").fetchone()
+    except Exception:
+        row = None
+    if not row or not row.get("site_url"):
+        return jsonify({"suggestions": [], "site": None})
+
+    site_url = row["site_url"]
+    business = row.get("business_name", "")
+    city = row.get("city", "")
+    niche = row.get("niche", "")
+
+    suggestions = []
+    try:
+        resp = requests.get(site_url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        html = resp.text.lower()
+        title = ""
+        meta_desc = ""
+        import re as _re
+        m = _re.search(r"<title>(.*?)</title>", html, _re.IGNORECASE | _re.DOTALL)
+        if m: title = m.group(1).strip()
+        m = _re.search(r'<meta\s+name=["\']description["\']\s+content=["\'](.*?)["\']', html, _re.IGNORECASE | _re.DOTALL)
+        if m: meta_desc = m.group(1).strip()
+        has_h1 = bool(_re.search(r"<h1[^>]*>", html))
+        h1_count = len(_re.findall(r"<h1[^>]*>", html))
+        has_schema = "schema.org" in html or "application/ld+json" in html
+        has_og = "og:title" in html
+        has_whatsapp = "whatsapp" in html
+        has_phone = bool(_re.search(r"tel:|\(\d{3}\)\s*\d{3}-\d{4}|\d{3}-\d{3}-\d{4}", html))
+        word_count = len(html.split())
+
+        if not title:
+            suggestions.append("Your homepage is missing a <title> tag. Add one with your business name and city.")
+        else:
+            suggestions.append(f"Your site title is: \"{title[:80]}\" — keep it under 60 chars for Google.")
+
+        if not meta_desc:
+            suggestions.append("No meta description found. Add one summarizing your services for better click-through rates.")
+
+        if h1_count > 1:
+            suggestions.append(f"You have {h1_count} H1 tags. Use only one H1 per page for SEO best practices.")
+        elif not has_h1:
+            suggestions.append("No H1 heading found. Add one that includes your main service keyword.")
+
+        if not has_schema:
+            suggestions.append("No schema.org markup detected. LocalBusiness schema helps you show up in rich results.")
+
+        if not has_og:
+            suggestions.append("No Open Graph tags found. These control how your site looks when shared on Facebook and LinkedIn.")
+
+        if not has_phone:
+            suggestions.append("No click-to-call phone number detected. Add your phone number prominently for mobile users.")
+
+        if word_count < 100:
+            suggestions.append(f"Your homepage only has about {word_count} words. Add more content describing your services for better SEO.")
+
+        if not has_whatsapp:
+            pass  # optional
+
+        return jsonify({
+            "site": {"url": site_url, "title": title[:80], "meta_desc": meta_desc[:120], "business": business, "city": city, "niche": niche},
+            "suggestions": suggestions[:5],
+        })
+    except Exception as e:
+        return jsonify({"suggestions": [f"Could not reach {site_url}. Make sure the site is live."], "site": None})
+
+
 @app.route("/api/dashboard/ask", methods=["POST"])
 def api_dashboard_ask():
     """Frankie: processes both questions AND actions through the orchestrator."""

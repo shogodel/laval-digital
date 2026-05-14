@@ -55,8 +55,6 @@ class LocalSEOAgent(BaseAgent):
 
 
 if __name__ == "__main__":
-    import os
-    from core.llm_adapter import LLMAdapter
 
     config = {
         "agent_id": "local_seo_test",

@@ -55,8 +55,6 @@ class SocialMediaAgent(BaseAgent):
 
 
 if __name__ == "__main__":
-    import os
-    from core.llm_adapter import LLMAdapter
 
     config = {
         "agent_id": "social_media_test",
