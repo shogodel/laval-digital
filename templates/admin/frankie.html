@@ -216,13 +216,46 @@ window.frankie = {
             body: JSON.stringify({query: text})
         }).then(function(r) { return r.json(); }).then(function(d) {
             self.hideTyping();
-            self.addMessage(d.response || 'No response.', 'bot');
+            var msg = d.response || 'No response.';
+            // If there's a pending approval, add an approve button
+            if (d.pending_approval && d.thread_id) {
+                msg += '<div style="margin-top:10px;">'
+                    + '<button class="suggestion-chip" onclick="frankie.approve(\'' + d.thread_id + '\', this)" style="background:#059669;color:#fff;border-color:#059669;">✅ Approve</button>'
+                    + '<button class="suggestion-chip" onclick="frankie.reject(\'' + d.thread_id + '\', this)" style="background:#dc2626;color:#fff;border-color:#dc2626;">❌ Reject</button>'
+                    + '</div>';
+            }
+            self.addMessage(msg, 'bot');
         }).catch(function() {
             self.hideTyping();
             self.addMessage('I couldn\'t process that. Try asking about agents, approvals, or recent activity.', 'bot');
         }).finally(function() {
             btn.disabled = false; btn.textContent = 'Send';
         });
+    },
+
+    approve: function(threadId, btn) {
+        btn.disabled = true; btn.textContent = 'Approving...';
+        fetch('/api/approvals/' + threadId + '/respond', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({approved: true})
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            btn.textContent = '✅ Approved';
+            btn.style.background = '#065f46';
+            btn.parentElement.innerHTML += '<div style="margin-top:6px;font-size:0.8rem;color:#059669;">Done!</div>';
+        }).catch(function() { btn.textContent = 'Error'; });
+    },
+
+    reject: function(threadId, btn) {
+        btn.disabled = true; btn.textContent = 'Rejecting...';
+        fetch('/api/approvals/' + threadId + '/respond', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({approved: false})
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            btn.textContent = '❌ Rejected';
+            btn.parentElement.innerHTML += '<div style="margin-top:6px;font-size:0.8rem;color:#dc2626;">Discarded.</div>';
+        }).catch(function() { btn.textContent = 'Error'; });
     },
 
     addMessage: function(text, role) {

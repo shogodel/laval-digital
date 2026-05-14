@@ -2296,47 +2296,61 @@ def api_undo():
 
 @app.route("/api/dashboard/ask", methods=["POST"])
 def api_dashboard_ask():
-    """Natural language dashboard query — LLM generates structured data."""
+    """Frankie: processes both questions AND actions through the orchestrator."""
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     query = (data or {}).get("query", "").strip()
     if not query:
         return jsonify({"error": "No query provided"}), 400
+    lang = "fr" if (session.get("lang") == "fr" or (request.accept_languages and request.accept_languages.best and request.accept_languages.best.startswith("fr"))) else "en"
     try:
-        lang = "fr" if (session.get("lang") == "fr" or (request.accept_languages and request.accept_languages.best and request.accept_languages.best.startswith("fr"))) else "en"
         orch = get_orchestrator()
-        activity = orch.get_activity_feed(50)
-        pending = len(orch._pending_drafts)
-        stats = get_event_bus().get_stats()
+        tenant_id = get_current_tenant() or ""
 
-        if lang == "fr":
-            context = f"Activité récente: {len(activity)} événements, Approbations en attente: {pending}, Total: {stats.get('total_events', 0)}"
-            prompt = f"""L'utilisateur pose une question sur sa plateforme marketing IA: "{query}"
+        # Route through orchestrator — this handles both questions and actions
+        autonomy_config = None
+        if tenant_id:
+            autonomy_config = tenant_manager.get_agent_autonomy(tenant_id)
 
-État actuel: {context}
+        result = orch.process_message(
+            user_message=query,
+            thread_id="frankie-" + uuid.uuid4().hex[:8],
+            language=lang if lang else None,
+            autonomy_config=autonomy_config,
+            tenant_id=tenant_id,
+        )
 
-Réponds en 1 à 3 phrases en français. Sois précis et inclus des chiffres.
-Si tu n'as pas les données, suggère ce qu'il devrait surveiller.
-            Réponds avec un ton amical et utile."""
-            system = "Tu es Frankie, l'assistant IA du centre de commande marketing. Tu as accès aux données d'activité des agents en temps réel. Réponds en français."
+        status = result.get("status", "error")
+        response = result.get("response", "")
+
+        # Format Frankie's response based on what happened
+        if status == "pending_approval":
+            agent = result.get("agent", "agent")
+            p = AGENT_PERSONALITIES.get(agent, {})
+            emoji = p.get("emoji", "🤖")
+            color = p.get("color", "#6b7280")
+            draft_preview = (response or "")[:200]
+            en = f"{emoji} I asked **{p.get('short', agent)}** to handle this. Here's the draft:\n\n{draft_preview}\n\n---\n\nYou can **approve** or **reject** it in the Tasks tab."
+            fr = f"{emoji} J'ai demandé à **{p.get('short_fr', agent)}** de s'en occuper. Voici le projet :\n\n{draft_preview}\n\n---\n\nVous pouvez **approuver** ou **rejeter** dans l'onglet Tâches."
+            return jsonify({"response": fr if lang == "fr" else en, "pending_approval": True, "agent": agent, "thread_id": result.get("thread_id")})
+        elif status == "auto_executed":
+            agent = result.get("agent", "agent")
+            p = AGENT_PERSONALITIES.get(agent, {})
+            emoji = p.get("emoji", "✅")
+            en = f"{emoji} Done! **{p.get('short', agent)}** handled it automatically."
+            fr = f"{emoji} Terminé ! **{p.get('short_fr', agent)}** s'en est occupé automatiquement."
+            return jsonify({"response": fr if lang == "fr" else en})
+        elif status == "executed_silent":
+            return jsonify({"response": "✅ Done."})
+        elif status == "error":
+            return jsonify({"response": response or "I couldn't process that."})
         else:
-            context = f"Recent activity count: {len(activity)}, Pending approvals: {pending}, Total events: {stats.get('total_events', 0)}"
-            prompt = f"""The user asks about their AI marketing platform: "{query}"
-
-Current state: {context}
-
-Answer concisely in 1-3 sentences. Be specific and include numbers where possible.
-If they ask for data we don't have, suggest what they should monitor.
-            Respond in a friendly, helpful tone."""
-            system = "You are Frankie, the AI marketing command center assistant. You have access to real-time agent activity data."
-        response = llm_adapter.invoke(system_prompt=system, user_message=prompt)
-        return jsonify({"response": response})
+            return jsonify({"response": response or "Done."})
     except Exception as e:
-        logger.error("Dashboard query failed: %s", e, exc_info=True)
-        if "fr" in str(request.accept_languages or ""):
-            return jsonify({"response": "Je n'ai pas pu traiter cette demande. Essayez de me parler des agents, des approbations ou de l'activité récente."})
-        return jsonify({"response": "I couldn't process that request. Try asking about agents, approvals, or recent activity."})
+        logger.error("Frankie query failed: %s", e, exc_info=True)
+        fallback = "Je n'ai pas pu traiter ça. Essayez de me parler des agents, des approbations ou de l'activité récente." if lang == "fr" else "I couldn't process that. Try asking about agents, approvals, or recent activity."
+        return jsonify({"response": fallback})
 
 
 AGENT_PERSONALITIES = {
