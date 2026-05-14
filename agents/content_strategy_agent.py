@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 from datetime import datetime, timezone
@@ -43,11 +44,10 @@ class ContentStrategyAgent(BaseAgent):
             return {"success": True, "result": str(filepath), "error": None}
         except OSError as e:
             logger.error("Failed to save calendar: %s", e)
-            return {"success": False, "result": "", "error": str(e)}
+            return {"success": False, "result": "", "error": "Failed to save content calendar."}
 
     @staticmethod
     def _slugify(text: str) -> str:
-        import re
         text = text.lower().strip()
         text = re.sub(r"[^\w\s-]", "", text)
         text = re.sub(r"[\s_]+", "-", text)

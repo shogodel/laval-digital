@@ -37,7 +37,7 @@ class ReportingAgent(BaseAgent):
             return {"success": True, "result": str(filepath), "error": None}
         except OSError as e:
             logger.error("Failed to save report: %s", e)
-            return {"success": False, "result": "", "error": str(e)}
+            return {"success": False, "result": "", "error": "Failed to save report."}
 
     @staticmethod
     def _slugify(text: str) -> str:

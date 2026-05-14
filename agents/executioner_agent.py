@@ -807,38 +807,60 @@ class ExecutionerAgent:
 
     def _save_content_calendar(self, draft: str) -> Dict[str, Any]:
         try:
-            from agents.content_strategy_agent import ContentStrategyAgent
-            agent = ContentStrategyAgent("_tool", {"agent_id": "_tool", "model": "deepseek-chat", "system_prompt_file": "prompts/content_strategy.md", "credentials": {"api_key": ""}})
-            return agent.save_calendar(draft)
-        except Exception as e:
-            logger.error("Content calendar save failed: %s", e)
+            cal_dir = Path("content/strategy")
+            cal_dir.mkdir(parents=True, exist_ok=True)
+            slug = self._slugify(draft.strip().split("\n")[0][:60])
+            ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            fp = cal_dir / f"calendar-{slug}-{ts}.jsonl"
+            record = {"id": uuid.uuid4().hex[:12], "type": "content_calendar", "content": draft, "created_at": datetime.now(timezone.utc).isoformat()}
+            with open(fp, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
+            logger.info("Calendar saved: %s", fp)
+            return {"success": True, "result": str(fp), "error": None}
+        except OSError as exc:
+            logger.error("Calendar save failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to save content calendar."}
 
     def _save_technical_seo_report(self, draft: str) -> Dict[str, Any]:
         try:
-            from agents.technical_seo_agent import TechnicalSEOAgent
-            agent = TechnicalSEOAgent("_tool", {"agent_id": "_tool", "model": "deepseek-chat", "system_prompt_file": "prompts/technical_seo.md", "credentials": {"api_key": ""}})
-            return agent.save_report(draft)
-        except Exception as e:
-            logger.error("Technical SEO report save failed: %s", e)
+            ts_dir = Path("content/technical_seo")
+            ts_dir.mkdir(parents=True, exist_ok=True)
+            slug = self._slugify(draft.strip().split("\n")[0][:60])
+            ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            fp = ts_dir / f"audit-{slug}-{ts}.md"
+            fp.write_text(draft.strip(), encoding="utf-8")
+            logger.info("Tech SEO report saved: %s", fp)
+            return {"success": True, "result": str(fp), "error": None}
+        except OSError as exc:
+            logger.error("Tech SEO save failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to save technical SEO report."}
 
     def _generate_schema_json(self, draft: str) -> Dict[str, Any]:
         try:
-            from agents.technical_seo_agent import TechnicalSEOAgent
-            agent = TechnicalSEOAgent("_tool", {"agent_id": "_tool", "model": "deepseek-chat", "system_prompt_file": "prompts/technical_seo.md", "credentials": {"api_key": ""}})
-            return agent.save_report(draft, report_type="schema")
-        except Exception as e:
-            logger.error("Schema save failed: %s", e)
+            schema_dir = Path("content/technical_seo")
+            schema_dir.mkdir(parents=True, exist_ok=True)
+            slug = self._slugify(draft.strip().split("\n")[0][:60])
+            ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            fp = schema_dir / f"schema-{slug}-{ts}.json"
+            fp.write_text(draft.strip(), encoding="utf-8")
+            logger.info("Schema saved: %s", fp)
+            return {"success": True, "result": str(fp), "error": None}
+        except OSError as exc:
+            logger.error("Schema save failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to save schema markup."}
 
     def _save_report(self, draft: str) -> Dict[str, Any]:
         try:
-            from agents.reporting_agent import ReportingAgent
-            agent = ReportingAgent("_tool", {"agent_id": "_tool", "model": "deepseek-chat", "system_prompt_file": "prompts/reporting.md", "credentials": {"api_key": ""}})
-            return agent.save_report(draft)
-        except Exception as e:
-            logger.error("Report save failed: %s", e)
+            rep_dir = Path("content/reports")
+            rep_dir.mkdir(parents=True, exist_ok=True)
+            slug = self._slugify(draft.strip().split("\n")[0][:60])
+            ts = datetime.now().strftime("%Y%m%d%H%M%S")
+            fp = rep_dir / f"report-{slug}-{ts}.html"
+            fp.write_text(draft.strip(), encoding="utf-8")
+            logger.info("Report saved: %s", fp)
+            return {"success": True, "result": str(fp), "error": None}
+        except OSError as exc:
+            logger.error("Report save failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to save report."}
 
     # ------------------------------------------------------------------

@@ -37,7 +37,7 @@ class TechnicalSEOAgent(BaseAgent):
             return {"success": True, "result": str(filepath), "error": None}
         except OSError as e:
             logger.error("Failed to save technical SEO report: %s", e)
-            return {"success": False, "result": "", "error": str(e)}
+            return {"success": False, "result": "", "error": "Failed to save technical SEO report."}
 
     def generate_schema(self, business_type: str, business_name: str, city: str, phone: str) -> str:
         schemas = {
