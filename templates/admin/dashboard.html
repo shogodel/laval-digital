@@ -35,6 +35,9 @@
         .panic-btn:hover { background: #b91c1c; }
         .panic-btn.resume { background: var(--green); animation: none; }
         .panic-btn.resume:hover { background: #047857; }
+        .install-btn { display: none; background: rgba(5,150,105,0.25); color: #6ee7b7; border: 1px solid rgba(5,150,105,0.4); border-radius: var(--radius); padding: 5px 14px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: 0.12s; white-space: nowrap; }
+        .install-btn:hover { background: rgba(5,150,105,0.4); }
+        .install-btn.installed { background: rgba(99,102,241,0.25); color: #a5b4fc; border-color: rgba(99,102,241,0.4); cursor: default; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
         .dashboard-layout { display: flex; flex: 1; overflow: hidden; gap: 0; }
         .main-panel { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
@@ -100,6 +103,7 @@
     </div>
         <div class="topbar-right">
             <button id="panic-btn" class="panic-btn" onclick="togglePanic()">&#9888; Stop All</button>
+            <button id="install-btn" class="install-btn" onclick="installApp()" style="display:none;">&#11013; Install App</button>
             <label style="font-size:0.7rem;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:4px;cursor:pointer;">
                 <input type="checkbox" id="push-subscribe" onchange="togglePush()" checked style="accent-color:var(--red);"> Push
             </label>
@@ -372,19 +376,57 @@ function escapeHtml(t) {
 connectSSE();
 bootstrap();
 
+/* ── PWA: Install Prompt ── */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById('install-btn');
+    if (btn) { btn.style.display = 'inline-flex'; }
+});
+
+window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    const btn = document.getElementById('install-btn');
+    if (btn) { btn.style.display = 'none'; }
+});
+
+async function installApp() {
+    if (!deferredPrompt) {
+        // Already installed or prompt not available
+        const btn = document.getElementById('install-btn');
+        if (btn) { btn.textContent = '\u2705 Installed'; btn.classList.add('installed'); }
+        return;
+    }
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    const btn = document.getElementById('install-btn');
+    if (result.outcome === 'accepted') {
+        if (btn) { btn.style.display = 'none'; }
+    } else {
+        if (btn) { btn.textContent = '\u274C Dismissed'; setTimeout(() => { btn.textContent = '\u11013 Install App'; }, 2000); }
+    }
+}
+
 /* ── PWA: Service Worker + Push ── */
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/static/sw.js').then(reg => {
-        console.log('SW registered');
-        // Check existing push subscription
         reg.pushManager.getSubscription().then(sub => {
-            const statusEl = document.getElementById('connection-status');
-            // Subscribe if not already
             if (!sub && document.getElementById('push-subscribe')?.checked) {
                 subscribePush(reg);
             }
         });
+        // Check if already installed (no install prompt will fire)
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            const btn = document.getElementById('install-btn');
+            if (btn) { btn.style.display = 'none'; }
+        }
     }).catch(() => {});
+} else {
+    // Not supported
+    const btn = document.getElementById('install-btn');
+    if (btn) { btn.style.display = 'none'; }
 }
 
 async function subscribePush(reg) {
@@ -392,7 +434,6 @@ async function subscribePush(reg) {
         const r = await fetch('/api/push/vapid-key');
         const data = await r.json();
         if (!data.enabled || !data.public_key) return;
-
         const sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(data.public_key),
