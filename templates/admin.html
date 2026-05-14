@@ -370,7 +370,7 @@
             <a href="#" data-tab="partners"><span class="icon">🤝</span> Partners</a>
         </nav>
         <div class="sidebar-footer" style="padding: 8px 12px;">
-            <input type="text" id="admin-ask-input" placeholder="Ask JARVIS..." style="width:100%;padding:6px 10px;font-size:0.78rem;font-family:inherit;border:1px solid rgba(255,255,255,0.15);border-radius:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);outline:none;margin-bottom:6px;" onkeydown="if(event.key==='Enter') adminAskJarvis()">
+            <input type="text" id="admin-ask-input" placeholder="Ask Frankie..." style="width:100%;padding:6px 10px;font-size:0.78rem;font-family:inherit;border:1px solid rgba(255,255,255,0.15);border-radius:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);outline:none;margin-bottom:6px;" onkeydown="if(event.key==='Enter') adminAskFrankie()">
             <div id="admin-ask-response" style="font-size:0.7rem;color:rgba(255,255,255,0.5);display:none;margin-bottom:6px;"></div>
             <a href="/admin/logout">🚪 Sign out</a>
         </div>
@@ -1573,7 +1573,7 @@ function editTier(tier) {
     }
 }
 
-/* ── JARVIS features ── */
+/* ── Frankie features ── */
 async function loadPersonalities() {
     try {
         const r = await fetch('/api/personalities');
@@ -1582,7 +1582,7 @@ async function loadPersonalities() {
     } catch (e) {}
 }
 
-async function adminAskJarvis() {
+async function adminAskFrankie() {
     const input = document.getElementById('admin-ask-input');
     const response = document.getElementById('admin-ask-response');
     const q = input.value.trim();

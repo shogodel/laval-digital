@@ -162,8 +162,8 @@
             <div class="feed-empty">Loading...</div>
         </div>
         <div class="ask-bar">
-            <input type="text" id="ask-input" placeholder="Ask JARVIS anything..." onkeydown="if(event.key==='Enter') askJarvis()">
-            <button onclick="askJarvis()">Ask</button>
+            <input type="text" id="ask-input" placeholder="Ask Frankie anything..." onkeydown="if(event.key==='Enter') askFrankie()">
+            <button onclick="askFrankie()">Ask</button>
             <div class="ask-response" id="ask-response"></div>
         </div>
     </div>
@@ -298,8 +298,8 @@ async function undoLast() {
     setTimeout(() => { btn.style.display = 'none'; btn.textContent = '↩ Undo Last'; btn.style.background = ''; }, 2000);
 }
 
-/* ── JARVIS Ask ── */
-async function askJarvis() {
+/* ── Frankie Ask ── */
+async function askFrankie() {
     const input = document.getElementById('ask-input');
     const response = document.getElementById('ask-response');
     const q = input.value.trim();

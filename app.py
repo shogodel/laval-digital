@@ -2252,7 +2252,7 @@ def api_push_unsubscribe():
 
 
 # ---------------------------------------------------------------------------
-# API: JARVIS features (inbox, undo, personalities, dashboard query)
+# API: Frankie features (inbox, undo, personalities, dashboard query)
 # ---------------------------------------------------------------------------
 
 
@@ -2325,8 +2325,8 @@ def api_dashboard_ask():
 
 Réponds en 1 à 3 phrases en français. Sois précis et inclus des chiffres.
 Si tu n'as pas les données, suggère ce qu'il devrait surveiller.
-Réponds avec un ton amical et utile, comme JARVIS."""
-            system = "Tu es JARVIS, l'assistant du centre de commande marketing IA. Tu as accès aux données d'activité des agents en temps réel. Réponds en français."
+            Réponds avec un ton amical et utile."""
+            system = "Tu es Frankie, l'assistant IA du centre de commande marketing. Tu as accès aux données d'activité des agents en temps réel. Réponds en français."
         else:
             context = f"Recent activity count: {len(activity)}, Pending approvals: {pending}, Total events: {stats.get('total_events', 0)}"
             prompt = f"""The user asks about their AI marketing platform: "{query}"
@@ -2335,8 +2335,8 @@ Current state: {context}
 
 Answer concisely in 1-3 sentences. Be specific and include numbers where possible.
 If they ask for data we don't have, suggest what they should monitor.
-Respond in a friendly, JARVIS-like tone."""
-            system = "You are JARVIS, the AI marketing command center assistant. You have access to real-time agent activity data."
+            Respond in a friendly, helpful tone."""
+            system = "You are Frankie, the AI marketing command center assistant. You have access to real-time agent activity data."
         response = llm_adapter.invoke(system_prompt=system, user_message=prompt)
         return jsonify({"response": response})
     except Exception as e:
