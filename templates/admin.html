@@ -370,7 +370,7 @@
             <a href="#" data-tab="partners"><span class="icon">🤝</span> Partners</a>
         </nav>
         <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:4px;">
-            <button id="sidebar-install-btn" class="btn btn-gray btn-xs" onclick="installApp()" style="display:none;width:100%;">📲 Install App</button>
+            <button id="sidebar-install-btn" class="btn btn-gray btn-xs" onclick="installApp()" style="width:100%;">📲 Install App</button>
             <a href="/admin/dashboard" style="font-size:0.78rem;color:rgba(255,255,255,0.5);padding:6px 0;">⚡ Frankie Dashboard</a>
             <a href="/admin/logout">🚪 Sign out</a>
         </div>
@@ -1589,16 +1589,24 @@ window.onload = function() {
     window.addEventListener('beforeinstallprompt', e => {
         e.preventDefault();
         deferredPrompt = e;
-        const btn = document.getElementById('sidebar-install-btn');
-        if (btn) btn.style.display = 'block';
     });
 };
 
 function installApp() {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+    } else {
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isSafari = /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
+        if (isIOS || isSafari) {
+            alert('On Safari: tap the Share icon (📤) at the bottom of the screen, then scroll down and tap "Add to Home Screen".');
+        } else {
+            alert('Open Chrome/Edge menu (⋮ or ⋯) and select "Install" or "Add to Home Screen".\n\nYou can also open the Frankie Dashboard and install from there.');
+        }
+    }
 }
+</script>
 </script>
 {% include 'admin/frankie.html' %}
 </body>
