@@ -4,13 +4,9 @@ Uses the ``pywebpush`` library for encrypted push delivery via browser's
 native push service. Falls back gracefully if the library is not installed.
 
 Subscriptions are persisted to ``data/push_subscriptions.jsonl`` so they
-survive server restarts but are not stored in tenant databases (they are
-browser-scoped, not tenant-scoped).
-
-VAPID keys can be set via environment variables ``VAPID_PUBLIC_KEY`` and
-``VAPID_PRIVATE_KEY``. If unset, ephemeral keys are generated on each
-startup (existing subscriptions will become invalid after restart, which
-is fine — the browser recovers automatically).
+survive server restarts.
+VAPID keys are auto-generated on first startup and cached to
+``data/vapid_keys.json`` — no environment configuration needed.
 """
 
 import json
@@ -18,11 +14,15 @@ import logging
 import os
 import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 
 logger = logging.getLogger(__name__)
 
 SUBSCRIPTIONS_FILE = Path("data/push_subscriptions.jsonl")
+VAPID_KEYS_FILE = Path("data/vapid_keys.json")
 
 try:
     from pywebpush import webpush, WebPushException
@@ -32,29 +32,59 @@ except ImportError:
     logger.info("pywebpush not installed — push disabled. Install: pip install pywebpush")
 
 
+def _ensure_vapid_keys() -> Dict[str, str]:
+    """Load VAPID keys from env vars, cached file, or generate fresh."""
+    pub = os.getenv("VAPID_PUBLIC_KEY", "")
+    priv = os.getenv("VAPID_PRIVATE_KEY", "")
+    if pub and priv:
+        return {"public_key": pub, "private_key": priv}
+
+    if VAPID_KEYS_FILE.exists():
+        try:
+            return json.loads(VAPID_KEYS_FILE.read_text())
+        except Exception:
+            pass
+
+    key = ec.generate_private_key(ec.SECP256R1())
+    keys = {
+        "private_key": key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        ).decode(),
+        "public_key": key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        ).decode(),
+    }
+    try:
+        VAPID_KEYS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        VAPID_KEYS_FILE.write_text(json.dumps(keys))
+    except Exception as e:
+        logger.warning("Failed to cache VAPID keys: %s", e)
+    return keys
+
+
 class PushManager:
     """Manages Web Push subscriptions and sends push notifications.
 
     Thread-safe. Degrades gracefully if ``pywebpush`` is not installed.
-    Subscriptions are stored in a JSONL file for persistence.
     """
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._subscriptions: List[Dict[str, Any]] = []
-        self._vapid_private_key = os.getenv("VAPID_PRIVATE_KEY", "")
+        self._vapid = _ensure_vapid_keys()
         self._vapid_claims = {"sub": "mailto:lavaldigital@gmail.com"}
         self._load_subscriptions()
 
     @property
     def public_key(self) -> str:
-        return os.getenv("VAPID_PUBLIC_KEY", "")
+        return self._vapid.get("public_key", "")
 
     @property
     def enabled(self) -> bool:
-        return HAS_PYWEBPUSH and bool(self._vapid_private_key) and bool(self.public_key)
-
-    # ── Subscription persistence ───────────────────────────────────────
+        return HAS_PYWEBPUSH and bool(self._vapid.get("private_key"))
 
     def _load_subscriptions(self) -> None:
         if not SUBSCRIPTIONS_FILE.exists():
@@ -63,14 +93,12 @@ class PushManager:
             self._subscriptions = []
             try:
                 SUBSCRIPTIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
-                with open(SUBSCRIPTIONS_FILE, "r") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line:
-                            try:
-                                self._subscriptions.append(json.loads(line))
-                            except json.JSONDecodeError:
-                                continue
+                for line in SUBSCRIPTIONS_FILE.read_text().strip().split("\n"):
+                    if line.strip():
+                        try:
+                            self._subscriptions.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            continue
             except Exception as e:
                 logger.warning("Failed to load push subscriptions: %s", e)
 
@@ -78,21 +106,18 @@ class PushManager:
         try:
             SUBSCRIPTIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
             with self._lock:
-                with open(SUBSCRIPTIONS_FILE, "w") as f:
-                    for sub in self._subscriptions:
-                        f.write(json.dumps(sub) + "\n")
+                SUBSCRIPTIONS_FILE.write_text(
+                    "\n".join(json.dumps(s) for s in self._subscriptions)
+                )
         except Exception as e:
             logger.warning("Failed to save push subscriptions: %s", e)
-
-    # ── Subscribe / Unsubscribe ────────────────────────────────────────
 
     def subscribe(self, subscription: Dict[str, Any]) -> bool:
         endpoint = subscription.get("endpoint", "")
         if not endpoint:
             return False
         with self._lock:
-            exists = any(s.get("endpoint") == endpoint for s in self._subscriptions)
-            if not exists:
+            if not any(s.get("endpoint") == endpoint for s in self._subscriptions):
                 self._subscriptions.append(subscription)
                 self._save_subscriptions()
         return True
@@ -105,34 +130,12 @@ class PushManager:
                 self._save_subscriptions()
             return len(self._subscriptions) < before
 
-    # ── Send notifications ─────────────────────────────────────────────
-
     def send(self, title: str, body: str, icon: str = "/static/logo.svg", url: str = "/admin/dashboard") -> int:
-        """Send a push notification to all active subscribers.
-
-        Args:
-            title: Notification title.
-            body: Notification body text.
-            icon: Icon URL (defaults to app logo).
-            url: URL to open when notification is clicked.
-
-        Returns:
-            Number of successful sends.
-        """
         if not self.enabled:
             return 0
-
-        payload = json.dumps({
-            "title": title,
-            "body": body,
-            "icon": icon,
-            "url": url,
-            "badge": "/static/logo.svg",
-        })
-
+        payload = json.dumps({"title": title, "body": body, "icon": icon, "url": url, "badge": "/static/logo.svg"})
         with self._lock:
             subs = list(self._subscriptions)
-
         success = 0
         expired = []
         for sub in subs:
@@ -140,7 +143,7 @@ class PushManager:
                 webpush(
                     subscription_info=sub,
                     data=payload,
-                    vapid_private_key=self._vapid_private_key,
+                    vapid_private_key=self._vapid["private_key"],
                     vapid_claims=self._vapid_claims,
                 )
                 success += 1
@@ -151,36 +154,20 @@ class PushManager:
                     logger.warning("Push send failed: %s", e)
             except Exception as e:
                 logger.warning("Push send error: %s", e)
-
         if expired:
             with self._lock:
                 for ep in expired:
                     self._subscriptions = [s for s in self._subscriptions if s.get("endpoint") != ep]
                 self._save_subscriptions()
-
         return success
 
-    def send_event(self, event_type: str, agent: str, data: Optional[Dict[str, Any]] = None) -> None:
-        """Send a push notification mapped from an orchestrator event."""
+    def send_event(self, event_type: str, agent: str, data: Dict[str, Any] = None) -> None:
         data = data or {}
         if event_type == "agent_executed":
-            self.send(
-                title=f"✅ {agent} completed",
-                body=(data.get("draft_preview") or "Task executed.")[:120],
-            )
+            self.send(title=f"✅ {agent} completed", body=(data.get("draft_preview") or "Task executed.")[:120])
         elif event_type == "agent_failed":
-            self.send(
-                title=f"❌ {agent} failed",
-                body=(data.get("error") or "Task failed.")[:120],
-            )
+            self.send(title=f"❌ {agent} failed", body=(data.get("error") or "Task failed.")[:120])
         elif event_type == "approval_needed":
-            self.send(
-                title=f"🤔 {agent} needs approval",
-                body=(data.get("draft_preview") or "New draft ready for review.")[:120],
-                url="/admin",
-            )
+            self.send(title=f"🤔 {agent} needs approval", body=(data.get("draft_preview") or "New draft ready.")[:120], url="/admin")
         elif event_type == "approval_responded":
-            self.send(
-                title=f"📋 {agent} processed",
-                body="Your approval response has been received.",
-            )
+            self.send(title=f"📋 {agent} processed", body="Your approval response was received.")
