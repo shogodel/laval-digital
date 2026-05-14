@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laval Digital — Panneau d'Admin</title>
+    <meta name="theme-color" content="#D42B2B">
+    <link rel="manifest" href="/static/manifest.json">
+    <title>Laval Digital — Panneau d'Administration</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -349,10 +351,12 @@
             <a href="#" data-tab="managed"><span class="icon">🔧</span> Clients Gérés</a>
             <a href="#" data-tab="partners"><span class="icon">🤝</span> Partenaires</a>
         </nav>
-        <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:4px;">
-            <button id="sidebar-install-btn" class="btn btn-gray btn-xs" onclick="installApp()" style="width:100%;">📲 Installer l'App</button>
-            <a href="/admin/dashboard" style="font-size:0.78rem;color:rgba(255,255,255,0.5);padding:6px 0;">⚡ Frankie</a>
-            <a href="/fr/admin/logout">🚪 Déconnexion</a>
+        <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
+            <a href="/admin/dashboard" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:12px 16px;border-radius:10px;font-size:0.9rem;font-weight:700;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
+                🤖 Ouvrir Frankie
+            </a>
+            <button id="sidebar-install-btn" onclick="installApp()" style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;width:100%;">📲 Installer l'App</button>
+            <a href="/fr/admin/logout" style="font-size:0.75rem;color:rgba(255,255,255,0.35);text-decoration:none;text-align:center;padding:4px 0;transition:color 0.15s;">Déconnexion</a>
         </div>
     </aside>
 
@@ -1425,6 +1429,9 @@ window.onload = function() {
         document.getElementById('detect-btn').disabled = !this.value.trim();
     });
 
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+    }
     let deferredPrompt = null;
     window.addEventListener('beforeinstallprompt', e => {
         e.preventDefault();
