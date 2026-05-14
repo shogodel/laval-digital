@@ -109,27 +109,37 @@
         </div>
 
         <div class="card" id="earnings">
-            <div class="card-header"><h2>Referral History</h2></div>
-            {% if referrals %}
+            <div class="card-header"><h2>Commission History</h2></div>
+            {% if commissions %}
             <div style="overflow-x:auto;">
                 <table>
-                    <thead><tr><th>Date</th><th>Business</th><th>Package</th><th>Status</th><th>Commission</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Status</th></tr></thead>
                     <tbody>
-                        {% for r in referrals %}
+                        {% for c in commissions %}
                         <tr>
-                            <td>{{ r.created_at[:10] }}</td>
-                            <td>{{ r.business_name or "—" }}</td>
-                            <td>{{ r.package or "—" }}</td>
-                            <td><span class="badge badge-{{ 'green' if r.status == 'client' else 'blue' }}">{{ r.status|capitalize }}</span></td>
-                            <td>${{ "%.2f"|format(r.commission or 0) }}</td>
+                            <td>{{ c.created_at[:10] }}</td>
+                            <td>{{ c.client_name or c.client_email or "—" }}</td>
+                            <td>${{ "%.2f"|format(c.amount) }}</td>
+                            <td><span class="badge badge-{{ 'green' if c.status == 'paid' else 'amber' }}">{{ c.status|capitalize }}</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
             {% else %}
-            <p class="empty">No referrals yet. Share your link to get started!</p>
+            <p class="empty">No commissions yet. Share your link to get started!</p>
             {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h2>Request Payout</h2><p>Minimum $50 — we send via Interac e-Transfer</p></div>
+            <div style="padding:8px 0;">
+                <p style="font-size:0.9rem;color:var(--gray-600);margin-bottom:12px;">
+                    Available balance: <strong id="balance-display">${{ "%.2f"|format(stats.total_commissions) }}</strong>
+                </p>
+                <button class="btn btn-green" onclick="requestPayout()" id="payout-btn">Request Payout</button>
+                <span id="payout-status" style="margin-left:12px;font-size:0.85rem;"></span>
+            </div>
         </div>
 
         <div class="card">
@@ -137,14 +147,13 @@
             {% if payouts %}
             <div style="overflow-x:auto;">
                 <table>
-                    <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
                     <tbody>
                         {% for p in payouts %}
                         <tr>
-                            <td>{{ p.paid_date or p.created_at[:10] }}</td>
+                            <td>{{ p.created_at[:10] }}</td>
                             <td>${{ "%.2f"|format(p.amount) }}</td>
-                            <td>{{ p.method or "eTransfer" }}</td>
-                            <td><span class="badge badge-green">Paid</span></td>
+                            <td><span class="badge badge-{{ 'green' if p.status == 'processed' else 'amber' }}">{{ p.status|capitalize }}</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -168,6 +177,28 @@
             btn.textContent = 'Copied!';
             setTimeout(() => btn.textContent = orig, 2000);
         });
+    }
+    async function requestPayout() {
+        const btn = document.getElementById('payout-btn');
+        const status = document.getElementById('payout-status');
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+        try {
+            const r = await fetch('/api/affiliate/payouts', { method: 'POST' });
+            const d = await r.json();
+            if (d.success) {
+                status.textContent = '✅ Payout requested — we\'ll send it via Interac within 48h.';
+                status.style.color = 'var(--green)';
+            } else {
+                status.textContent = '⚠️ ' + (d.error || 'Request failed');
+                status.style.color = 'var(--amber)';
+            }
+        } catch (e) {
+            status.textContent = 'Network error. Please try again.';
+            status.style.color = 'var(--red)';
+        }
+        btn.disabled = false;
+        btn.textContent = 'Request Payout';
     }
     </script>
 </body>

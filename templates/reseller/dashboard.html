@@ -105,13 +105,29 @@
         </div>
 
         <div class="card">
+            <div class="card-header">
+                <h2>Your Partner Tier <span class="badge badge-{{ 'green' if tier_name != 'standard' else 'amber' }}" style="text-transform:uppercase;">{{ tier_name or 'Standard' }}</span></h2>
+                <p>You earn <strong>${{ "%.0f"|format(mrr_per_client or 1500) }}/client/month</strong> in recurring revenue</p>
+            </div>
+        </div>
+
+        <div class="card">
             <div class="card-header"><h2>Pricing Guidelines</h2><p>You keep 100% of your profit above wholesale. Advertised prices must meet MAP.</p></div>
             <table>
                 <thead><tr><th>Suite</th><th>Wholesale</th><th>MAP</th><th>Your Min Profit</th></tr></thead>
                 <tbody>
-                    <tr><td><strong>Core Suite</strong></td><td>$4,500</td><td>$8,500+</td><td class="profit" style="color:var(--green);font-weight:700;">$4,000+</td></tr>
-                    <tr><td><strong>Growth Suite</strong></td><td>$7,000</td><td>$12,500+</td><td class="profit" style="color:var(--green);font-weight:700;">$5,500+</td></tr>
-                    <tr><td><strong>Full Empire</strong></td><td>$9,500</td><td>$16,500+</td><td class="profit" style="color:var(--green);font-weight:700;">$7,000+</td></tr>
+                    <tr><td><strong>Core Suite</strong></td>
+                        <td>${{ "%.0f"|format(map_pricing.core_suite.wholesale if map_pricing.core_suite else 4500) }}</td>
+                        <td>${{ "%.0f"|format(map_pricing.core_suite.map if map_pricing.core_suite else 8500) }}+</td>
+                        <td class="profit" style="color:var(--green);font-weight:700;">${{ "%.0f"|format((map_pricing.core_suite.map if map_pricing.core_suite else 8500) - (map_pricing.core_suite.wholesale if map_pricing.core_suite else 4500)) }}+</td></tr>
+                    <tr><td><strong>Growth Suite</strong></td>
+                        <td>${{ "%.0f"|format(map_pricing.growth_suite.wholesale if map_pricing.growth_suite else 7000) }}</td>
+                        <td>${{ "%.0f"|format(map_pricing.growth_suite.map if map_pricing.growth_suite else 12500) }}+</td>
+                        <td class="profit" style="color:var(--green);font-weight:700;">${{ "%.0f"|format((map_pricing.growth_suite.map if map_pricing.growth_suite else 12500) - (map_pricing.growth_suite.wholesale if map_pricing.growth_suite else 7000)) }}+</td></tr>
+                    <tr><td><strong>Full Empire</strong></td>
+                        <td>${{ "%.0f"|format(map_pricing.full_empire.wholesale if map_pricing.full_empire else 9500) }}</td>
+                        <td>${{ "%.0f"|format(map_pricing.full_empire.map if map_pricing.full_empire else 16500) }}+</td>
+                        <td class="profit" style="color:var(--green);font-weight:700;">${{ "%.0f"|format((map_pricing.full_empire.map if map_pricing.full_empire else 16500) - (map_pricing.full_empire.wholesale if map_pricing.full_empire else 9500)) }}+</td></tr>
                 </tbody>
             </table>
             <p style="margin-top:12px;font-size:0.85rem;color:var(--gray-500);">MAP applies to public advertising only. Private quotes and negotiations have no price restrictions.</p>
