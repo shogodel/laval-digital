@@ -54,6 +54,8 @@ from core.orchestrator import Orchestrator
 from core.llm_adapter import LLMAdapter
 from core.events import get_event_bus
 from core.push import PushManager
+from core.memory import AgentMemory
+from core.monitor import monitor as proactive_monitor
 from core.tenant_manager import TenantManager
 from agents.local_seo_agent import LocalSEOAgent
 from agents.social_media_agent import SocialMediaAgent
@@ -93,6 +95,7 @@ reseller_manager = ResellerManager(tenant_manager)
 
 # Initialize Push Manager (PWA push notifications)
 push_manager = PushManager()
+agent_memory = AgentMemory(tenant_manager)
 
 # Initialize Flask-Login auth with tenant manager reference
 login_manager = init_auth(app, tenant_manager)
@@ -447,7 +450,7 @@ def get_orchestrator():
     key_preview = llm_adapter._api_key[:10] + "..." if llm_adapter._api_key else "None"
     logger.info(f"Building orchestrator with API key: {key_preview}")
 
-    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager)
+    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
     return orchestrator
 
 
@@ -1619,7 +1622,7 @@ def update_agent_config(agent_id):
 
     # Rebuild orchestrator with updated agent
     global orchestrator, orchestrator_graph
-    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager)
+    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
     orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
@@ -1673,7 +1676,7 @@ def update_all_agents_config():
             temperature=llm_adapter._temperature,
         )
 
-    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager)
+    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
     orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
@@ -1775,7 +1778,7 @@ def bulk_update_agent_config():
     # Rebuild orchestrator if any agent was updated
     if results["updated"]:
         global orchestrator, orchestrator_graph
-        orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager)
+        orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
         orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
@@ -2078,6 +2081,7 @@ def submit_task():
             user_request, thread_id,
             language=language or None,
             autonomy_config=autonomy_config,
+            tenant_id=tenant_id or "",
         )
 
         return jsonify(result)
@@ -2245,6 +2249,112 @@ def api_push_unsubscribe():
         return jsonify({"error": "No endpoint"}), 400
     ok = push_manager.unsubscribe(endpoint)
     return jsonify({"success": ok})
+
+
+# ---------------------------------------------------------------------------
+# API: JARVIS features (inbox, undo, personalities, dashboard query)
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/inbox", methods=["GET"])
+def api_inbox():
+    """Unified inbox: merges pending approvals, activity, and agent messages."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    limit = request.args.get("limit", 50, type=int)
+    orch = get_orchestrator()
+    items = []
+
+    # Pending approvals
+    for tid, info in orch._pending_drafts.items():
+        items.append({
+            "type": "approval",
+            "agent": info.get("agent", "?"),
+            "summary": (info.get("draft", "") or "")[:120],
+            "thread_id": tid,
+            "created_at": info.get("created_at", ""),
+            "icon": "🤔",
+        })
+
+    # Activity feed
+    for a in orch.get_activity_feed(limit):
+        items.append({
+            "type": "activity",
+            "agent": a.get("agent", "?"),
+            "summary": a.get("draft_preview", "")[:120],
+            "action": a.get("action", ""),
+            "created_at": a.get("timestamp", ""),
+            "icon": "✅" if a.get("success") else "❌",
+        })
+
+    items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return jsonify({"items": items[:limit]})
+
+
+@app.route("/api/orchestrator/undo", methods=["POST"])
+def api_undo():
+    """Undo the last execution."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    orch = get_orchestrator()
+    result = orch.undo_last()
+    return jsonify(result if result else {"success": False, "action": "nothing_to_undo"})
+
+
+@app.route("/api/dashboard/ask", methods=["POST"])
+def api_dashboard_ask():
+    """Natural language dashboard query — LLM generates structured data."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    query = (data or {}).get("query", "").strip()
+    if not query:
+        return jsonify({"error": "No query provided"}), 400
+    try:
+        orch = get_orchestrator()
+        activity = orch.get_activity_feed(50)
+        pending = len(orch._pending_drafts)
+        stats = get_event_bus().get_stats()
+        context = f"Recent activity count: {len(activity)}, Pending approvals: {pending}, Total events: {stats.get('total_events', 0)}"
+        prompt = f"""The user asks about their AI marketing platform: "{query}"
+
+Current state: {context}
+
+Answer concisely in 1-3 sentences. Be specific and include numbers where possible.
+If they ask for data we don't have, suggest what they should monitor.
+Respond in a friendly, JARVIS-like tone."""
+        response = llm_adapter.invoke(
+            system_prompt="You are JARVIS, the AI marketing command center assistant. You have access to real-time agent activity data.",
+            user_message=prompt,
+        )
+        return jsonify({"response": response})
+    except Exception as e:
+        logger.error("Dashboard query failed: %s", e, exc_info=True)
+        return jsonify({"response": "I couldn't process that request. Try asking about agents, approvals, or recent activity."})
+
+
+AGENT_PERSONALITIES = {
+    "local_seo": {"emoji": "📍", "color": "#10b981", "short": "Local SEO"},
+    "social_media": {"emoji": "📱", "color": "#3b82f6", "short": "Social"},
+    "lead_conversion": {"emoji": "🎯", "color": "#f59e0b", "short": "Leads"},
+    "paid_ads": {"emoji": "📢", "color": "#ef4444", "short": "Ads"},
+    "growth_hacker": {"emoji": "🚀", "color": "#8b5cf6", "short": "Growth"},
+    "reputation": {"emoji": "⭐", "color": "#06b6d4", "short": "Reputation"},
+    "email_marketing": {"emoji": "✉️", "color": "#ec4899", "short": "Email"},
+    "tiktok": {"emoji": "🎬", "color": "#14b8a6", "short": "TikTok"},
+    "outreach": {"emoji": "🤝", "color": "#f97316", "short": "Outreach"},
+    "backlinks": {"emoji": "🔗", "color": "#6366f1", "short": "Backlinks"},
+    "content_strategy": {"emoji": "📝", "color": "#84cc16", "short": "Content"},
+    "technical_seo": {"emoji": "⚙️", "color": "#06b6d4", "short": "Tech SEO"},
+    "reporting": {"emoji": "📊", "color": "#a855f7", "short": "Reports"},
+    "executioner": {"emoji": "⚡", "color": "#64748b", "short": "Execute"},
+}
+
+
+@app.route("/api/personalities", methods=["GET"])
+def api_personalities():
+    """Return agent personalities (emoji, color, short name)."""
+    return jsonify({"personalities": AGENT_PERSONALITIES})
 
 
 @app.route("/admin/dashboard")
@@ -2489,6 +2599,9 @@ if os.getenv("EMAIL_BRIDGE_USER") and os.getenv("EMAIL_BRIDGE_PASS"):
 
     import threading
     threading.Thread(target=_bridge.start, daemon=True).start()
+
+# Start proactive monitor
+proactive_monitor.start(get_orchestrator, lambda: push_manager)
 
 
 @app.route("/api/agents/<agent_id>/autonomy", methods=["GET", "PUT"])

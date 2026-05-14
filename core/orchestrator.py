@@ -100,15 +100,18 @@ Respond in {language}."""
 
 
 class Orchestrator:
-    def __init__(self, llm_adapter: LLMAdapter, agent_registry: Dict[str, BaseAgent], executioner=None, push_manager=None):
+    def __init__(self, llm_adapter: LLMAdapter, agent_registry: Dict[str, BaseAgent], executioner=None, push_manager=None, memory=None):
         self._llm_adapter = llm_adapter
         self._agent_registry = agent_registry
         self._executioner = executioner
         self._push_manager = push_manager
+        self._memory = memory
         self._pending_drafts: Dict[str, Dict[str, Any]] = {}
         self._activity_feed: List[Dict[str, Any]] = []
         self._panicked = False
         self._panic_lock = Lock()
+        self._last_execution: Optional[Dict[str, Any]] = None
+        self._findings_board: Dict[str, List[Dict[str, Any]]] = {}
         logger.info(
             "Orchestrator initialized with %d agents (executioner=%s, push=%s)",
             len(agent_registry),
@@ -164,6 +167,29 @@ class Orchestrator:
             fallback_fr = "Bonjour ! Je suis votre équipe marketing IA. J'ai 10 agents spécialisés prêts à vous aider avec le SEO, les réseaux sociaux, les annonces, les courriels et plus encore. Parlez-moi de votre entreprise et de ce que vous aimeriez améliorer."
             return {"response": fallback_fr if language == "fr" else fallback_en, "agent": "orchestrator", "status": "welcome"}
 
+    def undo_last(self) -> Optional[Dict[str, Any]]:
+        if not self._last_execution:
+            return None
+        last = self._last_execution
+        if last.get("tool") in ("publish_blog_post", "save_content_calendar", "save_technical_seo_report", "save_report"):
+            path = last.get("file_path", "")
+            if path:
+                import os as _os
+                if _os.path.exists(path):
+                    _os.remove(path)
+                    logger.info("Undo: deleted %s", path)
+                    return {"success": True, "action": "deleted", "file": path}
+        return {"success": False, "action": "no_undo_available"}
+
+    def _record_feedback(self, tenant_id: str, agent_id: str, draft: str, approved: bool) -> None:
+        if self._memory and tenant_id:
+            self._memory.record_feedback(tenant_id, agent_id, "approval", draft, approved)
+
+    def _publish_finding(self, tenant_id: str, agent_id: str, summary: str) -> None:
+        if self._memory and tenant_id:
+            self._memory.publish_finding(tenant_id, agent_id, "agent_output", summary)
+        self._findings_board.setdefault(agent_id, []).append({"summary": summary, "ts": datetime.now(timezone.utc).isoformat()})
+
     def _send_push(self, event_type: str, agent: str, data: Dict[str, Any]) -> None:
         if self._push_manager and hasattr(self._push_manager, "send_event"):
             try:
@@ -193,6 +219,7 @@ class Orchestrator:
         thread_id: str,
         language: Optional[str] = None,
         autonomy_config: Optional[Dict[str, Dict[str, Any]]] = None,
+        tenant_id: str = "",
     ) -> Dict[str, Any]:
         """Process a user message, applying the autonomy policy if configured.
 
@@ -224,14 +251,14 @@ class Orchestrator:
             "approve", "approved", "yes", "execute", "run it", "go ahead", "confirm",
             "approuvé", "approuve", "oui", "exécute", "exécuter", "confirmer",
         ):
-            return self._handle_approval(thread_id, approved=True)
+            return self._handle_approval(thread_id, approved=True, tenant_id=tenant_id)
         elif message_lower in (
             "reject", "rejected", "no", "discard", "cancel", "stop",
             "non", "rejeté", "rejeter", "annuler", "supprimer",
         ):
-            return self._handle_approval(thread_id, approved=False)
+            return self._handle_approval(thread_id, approved=False, tenant_id=tenant_id)
 
-        return self._route_and_respond(user_message, thread_id, language, autonomy_config)
+        return self._route_and_respond(user_message, thread_id, language, autonomy_config, tenant_id)
 
     def _route_and_respond(
         self,
@@ -239,6 +266,7 @@ class Orchestrator:
         thread_id: str,
         language: str,
         autonomy_config: Optional[Dict[str, Dict[str, Any]]] = None,
+        tenant_id: str = "",
     ) -> Dict[str, Any]:
         lang_label = "français" if language == "fr" else "english"
         try:
@@ -312,6 +340,14 @@ class Orchestrator:
                     "timestamp": now_iso,
                 })
 
+                # Track last execution for undo
+                self._last_execution = {
+                    "agent": agent_name,
+                    "tool": execution_result.get("tool", ""),
+                    "file_path": execution_result.get("result", ""),
+                    "draft": clean_draft[:200],
+                }
+
                 # Publish event
                 event_type = "agent_executed" if success_flag else "agent_failed"
                 event_data_exec = {
@@ -377,6 +413,7 @@ class Orchestrator:
                 "language": language,
                 "confidence": confidence,
                 "autonomy": autonomy_level,
+                "tenant_id": tenant_id,
                 "created_at": now_iso,
             }
 
@@ -407,7 +444,7 @@ class Orchestrator:
                 "pending_approval": False,
             }
 
-    def _handle_approval(self, thread_id: str, approved: bool) -> Dict[str, Any]:
+    def _handle_approval(self, thread_id: str, approved: bool, tenant_id: str = "") -> Dict[str, Any]:
         if thread_id not in self._pending_drafts:
             return {
                 "response": "I don't have any pending content to approve or reject. Send me a new request and I'll generate something for you!",
@@ -455,6 +492,18 @@ class Orchestrator:
                 "timestamp": now_iso,
             })
 
+            # Record feedback (memory)
+            self._record_feedback(draft_info.get("tenant_id", ""), agent_name, draft, True)
+            self._publish_finding(draft_info.get("tenant_id", ""), agent_name, f"Approved draft: {draft[:80]}...")
+
+            # Track for undo
+            self._last_execution = {
+                "agent": agent_name,
+                "tool": execution_result.get("tool", ""),
+                "file_path": execution_result.get("result", ""),
+                "draft": draft[:200],
+            }
+
             # Publish event
             event_type = "agent_executed" if success_flag else "agent_failed"
             event_data_approve = {
@@ -495,6 +544,7 @@ class Orchestrator:
         }
         get_event_bus().publish("approval_responded", draft_info["agent"], event_data_reject)
         self._send_push("approval_responded", draft_info["agent"], event_data_reject)
+        self._record_feedback(draft_info.get("tenant_id", ""), draft_info["agent"], draft_info.get("draft", ""), False)
 
         msg_en = f"❌ Rejected. The content from **{draft_info['agent']}** has been discarded. Send me a new request and I'll try again!"
         msg_fr = f"❌ Rejeté. Le contenu de **{draft_info['agent']}** a été supprimé. Envoyez-moi une nouvelle demande et je réessaierai !"

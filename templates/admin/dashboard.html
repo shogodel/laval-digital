@@ -38,6 +38,14 @@
         .install-btn { display: none; background: rgba(5,150,105,0.25); color: #6ee7b7; border: 1px solid rgba(5,150,105,0.4); border-radius: var(--radius); padding: 5px 14px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: 0.12s; white-space: nowrap; }
         .install-btn:hover { background: rgba(5,150,105,0.4); }
         .install-btn.installed { background: rgba(99,102,241,0.25); color: #a5b4fc; border-color: rgba(99,102,241,0.4); cursor: default; }
+        .ask-bar { display: flex; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--gray-200); flex-shrink: 0; }
+        .ask-bar input { flex: 1; padding: 8px 12px; font-size: 0.82rem; font-family: inherit; border: 1px solid var(--gray-200); border-radius: var(--radius); outline: none; }
+        .ask-bar input:focus { border-color: var(--blue); }
+        .ask-bar button { padding: 8px 14px; font-size: 0.78rem; font-family: inherit; background: var(--navy); color: white; border: none; border-radius: var(--radius); cursor: pointer; white-space: nowrap; }
+        .ask-bar .ask-response { font-size: 0.78rem; color: var(--gray-600); padding: 4px 0; line-height: 1.5; display: none; }
+        .undo-btn { position: fixed; bottom: 24px; right: 24px; z-index: 100; background: var(--navy); color: white; border: none; border-radius: 50px; padding: 10px 20px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 4px 20px rgba(0,0,0,0.2); display: none; align-items: center; gap: 6px; transition: 0.15s; }
+        .undo-btn:hover { transform: scale(1.05); }
+        .feed-item .fi-personality { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; flex-shrink: 0; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
         .dashboard-layout { display: flex; flex: 1; overflow: hidden; gap: 0; }
         .main-panel { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
@@ -141,19 +149,25 @@
     <div class="feed-panel">
         <div class="feed-header">
             <div style="display:flex;align-items:center;gap:8px;">
-                <h2>Live Feed</h2>
+                <h2>Inbox</h2>
                 <span class="badge" id="feed-count">0</span>
             </div>
             <div class="filter-group">
                 <button class="active" data-filter="all" onclick="setFilter('all', this)">All</button>
-                <button data-filter="agent_executed" onclick="setFilter('agent_executed', this)">Ok</button>
-                <button data-filter="agent_failed" onclick="setFilter('agent_failed', this)">Fail</button>
+                <button data-filter="approval" onclick="setFilter('approval', this)">Pending</button>
+                <button data-filter="activity" onclick="setFilter('activity', this)">Done</button>
             </div>
         </div>
         <div class="feed-list" id="feed-list">
-            <div class="feed-empty">Waiting for events...</div>
+            <div class="feed-empty">Loading...</div>
+        </div>
+        <div class="ask-bar">
+            <input type="text" id="ask-input" placeholder="Ask JARVIS anything..." onkeydown="if(event.key==='Enter') askJarvis()">
+            <button onclick="askJarvis()">Ask</button>
+            <div class="ask-response" id="ask-response"></div>
         </div>
     </div>
+    <button class="undo-btn" id="undo-btn" onclick="undoLast()">↩ Undo Last</button>
 </div>
 
 <script>
@@ -259,17 +273,93 @@ function addFeedItem(event) {
 }
 
 /* ── Filter ── */
+let PERSONALITIES = {};
+
+async function loadPersonalities() {
+    try { const r = await fetch('/api/personalities'); const d = await r.json(); PERSONALITIES = d.personalities || {}; } catch (e) {}
+}
+loadPersonalities();
+
+/* ── Undo ── */
+async function undoLast() {
+    const btn = document.getElementById('undo-btn');
+    btn.textContent = '↩ Undoing...';
+    try {
+        const r = await fetch('/api/orchestrator/undo', { method: 'POST' });
+        const d = await r.json();
+        if (d.success) {
+            btn.textContent = '✓ Undone';
+            btn.style.background = 'var(--green)';
+        } else {
+            btn.textContent = '✗ Nothing to undo';
+            btn.style.background = 'var(--red)';
+        }
+    } catch (e) { btn.textContent = '✗ Error'; }
+    setTimeout(() => { btn.style.display = 'none'; btn.textContent = '↩ Undo Last'; btn.style.background = ''; }, 2000);
+}
+
+/* ── JARVIS Ask ── */
+async function askJarvis() {
+    const input = document.getElementById('ask-input');
+    const response = document.getElementById('ask-response');
+    const q = input.value.trim();
+    if (!q) return;
+    response.style.display = 'block';
+    response.textContent = 'Thinking...';
+    try {
+        const r = await fetch('/api/dashboard/ask', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query: q}),
+        });
+        const d = await r.json();
+        response.textContent = d.response || 'No response.';
+    } catch (e) { response.textContent = 'Error. Try again.'; }
+    input.value = '';
+}
+
+/* ── Inbox / Feed ── */
+async function loadInbox() {
+    try {
+        const r = await fetch('/api/inbox?limit=100');
+        const d = await r.json();
+        const list = document.getElementById('feed-list');
+        const items = d.items || [];
+        document.getElementById('feed-count').textContent = items.length;
+        if (items.length === 0) {
+            list.innerHTML = '<div class="feed-empty">Nothing yet.</div>';
+            return;
+        }
+        list.innerHTML = items.map(item => {
+            const p = PERSONALITIES[item.agent] || {};
+            const emoji = p.emoji || '🤖';
+            const color = p.color || '#6b7280';
+            const time = item.created_at ? new Date(item.created_at).toLocaleTimeString() : '';
+            const icon = item.icon || (item.type === 'approval' ? '🤔' : '✅');
+            return '<div class="feed-item" data-type="' + item.type + '">'
+                + '<div class="fi-top">'
+                + '<span class="fi-personality" style="background:' + color + '20;color:' + color + ';">' + emoji + '</span>'
+                + '<span class="fi-agent">' + (p.short || item.agent) + '</span>'
+                + '<span class="fi-time">' + time + '</span>'
+                + '</div>'
+                + '<div class="fi-draft">' + escapeHtml(item.summary || '') + '</div>'
+                + '</div>';
+        }).join('');
+        applyFilter();
+    } catch (e) { document.getElementById('feed-list').innerHTML = '<div class="feed-empty">Failed to load.</div>'; }
+}
+
 function setFilter(filter, btn) {
     EVENT_FILTER = filter;
     document.querySelectorAll('.filter-group button').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
-    // Re-apply filter to existing items
+    applyFilter();
+}
+
+function applyFilter() {
     document.querySelectorAll('.feed-item').forEach(item => {
-        const typeEl = item.querySelector('.fi-type');
-        if (!typeEl) return;
-        const cls = typeEl.className.split(' ');
-        const evType = cls.find(c => c.startsWith('agent_') || c.startsWith('approval_'));
-        if (filter === 'all' || evType === filter) {
+        const type = item.getAttribute('data-type');
+        if (EVENT_FILTER === 'all' || type === EVENT_FILTER) {
             item.style.display = '';
         } else {
             item.style.display = 'none';
@@ -365,7 +455,8 @@ async function bootstrap() {
     // Load stats
     await updateStats();
     setInterval(updateStats, 5000);
-}
+    setInterval(loadInbox, 8000);
+    loadInbox();
 
 function escapeHtml(t) {
     const d = document.createElement('div');
