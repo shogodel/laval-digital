@@ -1,0 +1,33 @@
+{
+  "name": "Laval Digital — AI Marketing Command Center",
+  "short_name": "Laval AI",
+  "description": "Real-time AI marketing agent dashboard. Monitor agents, approve drafts, and control your entire marketing suite from anywhere.",
+  "start_url": "/admin/dashboard",
+  "display": "standalone",
+  "background_color": "#0f2b45",
+  "theme_color": "#D42B2B",
+  "orientation": "any",
+  "categories": ["business", "productivity", "marketing"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/static/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/admin/dashboard"
+    },
+    {
+      "name": "Admin Panel",
+      "short_name": "Admin",
+      "url": "/admin"
+    }
+  ]
+}

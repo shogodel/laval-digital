@@ -53,6 +53,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from core.orchestrator import Orchestrator
 from core.llm_adapter import LLMAdapter
 from core.events import get_event_bus
+from core.push import PushManager
 from core.tenant_manager import TenantManager
 from agents.local_seo_agent import LocalSEOAgent
 from agents.social_media_agent import SocialMediaAgent
@@ -86,6 +87,9 @@ affiliate_manager = AffiliateManager(tenant_manager)
 # Initialize Reseller Manager (persistent DB-backed reseller system)
 from core.resellers import ResellerManager
 reseller_manager = ResellerManager(tenant_manager)
+
+# Initialize Push Manager (PWA push notifications)
+push_manager = PushManager()
 
 # Initialize Flask-Login auth with tenant manager reference
 login_manager = init_auth(app, tenant_manager)
@@ -401,7 +405,7 @@ def get_orchestrator():
     key_preview = llm_adapter._api_key[:10] + "..." if llm_adapter._api_key else "None"
     logger.info(f"Building orchestrator with API key: {key_preview}")
 
-    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner)
+    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager)
     return orchestrator
 
 
@@ -1573,7 +1577,7 @@ def update_agent_config(agent_id):
 
     # Rebuild orchestrator with updated agent
     global orchestrator, orchestrator_graph
-    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner)
+    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager)
     orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
@@ -1627,7 +1631,7 @@ def update_all_agents_config():
             temperature=llm_adapter._temperature,
         )
 
-    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner)
+    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager)
     orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
@@ -1723,7 +1727,7 @@ def bulk_update_agent_config():
     # Rebuild orchestrator if any agent was updated
     if results["updated"]:
         global orchestrator, orchestrator_graph
-        orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner)
+        orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager)
         orchestrator_graph = orchestrator.build_graph()
 
     return jsonify({
@@ -2161,6 +2165,38 @@ def api_events_history():
 def api_events_stats():
     """Return aggregate event stats for the dashboard."""
     return jsonify(get_event_bus().get_stats())
+
+
+# ---------------------------------------------------------------------------
+# API: PWA push notifications
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/push/vapid-key", methods=["GET"])
+def api_push_vapid_key():
+    """Return the VAPID public key for push subscription."""
+    return jsonify({"public_key": push_manager.public_key, "enabled": push_manager.enabled})
+
+
+@app.route("/api/push/subscribe", methods=["POST"])
+def api_push_subscribe():
+    """Store a push subscription from the browser."""
+    data = request.json
+    if not data:
+        return jsonify({"error": "No subscription data"}), 400
+    ok = push_manager.subscribe(data)
+    return jsonify({"success": ok})
+
+
+@app.route("/api/push/unsubscribe", methods=["POST"])
+def api_push_unsubscribe():
+    """Remove a push subscription."""
+    data = request.json
+    endpoint = (data or {}).get("endpoint", "")
+    if not endpoint:
+        return jsonify({"error": "No endpoint"}), 400
+    ok = push_manager.unsubscribe(endpoint)
+    return jsonify({"success": ok})
 
 
 @app.route("/admin/dashboard")

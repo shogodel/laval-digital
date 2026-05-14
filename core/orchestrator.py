@@ -97,18 +97,20 @@ Respond in {language}."""
 
 
 class Orchestrator:
-    def __init__(self, llm_adapter: LLMAdapter, agent_registry: Dict[str, BaseAgent], executioner=None):
+    def __init__(self, llm_adapter: LLMAdapter, agent_registry: Dict[str, BaseAgent], executioner=None, push_manager=None):
         self._llm_adapter = llm_adapter
         self._agent_registry = agent_registry
         self._executioner = executioner
+        self._push_manager = push_manager
         self._pending_drafts: Dict[str, Dict[str, Any]] = {}
         self._activity_feed: List[Dict[str, Any]] = []
         self._panicked = False
         self._panic_lock = Lock()
         logger.info(
-            "Orchestrator initialized with %d agents (executioner=%s)",
+            "Orchestrator initialized with %d agents (executioner=%s, push=%s)",
             len(agent_registry),
             "connected" if executioner else "not connected",
+            "connected" if push_manager else "not connected",
         )
 
     # ------------------------------------------------------------------
@@ -158,6 +160,13 @@ class Orchestrator:
             fallback_en = "Hi! I'm your AI marketing team. I have 10 specialized agents ready to help with SEO, social media, ads, email, and more. What's your business and what would you like help with?"
             fallback_fr = "Bonjour ! Je suis votre équipe marketing IA. J'ai 10 agents spécialisés prêts à vous aider avec le SEO, les réseaux sociaux, les annonces, les courriels et plus encore. Parlez-moi de votre entreprise et de ce que vous aimeriez améliorer."
             return {"response": fallback_fr if language == "fr" else fallback_en, "agent": "orchestrator", "status": "welcome"}
+
+    def _send_push(self, event_type: str, agent: str, data: Dict[str, Any]) -> None:
+        if self._push_manager and hasattr(self._push_manager, "send_event"):
+            try:
+                self._push_manager.send_event(event_type, agent, data)
+            except Exception:
+                pass
 
     def get_suggestions(self, language: str = "en") -> Dict[str, Any]:
         lang_label = "français" if language == "fr" else "english"
@@ -239,10 +248,9 @@ class Orchestrator:
             agent_name = self._extract_agent_from_response(response)
             now_iso = datetime.now(timezone.utc).isoformat()
 
-            get_event_bus().publish("agent_processing", agent_name, {
-                "task": user_message[:200],
-                "language": language,
-            })
+            event_data_processing = {"task": user_message[:200], "language": language}
+            get_event_bus().publish("agent_processing", agent_name, event_data_processing)
+            self._send_push("agent_processing", agent_name, event_data_processing)
 
             # Check autonomy policy for this agent
             autonomy_level = "manual"
@@ -303,13 +311,15 @@ class Orchestrator:
 
                 # Publish event
                 event_type = "agent_executed" if success_flag else "agent_failed"
-                get_event_bus().publish(event_type, agent_name, {
+                event_data_exec = {
                     "autonomy": autonomy_level,
                     "confidence": confidence,
                     "draft_preview": clean_draft[:200],
                     "success": success_flag,
                     "result": execution_result.get("result") if execution_result else None,
-                })
+                }
+                get_event_bus().publish(event_type, agent_name, event_data_exec)
+                self._send_push(event_type, agent_name, event_data_exec)
 
                 if autonomy_level == "silent":
                     return {
@@ -345,13 +355,15 @@ class Orchestrator:
                 }
 
             # Publish approval_needed event
-            get_event_bus().publish("approval_needed", agent_name, {
+            event_data_approval = {
                 "thread_id": thread_id,
                 "confidence": confidence,
                 "autonomy": autonomy_level,
                 "task": user_message[:200],
                 "draft_preview": clean_draft[:200],
-            })
+            }
+            get_event_bus().publish("approval_needed", agent_name, event_data_approval)
+            self._send_push("approval_needed", agent_name, event_data_approval)
 
             # Store draft for human approval (manual mode or low-confidence suggest)
             self._pending_drafts[thread_id] = {
@@ -442,13 +454,15 @@ class Orchestrator:
 
             # Publish event
             event_type = "agent_executed" if success_flag else "agent_failed"
-            get_event_bus().publish(event_type, agent_name, {
+            event_data_approve = {
                 "autonomy": draft_info.get("autonomy", "manual"),
                 "confidence": draft_info.get("confidence", 0.0),
                 "draft_preview": draft[:200],
                 "success": success_flag,
                 "source": "human_approval",
-            })
+            }
+            get_event_bus().publish(event_type, agent_name, event_data_approve)
+            self._send_push(event_type, agent_name, event_data_approve)
 
             msg_en = f"✅ Approved! The content from **{agent_name}** has been executed."
             msg_fr = f"✅ Approuvé ! Le contenu de **{agent_name}** a été exécuté."
@@ -471,11 +485,13 @@ class Orchestrator:
                 "execution": execution_result,
             }
 
-        get_event_bus().publish("approval_responded", draft_info["agent"], {
+        event_data_reject = {
             "thread_id": thread_id,
             "approved": False,
             "task": draft_info.get("task", "")[:200],
-        })
+        }
+        get_event_bus().publish("approval_responded", draft_info["agent"], event_data_reject)
+        self._send_push("approval_responded", draft_info["agent"], event_data_reject)
 
         msg_en = f"❌ Rejected. The content from **{draft_info['agent']}** has been discarded. Send me a new request and I'll try again!"
         msg_fr = f"❌ Rejeté. Le contenu de **{draft_info['agent']}** a été supprimé. Envoyez-moi une nouvelle demande et je réessaierai !"

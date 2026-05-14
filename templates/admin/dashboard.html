@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Dashboard — Laval Digital</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#D42B2B">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -96,10 +98,13 @@
     <div class="topbar-center">
         <h1>&#9889; Agent Command Center <span>live</span></h1>
     </div>
-    <div class="topbar-right">
-        <button id="panic-btn" class="panic-btn" onclick="togglePanic()">&#9888; Stop All</button>
-        <span id="connection-status" style="font-size:0.7rem;color:rgba(255,255,255,0.4);padding:3px 8px;border-radius:10px;background:rgba(255,255,255,0.08);">connecting...</span>
-    </div>
+        <div class="topbar-right">
+            <button id="panic-btn" class="panic-btn" onclick="togglePanic()">&#9888; Stop All</button>
+            <label style="font-size:0.7rem;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" id="push-subscribe" onchange="togglePush()" checked style="accent-color:var(--red);"> Push
+            </label>
+            <span id="connection-status" style="font-size:0.7rem;color:rgba(255,255,255,0.4);padding:3px 8px;border-radius:10px;background:rgba(255,255,255,0.08);">connecting...</span>
+        </div>
 </div>
 
 <div class="dashboard-layout">
@@ -290,6 +295,24 @@ async function updateStats() {
 }
 
 /* ── Panic ── */
+async function togglePush() {
+    if (!('serviceWorker' in navigator)) return;
+    const reg = await navigator.serviceWorker.ready;
+    if (document.getElementById('push-subscribe')?.checked) {
+        subscribePush(reg);
+    } else {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+            await fetch('/api/push/unsubscribe', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({endpoint: sub.endpoint}),
+            });
+            await sub.unsubscribe();
+        }
+    }
+}
+
 async function togglePanic() {
     const btn = document.getElementById('panic-btn');
     try {
@@ -348,6 +371,46 @@ function escapeHtml(t) {
 
 connectSSE();
 bootstrap();
+
+/* ── PWA: Service Worker + Push ── */
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js').then(reg => {
+        console.log('SW registered');
+        // Check existing push subscription
+        reg.pushManager.getSubscription().then(sub => {
+            const statusEl = document.getElementById('connection-status');
+            // Subscribe if not already
+            if (!sub && document.getElementById('push-subscribe')?.checked) {
+                subscribePush(reg);
+            }
+        });
+    }).catch(() => {});
+}
+
+async function subscribePush(reg) {
+    try {
+        const r = await fetch('/api/push/vapid-key');
+        const data = await r.json();
+        if (!data.enabled || !data.public_key) return;
+
+        const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(data.public_key),
+        });
+        await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(sub.toJSON()),
+        });
+    } catch (e) { console.warn('Push subscribe failed', e); }
+}
+
+function urlBase64ToUint8Array(base64) {
+    const padding = '='.repeat((4 - base64.length % 4) % 4);
+    const b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(b64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
 </script>
 </body>
 </html>
