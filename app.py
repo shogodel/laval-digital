@@ -1230,6 +1230,25 @@ def api_admin_process_payout(code):
 # ---------------------------------------------------------------------------
 
 
+_reseller_spots = 17
+
+
+@app.route("/api/reseller/spots", methods=["GET"])
+def api_reseller_spots():
+    return jsonify({"spots_remaining": _reseller_spots})
+
+
+@app.route("/api/admin/reseller/spots", methods=["PUT"])
+def api_admin_set_spots():
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    if data and "spots" in data:
+        global _reseller_spots
+        _reseller_spots = int(data["spots"])
+    return jsonify({"spots_remaining": _reseller_spots})
+
+
 @app.route("/api/admin/reseller/tiers", methods=["GET"])
 def api_admin_reseller_tiers():
     """Return all reseller tiers (admin only)."""
