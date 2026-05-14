@@ -349,9 +349,7 @@
             <a href="#" data-tab="managed"><span class="icon">🔧</span> Clients Gérés</a>
             <a href="#" data-tab="partners"><span class="icon">🤝</span> Partenaires</a>
         </nav>
-        <div class="sidebar-footer" style="padding: 8px 12px;">
-            <input type="text" id="admin-ask-input" placeholder="Demandez à Frankie..." style="width:100%;padding:6px 10px;font-size:0.78rem;font-family:inherit;border:1px solid rgba(255,255,255,0.15);border-radius:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);outline:none;margin-bottom:6px;" onkeydown="if(event.key==='Enter') adminAskFrankie()">
-            <div id="admin-ask-response" style="font-size:0.7rem;color:rgba(255,255,255,0.5);display:none;margin-bottom:6px;"></div>
+        <div class="sidebar-footer">
             <a href="/fr/admin/logout">🚪 Déconnexion</a>
         </div>
     </aside>
@@ -1309,30 +1307,6 @@ function deleteUser(userId) {
         .catch(err => { alert('Erreur: ' + err.message); });
 }
 
-/* ── Frankie en français ── */
-async function loadPersonalities() {
-    try { const r = await fetch('/api/personalities?lang=fr'); const d = await r.json(); AGENT_PERSONALITIES = d.personalities || {}; } catch (e) {}
-}
-
-async function adminAskFrankie() {
-    const input = document.getElementById('admin-ask-input');
-    const response = document.getElementById('admin-ask-response');
-    const q = input.value.trim();
-    if (!q) return;
-    response.style.display = 'block';
-    response.textContent = 'Réflexion...';
-    try {
-        const r = await fetch('/api/dashboard/ask', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({query: q}),
-        });
-        const d = await r.json();
-        response.textContent = d.response || 'Pas de réponse.';
-    } catch (e) { response.textContent = 'Erreur.'; }
-    input.value = '';
-}
-
 /* ── Partenaires (copié de admin.html) ── */
 function showPartnerTab(name) {
     document.querySelectorAll('.partner-section').forEach(s => s.style.display = 'none');
@@ -1450,5 +1424,6 @@ window.onload = function() {
     });
 };
 </script>
+{% include 'admin/frankie.html' %}
 </body>
 </html>

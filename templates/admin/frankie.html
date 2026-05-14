@@ -1,0 +1,255 @@
+<div id="frankie-container">
+    <div id="frankie-bubble" onclick="frankie.toggle()">
+        <span id="frankie-bubble-icon">🤖</span>
+        <span id="frankie-status-dot"></span>
+    </div>
+
+    <div id="frankie-panel">
+        <div id="frankie-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:1.8rem;">🤖</span>
+                <div>
+                    <strong style="font-size:1rem;color:var(--white);">Frankie</strong>
+                    <div style="font-size:0.7rem;color:rgba(255,255,255,0.6);" id="frankie-status">Online</div>
+                </div>
+            </div>
+            <button onclick="frankie.toggle()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:1.4rem;cursor:pointer;">&times;</button>
+        </div>
+        <div id="frankie-body">
+            <div id="frankie-messages">
+                <div class="frankie-msg frankie-bot" id="frankie-greeting">
+                    <div class="frankie-avatar">🤖</div>
+                    <div class="frankie-bubble">
+                        <div id="frankie-greeting-text">Loading...</div>
+                        <div id="frankie-suggestions" style="margin-top:10px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="frankie-input-area">
+                <input type="text" id="frankie-input" placeholder="Ask Frankie anything..." onkeydown="if(event.key==='Enter') frankie.ask()">
+                <button onclick="frankie.ask()" id="frankie-send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+#frankie-container { font-family: 'Inter', sans-serif; }
+#frankie-bubble {
+    position: fixed; bottom: 24px; right: 24px; z-index: 99999;
+    width: 60px; height: 60px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--navy, #0f2b45), #1a3a5c);
+    border: 2px solid rgba(255,255,255,0.15);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+#frankie-bubble:hover { transform: scale(1.08); box-shadow: 0 8px 32px rgba(0,0,0,0.35); }
+#frankie-bubble-icon { font-size: 1.6rem; line-height: 1; }
+#frankie-status-dot {
+    position: absolute; bottom: 2px; right: 2px;
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--navy, #0f2b45);
+    background: #10b981; animation: frankie-pulse 2s infinite;
+}
+@keyframes frankie-pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+#frankie-panel {
+    position: fixed; bottom: 96px; right: 24px; z-index: 99999;
+    width: 380px; max-height: 520px; background: var(--white, #fff);
+    border-radius: 16px; box-shadow: 0 16px 64px rgba(0,0,0,0.2);
+    display: none; flex-direction: column; overflow: hidden;
+    border: 1px solid var(--gray-200, #e5e7eb);
+}
+#frankie-panel.open { display: flex; }
+
+#frankie-header {
+    background: linear-gradient(135deg, var(--navy, #0f2b45), #1a3a5c);
+    padding: 16px 18px; display: flex; align-items: center;
+    justify-content: space-between; flex-shrink: 0;
+}
+#frankie-body { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+#frankie-messages {
+    flex: 1; overflow-y: auto; padding: 16px; display: flex;
+    flex-direction: column; gap: 12px; min-height: 200px;
+    background: #f9fafb;
+}
+.frankie-msg { display: flex; gap: 8px; align-items: flex-start; max-width: 100%; }
+.frankie-msg.frankie-user { flex-direction: row-reverse; }
+.frankie-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--gray-200, #e5e7eb); display: flex;
+    align-items: center; justify-content: center; font-size: 1rem;
+    flex-shrink: 0;
+}
+.frankie-user .frankie-avatar { background: var(--navy, #0f2b45); }
+.frankie-bubble {
+    background: var(--white, #fff); border-radius: 12px 12px 12px 4px;
+    padding: 10px 14px; font-size: 0.85rem; color: #1f2937;
+    line-height: 1.5; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    max-width: 280px; word-wrap: break-word;
+}
+.frankie-user .frankie-bubble {
+    background: #0f2b45; color: #fff;
+    border-radius: 12px 12px 4px 12px;
+}
+.frankie-typing { display: flex; gap: 4px; padding: 12px 16px; }
+.frankie-typing span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #9ca3af; animation: frankie-bounce 1.2s infinite;
+}
+.frankie-typing span:nth-child(2) { animation-delay:0.2s; }
+.frankie-typing span:nth-child(3) { animation-delay:0.4s; }
+@keyframes frankie-bounce { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-4px); } }
+
+.suggestion-chip {
+    display: inline-block; padding: 5px 12px; margin: 3px;
+    border-radius: 14px; background: #eff6ff; color: #2563eb;
+    font-size: 0.75rem; cursor: pointer; border: 1px solid #dbeafe;
+    transition: all 0.15s; font-family: inherit; white-space: nowrap;
+}
+.suggestion-chip:hover { background: #dbeafe; border-color: #93c5fd; }
+
+#frankie-input-area {
+    display: flex; gap: 8px; padding: 12px 14px;
+    border-top: 1px solid var(--gray-200, #e5e7eb);
+    background: var(--white, #fff); flex-shrink: 0;
+}
+#frankie-input {
+    flex: 1; padding: 9px 14px; font-size: 0.85rem; font-family: inherit;
+    border: 1px solid var(--gray-300, #d1d5db); border-radius: 10px;
+    outline: none; transition: border-color 0.15s;
+}
+#frankie-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+#frankie-send-btn {
+    padding: 9px 18px; font-size: 0.82rem; font-weight: 600;
+    font-family: inherit; background: #D42B2B; color: #fff;
+    border: none; border-radius: 10px; cursor: pointer;
+    transition: background 0.15s; white-space: nowrap;
+}
+#frankie-send-btn:hover { background: #A82323; }
+#frankie-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 480px) {
+    #frankie-panel { width: calc(100% - 32px); right: 16px; bottom: 88px; max-height: 60vh; }
+    #frankie-bubble { bottom: 16px; right: 16px; width: 52px; height: 52px; }
+}
+</style>
+
+<script>
+window.frankie = {
+    panel: null, bubble: null, messages: null, input: null,
+    greeting: null, suggestions: null, status: null,
+
+    init: function() {
+        this.panel = document.getElementById('frankie-panel');
+        this.bubble = document.getElementById('frankie-bubble');
+        this.messages = document.getElementById('frankie-messages');
+        this.input = document.getElementById('frankie-input');
+        this.greeting = document.getElementById('frankie-greeting-text');
+        this.suggestions = document.getElementById('frankie-suggestions');
+        this.status = document.getElementById('frankie-status');
+        this.loadContext();
+    },
+
+    loadContext: function() {
+        var self = this;
+        fetch('/api/orchestrator/status').then(function(r) { return r.json(); }).then(function(d) {
+            var pending = d.pending_drafts || 0;
+            var count = d.activity_count || 0;
+            var hour = new Date().getHours();
+            var timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+            var msg = timeGreeting + '! I\'m Frankie, your AI command center. ';
+            if (pending > 0) {
+                msg += 'You have <strong>' + pending + ' pending approval' + (pending > 1 ? 's' : '') + '</strong> waiting for you. ';
+            } else if (count > 0) {
+                msg += 'Things are running smoothly — <strong>' + count + ' recent actions</strong> logged. ';
+            } else {
+                msg += 'Your agents are ready. What would you like to do?';
+            }
+            msg += 'How can I help?';
+
+            self.greeting.innerHTML = msg;
+
+            var chips = [];
+            if (pending > 0) chips.push('Review pending approvals');
+            chips.push('How are my agents doing?');
+            chips.push('What needs my attention?');
+            chips.push('Summarize recent activity');
+            chips.push('Compare this week');
+            self.suggestions.innerHTML = chips.map(function(c) {
+                return '<button class="suggestion-chip" onclick="frankie.ask(\'' + c.replace(/'/g, "\\'") + '\')">' + c + '</button>';
+            }).join('');
+        }).catch(function() {
+            self.greeting.textContent = 'Hi! I\'m Frankie. Ask me anything about your agents.';
+        });
+    },
+
+    toggle: function() {
+        var isOpen = this.panel.classList.contains('open');
+        if (isOpen) {
+            this.panel.classList.remove('open');
+        } else {
+            this.panel.classList.add('open');
+            this.input.focus();
+        }
+    },
+
+    ask: function(prefilled) {
+        var text = prefilled || this.input.value.trim();
+        if (!text) return;
+
+        var self = this;
+        this.input.value = '';
+        var btn = document.getElementById('frankie-send-btn');
+        btn.disabled = true; btn.textContent = '...';
+
+        // Add user message
+        this.addMessage(text, 'user');
+        // Show typing
+        this.showTyping();
+
+        fetch('/api/dashboard/ask', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query: text})
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            self.hideTyping();
+            self.addMessage(d.response || 'No response.', 'bot');
+        }).catch(function() {
+            self.hideTyping();
+            self.addMessage('I couldn\'t process that. Try asking about agents, approvals, or recent activity.', 'bot');
+        }).finally(function() {
+            btn.disabled = false; btn.textContent = 'Send';
+        });
+    },
+
+    addMessage: function(text, role) {
+        var div = document.createElement('div');
+        div.className = 'frankie-msg frankie-' + role;
+        div.innerHTML = '<div class="frankie-avatar">' + (role === 'user' ? '👤' : '🤖') + '</div>'
+            + '<div class="frankie-bubble">' + text + '</div>';
+        this.messages.appendChild(div);
+        this.messages.scrollTop = this.messages.scrollHeight;
+    },
+
+    showTyping: function() {
+        var div = document.createElement('div');
+        div.className = 'frankie-msg frankie-bot';
+        div.id = 'frankie-typing';
+        div.innerHTML = '<div class="frankie-avatar">🤖</div><div class="frankie-bubble"><div class="frankie-typing"><span></span><span></span><span></span></div></div>';
+        this.messages.appendChild(div);
+        this.messages.scrollTop = this.messages.scrollHeight;
+    },
+
+    hideTyping: function() {
+        var el = document.getElementById('frankie-typing');
+        if (el) el.remove();
+    }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.frankie) frankie.init();
+});
+</script>

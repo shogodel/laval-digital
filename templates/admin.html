@@ -369,9 +369,7 @@
             <a href="#" data-tab="managed"><span class="icon">🔧</span> Managed Clients</a>
             <a href="#" data-tab="partners"><span class="icon">🤝</span> Partners</a>
         </nav>
-        <div class="sidebar-footer" style="padding: 8px 12px;">
-            <input type="text" id="admin-ask-input" placeholder="Ask Frankie..." style="width:100%;padding:6px 10px;font-size:0.78rem;font-family:inherit;border:1px solid rgba(255,255,255,0.15);border-radius:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);outline:none;margin-bottom:6px;" onkeydown="if(event.key==='Enter') adminAskFrankie()">
-            <div id="admin-ask-response" style="font-size:0.7rem;color:rgba(255,255,255,0.5);display:none;margin-bottom:6px;"></div>
+        <div class="sidebar-footer">
             <a href="/admin/logout">🚪 Sign out</a>
         </div>
     </aside>
@@ -1582,25 +1580,6 @@ async function loadPersonalities() {
     } catch (e) {}
 }
 
-async function adminAskFrankie() {
-    const input = document.getElementById('admin-ask-input');
-    const response = document.getElementById('admin-ask-response');
-    const q = input.value.trim();
-    if (!q) return;
-    response.style.display = 'block';
-    response.textContent = 'Thinking...';
-    try {
-        const r = await fetch('/api/dashboard/ask', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({query: q}),
-        });
-        const d = await r.json();
-        response.textContent = d.response || 'No response.';
-    } catch (e) { response.textContent = 'Error.'; }
-    input.value = '';
-}
-
 function escapeHtml(t) {
     const d = document.createElement('div');
     d.textContent = t;
@@ -1624,5 +1603,6 @@ window.onload = function() {
     });
 };
 </script>
+{% include 'admin/frankie.html' %}
 </body>
 </html>
