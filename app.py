@@ -2311,50 +2311,70 @@ def api_dashboard_ask():
     if not query:
         return jsonify({"error": "No query provided"}), 400
     try:
+        lang = "fr" if (session.get("lang") == "fr" or (request.accept_languages and request.accept_languages.best and request.accept_languages.best.startswith("fr"))) else "en"
         orch = get_orchestrator()
         activity = orch.get_activity_feed(50)
         pending = len(orch._pending_drafts)
         stats = get_event_bus().get_stats()
-        context = f"Recent activity count: {len(activity)}, Pending approvals: {pending}, Total events: {stats.get('total_events', 0)}"
-        prompt = f"""The user asks about their AI marketing platform: "{query}"
+
+        if lang == "fr":
+            context = f"Activité récente: {len(activity)} événements, Approbations en attente: {pending}, Total: {stats.get('total_events', 0)}"
+            prompt = f"""L'utilisateur pose une question sur sa plateforme marketing IA: "{query}"
+
+État actuel: {context}
+
+Réponds en 1 à 3 phrases en français. Sois précis et inclus des chiffres.
+Si tu n'as pas les données, suggère ce qu'il devrait surveiller.
+Réponds avec un ton amical et utile, comme JARVIS."""
+            system = "Tu es JARVIS, l'assistant du centre de commande marketing IA. Tu as accès aux données d'activité des agents en temps réel. Réponds en français."
+        else:
+            context = f"Recent activity count: {len(activity)}, Pending approvals: {pending}, Total events: {stats.get('total_events', 0)}"
+            prompt = f"""The user asks about their AI marketing platform: "{query}"
 
 Current state: {context}
 
 Answer concisely in 1-3 sentences. Be specific and include numbers where possible.
 If they ask for data we don't have, suggest what they should monitor.
 Respond in a friendly, JARVIS-like tone."""
-        response = llm_adapter.invoke(
-            system_prompt="You are JARVIS, the AI marketing command center assistant. You have access to real-time agent activity data.",
-            user_message=prompt,
-        )
+            system = "You are JARVIS, the AI marketing command center assistant. You have access to real-time agent activity data."
+        response = llm_adapter.invoke(system_prompt=system, user_message=prompt)
         return jsonify({"response": response})
     except Exception as e:
         logger.error("Dashboard query failed: %s", e, exc_info=True)
+        if "fr" in str(request.accept_languages or ""):
+            return jsonify({"response": "Je n'ai pas pu traiter cette demande. Essayez de me parler des agents, des approbations ou de l'activité récente."})
         return jsonify({"response": "I couldn't process that request. Try asking about agents, approvals, or recent activity."})
 
 
 AGENT_PERSONALITIES = {
-    "local_seo": {"emoji": "📍", "color": "#10b981", "short": "Local SEO"},
-    "social_media": {"emoji": "📱", "color": "#3b82f6", "short": "Social"},
-    "lead_conversion": {"emoji": "🎯", "color": "#f59e0b", "short": "Leads"},
-    "paid_ads": {"emoji": "📢", "color": "#ef4444", "short": "Ads"},
-    "growth_hacker": {"emoji": "🚀", "color": "#8b5cf6", "short": "Growth"},
-    "reputation": {"emoji": "⭐", "color": "#06b6d4", "short": "Reputation"},
-    "email_marketing": {"emoji": "✉️", "color": "#ec4899", "short": "Email"},
-    "tiktok": {"emoji": "🎬", "color": "#14b8a6", "short": "TikTok"},
-    "outreach": {"emoji": "🤝", "color": "#f97316", "short": "Outreach"},
-    "backlinks": {"emoji": "🔗", "color": "#6366f1", "short": "Backlinks"},
-    "content_strategy": {"emoji": "📝", "color": "#84cc16", "short": "Content"},
-    "technical_seo": {"emoji": "⚙️", "color": "#06b6d4", "short": "Tech SEO"},
-    "reporting": {"emoji": "📊", "color": "#a855f7", "short": "Reports"},
-    "executioner": {"emoji": "⚡", "color": "#64748b", "short": "Execute"},
+    "local_seo": {"emoji": "📍", "color": "#10b981", "short": "Local SEO", "short_fr": "SEO Local"},
+    "social_media": {"emoji": "📱", "color": "#3b82f6", "short": "Social", "short_fr": "Sociaux"},
+    "lead_conversion": {"emoji": "🎯", "color": "#f59e0b", "short": "Leads", "short_fr": "Prospects"},
+    "paid_ads": {"emoji": "📢", "color": "#ef4444", "short": "Ads", "short_fr": "Annonces"},
+    "growth_hacker": {"emoji": "🚀", "color": "#8b5cf6", "short": "Growth", "short_fr": "Croissance"},
+    "reputation": {"emoji": "⭐", "color": "#06b6d4", "short": "Reputation", "short_fr": "Réputation"},
+    "email_marketing": {"emoji": "✉️", "color": "#ec4899", "short": "Email", "short_fr": "Courriel"},
+    "tiktok": {"emoji": "🎬", "color": "#14b8a6", "short": "TikTok", "short_fr": "TikTok"},
+    "outreach": {"emoji": "🤝", "color": "#f97316", "short": "Outreach", "short_fr": "Prospection"},
+    "backlinks": {"emoji": "🔗", "color": "#6366f1", "short": "Backlinks", "short_fr": "Liens"},
+    "content_strategy": {"emoji": "📝", "color": "#84cc16", "short": "Content", "short_fr": "Contenu"},
+    "technical_seo": {"emoji": "⚙️", "color": "#06b6d4", "short": "Tech SEO", "short_fr": "SEO Tech"},
+    "reporting": {"emoji": "📊", "color": "#a855f7", "short": "Reports", "short_fr": "Rapports"},
+    "executioner": {"emoji": "⚡", "color": "#64748b", "short": "Execute", "short_fr": "Exécution"},
 }
 
 
 @app.route("/api/personalities", methods=["GET"])
 def api_personalities():
-    """Return agent personalities (emoji, color, short name)."""
-    return jsonify({"personalities": AGENT_PERSONALITIES})
+    """Return agent personalities (emoji, color, short name).
+    Supports ``?lang=fr`` for French names."""
+    lang = request.args.get("lang", "en")
+    data = {}
+    for aid, p in AGENT_PERSONALITIES.items():
+        entry = dict(p)
+        entry["short"] = p.get("short_fr", p["short"]) if lang == "fr" else p["short"]
+        data[aid] = entry
+    return jsonify({"personalities": data})
 
 
 @app.route("/admin/dashboard")

@@ -163,11 +163,22 @@ class PushManager:
 
     def send_event(self, event_type: str, agent: str, data: Dict[str, Any] = None) -> None:
         data = data or {}
-        if event_type == "agent_executed":
-            self.send(title=f"✅ {agent} completed", body=(data.get("draft_preview") or "Task executed.")[:120])
-        elif event_type == "agent_failed":
-            self.send(title=f"❌ {agent} failed", body=(data.get("error") or "Task failed.")[:120])
-        elif event_type == "approval_needed":
-            self.send(title=f"🤔 {agent} needs approval", body=(data.get("draft_preview") or "New draft ready.")[:120], url="/admin")
-        elif event_type == "approval_responded":
-            self.send(title=f"📋 {agent} processed", body="Your approval response was received.")
+        lang = data.get("lang", "en")
+        if lang == "fr":
+            if event_type == "agent_executed":
+                self.send(title=f"✅ {agent} terminé", body=(data.get("draft_preview") or "Tâche exécutée.")[:120])
+            elif event_type == "agent_failed":
+                self.send(title=f"❌ {agent} a échoué", body=(data.get("error") or "Tâche échouée.")[:120])
+            elif event_type == "approval_needed":
+                self.send(title=f"🤔 {agent} nécessite approbation", body=(data.get("draft_preview") or "Nouveau projet prêt.")[:120], url="/admin")
+            elif event_type == "approval_responded":
+                self.send(title=f"📋 {agent} traité", body="Votre réponse d'approbation a été reçue.")
+        else:
+            if event_type == "agent_executed":
+                self.send(title=f"✅ {agent} completed", body=(data.get("draft_preview") or "Task executed.")[:120])
+            elif event_type == "agent_failed":
+                self.send(title=f"❌ {agent} failed", body=(data.get("error") or "Task failed.")[:120])
+            elif event_type == "approval_needed":
+                self.send(title=f"🤔 {agent} needs approval", body=(data.get("draft_preview") or "New draft ready.")[:120], url="/admin")
+            elif event_type == "approval_responded":
+                self.send(title=f"📋 {agent} processed", body="Your approval response was received.")

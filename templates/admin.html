@@ -369,7 +369,9 @@
             <a href="#" data-tab="managed"><span class="icon">🔧</span> Managed Clients</a>
             <a href="#" data-tab="partners"><span class="icon">🤝</span> Partners</a>
         </nav>
-        <div class="sidebar-footer">
+        <div class="sidebar-footer" style="padding: 8px 12px;">
+            <input type="text" id="admin-ask-input" placeholder="Ask JARVIS..." style="width:100%;padding:6px 10px;font-size:0.78rem;font-family:inherit;border:1px solid rgba(255,255,255,0.15);border-radius:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);outline:none;margin-bottom:6px;" onkeydown="if(event.key==='Enter') adminAskJarvis()">
+            <div id="admin-ask-response" style="font-size:0.7rem;color:rgba(255,255,255,0.5);display:none;margin-bottom:6px;"></div>
             <a href="/admin/logout">🚪 Sign out</a>
         </div>
     </aside>
@@ -817,6 +819,8 @@ const AGENT_META = {
     backlinks: { name: 'Backlinks', desc: 'Link building, guest post prospecting, citation building, backlink gap analysis, broken link building, directory submissions' },
 };
 
+let AGENT_PERSONALITIES = {};
+
 function loadAgents() {
     return fetch('/api/agents')
         .then(r => r.json())
@@ -824,13 +828,17 @@ function loadAgents() {
             const agents = data.agents || [];
             const html = agents.map(a => {
                 const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '' };
+                const p = AGENT_PERSONALITIES[a.agent_id] || {};
+                const emoji = p.emoji || '🤖';
+                const color = p.color || '#6b7280';
+                const short = p.short || meta.name;
                 const status = a.enabled ? a.status : 'disabled';
                 const statusLabels = { processing:'Processing', pending_approval:'Pending Approval', pending_confirmation:'Pending Confirmation', idle:'Idle', disabled:'Disabled' };
                 const label = statusLabels[status] || 'Idle';
                 const lastInvoked = a.last_invoked ? new Date(a.last_invoked).toLocaleString() : '--';
                 return `
                 <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" data-agent-id="${a.agent_id}">
-                    <div class="agent-name">${meta.name}</div>
+                    <div class="agent-name"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${color}20;font-size:0.8rem;margin-right:6px;">${emoji}</span>${meta.name}</div>
                     <div class="agent-desc">${meta.desc}</div>
                     <div class="row"><span class="label">Status</span><span class="badge badge-${status}">${label}</span></div>
                     <div class="row"><span class="label">Model</span><span class="value">${a.model}</span></div>
@@ -1565,6 +1573,34 @@ function editTier(tier) {
     }
 }
 
+/* ── JARVIS features ── */
+async function loadPersonalities() {
+    try {
+        const r = await fetch('/api/personalities');
+        const d = await r.json();
+        AGENT_PERSONALITIES = d.personalities || {};
+    } catch (e) {}
+}
+
+async function adminAskJarvis() {
+    const input = document.getElementById('admin-ask-input');
+    const response = document.getElementById('admin-ask-response');
+    const q = input.value.trim();
+    if (!q) return;
+    response.style.display = 'block';
+    response.textContent = 'Thinking...';
+    try {
+        const r = await fetch('/api/dashboard/ask', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query: q}),
+        });
+        const d = await r.json();
+        response.textContent = d.response || 'No response.';
+    } catch (e) { response.textContent = 'Error.'; }
+    input.value = '';
+}
+
 function escapeHtml(t) {
     const d = document.createElement('div');
     d.textContent = t;
@@ -1573,6 +1609,7 @@ function escapeHtml(t) {
 
 /* ── Init ── */
 window.onload = function() {
+    loadPersonalities().then(() => loadAgents());
     loadAgents();
     loadApprovals();
     loadPendingExecutions();
