@@ -3,6 +3,7 @@ import sys
 import uuid
 import secrets
 import warnings
+import json
 import logging
 import requests
 from datetime import datetime, timedelta, timezone
@@ -75,6 +76,17 @@ from agents.cro_agent import CROAgent
 from agents.video_agent import VideoAgent
 from agents.sms_marketing_agent import SMSMarketingAgent
 from agents.executioner_agent import ExecutionerAgent
+
+AGENT_CLASSES = {
+    "local_seo": LocalSEOAgent, "social_media": SocialMediaAgent,
+    "lead_conversion": LeadConversionAgent, "paid_ads": PaidAdsAgent,
+    "growth_hacker": GrowthHackerAgent, "reputation": ReputationManagementAgent,
+    "email_marketing": EmailMarketingAgent, "tiktok": TikTokAgent,
+    "outreach": OutreachAgent, "backlinks": BacklinksAgent,
+    "content_strategy": ContentStrategyAgent, "technical_seo": TechnicalSEOAgent,
+    "reporting": ReportingAgent, "cro": CROAgent, "video": VideoAgent,
+    "sms_marketing": SMSMarketingAgent,
+}
 from client_factory import ClientFactory, deploy as client_factory_deploy, deploy_async as client_factory_deploy_async, get_deploy_status as client_factory_get_deploy_status
 from core.auth import (
     init_auth, User, find_user_by_email, add_user_to_tenant,
@@ -409,38 +421,9 @@ llm_adapter = LLMAdapter(
 # Initialize agents (stateless registry — no per-client data)
 agent_registry = {}
 for agent_id, config in AGENT_CONFIGS.items():
-    if agent_id == "local_seo":
-        agent_registry[agent_id] = LocalSEOAgent(agent_id, config)
-    elif agent_id == "social_media":
-        agent_registry[agent_id] = SocialMediaAgent(agent_id, config)
-    elif agent_id == "lead_conversion":
-        agent_registry[agent_id] = LeadConversionAgent(agent_id, config)
-    elif agent_id == "paid_ads":
-        agent_registry[agent_id] = PaidAdsAgent(agent_id, config)
-    elif agent_id == "growth_hacker":
-        agent_registry[agent_id] = GrowthHackerAgent(agent_id, config)
-    elif agent_id == "reputation":
-        agent_registry[agent_id] = ReputationManagementAgent(agent_id, config)
-    elif agent_id == "email_marketing":
-        agent_registry[agent_id] = EmailMarketingAgent(agent_id, config)
-    elif agent_id == "tiktok":
-        agent_registry[agent_id] = TikTokAgent(agent_id, config)
-    elif agent_id == "outreach":
-        agent_registry[agent_id] = OutreachAgent(agent_id, config)
-    elif agent_id == "backlinks":
-        agent_registry[agent_id] = BacklinksAgent(agent_id, config)
-    elif agent_id == "content_strategy":
-        agent_registry[agent_id] = ContentStrategyAgent(agent_id, config)
-    elif agent_id == "technical_seo":
-        agent_registry[agent_id] = TechnicalSEOAgent(agent_id, config)
-    elif agent_id == "reporting":
-        agent_registry[agent_id] = ReportingAgent(agent_id, config)
-    elif agent_id == "cro":
-        agent_registry[agent_id] = CROAgent(agent_id, config)
-    elif agent_id == "video":
-        agent_registry[agent_id] = VideoAgent(agent_id, config)
-    elif agent_id == "sms_marketing":
-        agent_registry[agent_id] = SMSMarketingAgent(agent_id, config)
+    cls = AGENT_CLASSES.get(agent_id)
+    if cls:
+        agent_registry[agent_id] = cls(agent_id, config)
 
 # Agent display metadata for chat interfaces
 AGENT_META: Dict[str, Dict[str, str]] = {
@@ -1735,44 +1718,9 @@ def update_all_agents_config():
 
 
 def _reinitialize_agent(agent_id: str, config: dict) -> None:
-    """Re-initialize a single agent in the registry with a new config.
-
-    Args:
-        agent_id: The agent identifier.
-        config: The updated configuration dict.
-    """
-    if agent_id == "local_seo":
-        agent_registry[agent_id] = LocalSEOAgent(agent_id, config)
-    elif agent_id == "social_media":
-        agent_registry[agent_id] = SocialMediaAgent(agent_id, config)
-    elif agent_id == "lead_conversion":
-        agent_registry[agent_id] = LeadConversionAgent(agent_id, config)
-    elif agent_id == "paid_ads":
-        agent_registry[agent_id] = PaidAdsAgent(agent_id, config)
-    elif agent_id == "growth_hacker":
-        agent_registry[agent_id] = GrowthHackerAgent(agent_id, config)
-    elif agent_id == "reputation":
-        agent_registry[agent_id] = ReputationManagementAgent(agent_id, config)
-    elif agent_id == "email_marketing":
-        agent_registry[agent_id] = EmailMarketingAgent(agent_id, config)
-    elif agent_id == "tiktok":
-        agent_registry[agent_id] = TikTokAgent(agent_id, config)
-    elif agent_id == "outreach":
-        agent_registry[agent_id] = OutreachAgent(agent_id, config)
-    elif agent_id == "backlinks":
-        agent_registry[agent_id] = BacklinksAgent(agent_id, config)
-    elif agent_id == "content_strategy":
-        agent_registry[agent_id] = ContentStrategyAgent(agent_id, config)
-    elif agent_id == "technical_seo":
-        agent_registry[agent_id] = TechnicalSEOAgent(agent_id, config)
-    elif agent_id == "reporting":
-        agent_registry[agent_id] = ReportingAgent(agent_id, config)
-    elif agent_id == "cro":
-        agent_registry[agent_id] = CROAgent(agent_id, config)
-    elif agent_id == "video":
-        agent_registry[agent_id] = VideoAgent(agent_id, config)
-    elif agent_id == "sms_marketing":
-        agent_registry[agent_id] = SMSMarketingAgent(agent_id, config)
+    cls = AGENT_CLASSES.get(agent_id)
+    if cls:
+        agent_registry[agent_id] = cls(agent_id, config)
 
 
 @app.route("/api/agents/config/bulk", methods=["POST"])
@@ -2429,6 +2377,115 @@ def api_personalities():
     return jsonify({"personalities": data})
 
 
+# ---------------------------------------------------------------------------
+# API: Onboarding wizard
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/onboarding/status", methods=["GET"])
+def api_onboarding_status():
+    """Return onboarding completion status for the current tenant."""
+    tenant_id = get_current_tenant() or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    if not tenant_id:
+        return jsonify({"onboarded": False, "error": "No tenant"}), 400
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        row = conn.execute("SELECT services FROM client_details WHERE id = 1").fetchone()
+        services = json.loads(row["services"]) if row and row["services"] else {}
+        onboarded = services.get("onboarding_complete", False)
+        steps = {
+            "welcome": services.get("onboard_welcome", False),
+            "agents": services.get("onboard_agents", False),
+            "autonomy": services.get("onboard_autonomy", False),
+            "done": onboarded,
+        }
+        return jsonify({"onboarded": onboarded, "steps": steps})
+    except Exception:
+        return jsonify({"onboarded": False, "steps": {}})
+
+
+@app.route("/api/onboarding/step", methods=["POST"])
+def api_onboarding_step():
+    """Mark an onboarding step as complete."""
+    tenant_id = get_current_tenant() or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    if not tenant_id:
+        return jsonify({"error": "No tenant"}), 400
+    data = request.json
+    step = (data or {}).get("step", "")
+    if step not in ("welcome", "agents", "autonomy", "complete"):
+        return jsonify({"error": "Invalid step"}), 400
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        row = conn.execute("SELECT services FROM client_details WHERE id = 1").fetchone()
+        services = json.loads(row["services"]) if row and row["services"] else {}
+        if step == "complete":
+            services["onboarding_complete"] = True
+        else:
+            services[f"onboard_{step}"] = True
+        conn.execute(
+            "INSERT OR REPLACE INTO client_details (id, services) VALUES (1, ?)",
+            (json.dumps(services),),
+        )
+        conn.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# API: Scheduler (scheduled agent tasks)
+# ---------------------------------------------------------------------------
+
+
+@app.route("/api/schedules", methods=["GET"])
+def api_list_schedules():
+    """List all scheduled tasks (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    tenant_id = request.args.get("tenant_id", "")
+    schedules = scheduler_manager.get_schedules(tenant_id=tenant_id or None)
+    return jsonify({"schedules": schedules, "enabled": scheduler_manager.enabled})
+
+
+@app.route("/api/schedules", methods=["POST"])
+def api_create_schedule():
+    """Create a new scheduled task (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data"}), 400
+    tenant_id = data.get("tenant_id", "")
+    agent_id = data.get("agent_id", "")
+    task = data.get("task", "")
+    cron = data.get("cron", "")
+    lang = data.get("language", "en")
+    if not all([tenant_id, agent_id, task, cron]):
+        return jsonify({"error": "tenant_id, agent_id, task, and cron are required"}), 400
+    sid = scheduler_manager.create_schedule(tenant_id, agent_id, task, cron, lang)
+    return jsonify({"id": sid, "success": True}), 201
+
+
+@app.route("/api/schedules/<schedule_id>", methods=["DELETE"])
+def api_delete_schedule(schedule_id):
+    """Delete a scheduled task (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    ok = scheduler_manager.delete_schedule(schedule_id)
+    return jsonify({"success": ok})
+
+
+@app.route("/api/schedules/<schedule_id>/toggle", methods=["POST"])
+def api_toggle_schedule(schedule_id):
+    """Enable or disable a scheduled task (admin only)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    enabled = (data or {}).get("enabled", True)
+    ok = scheduler_manager.toggle_schedule(schedule_id, enabled)
+    return jsonify({"success": ok})
+
+
 @app.route("/admin/dashboard")
 def admin_dashboard():
     """Serve the real-time agent dashboard."""
@@ -2720,6 +2777,11 @@ if os.getenv("EMAIL_BRIDGE_USER") and os.getenv("EMAIL_BRIDGE_PASS"):
 
 # Start proactive monitor
 proactive_monitor.start(get_orchestrator, lambda: push_manager)
+
+# Start scheduler
+from core.scheduler import SchedulerManager
+scheduler_manager = SchedulerManager(tenant_manager, get_orchestrator)
+scheduler_manager.start()
 
 
 @app.route("/api/agents/<agent_id>/autonomy", methods=["GET", "PUT"])

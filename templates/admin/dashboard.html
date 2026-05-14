@@ -45,6 +45,8 @@
         .ask-bar .ask-response { font-size: 0.78rem; color: var(--gray-600); padding: 4px 0; line-height: 1.5; display: none; }
         .undo-btn { position: fixed; bottom: 24px; right: 24px; z-index: 100; background: var(--navy); color: white; border: none; border-radius: 50px; padding: 10px 20px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 4px 20px rgba(0,0,0,0.2); display: none; align-items: center; gap: 6px; transition: 0.15s; }
         .undo-btn:hover { transform: scale(1.05); }
+        #onboarding-overlay { display: none !important; }
+        #onboarding-overlay.visible { display: flex !important; }
         .feed-item .fi-personality { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; flex-shrink: 0; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
         .dashboard-layout { display: flex; flex: 1; overflow: hidden; gap: 0; }
@@ -458,6 +460,15 @@ async function bootstrap() {
     setInterval(loadInbox, 8000);
     loadInbox();
 
+    // Check onboarding status
+    try {
+        const r = await fetch('/api/onboarding/status');
+        const d = await r.json();
+        if (!d.onboarded) {
+            document.getElementById('onboarding-overlay')?.classList.add('visible');
+        }
+    } catch (e) {}
+
 function escapeHtml(t) {
     const d = document.createElement('div');
     d.textContent = t;
@@ -544,5 +555,6 @@ function urlBase64ToUint8Array(base64) {
     return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 </script>
+{% include 'admin/onboarding.html' %}
 </body>
 </html>
