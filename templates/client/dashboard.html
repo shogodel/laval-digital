@@ -85,6 +85,7 @@
         </div>
         <button class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">☰</button>
         <div class="nav-links" id="nav-links">
+            <a href="javascript:void(0)" onclick="if(window.frankie)frankie.toggle()" style="color:#6ee7b7;font-weight:700;">🤖 Talk to Frankie</a>
             <a href="{{ url_for('client_dashboard') }}" class="active">My Dashboard</a>
             <a href="#submit-task" onclick="document.getElementById('nav-links').classList.remove('open')">Submit Task</a>
             <a href="#payments" onclick="document.getElementById('nav-links').classList.remove('open')">My Payments</a>
@@ -99,7 +100,14 @@
 
         <div class="page-header">
             <h1>Welcome, {{ current_user.display_name or current_user.email }}</h1>
-            <p>Your AI-powered marketing dashboard</p>
+            <p>Your AI marketing suite is active. <strong style="color:var(--green);">🤖 Frankie</strong> is ready to help — click the Frankie button in the bottom-right corner.</p>
+        </div>
+
+        <div class="card" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #a7f3d0;text-align:center;padding:24px;">
+            <div style="font-size:3rem;margin-bottom:8px;">🤖</div>
+            <h2 style="font-size:1.1rem;font-weight:700;color:#065f46;margin-bottom:4px;">Frankie is Here to Help</h2>
+            <p style="font-size:0.9rem;color:#047857;margin-bottom:16px;">Your AI command center. Ask Frankie to write content, run SEO, create social posts, or check performance — all in plain English.</p>
+            <button onclick="if(window.frankie)frankie.toggle()" style="background:#059669;color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;">💬 Talk to Frankie</button>
         </div>
 
         <div class="stats-grid">
@@ -108,7 +116,7 @@
                 <div class="stat-label">Project Status</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="stat-agents">{{ active_agents or 0 }} / 11</div>
+                <div class="stat-value" id="stat-agents">{{ active_agents or 0 }} / 16</div>
                 <div class="stat-label">AI Agents Active</div>
             </div>
             <div class="stat-card">
@@ -227,5 +235,6 @@
         .catch(err => { el.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>'; });
     }
     </script>
+{% include 'admin/frankie.html' %}
 </body>
 </html>
