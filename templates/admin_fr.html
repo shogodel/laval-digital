@@ -349,7 +349,9 @@
             <a href="#" data-tab="managed"><span class="icon">🔧</span> Clients Gérés</a>
             <a href="#" data-tab="partners"><span class="icon">🤝</span> Partenaires</a>
         </nav>
-        <div class="sidebar-footer">
+        <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:4px;">
+            <button id="sidebar-install-btn" class="btn btn-gray btn-xs" onclick="installApp()" style="display:none;width:100%;">📲 Installer l'App</button>
+            <a href="/admin/dashboard" style="font-size:0.78rem;color:rgba(255,255,255,0.5);padding:6px 0;">⚡ Frankie</a>
             <a href="/fr/admin/logout">🚪 Déconnexion</a>
         </div>
     </aside>
@@ -1422,7 +1424,21 @@ window.onload = function() {
     document.getElementById('config-api-key').addEventListener('input', function() {
         document.getElementById('detect-btn').disabled = !this.value.trim();
     });
+
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const btn = document.getElementById('sidebar-install-btn');
+        if (btn) btn.style.display = 'block';
+    });
 };
+
+function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+}
 </script>
 {% include 'admin/frankie.html' %}
 </body>

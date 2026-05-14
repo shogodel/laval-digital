@@ -369,7 +369,9 @@
             <a href="#" data-tab="managed"><span class="icon">🔧</span> Managed Clients</a>
             <a href="#" data-tab="partners"><span class="icon">🤝</span> Partners</a>
         </nav>
-        <div class="sidebar-footer">
+        <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:4px;">
+            <button id="sidebar-install-btn" class="btn btn-gray btn-xs" onclick="installApp()" style="display:none;width:100%;">📲 Install App</button>
+            <a href="/admin/dashboard" style="font-size:0.78rem;color:rgba(255,255,255,0.5);padding:6px 0;">⚡ Frankie Dashboard</a>
             <a href="/admin/logout">🚪 Sign out</a>
         </div>
     </aside>
@@ -479,12 +481,11 @@
         <!-- TAB: Tasks & Approvals                                            -->
         <!-- ================================================================ -->
         <div class="tab-content" id="tab-tasks">
-            <div class="card">
-                <div class="card-header"><h2>Submit Task</h2><p>Send a request to the AI orchestrator</p></div>
-                <textarea id="task-input" rows="3" placeholder="e.g., I want more plumbing leads in Laval this week" style="margin-bottom:10px;"></textarea>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <button class="btn btn-red" onclick="submitTask()">Submit Task</button>
-                    <span id="task-result"></span>
+            <div class="card" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #a7f3d0;">
+                <div style="text-align:center;padding:8px;">
+                    <div style="font-size:2rem;margin-bottom:4px;">🤖</div>
+                    <p style="font-size:0.9rem;color:#065f46;">Frankie handles all tasks now. Click the Frankie bubble in the bottom-right corner to chat.</p>
+                    <button onclick="if(window.frankie)frankie.toggle()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;">💬 Talk to Frankie</button>
                 </div>
             </div>
             <div class="card">
@@ -869,25 +870,6 @@ function toggleAgent(agentId) {
 }
 
 /* ── Tasks ── */
-function submitTask() {
-    const task = document.getElementById('task-input').value;
-    if (!task) return alert('Please enter a task');
-    const el = document.getElementById('task-result');
-    el.innerHTML = '<span style="color:var(--blue);">Submitting...</span>';
-    fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ request: task })
-    })
-    .then(r => r.json())
-    .then(data => {
-        const status = data.status === 'completed' ? 'Completed' : 'Pending approval';
-        el.innerHTML = `<span style="color:var(--green);">✓ ${status}</span>`;
-        setTimeout(loadApprovals, 2000);
-    })
-    .catch(err => { el.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>'; });
-}
-
 function loadApprovals() {
     fetch('/api/approvals')
         .then(r => r.json())
@@ -1601,7 +1583,22 @@ window.onload = function() {
     document.getElementById('config-api-key').addEventListener('input', function() {
         document.getElementById('detect-btn').disabled = !this.value.trim();
     });
+
+    // PWA Install
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const btn = document.getElementById('sidebar-install-btn');
+        if (btn) btn.style.display = 'block';
+    });
 };
+
+function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+}
 </script>
 {% include 'admin/frankie.html' %}
 </body>
