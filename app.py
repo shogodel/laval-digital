@@ -6,6 +6,7 @@ import warnings
 import logging
 import requests
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -2547,6 +2548,24 @@ def api_pending_actions():
     return jsonify({"actions": actions})
 
 
+@app.route("/api/actions/sms-pending", methods=["GET"])
+def api_sms_pending():
+    """Return pending SMS messages from the executioner's JSONL queue."""
+    sms_file = Path(__file__).parent / "content" / "sms" / "sms.jsonl"
+    if not sms_file.exists():
+        return jsonify({"messages": []})
+    messages = []
+    for line in sms_file.read_text().strip().split("\n"):
+        if line.strip():
+            try:
+                msg = json.loads(line)
+                if msg.get("status") == "queued":
+                    messages.append(msg)
+            except json.JSONDecodeError:
+                continue
+    return jsonify({"messages": messages[::-1]})
+
+
 @app.route("/api/actions/<action_id>/confirm", methods=["POST"])
 def api_confirm_action(action_id):
     """Confirm and execute a pending action (called by bookmarklet or email bridge)."""
@@ -2555,6 +2574,34 @@ def api_confirm_action(action_id):
         return jsonify({"error": "No tenant context"}), 400
     result = _confirm_pending_action(tenant_id, action_id)
     return jsonify(result)
+
+
+@app.route("/api/actions/sms-sent", methods=["POST"])
+def api_sms_mark_sent():
+    """Mark an SMS as sent so it doesn't show up in pending again."""
+    data = request.json
+    timestamp = (data or {}).get("timestamp", "")
+    if not timestamp:
+        return jsonify({"error": "timestamp required"}), 400
+    sms_file = Path(__file__).parent / "content" / "sms" / "sms.jsonl"
+    if not sms_file.exists():
+        return jsonify({"success": True})
+    try:
+        lines = sms_file.read_text().strip().split("\n")
+        new_lines = []
+        for line in lines:
+            if line.strip():
+                try:
+                    msg = json.loads(line)
+                    if msg.get("timestamp") == timestamp:
+                        msg["status"] = "sent"
+                    new_lines.append(json.dumps(msg))
+                except json.JSONDecodeError:
+                    new_lines.append(line)
+        sms_file.write_text("\n".join(new_lines) + "\n")
+    except Exception:
+        pass
+    return jsonify({"success": True})
 
 
 @app.route("/api/actions/<action_id>/skip", methods=["POST"])
