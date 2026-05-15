@@ -250,10 +250,116 @@ class Orchestrator:
             return {"response": "", "agent": "orchestrator", "status": "suggestions"}
 
     # ------------------------------------------------------------------
-    # Main message processing with autonomy policy
+    # Chat-based message processing (primary Frankie entry point)
     # ------------------------------------------------------------------
 
-    def process_message(
+    def process_message(self, user_message: str, thread_id: str) -> Dict[str, Any]:
+        """Process a user message from the Frankie chat interface.
+
+        This is the primary entry point for the chat-based Frankie experience.
+        It immediately routes the message to the appropriate agent and returns
+        a response — no LangGraph interrupts, no approval pause.
+
+        Args:
+            user_message: The user's chat message
+            thread_id: Unique thread identifier for conversation continuity
+
+        Returns:
+            Dict with keys: response, agent, status, thread_id, pending_approval
+        """
+        message_lower = user_message.strip().lower()
+
+        if self.is_panicked:
+            return {
+                "response": "⚠️ All agents are stopped. Click Resume to continue.",
+                "agent": "orchestrator",
+                "status": "panicked",
+                "thread_id": thread_id,
+                "pending_approval": False,
+            }
+
+        if message_lower in ("approve", "approved", "yes", "execute", "run it"):
+            return self._handle_chat_approval(thread_id, approved=True)
+        elif message_lower in ("reject", "rejected", "no", "discard", "cancel"):
+            return self._handle_chat_approval(thread_id, approved=False)
+
+        return self._route_and_respond_chat(user_message, thread_id)
+
+    def _route_and_respond_chat(self, user_message: str, thread_id: str) -> Dict[str, Any]:
+        """Route a chat message to the appropriate agent and return an immediate response."""
+        try:
+            prompt = ROUTING_PROMPT.format(user_request=user_message, language="english")
+            response = self._llm_adapter.invoke(
+                system_prompt="You are a helpful AI orchestrator for local business marketing.",
+                user_message=prompt
+            )
+            agent_name = self._extract_agent_from_response(response)
+
+            if not hasattr(self, '_pending_drafts'):
+                self._pending_drafts = {}
+
+            self._pending_drafts[thread_id] = {
+                "agent": agent_name,
+                "draft": response,
+                "task": user_message,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+
+            return {
+                "response": response,
+                "agent": agent_name,
+                "status": "pending_approval",
+                "thread_id": thread_id,
+                "pending_approval": True
+            }
+
+        except Exception as e:
+            logger.error(f"Chat routing failed: {e}")
+            return {
+                "response": f"I had trouble processing that request. Could you rephrase it? Error: {str(e)}",
+                "agent": "unknown",
+                "status": "error",
+                "thread_id": thread_id,
+                "pending_approval": False
+            }
+
+    def _handle_chat_approval(self, thread_id: str, approved: bool) -> Dict[str, Any]:
+        """Handle approval/rejection from the chat interface."""
+        if not hasattr(self, '_pending_drafts') or thread_id not in self._pending_drafts:
+            return {
+                "response": "I don't have any pending content to approve or reject. Send me a new request!",
+                "agent": "orchestrator",
+                "status": "no_pending",
+                "thread_id": thread_id,
+                "pending_approval": False
+            }
+
+        draft_info = self._pending_drafts.pop(thread_id)
+
+        if approved:
+            return {
+                "response": f"✅ Approved! The content from **{draft_info['agent']}** has been sent for execution.\n\nYou can now ask me for something else.",
+                "agent": draft_info["agent"],
+                "status": "approved",
+                "thread_id": thread_id,
+                "pending_approval": False,
+                "approved_draft": draft_info["draft"],
+                "agent_for_execution": draft_info["agent"]
+            }
+        else:
+            return {
+                "response": f"❌ Rejected. The content from **{draft_info['agent']}** has been discarded. Send me a new request and I'll try again!",
+                "agent": draft_info["agent"],
+                "status": "rejected",
+                "thread_id": thread_id,
+                "pending_approval": False
+            }
+
+    # ------------------------------------------------------------------
+    # Legacy autonomy-based message processing (backward compatible)
+    # ------------------------------------------------------------------
+
+    def process_message_with_autonomy(
         self,
         user_message: str,
         thread_id: str,
@@ -263,6 +369,10 @@ class Orchestrator:
         source: str = "chat",
     ) -> Dict[str, Any]:
         """Process a user message, applying the autonomy policy if configured.
+
+        This is the legacy method for the admin panel which supports autonomy
+        levels (manual/suggest/auto/silent). The chat interface uses
+        ``process_message()`` instead.
 
         Args:
             user_message: The user's text input.
