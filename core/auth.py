@@ -192,17 +192,56 @@ def validate_password(password: str) -> Tuple[bool, str]:
 
 
 # ---------------------------------------------------------------------------
-# Role-based decorators
+# Decorators
 # ---------------------------------------------------------------------------
 
-def client_required(f):
+def login_required(f):
+    """Decorator that requires the user to be authenticated (any role)."""
     @wraps(f)
     def decorated(*args, **kwargs):
         if not current_user.is_authenticated:
             flash("Please log in to continue.")
             return redirect(url_for("client_login"))
-        if current_user.role != "client":
-            flash("Client access required.")
-            return redirect(url_for("client_login"))
         return f(*args, **kwargs)
     return decorated
+
+# Backward compatibility alias
+client_required = login_required
+
+
+def create_user_and_tenant(email: str, password: str, display_name: str = "") -> dict:
+    """Create a new tenant database and user account in one step.
+
+    Args:
+        email: User email address.
+        password: Plain text password (will be hashed).
+        display_name: Human-readable name.
+
+    Returns:
+        Dict with 'success', 'user_id', 'tenant_id', and 'password' or 'error'.
+    """
+    import secrets
+
+    if not _tm:
+        raise RuntimeError("Tenant manager not initialized.")
+
+    tenant_id = email.lower().split('@')[0].replace('.', '-').replace('_', '-')[:40]
+
+    try:
+        _tm.create_tenant_database(tenant_id, "direct")
+    except Exception as e:
+        return {"success": False, "error": f"Failed to create tenant: {str(e)}"}
+
+    try:
+        result = add_user_to_tenant(
+            email=email,
+            password=password,
+            role="user",
+            display_name=display_name or email.split('@')[0],
+            tenant_id=tenant_id,
+            tenant_type="direct"
+        )
+        result["tenant_id"] = tenant_id
+        return result
+    except Exception as e:
+        return {"success": False, "error": str(e)}
