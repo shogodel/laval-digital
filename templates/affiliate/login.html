@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Affiliate Login — Laval Digital</title>
+    <title>Affiliate Login — Frankie</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -46,7 +46,7 @@
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
         </div>
         <h1>Affiliate Login</h1>
-        <p class="subtitle">Track your referrals and commissions</p>
+        <p class="subtitle">Track your referrals and earnings from Frankie subscriptions</p>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -69,7 +69,7 @@
         </form>
 
         <div class="login-footer">
-            <p>Not an affiliate yet? <a href="{{ url_for('affiliate_signup') }}">Join the program</a></p>
+            <p>Not an affiliate yet? <a href="{{ url_for('affiliate_signup') }}">Earn 20% on every Frankie referral.</a></p>
         </div>
     </div>
 </body>
