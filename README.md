@@ -1,18 +1,15 @@
-# Laval Digital — AI Marketing Agency Platform
+# Laval Digital — Frankie AI Marketing Command Center
 
-A full-stack AI marketing automation platform for small-to-medium businesses. Built with a multi-agent LangGraph orchestration engine, multi-tenant database isolation, bilingual public pages (EN/FR), affiliate/reseller programs, and an automated client deployment pipeline (Client Factory).
+Frankie is a standalone AI marketing command center that connects to your existing website, social accounts, email, and ad platforms. 16 specialized AI agents work 24/7 to grow your business. One product. One price. No website builder, no subdomain, no payment schedules.
 
 ## Architecture
 
-- **Multi-Agent System**: 11 specialized agents (Local SEO, Social Media, Lead Conversion, Paid Ads, Growth Hacker, Reputation, Email Marketing, TikTok, Outreach, Backlinks, Executioner)
-- **Orchestrator**: LangGraph-based workflow routing with human-in-the-loop approval via interrupts
-- **Multi-Tenant**: Database-per-tenant isolation — direct clients at `/tenants/direct/<id>.db`, resellers at `/tenants/resellers/<id>/`
+- **Multi-Agent System**: 16 specialized agents (Local SEO, Social Media, Lead Conversion, Paid Ads, Growth Hacker, Reputation, Email Marketing, TikTok, Outreach, Backlinks, Content Strategy, Technical SEO, CRO, Video, SMS Marketing, Analytics & Reports)
+- **Frankie Orchestrator**: LangGraph-based workflow routing with human-in-the-loop approval via interrupts
+- **Multi-Tenant**: Database-per-tenant isolation at `/tenants/direct/<id>.db`
 - **Bilingual**: All public pages served in English and French (`/fr/` routes)
-- **Client Factory**: 7-station automated deploy pipeline (validate → subdomain → tenant DB → clone template → inject brand → Nginx → SSL → welcome email)
-- **Admin Panel**: Tabbed sidebar layout (Dashboard, Agents, Tasks & Approvals, Deploy Client, Settings) with tenant selector, inline agent toggle, and execution management
-- **Affiliate Engine**: Session-based referral tracking with 30-day persistent cookie and $500 discount
-- **Reseller Program**: Founding Partner offers with wholesale pricing tiers
-- **Contract Flow**: Package selector, milestone-based payments, digital signature, Interac e-Transfer instructions
+- **Admin Panel**: Tabbed sidebar layout (Dashboard, Agents, Tasks & Approvals, Settings, Users, Analytics, Reports) with tenant selector, inline agent toggle, agent config, and execution management
+- **Affiliate Referrals**: Lightweight 20% commission tracking with session-based referral cookies
 
 ## Tech Stack
 
@@ -21,20 +18,21 @@ A full-stack AI marketing automation platform for small-to-medium businesses. Bu
 - **LLM Providers**: DeepSeek, OpenAI, Anthropic (via LiteLLM)
 - **Database**: SQLite (database-per-tenant)
 - **Templating**: Jinja2
-- **Deployment**: Client Factory with Nginx + Certbot SSL provisioning
+- **Frontend**: PWA dashboard (installable on any device)
 
 ## Project Structure
 
 ```
 laval-digital/
 ├── app.py                    # Flask application — all routes, API endpoints, agent registry
-├── client_factory.py         # Automated client deployment pipeline (7 stations)
 ├── core/
 │   ├── base_agent.py         # BaseAgent abstract class
 │   ├── orchestrator.py       # LangGraph orchestration engine
 │   ├── llm_adapter.py        # Multi-LLM adapter (DeepSeek/OpenAI/Anthropic)
-│   └── tenant_manager.py     # Database-per-tenant lifecycle (8 tables, 11-agent seeding)
-├── agents/                   # Specialized agent implementations
+│   ├── auth.py               # Authentication, user management, role handling
+│   ├── tenant_manager.py     # Database-per-tenant lifecycle
+│   └── analytics.py          # Per-tenant analytics and reporting
+├── agents/                   # 16 specialized agent implementations
 │   ├── local_seo_agent.py
 │   ├── social_media_agent.py
 │   ├── lead_conversion_agent.py
@@ -44,29 +42,21 @@ laval-digital/
 │   ├── email_marketing_agent.py
 │   ├── tiktok_agent.py
 │   ├── outreach_agent.py
-│   ├── backlinks_agent.py
-│   └── executioner_agent.py  # Executes approved drafts via SMTP/social APIs
+│   └── backlinks_agent.py
 ├── tools/
 │   └── prospect_scraper.py   # Google Maps Places API prospect scraper + CSV export
 ├── prompts/                  # System prompt templates for each agent
 ├── templates/                # Jinja2 templates
 │   ├── home.html / home_fr.html
-│   ├── contract.html / contract_fr.html
-│   ├── affiliate.html / affiliate_fr.html
-│   ├── reseller.html / reseller_fr.html
 │   ├── admin.html / admin_fr.html
 │   ├── demo.html / demo_fr.html
 │   ├── blog.html / blog_fr.html
 │   ├── login.html / login_fr.html
-│   └── lead_site.html        # Client lead site template with brand injection
+│   └── affiliate.html / affiliate_fr.html
 ├── static/                   # Static assets (CSS, JS, logos)
-├── config/
-│   └── client_config.json    # Default client configuration
-├── tenants/                  # Tenant database storage
-│   ├── direct/               # Direct client databases
-│   └── resellers/            # Reseller tenant databases
+├── tenants/direct/           # Per-tenant SQLite databases
 ├── data/
-│   └── prospects/            # CSV export directory for prospect scraper
+│   └── vapid_keys.json       # Web push notification keys
 └── requirements.txt
 ```
 
@@ -85,7 +75,7 @@ laval-digital/
    FLASK_SECRET_KEY=your-random-secret
    ADMIN_USERNAME=laval
    ADMIN_PASSWORD=digital2026!
-   GOOGLE_MAPS_API_KEY=your-maps-key   # optional — scraper falls back to sample data
+   GOOGLE_MAPS_API_KEY=your-maps-key
    ```
 
 3. **Run the server**:
@@ -102,8 +92,6 @@ laval-digital/
 |---|---|---|
 | `/api/affiliate/status` | GET | Return affiliate discount status for current session |
 | `/api/affiliate/signup` | POST | Register a new affiliate, return referral code |
-| `/api/contract/submit` | POST | Submit a signed agreement |
-| `/api/reseller/apply` | POST | Submit a reseller application |
 | `/api/leads` | GET/POST | List or create lead form submissions |
 | `/api/agents` | GET | List all agents with activity telemetry |
 | `/api/agents/<id>/toggle` | POST | Enable/disable an agent |
@@ -121,17 +109,14 @@ laval-digital/
 | `/api/models/detect` | POST | Detect provider from API key |
 | `/api/tenants` | GET | List all tenants (admin only) |
 | `/api/tenants/switch` | POST | Switch admin active tenant context |
-| `/api/clients/deploy` | POST | Deploy a new client via Client Factory |
+| `/api/users` | GET/POST | List or create users for active tenant |
+| `/api/users/<id>` | DELETE | Delete a user |
+| `/api/personalities` | GET | Get agent personalities/emojis |
+| `/api/agents/bulk/config` | POST | Bulk update agent configurations |
 
-## Pricing Tiers
+## Pricing
 
-| Package | Base Price | With Affiliate Discount |
-|---|---|---|
-| Core | $8,500/mo | $8,000/mo |
-| Growth | $12,500/mo | $12,000/mo |
-| Full Empire | $16,500/mo | $16,000/mo |
-
-Affiliate commission: 10% of discounted package price. Referring friend gets $500 off.
+**$597.99/month** — All 16 AI agents + Frankie command center. One product. One price.
 
 ## Agent Configuration
 
