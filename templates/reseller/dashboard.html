@@ -163,60 +163,6 @@
             {% endif %}
         </div>
 
-        <div class="card" id="deploy">
-            <div class="card-header"><h2>Deploy New Client</h2><p>Creates tenant database, website, and sends welcome email</p></div>
-            <div class="deploy-grid">
-                <div class="form-group">
-                    <label>Business Name *</label>
-                    <input type="text" id="client-business-name" placeholder="Mike's Plumbing">
-                </div>
-                <div class="form-group">
-                    <label>Contact Name *</label>
-                    <input type="text" id="client-contact-name" placeholder="Mike Tremblay">
-                </div>
-                <div class="form-group">
-                    <label>Client Email *</label>
-                    <input type="email" id="client-email" placeholder="mike@mikesplumbing.ca">
-                </div>
-                <div class="form-group">
-                    <label>Phone *</label>
-                    <input type="tel" id="client-phone" placeholder="450-555-1234">
-                </div>
-                <div class="form-group">
-                    <label>City *</label>
-                    <input type="text" id="client-city" value="Laval">
-                </div>
-                <div class="form-group">
-                    <label>Niche *</label>
-                    <select id="client-niche">
-                        <option value="plumber">Plumber</option>
-                        <option value="electrician">Electrician</option>
-                        <option value="landscaper">Landscaper</option>
-                        <option value="roofer">Roofer</option>
-                        <option value="hvac">HVAC</option>
-                        <option value="cleaner">Cleaner</option>
-                        <option value="painter">Painter</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Package *</label>
-                    <select id="client-package">
-                        <option value="core_suite">Core Suite — $8,500</option>
-                        <option value="growth_suite" selected>Growth Suite — $12,500</option>
-                        <option value="full_empire">Full Empire — $16,500</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Services (comma-separated) *</label>
-                    <input type="text" id="client-services" placeholder="Emergency Repairs, Drain Cleaning, Water Heaters">
-                </div>
-            </div>
-            <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
-                <button class="btn btn-green" onclick="resellerDeployClient()">Deploy Client</button>
-                <span id="deploy-result"></span>
-            </div>
-        </div>
-
         <div class="card" id="settings">
             <div class="card-header"><h2>White-Label Settings</h2><p>Customize your agency branding</p></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
@@ -238,39 +184,6 @@
     </div>
 
     <script>
-    function resellerDeployClient() {
-        const cfg = {
-            business_name: document.getElementById('client-business-name').value,
-            contact_name: document.getElementById('client-contact-name').value,
-            client_email: document.getElementById('client-email').value,
-            phone: document.getElementById('client-phone').value,
-            city: document.getElementById('client-city').value,
-            niche: document.getElementById('client-niche').value,
-            services: document.getElementById('client-services').value.split(',').map(s => s.trim()),
-            package: document.getElementById('client-package').value,
-            affiliate_code: null
-        };
-        if (!cfg.business_name || !cfg.client_email || !cfg.phone) {
-            alert('Please fill in Business Name, Email, and Phone.'); return;
-        }
-        const el = document.getElementById('deploy-result');
-        el.innerHTML = '<span style="color:var(--blue);">Deploying... (up to 2 min)</span>';
-        fetch('/api/clients/deploy', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(cfg)
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                el.innerHTML = '<span style="color:var(--green);">✓ Live at <a href="' + data.url + '" target="_blank">' + data.url + '</a></span>';
-            } else {
-                el.innerHTML = '<span style="color:var(--red);">Failed: ' + (data.error || 'Unknown') + '</span>';
-            }
-        })
-        .catch(err => { el.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>'; });
-    }
-
     function saveResellerSettings() {
         const name = document.getElementById('agency-name').value;
         const fileInput = document.getElementById('agency-logo-input');

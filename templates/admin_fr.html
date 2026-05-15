@@ -281,8 +281,6 @@
         .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .settings-grid h3 { font-size: 0.9rem; font-weight: 700; color: var(--gray-700); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--gray-200); }
 
-        .deploy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-
         .hamburger { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray-700); padding: 4px; }
 
         select {
@@ -314,7 +312,6 @@
             .main { margin-left: 220px; padding: 20px; }
             .form-row { grid-template-columns: 1fr; }
             .settings-grid { grid-template-columns: 1fr; }
-            .deploy-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 640px) {
             .hamburger { display: block; }
@@ -343,7 +340,6 @@
             <a href="#" class="active" data-tab="dashboard"><span class="icon">📊</span> Tableau de Bord</a>
             <a href="#" data-tab="agents"><span class="icon">🤖</span> Agents</a>
             <a href="#" data-tab="tasks"><span class="icon">📋</span> Tâches &amp; Approbations</a>
-            <a href="#" data-tab="deploy"><span class="icon">🚀</span> Déployer un Client</a>
             <a href="#" data-tab="settings"><span class="icon">⚙️</span> Paramètres</a>
             <a href="#" data-tab="users"><span class="icon">👤</span> Utilisateurs</a>
             <a href="#" data-tab="analytics"><span class="icon">📈</span> Analytiques</a>
@@ -479,67 +475,6 @@
                     <button class="btn btn-amber btn-sm" onclick="loadPendingExecutions()">Actualiser</button>
                 </div>
                 <div id="pending-executions-list"><p class="empty">Chargement...</p></div>
-            </div>
-        </div>
-
-        <!-- TAB: Déployer un Client -->
-        <div class="tab-content" id="tab-deploy">
-            <div class="card">
-                <div class="card-header"><h2>Déployer un Nouveau Client</h2><p>Crée la base de données, le site web et envoie un courriel de bienvenue</p></div>
-                <div class="deploy-grid">
-                    <div class="form-group">
-                        <label>Nom d'Entreprise *</label>
-                        <input type="text" id="client-business-name" placeholder="Plomberie Mike">
-                    </div>
-                    <div class="form-group">
-                        <label>Nom du Contact *</label>
-                        <input type="text" id="client-contact-name" placeholder="Mike Tremblay">
-                    </div>
-                    <div class="form-group">
-                        <label>Courriel du Client *</label>
-                        <input type="email" id="client-email" placeholder="mike@plomberiemike.ca">
-                    </div>
-                    <div class="form-group">
-                        <label>Téléphone *</label>
-                        <input type="tel" id="client-phone" placeholder="450-555-1234">
-                    </div>
-                    <div class="form-group">
-                        <label>Ville *</label>
-                        <input type="text" id="client-city" value="Laval">
-                    </div>
-                    <div class="form-group">
-                        <label>Créneau *</label>
-                        <select id="client-niche">
-                            <option value="plumber">Plombier</option>
-                            <option value="electrician">Électricien</option>
-                            <option value="landscaper">Paysagiste</option>
-                            <option value="roofer">Couvreur</option>
-                            <option value="hvac">CVAC</option>
-                            <option value="cleaner">Nettoyeur</option>
-                            <option value="painter">Peintre</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Forfait *</label>
-                        <select id="client-package">
-                            <option value="core_suite">Offre de Base — 8 500 $</option>
-                            <option value="growth_suite" selected>Offre Croissance — 12 500 $</option>
-                            <option value="full_empire">Offre Complète — 16 500 $</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Code d'Affilié (optionnel)</label>
-                        <input type="text" id="client-affiliate" placeholder="MIKE15">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Services (séparés par des virgules) *</label>
-                    <input type="text" id="client-services" placeholder="Réparations d'Urgence, Débouchage, Chauffe-eau">
-                </div>
-                <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
-                    <button class="btn btn-green" onclick="deployClient()">Déployer le Site</button>
-                    <span id="deploy-result"></span>
-                </div>
             </div>
         </div>
 
@@ -1193,42 +1128,6 @@ function validateSocialApiKey() {
         } else {
             resultDiv.innerHTML = '<span style="color:var(--red);">❌ Connexion échouée: ' + data.error + '</span>';
         }
-    });
-}
-
-/* ── Déployer un Client ── */
-function deployClient() {
-    const cfg = {
-        business_name: document.getElementById('client-business-name').value,
-        contact_name: document.getElementById('client-contact-name').value,
-        client_email: document.getElementById('client-email').value,
-        phone: document.getElementById('client-phone').value,
-        city: document.getElementById('client-city').value,
-        niche: document.getElementById('client-niche').value,
-        services: document.getElementById('client-services').value.split(',').map(s => s.trim()),
-        package: document.getElementById('client-package').value,
-        affiliate_code: document.getElementById('client-affiliate').value || null
-    };
-    if (!cfg.business_name || !cfg.client_email || !cfg.phone) {
-        alert('Veuillez remplir le nom d\'entreprise, le courriel et le téléphone.'); return;
-    }
-    const el = document.getElementById('deploy-result');
-    el.innerHTML = '<span style="color:var(--blue);">Déploiement... (jusqu\'à 2 min)</span>';
-    fetch('/api/clients/deploy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cfg)
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            el.innerHTML = '<span style="color:var(--green);">✓ En ligne sur <a href="' + data.url + '" target="_blank">' + data.url + '</a></span>';
-        } else {
-            el.innerHTML = '<span style="color:var(--red);">Échec: ' + (data.error || 'Inconnu') + '</span>';
-        }
-    })
-    .catch(err => {
-        el.innerHTML = '<span style="color:var(--red);">Erreur: ' + err.message + '</span>';
     });
 }
 
