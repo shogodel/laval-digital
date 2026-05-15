@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Affiliate Dashboard — Laval Digital</title>
+    <title>Affiliate Dashboard — Frankie</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -74,11 +74,12 @@
 
     <nav class="nav">
         <div class="nav-brand">
-            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
+            <span style="font-size:1.2rem;">&#129302;</span>
             <span>Affiliate Portal</span>
         </div>
         <button class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">☰</button>
         <div class="nav-links" id="nav-links">
+            <a href="/" style="color:rgba(255,255,255,0.5);font-size:0.8rem;padding-right:8px;">&#8592; Dashboard</a>
             <a href="{{ url_for('affiliate_dashboard') }}" class="active">My Referrals</a>
             <a href="#link" onclick="document.getElementById('nav-links').classList.remove('open')">My Link</a>
             <a href="#earnings" onclick="document.getElementById('nav-links').classList.remove('open')">Earnings</a>
@@ -90,37 +91,59 @@
 
         <div class="page-header">
             <h1>Welcome, {{ current_user.display_name or current_user.email }}</h1>
-            <p>Your affiliate referral dashboard</p>
+            <p>Earn 20% recurring commission on every Frankie subscription you refer — $119.60/month per active referral</p>
         </div>
 
         <div class="stats-grid">
             <div class="stat-card"><div class="stat-value" id="stat-clicks">{{ stats.total_clicks or 0 }}</div><div class="stat-label">Total Clicks</div></div>
             <div class="stat-card"><div class="stat-value" id="stat-leads">{{ stats.total_leads or 0 }}</div><div class="stat-label">Leads</div></div>
             <div class="stat-card"><div class="stat-value" id="stat-clients">{{ stats.total_clients or 0 }}</div><div class="stat-label">Clients Signed</div></div>
-            <div class="stat-card"><div class="stat-value" id="stat-commissions">${{ "%.0f"|format(stats.total_commissions or 0) }}</div><div class="stat-label">Commissions Earned</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-commissions">${{ "%.2f"|format(stats.total_commissions or 0) }}</div><div class="stat-label">Commissions Earned</div></div>
         </div>
 
         <div class="card" id="link">
-            <div class="card-header"><h2>Your Referral Link</h2><p>Share this link to earn commissions</p></div>
+            <div class="card-header"><h2>Your Referral Link</h2><p>Share this link — your friends get their first month free</p></div>
             <div class="copy-link">
                 <input type="text" id="ref-link" value="{{ referral_link }}" readonly>
                 <button class="btn btn-green btn-sm" onclick="copyRefLink()">Copy</button>
             </div>
+            <p style="font-size:0.78rem;color:var(--gray-400);margin-top:10px;">&#128279; Link format: https://laval.digital/?ref=YOUR_CODE</p>
         </div>
 
         <div class="card" id="earnings">
+            <div class="card-header"><h2>Earnings Summary</h2></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-bottom:20px;">
+                <div style="background:var(--gray-50);border-radius:var(--radius);padding:16px;text-align:center;">
+                    <div style="font-size:1.4rem;font-weight:800;color:var(--green);">${{ "%.2f"|format(stats.total_commissions or 0) }}</div>
+                    <div style="font-size:0.75rem;color:var(--gray-500);text-transform:uppercase;margin-top:4px;">Total Earned</div>
+                </div>
+                <div style="background:var(--gray-50);border-radius:var(--radius);padding:16px;text-align:center;">
+                    <div style="font-size:1.4rem;font-weight:800;color:var(--amber);">${{ "%.2f"|format(stats.pending_commissions or 0) }}</div>
+                    <div style="font-size:0.75rem;color:var(--gray-500);text-transform:uppercase;margin-top:4px;">Pending (Trial)</div>
+                </div>
+                <div style="background:var(--gray-50);border-radius:var(--radius);padding:16px;text-align:center;">
+                    <div style="font-size:1.4rem;font-weight:800;color:var(--blue);">${{ "%.2f"|format(stats.available_commissions or 0) }}</div>
+                    <div style="font-size:0.75rem;color:var(--gray-500);text-transform:uppercase;margin-top:4px;">Available for Payout</div>
+                </div>
+                <div style="background:var(--green-bg);border-radius:var(--radius);padding:16px;text-align:center;">
+                    <div style="font-size:1.4rem;font-weight:800;color:var(--green);">${{ "%.2f"|format((stats.active_referrals or 0) * 119.60) }}</div>
+                    <div style="font-size:0.75rem;color:var(--gray-500);text-transform:uppercase;margin-top:4px;">Monthly Recurring</div>
+                </div>
+            </div>
+            <p style="font-size:0.82rem;color:var(--gray-500);margin-bottom:16px;">You earn 20% ($119.60/month) for every month your referral stays subscribed to the $597.99/month Frankie plan.</p>
+
             <div class="card-header"><h2>Commission History</h2></div>
             {% if commissions %}
             <div style="overflow-x:auto;">
                 <table>
-                    <thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Business</th><th>Status</th><th>Commission</th></tr></thead>
                     <tbody>
                         {% for c in commissions %}
                         <tr>
                             <td>{{ c.created_at[:10] }}</td>
                             <td>{{ c.client_name or c.client_email or "—" }}</td>
+                            <td><span class="badge badge-{{ 'green' if c.status == 'active' else 'amber' if c.status == 'trial' else 'blue' }}">{{ c.status|capitalize }}</span></td>
                             <td>${{ "%.2f"|format(c.amount) }}</td>
-                            <td><span class="badge badge-{{ 'green' if c.status == 'paid' else 'amber' }}">{{ c.status|capitalize }}</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>
