@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#D42B2B">
     <link rel="manifest" href="/static/manifest.json">
-    <title>Laval Digital — Panneau d'Administration</title>
+    <title>Frankie Control Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -334,7 +334,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
-            <span>Admin Panel</span>
+            <span>Frankie Control Center</span>
         </div>
         <nav class="sidebar-nav">
             <a href="#" class="active" data-tab="dashboard"><span class="icon">📊</span> Tableau de Bord</a>
@@ -344,8 +344,6 @@
             <a href="#" data-tab="users"><span class="icon">👤</span> Utilisateurs</a>
             <a href="#" data-tab="analytics"><span class="icon">📈</span> Analytiques</a>
             <a href="#" data-tab="reports"><span class="icon">📄</span> Rapports</a>
-            <a href="#" data-tab="managed"><span class="icon">🔧</span> Clients Gérés</a>
-            <a href="#" data-tab="partners"><span class="icon">🤝</span> Partenaires</a>
         </nav>
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
             <a href="/admin/dashboard" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:12px 16px;border-radius:10px;font-size:0.9rem;font-weight:700;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
@@ -366,12 +364,12 @@
             <div class="topbar-right">
                 <div class="tenant-pill">
                     <span class="dot {% if active_tenant %}active{% else %}inactive{% endif %}"></span>
-                    <span id="active-tenant-label">{% if active_tenant %}{{ active_tenant }}{% else %}Aucun client{% endif %}</span>
+                    <span id="active-tenant-label">{% if active_tenant %}{{ active_tenant }}{% else %}Aucun utilisateur{% endif %}</span>
                 </div>
                 <select id="tenant-select" onchange="switchTenant(this.value)" style="width:auto;min-width:140px;padding:6px 10px;font-size:0.85rem;">
-                    <option value="">Sélectionner un client…</option>
+                    <option value="">Sélectionner un utilisateur…</option>
                     {% if tenants.direct_clients %}
-                    <optgroup label="Clients Directs">
+                    <optgroup label="Utilisateurs">
                         {% for t in tenants.direct_clients %}
                         <option value="{{ t }}"{% if active_tenant == t %} selected{% endif %}>{{ t }}</option>
                         {% endfor %}
@@ -553,8 +551,7 @@
                 <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
                     <select id="user-role-filter" onchange="loadUsers()" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
                         <option value="">Tous les rôles</option>
-                        <option value="client">Client</option>
-                        <option value="affiliate">Affilié</option>
+                        <option value="user">Utilisateur</option>
                     </select>
                     <button class="btn btn-green btn-sm" onclick="showAddUser()">+ Ajouter</button>
                 </div>
@@ -567,20 +564,6 @@
 
         {% include 'admin/analytics.html' %}
         {% include 'admin/reports.html' %}
-        {% include 'admin/managed_clients.html' %}
-
-        <!-- TAB: Partenaires -->
-        <div class="tab-content" id="tab-partners">
-            <div class="page-header"><h1>🤝 Gestion des Partenaires</h1></div>
-            <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
-                <button class="btn btn-sm btn-red" onclick="showPartnerTab('affiliates')">Affiliés</button>
-
-            </div>
-            <div id="partner-affiliates" class="partner-section">
-                <div class="card"><div class="card-header"><h2>Tous les Affiliés</h2><p>Gérer les commissions et paiements</p></div><div style="overflow-x:auto;" id="affiliates-list"><p class="empty">Chargement...</p></div></div>
-            </div>
-
-        </div>
     </main>
 
     <!-- Modal Ajouter Utilisateur -->
@@ -602,8 +585,7 @@
             <div class="form-group">
                 <label>Rôle</label>
                 <select id="new-user-role">
-                    <option value="client">Client</option>
-                    <option value="affiliate">Affilié</option>
+                    <option value="user">Utilisateur</option>
                 </select>
             </div>
             <div id="add-user-error" style="color:var(--red);font-size:0.85rem;margin-bottom:8px;"></div>
@@ -647,7 +629,7 @@ function switchTenant(tenantId) {
     .then(r => r.json())
     .then(data => {
         el.textContent = data.message || 'Client changé!';
-        document.getElementById('active-tenant-label').textContent = data.active_tenant || 'Aucun client sélectionné';
+        document.getElementById('active-tenant-label').textContent = data.active_tenant || 'Aucun utilisateur sélectionné';
         document.querySelector('.tenant-pill .dot').className = data.active_tenant ? 'dot active' : 'dot inactive';
         refreshAll();
     })
@@ -1198,46 +1180,7 @@ function deleteUser(userId) {
         .catch(err => { alert('Erreur: ' + err.message); });
 }
 
-/* ── Partenaires (copié de admin.html) ── */
-function showPartnerTab(name) {
-    document.querySelectorAll('.partner-section').forEach(s => s.style.display = 'none');
-    document.getElementById('partner-' + name).style.display = 'block';
-    document.querySelectorAll('#tab-partners .btn').forEach(b => b.classList.remove('btn-red'));
-    document.querySelectorAll('#tab-partners .btn').forEach(b => b.classList.add('btn-gray'));
-    event.target.classList.remove('btn-gray');
-    event.target.classList.add('btn-red');
-    if (name === 'affiliates') loadAffiliates();
 
-}
-
-async function loadAffiliates() {
-    try {
-        const r = await fetch('/api/admin/affiliates');
-        const d = await r.json();
-        const list = document.getElementById('affiliates-list');
-        if (!d.affiliates || d.affiliates.length === 0) { list.innerHTML = '<p class=\"empty\">Aucun affilié.</p>'; return; }
-        let html = '<table><thead><tr><th>Code</th><th>Nom</th><th>Courriel</th><th>Gains</th><th>Payé</th><th>Statut</th><th>Depuis</th></tr></thead><tbody>';
-        d.affiliates.forEach(a => {
-            html += '<tr><td>' + escapeHtml(a.code) + '</td><td>' + escapeHtml(a.name) + '</td><td>' + escapeHtml(a.email) + '</td><td>$' + (a.total_earnings || 0) + '</td><td>$' + (a.paid_earnings || 0) + '</td><td><span class=\"badge badge-' + (a.status === 'active' ? 'green' : 'amber') + '\">' + a.status + '</span></td><td>' + (a.created_at ? a.created_at.substring(0, 10) : '') + '</td></tr>';
-        });
-        html += '</tbody></table>';
-        if (d.recent_commissions && d.recent_commissions.length > 0) {
-            html += '<h3 style="margin-top:20px;font-size:0.95rem;">Commissions Récentes</h3><table><thead><tr><th>Date</th><th>Affilié</th><th>Client</th><th>Montant</th><th>Statut</th></tr></thead><tbody>';
-            d.recent_commissions.forEach(c => {
-                html += '<tr><td>' + (c.created_at ? c.created_at.substring(0, 10) : '') + '</td><td>' + escapeHtml(c.affiliate_name || c.affiliate_code) + '</td><td>' + escapeHtml(c.client_name || c.client_email || '') + '</td><td>$' + (c.amount || 0) + '</td><td><span class=\"badge badge-' + (c.status === 'paid' ? 'green' : 'amber') + '\">' + c.status + '</span></td></tr>';
-            });
-            html += '</tbody></table>';
-        }
-        if (d.recent_payouts && d.recent_payouts.length > 0) {
-            html += '<h3 style="margin-top:20px;font-size:0.95rem;">Paiements Récents</h3><table><thead><tr><th>Date</th><th>Affilié</th><th>Montant</th><th>Statut</th></tr></thead><tbody>';
-            d.recent_payouts.forEach(p => {
-                html += '<tr><td>' + (p.created_at ? p.created_at.substring(0, 10) : '') + '</td><td>' + escapeHtml(p.affiliate_name || p.affiliate_code) + '</td><td>$' + (p.amount || 0) + '</td><td><span class=\"badge badge-' + (p.status === 'processed' ? 'green' : 'amber') + '\">' + p.status + '</span></td></tr>';
-            });
-            html += '</tbody></table>';
-        }
-        list.innerHTML = html;
-    } catch (e) { document.getElementById('affiliates-list').innerHTML = '<p class=\"empty\">Échec du chargement.</p>'; }
-}
 
 /* ── Init ── */
 window.onload = function() {
