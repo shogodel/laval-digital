@@ -1,11 +1,8 @@
 <div class="tab-content" id="tab-analytics">
     <div class="topbar">
-        <div><h1>Analytics</h1></div>
+        <div><h1>Your Marketing Performance</h1></div>
         <div class="topbar-right">
-            <select id="analytics-client-select" onchange="loadAdminAnalytics()" style="width:auto;min-width:180px;padding:6px 10px;font-size:0.85rem;">
-                <option value="">All Clients</option>
-            </select>
-            <select id="analytics-period" onchange="loadAdminAnalytics()" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
+            <select id="analytics-period" onchange="loadAnalytics()" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
                 <option value="7">Last 7 days</option>
                 <option value="30" selected>This month</option>
                 <option value="90">Last 90 days</option>
@@ -15,8 +12,10 @@
         </div>
     </div>
 
+    <div style="font-size:0.75rem;color:var(--gray-400);margin-bottom:12px;">Last updated: <span id="analytics-last-updated">never</span></div>
+
     <div class="stats-grid" id="analytics-summary-cards">
-        <div class="stat-card"><div class="stat-value" id="stat-total-clients">0</div><div class="stat-label">Total Clients</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-active-agents">0</div><div class="stat-label">Active Agents</div></div>
         <div class="stat-card"><div class="stat-value" id="stat-total-leads">0</div><div class="stat-label">Leads This Month</div></div>
         <div class="stat-card"><div class="stat-value" id="stat-total-tasks">0</div><div class="stat-label">Tasks Executed</div></div>
         <div class="stat-card"><div class="stat-value" id="stat-avg-success">0%</div><div class="stat-label">Avg Success Rate</div></div>
@@ -53,14 +52,14 @@
     </div>
 
     <div class="card">
-        <div class="card-header"><h2>All Clients</h2><p>Click a row to drill into client analytics</p></div>
+        <div class="card-header"><h2>Recent Activity</h2><p>Your last 10 events</p></div>
         <div style="overflow-x:auto;">
             <table>
                 <thead>
-                    <tr><th>Client</th><th>Leads</th><th>Tasks</th><th>Success Rate</th><th>Active Agents</th></tr>
+                    <tr><th>Date</th><th>Agent</th><th>Action</th><th>Result</th></tr>
                 </thead>
-                <tbody id="analytics-clients-table">
-                    <tr><td colspan="5" class="empty">Loading...</td></tr>
+                <tbody id="analytics-activity-table">
+                    <tr><td colspan="4" class="empty">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -70,15 +69,14 @@
 <script>
 let analyticsData = {};
 
-function loadAdminAnalytics() {
-    const clientId = document.getElementById('analytics-client-select').value;
+function loadAnalytics() {
     const days = document.getElementById('analytics-period').value;
 
-    fetch('/api/analytics/summary?client=' + encodeURIComponent(clientId) + '&days=' + days)
+    fetch('/api/analytics/summary?days=' + days)
         .then(r => r.json())
         .then(data => {
             analyticsData = data;
-            document.getElementById('stat-total-clients').textContent = data.total_clients || 0;
+            document.getElementById('stat-active-agents').textContent = data.active_agents || 0;
             document.getElementById('stat-total-leads').textContent = data.total_leads || 0;
             document.getElementById('stat-total-tasks').textContent = data.total_tasks || 0;
             document.getElementById('stat-avg-success').textContent = (data.avg_success_rate || 0) + '%';
@@ -88,21 +86,28 @@ function loadAdminAnalytics() {
             renderSuccessPie(data.success_count || 0, data.fail_count || 0);
             renderFailuresByTool(data.failures_by_tool || {});
 
-            const tbody = document.getElementById('analytics-clients-table');
-            if (data.per_client && data.per_client.length) {
-                tbody.innerHTML = data.per_client.map(c => `
-                    <tr style="cursor:pointer;" onclick="drillIntoClient('${c.tenant_id}')">
-                        <td><strong>${c.tenant_id}</strong></td>
-                        <td>${c.leads}</td>
-                        <td>${c.tasks}</td>
-                        <td>${c.success_rate}%</td>
-                        <td>${c.active_agents}</td>
+            const tbody = document.getElementById('analytics-activity-table');
+            if (data.recent_events && data.recent_events.length) {
+                tbody.innerHTML = data.recent_events.map(e => `
+                    <tr>
+                        <td>${formatDate(e.timestamp)}</td>
+                        <td><strong>${e.agent || '—'}</strong></td>
+                        <td>${e.action || e.type || '—'}</td>
+                        <td>${e.result || e.status || '—'}</td>
                     </tr>
                 `).join('');
             } else {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty">No client data available.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="empty">No recent activity.</td></tr>';
             }
+
+            document.getElementById('analytics-last-updated').textContent = new Date().toLocaleTimeString();
         });
+}
+
+function formatDate(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function renderLeadsBarChart(months) {
@@ -175,35 +180,21 @@ function renderFailuresByTool(failures) {
     }).join('');
 }
 
-function drillIntoClient(tenantId) {
-    document.getElementById('analytics-client-select').value = tenantId;
-    loadAdminAnalytics();
-}
-
 function exportAnalyticsCSV() {
-    const rows = [['Client', 'Leads', 'Tasks', 'Success Rate', 'Active Agents']];
-    (analyticsData.per_client || []).forEach(c => {
-        rows.push([c.tenant_id, c.leads, c.tasks, c.success_rate + '%', c.active_agents]);
+    const rows = [['Date', 'Agent', 'Action', 'Result']];
+    (analyticsData.recent_events || []).forEach(e => {
+        rows.push([e.timestamp || '', e.agent || '', e.action || e.type || '', e.result || e.status || '']);
     });
-    const csv = rows.map(r => r.join(',')).join('\n');
+    const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'analytics_export.csv';
+    a.download = 'frankie_analytics_export.csv';
     a.click();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const sel = document.getElementById('analytics-client-select');
-    fetch('/api/tenants')
-        .then(r => r.json())
-        .then(data => {
-            (data.direct_clients || []).forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t; opt.textContent = t;
-                sel.appendChild(opt);
-            });
-            loadAdminAnalytics();
-        });
+    loadAnalytics();
+    setInterval(loadAnalytics, 60000);
 });
 </script>
