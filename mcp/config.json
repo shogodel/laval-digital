@@ -5,20 +5,20 @@
       "description": "Content publishing to WordPress, Webflow, Netlify, and custom sites"
     },
     "social": {
-      "enabled": false,
-      "description": "Social media posting to Facebook, Instagram, TikTok, LinkedIn (coming soon)"
+      "enabled": true,
+      "description": "Social media posting to Facebook, Instagram, TikTok, LinkedIn"
     },
     "email": {
-      "enabled": false,
-      "description": "Email marketing via SendGrid, Mailgun, Gmail SMTP (coming soon)"
+      "enabled": true,
+      "description": "Email marketing via SendGrid, Mailgun, Gmail SMTP, custom SMTP"
     },
     "gmb": {
-      "enabled": false,
-      "description": "Google Business Profile management (coming soon)"
+      "enabled": true,
+      "description": "Google Business Profile management — posts, reviews, Q&A, photos"
     },
     "ads": {
-      "enabled": false,
-      "description": "Google Ads and Meta Ads campaign management (coming soon)"
+      "enabled": true,
+      "description": "Ad campaign management — Google Ads, Meta Ads"
     }
   }
 }

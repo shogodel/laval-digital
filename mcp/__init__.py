@@ -6,6 +6,10 @@ import logging
 from typing import Dict, Optional
 from .base_server import MCPServer
 from .seo_server import SEOMCPServer
+from .social_server import SocialMCPServer
+from .email_server import EmailMCPServer
+from .gmb_server import GMBMCPServer
+from .ads_server import AdsMCPServer
 
 logger = logging.getLogger(__name__)
 
@@ -21,15 +25,21 @@ def init_mcp_servers() -> Dict[str, MCPServer]:
     seo = SEOMCPServer()
     _mcp_servers[seo.name] = seo
 
-    # Future servers will be registered here:
-    # from .social_server import SocialMCPServer
-    # _mcp_servers["social"] = SocialMCPServer()
-    # from .email_server import EmailMCPServer
-    # _mcp_servers["email"] = EmailMCPServer()
-    # from .gmb_server import GMBMCPServer
-    # _mcp_servers["gmb"] = GMBMCPServer()
-    # from .ads_server import AdsMCPServer
-    # _mcp_servers["ads"] = AdsMCPServer()
+    # Register Social Media server
+    social = SocialMCPServer()
+    _mcp_servers[social.name] = social
+
+    # Register Email server
+    email = EmailMCPServer()
+    _mcp_servers[email.name] = email
+
+    # Register Google Business Profile server
+    gmb = GMBMCPServer()
+    _mcp_servers[gmb.name] = gmb
+
+    # Register Ads server
+    ads = AdsMCPServer()
+    _mcp_servers[ads.name] = ads
 
     logger.info(f"MCP servers initialized: {list(_mcp_servers.keys())}")
     return _mcp_servers
