@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Démo Client — Laval Digital</title>
+    <title>Démo Frankie — Centre de Commande Marketing IA</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -71,18 +71,10 @@
         .tag-gray { background: var(--gray-200); color: var(--gray-600); }
         .tag-red { background: #fef2f2; color: #991b1b; }
 
-        .mock-site { background: var(--white); border: 2px solid var(--gray-200); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-md); }
-        .mock-site-bar { background: var(--navy); padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
-        .mock-site-bar .dots { display: flex; gap: 6px; }
-        .mock-site-bar .dots span { width: 10px; height: 10px; border-radius: 50%; }
-        .mock-site-bar .dots .r { background: #ef4444; } .mock-site-bar .dots .y { background: #eab308; } .mock-site-bar .dots .g { background: #22c55e; }
-        .mock-site-bar .url { color: rgba(255,255,255,0.5); font-size: 0.75rem; flex: 1; text-align: center; }
-        .mock-site-hero { background: linear-gradient(135deg, #1e3a5f 0%, #2a4a7a 100%); padding: 40px; text-align: center; color: var(--white); }
-        .mock-site-hero h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
-        .mock-site-hero p { font-size: 0.9rem; opacity: 0.8; max-width: 400px; margin: 0 auto; }
-        .mock-site-content { padding: 24px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-        .mock-site-content .block { background: var(--gray-100); border-radius: var(--radius); height: 80px; }
-        .mock-site-footer { background: var(--navy); padding: 16px; text-align: center; color: rgba(255,255,255,0.4); font-size: 0.75rem; }
+        .platform-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; max-width: 600px; margin: 24px auto; }
+        .platform-item { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: 20px; text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--gray-700); transition: box-shadow 0.2s; }
+        .platform-item:hover { box-shadow: var(--shadow-md); }
+        .platform-item .icon { font-size: 2rem; display: block; margin-bottom: 6px; }
 
         .mock-dash { background: var(--white); border: 2px solid var(--gray-200); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-md); }
         .mock-dash-nav { background: var(--navy); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
@@ -93,9 +85,17 @@
         .mock-dash-stat { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 14px; text-align: center; }
         .mock-dash-stat .val { font-size: 1.4rem; font-weight: 800; color: var(--gray-900); }
         .mock-dash-stat .lbl { font-size: 0.7rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
-        .mock-dash-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-        .mock-dash-table th { text-align: left; font-weight: 600; color: var(--gray-500); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 10px; border-bottom: 2px solid var(--gray-200); }
-        .mock-dash-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-100); }
+
+        .activity-feed { margin-top: 16px; }
+        .activity-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-item .icon { font-size: 1.2rem; width: 28px; text-align: center; }
+        .activity-item .text { font-size: 0.85rem; color: var(--gray-600); flex: 1; }
+        .activity-item .time { font-size: 0.72rem; color: var(--gray-400); white-space: nowrap; }
+
+        .chat-input { display: flex; gap: 8px; margin-top: 12px; }
+        .chat-input input { flex: 1; padding: 10px 14px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-family: inherit; font-size: 0.85rem; background: var(--white); color: var(--gray-900); }
+        .chat-input input:disabled { background: var(--gray-50); color: var(--gray-500); }
 
         .timeline { position: relative; padding-left: 32px; }
         .timeline::before { content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: var(--gray-200); }
@@ -113,7 +113,7 @@
         @media (max-width: 900px) {
             .grid-2, .grid-3 { grid-template-columns: 1fr; }
             .mock-dash-stats { grid-template-columns: repeat(2, 1fr); }
-            .mock-site-content { grid-template-columns: 1fr; }
+            .platform-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 640px) {
             .hamburger { display: block; }
@@ -124,8 +124,6 @@
             .hero { padding: 40px 20px 56px; }
             .section { padding: 40px 20px; }
             .section-header h2 { font-size: 1.5rem; }
-            .mock-site-hero { padding: 24px; }
-            .mock-site-hero h2 { font-size: 1.15rem; }
         }
     </style>
 </head>
@@ -140,45 +138,45 @@
         <div class="nav-links" id="nav-links">
             <a href="/fr/">Accueil</a>
             <a href="/fr/demo">Démo</a>
-            <a href="/fr/contract" class="cta">Commencer</a>
+            <a href="/fr/signup" class="cta">Essayer Frankie Gratuit</a>
             <a href="/demo" class="lang-toggle">EN</a>
         </div>
     </nav>
 
     <section class="hero">
-        <h1>Voyez ce que <span>Frankie</span> — votre équipe marketing IA — vous apporte</h1>
-        <p>En vous inscrivant, vous obtenez un site web live, un tableau de bord client et <strong>16 agents IA + Frankie</strong> qui travaillent 24h/24 pour développer votre entreprise. Voici exactement à quoi cela ressemble.</p>
+        <h1>Voyez <span>Frankie</span> en Action — Votre Centre de Commande Marketing IA</h1>
+        <p>Frankie se connecte à votre site web existant, vos réseaux sociaux, votre courriel et vos plateformes publicitaires. 16 agents IA spécialisés travaillent 24h/24 pour faire croître votre entreprise. Voici exactement à quoi cela ressemble.</p>
         <div class="btn-group">
-            <a href="/fr/contract" class="btn btn-red">Obtenez ceci pour votre entreprise</a>
+            <a href="/fr/signup" class="btn btn-red">Démarrez Votre Essai Gratuit</a>
             <a href="#ce-que-vous-obtenez" class="btn btn-outline">Découvrir</a>
         </div>
     </section>
 
     <div class="section" id="ce-que-vous-obtenez">
         <div class="section-header">
-            <h2>Tout ce que vous recevez comme client</h2>
-            <p>Trois produits intégrés qui travaillent ensemble pour automatiser votre marketing.</p>
+            <h2>Tout ce que Frankie Vous Offre</h2>
+            <p>Trois couches intégrées qui travaillent ensemble pour automatiser votre marketing.</p>
         </div>
         <div class="grid-3">
             <div class="demo-card">
                 <div class="demo-card-img" style="background:linear-gradient(135deg,#0f2b45,#1a3a5c);color:var(--white);font-size:2.5rem;font-weight:800;">🌐</div>
                 <div class="demo-card-body">
-                    <h3>Votre Site Web Live</h3>
-                    <p>Un site professionnel de génération de leads déployé sur votre propre sous-domaine. Personnalisé avec votre logo, couleurs et services. Conçu pour convertir les visiteurs en appels.</p>
+                    <h3>Votre Site Web Existant</h3>
+                    <p>Frankie se branche à votre site actuel — WordPress, Webflow, sur mesure, ou autre. Aucune migration. Aucune reconstruction. Frankie analyse, optimise et génère du trafic vers le site que vous avez déjà.</p>
                 </div>
             </div>
             <div class="demo-card">
                 <div class="demo-card-img" style="background:linear-gradient(135deg,#1a3a5c,#0f2b45);color:var(--white);font-size:2.5rem;font-weight:800;">📊</div>
                 <div class="demo-card-body">
-                    <h3>Votre Tableau de Bord Client</h3>
-                    <p>Soumettez des demandes marketing, suivez l'activité des agents IA, consultez votre échéancier de paiement et voyez les résultats en temps réel. Votre centre de commandement pour la croissance.</p>
+                    <h3>Centre de Commande Frankie</h3>
+                    <p>Un tableau de bord PWA puissant où vous discutez avec Frankie, approuvez le contenu, consultez les analyses et gérez les 16 agents IA. Installez-le sur n'importe quel appareil — téléphone, tablette ou ordinateur.</p>
                 </div>
             </div>
             <div class="demo-card">
                 <div class="demo-card-img" style="background:linear-gradient(135deg,#0f2b45,#1a3a5c);color:var(--white);font-size:2.5rem;font-weight:800;">🤖</div>
                 <div class="demo-card-body">
                     <h3>16 Agents IA + Frankie</h3>
-                    <p>SEO local, médias sociaux, annonces, courriel, TikTok, prospection, backlinks, réputation, conversion, growth hacking, stratégie de contenu, SEO technique, CRO, vidéo, SMS marketing, rapports — coordonné par <strong>Frankie</strong>, votre centre de commande IA.</p>
+                    <p>SEO local, médias sociaux, annonces payantes, courriel, TikTok, prospection, backlinks, réputation, conversion, growth hacking, stratégie de contenu, SEO technique, CRO, vidéo, SMS marketing, rapports — coordonné par <strong>Frankie</strong>, votre centre de commande IA.</p>
                 </div>
             </div>
         </div>
@@ -187,56 +185,35 @@
     <div class="bg-alt">
         <div class="section">
             <div class="section-header">
-                <h2>Votre Site Web Live</h2>
-                <p>Déployé en quelques heures après votre inscription. Optimisé pour la recherche locale et conçu pour générer des leads.</p>
+                <h2>Frankie se Connecte à Vos Outils</h2>
+                <p>Frankie s'intègre aux plateformes que vous utilisez déjà. Vous autorisez une fois — Frankie s'occupe du reste.</p>
             </div>
-            <div class="mock-site" style="max-width:800px;margin:0 auto;">
-                <div class="mock-site-bar">
-                    <div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
-                    <div class="url">plomberielaval.lavaldigital.ca</div>
-                    <div style="width:50px;"></div>
-                </div>
-                <div class="mock-site-hero">
-                    <h2>Plomberie Laval</h2>
-                    <p>Votre plombier d'urgence de confiance à Laval — disponible 24/7 pour tous vos besoins de plomberie.</p>
-                    <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
-                        <span style="background:var(--red);padding:8px 20px;border-radius:6px;font-weight:600;font-size:0.85rem;">(450) 555-1234</span>
-                        <span style="background:rgba(255,255,255,0.15);padding:8px 20px;border-radius:6px;font-size:0.85rem;">Soumission Gratuite</span>
-                    </div>
-                </div>
-                <div class="mock-site-content">
-                    <div class="block" style="height:auto;background:transparent;padding:8px;">
-                        <div style="font-weight:700;font-size:0.85rem;color:var(--gray-700);margin-bottom:4px;">Réparations d'Urgence</div>
-                        <div style="font-size:0.78rem;color:var(--gray-500);">Intervention 24/7 pour fuites, tuyaux burst et urgences de drain.</div>
-                    </div>
-                    <div class="block" style="height:auto;background:transparent;padding:8px;">
-                        <div style="font-weight:700;font-size:0.85rem;color:var(--gray-700);margin-bottom:4px;">Débouchage</div>
-                        <div style="font-size:0.78rem;color:var(--gray-500);">Hydro-jet, nettoyage et inspections par caméra pour drains bouchés.</div>
-                    </div>
-                    <div class="block" style="height:auto;background:transparent;padding:8px;">
-                        <div style="font-weight:700;font-size:0.85rem;color:var(--gray-700);margin-bottom:4px;">Chauffe-eau</div>
-                        <div style="font-size:0.78rem;color:var(--gray-500);">Installation, réparation et entretien de systèmes avec et sans réservoir.</div>
-                    </div>
-                </div>
-                <div class="mock-site-footer">© 2026 Plomberie Laval. Propulsé par Laval Digital.</div>
+            <div class="platform-grid">
+                <div class="platform-item"><span class="icon">🔌</span>WordPress</div>
+                <div class="platform-item"><span class="icon">👍</span>Facebook</div>
+                <div class="platform-item"><span class="icon">📸</span>Instagram</div>
+                <div class="platform-item"><span class="icon">📍</span>Google Business</div>
+                <div class="platform-item"><span class="icon">📢</span>Google Ads</div>
+                <div class="platform-item"><span class="icon">✉️</span>Gmail</div>
+                <div class="platform-item"><span class="icon">🎵</span>TikTok</div>
+                <div class="platform-item"><span class="icon">💼</span>LinkedIn</div>
             </div>
             <div style="text-align:center;margin-top:16px;">
-                <span class="tag tag-green">✓ Optimisé Google</span>
-                <span class="tag tag-blue">✓ Adapté mobile</span>
-                <span class="tag tag-amber">✓ Boutons d'appel</span>
-                <span class="tag tag-gray">✓ Pages de services</span>
+                <span class="tag tag-green">✓ Aucune migration</span>
+                <span class="tag tag-blue">✓ Aucune reconstruction</span>
+                <span class="tag tag-amber">✓ Fonctionne avec toute plateforme</span>
             </div>
         </div>
     </div>
 
     <div class="section">
         <div class="section-header">
-            <h2>Votre Tableau de Bord Client</h2>
-            <p>Suivez l'état de votre projet, soumettez des demandes et surveillez votre équipe IA en temps réel.</p>
+            <h2>Votre Centre de Commande Frankie</h2>
+            <p>Discutez avec Frankie, surveillez vos agents IA et suivez les résultats en temps réel.</p>
         </div>
         <div class="mock-dash" style="max-width:800px;margin:0 auto;">
             <div class="mock-dash-nav">
-                <div class="brand"><div class="dot"></div>Portail Client</div>
+                <div class="brand"><div class="dot"></div>Centre de Commande Frankie</div>
                 <div style="display:flex;gap:10px;align-items:center;">
                     <span style="color:rgba(255,255,255,0.5);font-size:0.75rem;">Plomberie Laval</span>
                     <span style="background:rgba(255,255,255,0.1);color:#fca5a5;padding:4px 10px;border-radius:4px;font-size:0.72rem;">Déconnexion</span>
@@ -244,28 +221,39 @@
             </div>
             <div class="mock-dash-body">
                 <div class="mock-dash-stats">
-                    <div class="mock-dash-stat"><div class="val" style="color:var(--green);">En ligne</div><div class="lbl">Statut Projet</div></div>
+                    <div class="mock-dash-stat"><div class="val" style="color:var(--green);">Actif</div><div class="lbl">Statut Frankie</div></div>
                     <div class="mock-dash-stat"><div class="val">16/16</div><div class="lbl">Agents IA Actifs</div></div>
                     <div class="mock-dash-stat"><div class="val">8</div><div class="lbl">Tâches ce Mois</div></div>
-                    <div class="mock-dash-stat"><div class="val" style="color:var(--blue);">Live</div><div class="lbl">Site Web</div></div>
-                </div>
-                <div style="margin-bottom:16px;">
-                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">Calendrier de Paiement</div>
-                    <table class="mock-dash-table">
-                        <thead><tr><th>#</th><th>Montant</th><th>Échéance</th><th>Statut</th></tr></thead>
-                        <tbody>
-                            <tr><td>1</td><td>3 125 $</td><td>1 juin 2026</td><td><span class="tag tag-green">Payé</span></td></tr>
-                            <tr><td>2</td><td>3 125 $</td><td>1 juil 2026</td><td><span class="tag tag-amber">Impayé</span></td></tr>
-                            <tr><td>3</td><td>3 125 $</td><td>1 août 2026</td><td><span class="tag tag-amber">Impayé</span></td></tr>
-                            <tr><td>4</td><td>3 125 $</td><td>1 sept 2026</td><td><span class="tag tag-amber">Impayé</span></td></tr>
-                        </tbody>
-                    </table>
+                    <div class="mock-dash-stat"><div class="val" style="color:var(--green);">Connecté</div><div class="lbl">Plateformes</div></div>
                 </div>
                 <div>
-                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">Soumettre une Demande</div>
-                    <div style="display:flex;gap:8px;">
-                        <input type="text" value="Créez une campagne Facebook pour notre offre de nettoyage de drain d'automne" disabled style="flex:1;padding:10px 14px;border:1px solid var(--gray-300);border-radius:var(--radius);font-family:inherit;font-size:0.85rem;background:var(--gray-50);color:var(--gray-500);">
+                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:4px;">Discutez avec Frankie</div>
+                    <div class="chat-input">
+                        <input type="text" value="Créez une campagne Facebook pour notre offre de nettoyage de drain d'automne" disabled>
                         <button class="btn btn-red" disabled style="padding:10px 20px;font-size:0.85rem;">Envoyer</button>
+                    </div>
+                </div>
+                <div class="activity-feed">
+                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">Activité Récente</div>
+                    <div class="activity-item">
+                        <div class="icon">📸</div>
+                        <div class="text">Agent Médias Sociaux a publié une publication avant/après sur Instagram et Facebook</div>
+                        <div class="time">il y a 2 min</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="icon">📍</div>
+                        <div class="text">Agent SEO Local a mis à jour votre profil Google Business avec de nouvelles photos</div>
+                        <div class="time">il y a 15 min</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="icon">📢</div>
+                        <div class="text">Agent Annonces Payantes a lancé une campagne Google Ads RSA — CTR : 4,2 %</div>
+                        <div class="time">il y a 1 h</div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="icon">✉️</div>
+                        <div class="text">Agent Marketing Courriel a envoyé l'infolettre mensuelle — Taux d'ouverture : 34 %</div>
+                        <div class="time">il y a 3 h</div>
                     </div>
                 </div>
             </div>
@@ -312,7 +300,7 @@
                         <h4>Publication Facebook & Instagram</h4>
                         <p>📣 <strong>Avant & Après : Rénovation de Salle de Bain</strong><br>
                         "Transformation complète de salle de bain à Chomedey — terminée en seulement 3 jours ! 🛁✨ De l'ancien carrelage au moderne. Les propriétaires de Laval font confiance à Plomberie Laval pour des rénovations de qualité.<br>
-                        📞 (450) 555-1234 | 🔗 plomberielaval.lavaldigital.ca"</p>
+                        📞 (450) 555-1234 | 🔗 votresiteweb.com"</p>
                         <div style="margin-top:8px;"><span class="tag tag-blue">Portée : 3 200</span> <span class="tag tag-amber">Engagements : 187</span></div>
                     </div>
                     <div class="preview-box">
@@ -338,8 +326,26 @@
                         <h4>Article Invité Publié</h4>
                         <p><strong>Publication :</strong> Blog des Propriétaires de Laval<br>
                         <strong>Titre :</strong> « 10 Vérifications de Plomberie Essentielles pour les Propriétaires de Laval ce Printemps »<br>
-                        <strong>Lien :</strong> → plomberielaval.lavaldigital.ca (backlink acquis)</p>
+                        <strong>Lien :</strong> → votresiteweb.com (backlink acquis)</p>
                         <div style="margin-top:8px;"><span class="tag tag-green">✓ Publié</span> <span class="tag tag-blue">Autorité de domaine : 42</span></div>
+                    </div>
+                    <div class="preview-box">
+                        <div class="label">Agent Stratégie de Contenu</div>
+                        <h4>Calendrier Éditorial Mensuel</h4>
+                        <p><strong>Thème :</strong> Série Entretien Printanier<br>
+                        <strong>Semaine 1 :</strong> Blog — « Liste de Vérification Plomberie Printemps » → Republication : Facebook + infolettre + SMS<br>
+                        <strong>Semaine 2 :</strong> Vidéo — « Comment Détecter une Fuite » → YouTube + Instagram Reels + TikTok<br>
+                        <strong>Semaine 3 :</strong> Étude de Cas — « Avant/Après Rénovation » → Carrousel Instagram + pub Facebook</p>
+                        <div style="margin-top:8px;"><span class="tag tag-green">4 canaux par pièce</span></div>
+                    </div>
+                    <div class="preview-box">
+                        <div class="label">Agent SEO Technique</div>
+                        <h4>Rapport d'Audit (Extrait)</h4>
+                        <p><strong>Schéma :</strong> JSON-LD LocalBusiness implémenté ✓<br>
+                        <strong>Vitesse :</strong> Core Web Vitals réussi — LCP 1,8s, FID 45ms, CLS 0,08 ✓<br>
+                        <strong>Exploration :</strong> 0 liens brisés, 3 redirections optimisées ✓<br>
+                        <strong>Plan du site :</strong> Soumis à Google Search Console ✓</p>
+                        <div style="margin-top:8px;"><span class="tag tag-green">Pages indexées : 12/12</span></div>
                     </div>
                 </div>
             </div>
@@ -354,41 +360,41 @@
         <div class="timeline" style="max-width:600px;margin:0 auto;">
             <div class="timeline-item">
                 <div class="date">Jour 1</div>
-                <h4>Site Web Déployé</h4>
-                <p>Votre site live est en ligne à votrenom.lavaldigital.ca avec votre logo, couleurs, services et coordonnées. Indexé Google sous 24h.</p>
+                <h4>Frankie Activé</h4>
+                <p>Frankie se connecte à votre site web, vos réseaux sociaux, votre courriel et vos plateformes publicitaires. Commence à analyser votre présence existante.</p>
             </div>
             <div class="timeline-item">
                 <div class="date">Jour 2-3</div>
-                <h4>Agents IA Activés</h4>
-                <p>Les 16 agents commencent à travailler. <strong>Frankie</strong> surveille tout depuis le centre de commande. Le SEO local optimise votre profil Google Business. Les médias sociaux préparent votre première semaine de contenu.</p>
+                <h4>Les Agents IA Commencent à Travailler</h4>
+                <p>Les 16 agents commencent à générer du contenu. Frankie surveille tout. Le SEO local audite votre présence Google. Les médias sociaux rédigent votre première semaine de publications.</p>
             </div>
             <div class="timeline-item">
                 <div class="date">Jour 4-5</div>
                 <h4>Premier Contenu Livré</h4>
-                <p>Vous recevez des brouillons dans votre tableau de bord. Révisez, approuvez et votre contenu est publié — publications sociales, articles de blog, campagnes publicitaires.</p>
+                <p>Vous recevez des brouillons dans votre tableau de bord Frankie. Révisez, approuvez et votre contenu est publié sur vos plateformes.</p>
             </div>
             <div class="timeline-item">
                 <div class="date">Jour 7</div>
-                <h4>Google Ads En Ligne</h4>
-                <p>Vos campagnes publicitaires payantes sont approuvées et actives. Mots-clés ciblés, budgets optimisés, textes publicitaires testés A/B.</p>
+                <h4>Annonces Payantes En Ligne</h4>
+                <p>Vos campagnes publicitaires Google et Meta sont approuvées et actives. Mots-clés ciblés, budgets optimisés.</p>
             </div>
             <div class="timeline-item">
                 <div class="date">Jour 14</div>
-                <h4>Premiers Leads</h4>
-                <p>L'agent de conversion de prospects commence à nourrir les demandes entrantes. Attendez-vous à vos premiers appels et soumissions de formulaire.</p>
+                <h4>Premiers Leads Suivis</h4>
+                <p>L'agent de conversion de prospects commence à nourrir les demandes entrantes. Frankie vous montre exactement d'où viennent les leads.</p>
             </div>
             <div class="timeline-item">
                 <div class="date">Jour 30</div>
                 <h4>Premier Rapport Mensuel</h4>
-                <p>Bilan complet : trafic site web, ROI publicitaire, croissance des médias sociaux, amélioration des avis, volume de leads. Stratégie basée sur les données pour le mois 2.</p>
+                <p>Bilan complet : trafic site web, ROI publicitaire, croissance des médias sociaux, amélioration des avis, volume de leads.</p>
             </div>
         </div>
     </div>
 
     <div class="bg-alt" style="text-align:center;padding:64px 24px;">
-        <h2 style="font-size:2rem;font-weight:800;letter-spacing:-0.015em;margin-bottom:12px;">Prêt à Commencer ?</h2>
-        <p style="font-size:1.05rem;color:var(--gray-500);max-width:500px;margin:0 auto 24px;">Votre équipe marketing IA est prête. Choisissez votre forfait et nous aurons votre site en ligne en quelques heures.</p>
-        <a href="/fr/contract" class="btn btn-red" style="font-size:1.05rem;padding:14px 36px;">Choisir Votre Forfait →</a>
+        <h2 style="font-size:2rem;font-weight:800;letter-spacing:-0.015em;margin-bottom:12px;">Prêt à Rencontrer Frankie ?</h2>
+        <p style="font-size:1.05rem;color:var(--gray-500);max-width:500px;margin:0 auto 24px;">Votre essai gratuit de 7 jours inclut l'accès complet aux 16 agents et au centre de commande Frankie. Aucune carte de crédit requise.</p>
+        <a href="/fr/signup" class="btn btn-red" style="font-size:1.05rem;padding:14px 36px;">Démarrez Votre Essai Gratuit →</a>
     </div>
 
     <div class="footer">
