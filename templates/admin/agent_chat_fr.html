@@ -470,13 +470,13 @@ async function sendMessage() {
 
 function executeAgentResponse(content) {
     if (!content) return alert('Aucun contenu à exécuter.');
-    if (!confirm('Envoyer cette réponse à l\'exécuteur pour publication ?')) return;
+    if (!confirm('Envoyer cette réponse via MCP pour publication ?')) return;
 
     const btn = event.target;
     btn.disabled = true;
     btn.textContent = 'Envoi...';
 
-    fetch('/api/executioner/execute-chat', {
+    fetch('/api/mcp/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent_id: AGENT_ID, content: content })
@@ -484,7 +484,7 @@ function executeAgentResponse(content) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert('Envoyé à l\'exécuteur : ' + (data.result || 'Terminé'));
+            alert('Exécuté via MCP : ' + (data.result || 'Terminé'));
         } else {
             alert('Échec : ' + (data.error || 'Erreur inconnue'));
         }

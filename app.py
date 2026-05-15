@@ -2607,14 +2607,55 @@ def respond_approval(thread_id):
             conn.commit()
 
             if approved and agent_name and agent_name in agent_registry:
-                try:
-                    exec_result = executioner.execute(agent_name, draft)
-                    execution_result = {
-                        "success": exec_result.get("success", False),
-                        "result": exec_result.get("result", "")
-                    }
-                except Exception as exec_err:
-                    execution_result = {"success": False, "error": str(exec_err)}
+                # Try MCP execution first, fall back to Executioner
+                exec_result = None
+                mcp_mapping = {
+                    "local_seo": ("seo", "publish_blog_post"),
+                    "social_media": ("social", "post_to_facebook"),
+                    "lead_conversion": ("email", "send_email"),
+                    "paid_ads": ("ads", "create_google_ads_campaign"),
+                    "growth_hacker": ("analytics", "analyze_trends"),
+                    "reputation": ("gmb", "respond_to_review"),
+                    "email_marketing": ("email", "send_campaign"),
+                    "tiktok": ("social", "post_to_tiktok"),
+                    "outreach": ("email", "send_email"),
+                    "backlinks": ("seo", "find_backlink_opportunities"),
+                    "content_strategist": ("seo", "publish_blog_post"),
+                    "cro": ("website", "audit_seo_health"),
+                    "technical_seo": ("seo", "run_site_audit"),
+                    "video": ("social", "post_to_tiktok"),
+                    "sms_marketing": ("email", "send_email"),
+                    "reporting": ("analytics", "generate_monthly_report"),
+                }
+
+                mapping = mcp_mapping.get(agent_name)
+                if mapping:
+                    server_name, tool_name = mapping
+                    mcp_server = get_mcp_server(server_name)
+                    if mcp_server:
+                        try:
+                            mcp_result = mcp_server.call_tool(tool_name, content=draft)
+                            exec_result = {
+                                "success": mcp_result.get("success", False),
+                                "result": mcp_result.get("result", ""),
+                                "error": mcp_result.get("error"),
+                                "execution_id": f"mcp-{server_name}-{tool_name}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                            }
+                            logger.info(f"MCP execution: {server_name}/{tool_name} → success={exec_result['success']}")
+                        except Exception as e:
+                            logger.warning(f"MCP execution failed, falling back to Executioner: {e}")
+
+                # Fall back to old Executioner if MCP failed or no mapping
+                if not exec_result:
+                    try:
+                        exec_result = executioner.execute(agent_name, draft)
+                    except Exception as exec_err:
+                        exec_result = {"success": False, "error": str(exec_err)}
+
+                execution_result = {
+                    "success": exec_result.get("success", False),
+                    "result": exec_result.get("result", "")
+                }
 
             return jsonify({
                 "thread_id": thread_id,
@@ -3798,6 +3839,123 @@ def call_mcp_tool():
         return jsonify({"error": f"MCP server '{server_name}' not found"}), 404
 
     result = server.call_tool(tool_name, **params)
+    return jsonify(result)
+
+
+@app.route("/api/mcp/credentials", methods=["GET"])
+def get_mcp_credentials():
+    """Get stored MCP credentials for the current tenant."""
+    tenant_id = get_current_tenant()
+    if not tenant_id:
+        return jsonify({"credentials": {}, "error": "No tenant selected"}), 400
+
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute("SELECT server_name, platform, credential_key, credential_value FROM mcp_credentials")
+        creds = {}
+        for row in cursor.fetchall():
+            key = f"{row['server_name']}.{row['platform']}.{row['credential_key']}"
+            creds[key] = row["credential_value"]
+        return jsonify({"credentials": creds})
+    except Exception as e:
+        return jsonify({"credentials": {}, "error": str(e)})
+
+
+@app.route("/api/mcp/credentials", methods=["POST"])
+def save_mcp_credentials():
+    """Save MCP credentials for the current tenant."""
+    tenant_id = get_current_tenant()
+    if not tenant_id:
+        return jsonify({"error": "No tenant selected"}), 400
+
+    data = request.json
+    server_name = data.get("server_name", "")
+    platform = data.get("platform", "")
+    credentials = data.get("credentials", {})
+
+    if not server_name:
+        return jsonify({"error": "server_name is required"}), 400
+
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        now = datetime.now().isoformat()
+
+        for key, value in credentials.items():
+            cursor.execute("""
+                INSERT OR REPLACE INTO mcp_credentials
+                (server_name, platform, credential_key, credential_value, created_at, updated_at)
+                VALUES (?, ?, ?, ?, COALESCE((SELECT created_at FROM mcp_credentials WHERE server_name=? AND platform=? AND credential_key=?), ?), ?)
+            """, (server_name, platform, key, value, server_name, platform, key, now, now))
+
+        conn.commit()
+        return jsonify({"success": True, "message": f"Credentials saved for {server_name}"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/mcp/credentials/<server_name>", methods=["DELETE"])
+def delete_mcp_credentials(server_name):
+    """Delete all credentials for an MCP server."""
+    tenant_id = get_current_tenant()
+    if not tenant_id:
+        return jsonify({"error": "No tenant selected"}), 400
+
+    try:
+        conn = tenant_manager.get_connection(tenant_id)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM mcp_credentials WHERE server_name = ?", (server_name,))
+        conn.commit()
+        return jsonify({"success": True, "message": f"Credentials deleted for {server_name}"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/mcp/execute", methods=["POST"])
+def execute_via_mcp():
+    """Execute an approved agent draft via the appropriate MCP server.
+    Auto-selects the correct MCP server based on the agent that generated the content.
+    """
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    agent_id = data.get("agent_id", "")
+    content = data.get("content", "")
+
+    if not agent_id or not content:
+        return jsonify({"error": "agent_id and content are required"}), 400
+
+    agent_mcp_map = {
+        "local_seo": ("seo", "publish_blog_post"),
+        "content_strategist": ("seo", "publish_blog_post"),
+        "technical_seo": ("seo", "run_site_audit"),
+        "backlinks": ("seo", "find_backlink_opportunities"),
+        "social_media": ("social", "post_to_facebook"),
+        "tiktok": ("social", "post_to_tiktok"),
+        "lead_conversion": ("email", "send_email"),
+        "email_marketing": ("email", "send_campaign"),
+        "outreach": ("email", "send_email"),
+        "reputation": ("gmb", "respond_to_review"),
+        "paid_ads": ("ads", "create_google_ads_campaign"),
+        "growth_hacker": ("analytics", "analyze_trends"),
+        "cro": ("website", "audit_seo_health"),
+        "video": ("social", "post_to_tiktok"),
+        "sms_marketing": ("email", "send_email"),
+        "reporting": ("analytics", "generate_monthly_report"),
+    }
+
+    mapping = agent_mcp_map.get(agent_id)
+    if not mapping:
+        return jsonify({"error": f"No MCP mapping for agent '{agent_id}'"}), 400
+
+    server_name, tool_name = mapping
+    server = get_mcp_server(server_name)
+    if not server:
+        return jsonify({"error": f"MCP server '{server_name}' not found"}), 404
+
+    result = server.call_tool(tool_name, content=content)
     return jsonify(result)
 
 

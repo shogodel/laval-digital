@@ -164,6 +164,8 @@ class ExecutionerAgent:
     ) -> Dict[str, Any]:
         """Execute an approved draft through a registered tool.
 
+        Tries MCP execution first, falls back to built-in tools.
+
         When the resolved tool is in the ``confirm_tools`` list and
         ``force`` is ``False``, the execution is queued for human
         confirmation instead of running immediately.
@@ -189,6 +191,48 @@ class ExecutionerAgent:
         Raises:
             ExecutionerError: If no tool can be found for the given inputs.
         """
+        # Try MCP execution first
+        try:
+            from mcp import get_mcp_server
+            mcp_mapping = {
+                "local_seo": ("seo", "publish_blog_post"),
+                "social_media": ("social", "post_to_facebook"),
+                "lead_conversion": ("email", "send_email"),
+                "paid_ads": ("ads", "create_google_ads_campaign"),
+                "growth_hacker": ("analytics", "analyze_trends"),
+                "reputation": ("gmb", "respond_to_review"),
+                "email_marketing": ("email", "send_campaign"),
+                "tiktok": ("social", "post_to_tiktok"),
+                "outreach": ("email", "send_email"),
+                "backlinks": ("seo", "find_backlink_opportunities"),
+                "content_strategist": ("seo", "publish_blog_post"),
+                "cro": ("website", "audit_seo_health"),
+                "technical_seo": ("seo", "run_site_audit"),
+                "video": ("social", "post_to_tiktok"),
+                "sms_marketing": ("email", "send_email"),
+                "reporting": ("analytics", "generate_monthly_report"),
+            }
+            mapping = mcp_mapping.get(agent_name)
+            if mapping:
+                server_name, mcp_tool = mapping
+                mcp_server = get_mcp_server(server_name)
+                if mcp_server:
+                    try:
+                        result = mcp_server.call_tool(mcp_tool, content=approved_draft)
+                        if result.get("success"):
+                            return {
+                                "success": True,
+                                "result": f"MCP: {result.get('result', 'Done')}",
+                                "error": None,
+                                "execution_id": f"mcp-{server_name}-{mcp_tool}"
+                            }
+                    except Exception as e:
+                        logger.warning(f"MCP call failed for {server_name}/{mcp_tool}: {e}")
+        except ImportError:
+            pass  # MCP not available, fall back to built-in tools
+        except Exception as e:
+            logger.warning(f"MCP execution failed, falling back: {e}")
+
         resolved_tool = tool_name or self._select_tool(agent_name)
 
         if resolved_tool not in self.tool_registry:

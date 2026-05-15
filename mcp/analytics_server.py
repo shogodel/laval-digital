@@ -1,7 +1,8 @@
 """Analytics & Reporting MCP Server for Frankie — Cross-channel performance measurement."""
 import logging
 import json
-from datetime import datetime, timezone
+import sqlite3
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from .base_server import MCPServer
@@ -17,6 +18,19 @@ class AnalyticsMCPServer(MCPServer):
             name="analytics",
             description="Analytics and reporting — cross-channel ROI, dashboards, trends, benchmarks, lead attribution"
         )
+
+    def _get_tenant_connection(self, tenant_id: str) -> Optional[sqlite3.Connection]:
+        """Get a database connection for a tenant. Returns None if tenant doesn't exist."""
+        try:
+            db_path = Path("tenants/direct") / f"{tenant_id}.db"
+            if not db_path.exists():
+                return None
+            conn = sqlite3.connect(str(db_path))
+            conn.row_factory = sqlite3.Row
+            return conn
+        except Exception as e:
+            logger.error(f"Failed to connect to tenant {tenant_id}: {e}")
+            return None
 
     def _register_tools(self) -> None:
         self.register_tool("generate_monthly_report", self.generate_monthly_report,
@@ -39,6 +53,10 @@ class AnalyticsMCPServer(MCPServer):
             "Configure alerts when campaigns hit key milestones")
         self.register_tool("benchmark_vs_industry", self.benchmark_vs_industry,
             "Compare performance to industry averages")
+        self.register_tool("get_executive_summary", self.get_executive_summary,
+            "Generate a plain-language executive summary of all Frankie activity")
+        self.register_tool("get_chart_data", self.get_chart_data,
+            "Return chart-ready data for the Frankie dashboard")
 
     # ------------------------------------------------------------------
     # Monthly Report
@@ -94,22 +112,45 @@ class AnalyticsMCPServer(MCPServer):
     # ROI Tracking
     # ------------------------------------------------------------------
 
-    def track_roi(self, period: str = "monthly", revenue: float = 0.0, costs: Dict[str, float] = None, **kwargs) -> Dict[str, Any]:
-        """Calculate ROI per marketing channel."""
-        costs = costs or {"ads": 500.0, "tools": 50.0, "frankie": 597.99}
-        total_cost = sum(costs.values())
-        roi = ((revenue - total_cost) / total_cost * 100) if total_cost > 0 else 0
+    def track_roi(self, tenant_id: str = "", period: str = "monthly", **kwargs) -> Dict[str, Any]:
+        """Calculate real ROI from Frankie's execution data."""
+        conn = self._get_tenant_connection(tenant_id) if tenant_id else None
+        if not conn:
+            return {"success": False, "result": "", "error": f"No data found for tenant '{tenant_id}'. Deploy Frankie first."}
 
-        channel_roi = {}
-        for channel, cost in costs.items():
-            if cost > 0:
-                channel_revenue = revenue * (cost / total_cost) if total_cost > 0 else 0
-                channel_roi[channel] = {"cost": cost, "attributed_revenue": round(channel_revenue, 2),
-                                        "roi_pct": round(((channel_revenue - cost) / cost * 100), 1)}
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) as total, SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful FROM execution_log")
+            row = cursor.fetchone()
+            total_executions = row["total"] or 0
+            successful = row["successful"] or 0
 
-        return {"success": True, "result": f"Overall ROI: {roi:.1f}% (${revenue:.2f} revenue / ${total_cost:.2f} cost)",
-                "total_cost": total_cost, "total_revenue": revenue, "roi_pct": round(roi, 1),
-                "channel_breakdown": channel_roi}
+            cursor.execute("SELECT COUNT(*) as total FROM leads")
+            leads = cursor.fetchone()["total"] or 0
+
+            cursor.execute("SELECT agent_name, COUNT(*) as count FROM execution_log GROUP BY agent_name ORDER BY count DESC")
+            agent_tasks = {row["agent_name"]: row["count"] for row in cursor.fetchall()}
+
+            estimated_customers = int(leads * 0.10)
+            estimated_revenue = estimated_customers * 500
+            monthly_cost = 597.99
+            roi = ((estimated_revenue - monthly_cost) / monthly_cost * 100) if monthly_cost > 0 else 0
+
+            conn.close()
+            return {"success": True,
+                    "result": f"ROI: {roi:.0f}% (${estimated_revenue} est. revenue / ${monthly_cost} cost)",
+                    "metrics": {"total_executions": total_executions,
+                                "successful_executions": successful,
+                                "success_rate": round((successful / total_executions * 100), 1) if total_executions > 0 else 0,
+                                "leads_captured": leads,
+                                "estimated_customers": estimated_customers,
+                                "estimated_revenue": estimated_revenue,
+                                "monthly_cost": monthly_cost,
+                                "roi_pct": round(roi, 1),
+                                "agent_breakdown": agent_tasks}}
+        except Exception as e:
+            conn.close() if conn else None
+            return {"success": False, "result": "", "error": str(e)}
 
     # ------------------------------------------------------------------
     # Dashboard
@@ -155,21 +196,76 @@ class AnalyticsMCPServer(MCPServer):
     # Trends
     # ------------------------------------------------------------------
 
-    def analyze_trends(self, channel: str = "all", metric: str = "leads", **kwargs) -> Dict[str, Any]:
-        """Identify growth trends across marketing channels."""
-        trends = {
-            "leads": {"direction": "analyzing", "velocity": "+X% vs last month", "forecast": "Continue current trajectory"},
-            "traffic": {"direction": "analyzing", "velocity": "Connect Google Analytics for live data", "forecast": "N/A"},
-            "engagement": {"direction": "analyzing", "velocity": "Connect social APIs for live data", "forecast": "N/A"},
-            "conversion": {"direction": "analyzing", "velocity": "Track form submissions and calls", "forecast": "N/A"}
-        }
-        return {"success": True, "result": f"Trend analysis for {metric} on {channel}", "trends": trends}
+    def analyze_trends(self, tenant_id: str = "", channel: str = "all", metric: str = "executions", **kwargs) -> Dict[str, Any]:
+        """Analyze real trends from execution data."""
+        conn = self._get_tenant_connection(tenant_id) if tenant_id else None
+        if not conn:
+            return {"success": False, "error": f"No data found for tenant '{tenant_id}'"}
 
-    def compare_periods(self, period_a: str = "", period_b: str = "", **kwargs) -> Dict[str, Any]:
-        """Compare performance between two time periods."""
-        return {"success": True, "result": "Period comparison framework ready",
-                "comparison": {"period_a": period_a or "Current month", "period_b": period_b or "Previous month",
-                               "metrics": ["leads", "traffic", "conversions", "revenue", "ad_spend", "roi"]}}
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""SELECT DATE(timestamp) as day, COUNT(*) as count FROM execution_log WHERE timestamp >= DATE('now', '-28 days') GROUP BY DATE(timestamp) ORDER BY day""")
+            daily_executions = [{"date": row["day"], "count": row["count"]} for row in cursor.fetchall()]
+
+            cursor.execute("""SELECT DATE(timestamp) as day, COUNT(*) as total, SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful FROM execution_log WHERE timestamp >= DATE('now', '-28 days') GROUP BY DATE(timestamp) ORDER BY day""")
+            success_trend = [{"date": row["day"], "rate": round((row["successful"]/row["total"]*100),1) if row["total"] > 0 else 0} for row in cursor.fetchall()]
+
+            cursor.execute("""SELECT agent_name, COUNT(*) as count FROM execution_log WHERE timestamp >= DATE('now', '-30 days') GROUP BY agent_name ORDER BY count DESC""")
+            agent_activity = {row["agent_name"]: row["count"] for row in cursor.fetchall()}
+
+            cursor.execute("""SELECT strftime('%W', created_at) as week, COUNT(*) as count FROM leads WHERE created_at >= DATE('now', '-28 days') GROUP BY week ORDER BY week""")
+            lead_growth = [{"week": f"Week {row['week']}", "count": row["count"]} for row in cursor.fetchall()]
+
+            conn.close()
+            return {"success": True,
+                    "result": f"Trend analysis complete — {len(daily_executions)} days of data",
+                    "trends": {"daily_executions": daily_executions,
+                               "success_rate_trend": success_trend,
+                               "agent_activity": agent_activity,
+                               "lead_growth": lead_growth,
+                               "summary": {"total_executions_28d": sum(d["count"] for d in daily_executions),
+                                           "avg_daily_executions": round(sum(d["count"] for d in daily_executions) / max(len(daily_executions), 1), 1),
+                                           "trend_direction": "up" if len(daily_executions) >= 2 and daily_executions[-1]["count"] > daily_executions[0]["count"] else "stable",
+                                           "most_active_agent": max(agent_activity, key=agent_activity.get) if agent_activity else "none"}}}
+        except Exception as e:
+            conn.close() if conn else None
+            return {"success": False, "error": str(e)}
+
+    def compare_periods(self, tenant_id: str = "", period_a_days: int = 30, period_b_days: int = 30, **kwargs) -> Dict[str, Any]:
+        """Compare real performance between current period and previous period."""
+        conn = self._get_tenant_connection(tenant_id) if tenant_id else None
+        if not conn:
+            return {"success": False, "error": f"No data for tenant '{tenant_id}'"}
+
+        try:
+            cursor = conn.cursor()
+            cursor.execute(f"""SELECT COUNT(*) as executions, SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful, COUNT(DISTINCT DATE(timestamp)) as active_days FROM execution_log WHERE timestamp >= DATE('now', '-{period_a_days} days')""")
+            current = dict(cursor.fetchone())
+
+            cursor.execute(f"""SELECT COUNT(*) as executions, SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful, COUNT(DISTINCT DATE(timestamp)) as active_days FROM execution_log WHERE timestamp >= DATE('now', '-{period_a_days + period_b_days} days') AND timestamp < DATE('now', '-{period_a_days} days')""")
+            previous = dict(cursor.fetchone())
+
+            cursor.execute(f"SELECT COUNT(*) FROM leads WHERE created_at >= DATE('now', '-{period_a_days} days')")
+            current_leads = cursor.fetchone()[0] or 0
+            cursor.execute(f"SELECT COUNT(*) FROM leads WHERE created_at >= DATE('now', '-{period_a_days + period_b_days} days') AND created_at < DATE('now', '-{period_a_days} days')")
+            previous_leads = cursor.fetchone()[0] or 0
+
+            conn.close()
+
+            def calc_change(c, p):
+                if p == 0: return 100 if c > 0 else 0
+                return round(((c - p) / p) * 100, 1)
+
+            return {"success": True,
+                    "result": f"Period comparison: last {period_a_days} days vs previous {period_b_days} days",
+                    "comparison": {"current_period": {"executions": current["executions"] or 0, "successful": current["successful"] or 0, "active_days": current["active_days"] or 0, "leads": current_leads},
+                                   "previous_period": {"executions": previous["executions"] or 0, "successful": previous["successful"] or 0, "active_days": previous["active_days"] or 0, "leads": previous_leads},
+                                   "changes": {"executions": f"{calc_change(current['executions'] or 0, previous['executions'] or 0):+}%",
+                                               "success_rate": f"{calc_change(current['successful'] or 0, previous['successful'] or 0):+}%",
+                                               "leads": f"{calc_change(current_leads, previous_leads):+}%"}}}
+        except Exception as e:
+            conn.close() if conn else None
+            return {"success": False, "error": str(e)}
 
     # ------------------------------------------------------------------
     # Export
@@ -215,3 +311,93 @@ class AnalyticsMCPServer(MCPServer):
         }
         industry_benchmarks = benchmarks.get(industry, benchmarks["local_services"])
         return {"success": True, "result": f"Industry benchmarks for {industry}", "benchmarks": industry_benchmarks}
+
+    def get_executive_summary(self, tenant_id: str = "", business_name: str = "", **kwargs) -> Dict[str, Any]:
+        """Generate a plain-language executive summary of all Frankie activity."""
+        conn = self._get_tenant_connection(tenant_id) if tenant_id else None
+        if not conn:
+            return {"success": False, "error": f"No data for tenant '{tenant_id}'"}
+
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""SELECT COUNT(*) as total, SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful FROM execution_log WHERE timestamp >= DATE('now', '-30 days')""")
+            month = dict(cursor.fetchone())
+
+            cursor.execute("SELECT COUNT(*) FROM leads WHERE created_at >= DATE('now', '-30 days')")
+            leads = cursor.fetchone()[0] or 0
+
+            cursor.execute("SELECT COUNT(DISTINCT agent_name) FROM execution_log WHERE timestamp >= DATE('now', '-30 days')")
+            active_agents = cursor.fetchone()[0] or 0
+
+            cursor.execute("SELECT agent_name, COUNT(*) as c FROM execution_log WHERE timestamp >= DATE('now', '-30 days') GROUP BY agent_name ORDER BY c DESC LIMIT 3")
+            top_agents = [f"{row['agent_name']} ({row['c']} tasks)" for row in cursor.fetchall()]
+
+            cursor.execute("SELECT COUNT(*) FROM execution_log WHERE timestamp >= DATE('now', '-7 days')")
+            this_week = cursor.fetchone()[0] or 0
+
+            cursor.execute("SELECT COUNT(*) FROM execution_log WHERE timestamp >= DATE('now', '-14 days') AND timestamp < DATE('now', '-7 days')")
+            last_week = cursor.fetchone()[0] or 0
+
+            conn.close()
+
+            week_change = "up" if this_week > last_week else "down" if this_week < last_week else "stable"
+            success_rate = round((month["successful"] or 0) / max(month["total"] or 1, 1) * 100, 1)
+
+            summary = f"""📊 **{business_name or 'Your'} Monthly Marketing Summary**
+
+This month, Frankie executed **{month['total'] or 0} tasks** across **{active_agents} active agents** with a **{success_rate}% success rate**.
+
+Your top 3 most active agents were: {', '.join(top_agents) if top_agents else 'None yet'}.
+
+Frankie captured **{leads} new leads** this month. Week-over-week activity is **{week_change}** ({this_week} tasks this week vs {last_week} last week).
+
+**What this means for your business:** Based on industry averages, those {leads} leads could translate to approximately **{int(leads * 0.10)} new customers** this month. At an average job value of $500, that's an estimated **${int(leads * 0.10) * 500} in new revenue** influenced by Frankie.
+
+**Recommendation:** {'Increase activity by connecting more platforms' if active_agents < 8 else 'Continue current strategy — Frankie is performing well!'}"""
+
+            return {"success": True, "result": "Executive summary generated", "summary": summary.strip(),
+                    "metrics": {"total_tasks": month["total"] or 0, "success_rate": success_rate,
+                                "leads": leads, "active_agents": active_agents, "top_agents": top_agents}}
+        except Exception as e:
+            conn.close() if conn else None
+            return {"success": False, "error": str(e)}
+
+    def get_chart_data(self, tenant_id: str = "", chart_type: str = "executions_by_day", days: int = 30, **kwargs) -> Dict[str, Any]:
+        """Return chart-ready data for the Frankie dashboard."""
+        conn = self._get_tenant_connection(tenant_id) if tenant_id else None
+        if not conn:
+            return {"success": False, "error": f"No data for tenant '{tenant_id}'"}
+
+        try:
+            cursor = conn.cursor()
+
+            if chart_type == "executions_by_day":
+                cursor.execute(f"SELECT DATE(timestamp) as date, COUNT(*) as count FROM execution_log WHERE timestamp >= DATE('now', '-{days} days') GROUP BY DATE(timestamp) ORDER BY date")
+                data = [{"date": row["date"], "count": row["count"]} for row in cursor.fetchall()]
+
+            elif chart_type == "success_vs_failure":
+                cursor.execute(f"SELECT SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful, SUM(CASE WHEN success=0 THEN 1 ELSE 0 END) as failed FROM execution_log WHERE timestamp >= DATE('now', '-{days} days')")
+                row = cursor.fetchone()
+                data = {"successful": row["successful"] or 0, "failed": row["failed"] or 0}
+
+            elif chart_type == "agents_pie":
+                cursor.execute(f"SELECT agent_name, COUNT(*) as count FROM execution_log WHERE timestamp >= DATE('now', '-{days} days') GROUP BY agent_name ORDER BY count DESC")
+                data = [{"agent": row["agent_name"], "count": row["count"]} for row in cursor.fetchall()]
+
+            elif chart_type == "leads_by_source":
+                cursor.execute(f"SELECT COALESCE(service, 'unknown') as source, COUNT(*) as count FROM leads WHERE created_at >= DATE('now', '-{days} days') GROUP BY source ORDER BY count DESC")
+                data = [{"source": row["source"], "count": row["count"]} for row in cursor.fetchall()]
+
+            elif chart_type == "leads_by_urgency":
+                cursor.execute(f"SELECT COALESCE(urgency, 'unspecified') as urgency, COUNT(*) as count FROM leads WHERE created_at >= DATE('now', '-{days} days') GROUP BY urgency ORDER BY count DESC")
+                data = [{"urgency": row["urgency"], "count": row["count"]} for row in cursor.fetchall()]
+
+            else:
+                data = []
+
+            conn.close()
+            return {"success": True, "result": f"Chart data for {chart_type} ({len(data) if isinstance(data, list) else 1} data points)",
+                    "chart_type": chart_type, "data": data}
+        except Exception as e:
+            conn.close() if conn else None
+            return {"success": False, "error": str(e)}

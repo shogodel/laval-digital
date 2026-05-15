@@ -363,6 +363,7 @@
             <a href="#" data-tab="users"><span class="icon">👤</span> Users</a>
             <a href="#" data-tab="analytics"><span class="icon">📈</span> Analytics</a>
             <a href="#" data-tab="reports"><span class="icon">📄</span> Reports</a>
+            <a href="#" data-tab="mcp"><span class="icon">🔌</span> MCP Servers</a>
         </nav>
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
             <a href="/admin/dashboard" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:12px 16px;border-radius:10px;font-size:0.9rem;font-weight:700;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
@@ -590,6 +591,10 @@
                     <span id="executioner-settings-result"></span>
                 </div>
             </div>
+            <div class="card">
+                <div class="card-header"><h2>MCP Server Credentials</h2><p>Connect your platforms for live execution</p></div>
+                <div id="mcp-credentials-list"></div>
+            </div>
         </div>
 
         <!-- ================================================================ -->
@@ -635,6 +640,13 @@
     </div>
 </div>
 
+<div class="tab-content" id="tab-mcp">
+    <div class="card">
+        <div class="card-header"><h2>MCP Server Status</h2><p>Real-time connection status for all execution servers</p></div>
+        <div id="mcp-server-list"><p class="empty">Loading...</p></div>
+    </div>
+</div>
+
 <script>
 /* ── Tab navigation ── */
 document.querySelectorAll('.sidebar-nav a[data-tab]').forEach(link => {
@@ -647,6 +659,7 @@ document.querySelectorAll('.sidebar-nav a[data-tab]').forEach(link => {
         document.getElementById('tab-' + tab).classList.add('active');
         document.getElementById('page-title').textContent = this.textContent.trim();
         if (window.innerWidth <= 640) toggleSidebar();
+        if (tab === 'mcp') loadMcpServers();
     });
 });
 
@@ -1259,6 +1272,147 @@ function escapeHtml(t) {
     return d.innerHTML;
 }
 
+/* ── MCP Servers ── */
+function loadMcpServers() {
+    fetch('/api/mcp/servers')
+        .then(r => r.json())
+        .then(data => {
+            const servers = data.servers || {};
+            const html = Object.entries(servers).map(([name, status]) => `
+                <div class="agent-card enabled" style="padding:16px;margin-bottom:8px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <strong style="font-size:1rem;">${name}</strong>
+                            <span class="badge badge-idle" style="margin-left:8px;">${status.tools} tools</span>
+                        </div>
+                        <span class="status-dot online" style="width:10px;height:10px;border-radius:50%;background:var(--green);"></span>
+                    </div>
+                    <div style="font-size:0.8rem;color:var(--gray-500);margin-top:4px;">${status.description}</div>
+                    <div style="margin-top:8px;">
+                        <button class="btn btn-gray btn-xs" onclick="testMcpServer('${name}')">Test Connection</button>
+                        <span id="mcp-test-${name}"></span>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('mcp-server-list').innerHTML = html || '<p class="empty">No MCP servers found.</p>';
+        });
+}
+
+function testMcpServer(serverName) {
+    const resultEl = document.getElementById('mcp-test-' + serverName);
+    resultEl.innerHTML = '<span style="color:var(--blue);">Testing...</span>';
+    fetch('/api/mcp/servers/' + serverName + '/tools')
+        .then(r => r.json())
+        .then(data => {
+            if (data.tools) {
+                resultEl.innerHTML = '<span style="color:var(--green);">\u2713 Connected \u2014 ' + data.count + ' tools available</span>';
+            } else {
+                resultEl.innerHTML = '<span style="color:var(--red);">\u2717 Failed: ' + (data.error || 'Unknown') + '</span>';
+            }
+        })
+        .catch(err => {
+            resultEl.innerHTML = '<span style="color:var(--red);">\u2717 Error: ' + err.message + '</span>';
+        });
+}
+
+function loadMcpCredentials() {
+    fetch('/api/mcp/servers')
+        .then(r => r.json())
+        .then(data => {
+            const servers = data.servers || {};
+            const html = Object.entries(servers).map(([name, status]) => `
+                <div class="settings-grid" style="margin-bottom:12px;padding:12px;border:1px solid var(--gray-200);border-radius:var(--radius);">
+                    <div>
+                        <strong>${name}</strong>
+                        <p style="font-size:0.8rem;color:var(--gray-500);">${status.description}</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-gray btn-sm" onclick="configureMcpServer('${name}')">Configure</button>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('mcp-credentials-list').innerHTML = html || '<p class="empty">No MCP servers found.</p>';
+        });
+}
+
+function configureMcpServer(serverName) {
+    const configs = {
+        "seo": [
+            {key: "cms_type", label: "CMS Type", type: "select", options: ["wordpress", "webflow", "shopify", "wix", "squarespace", "ghost", "contentful", "netlify", "file"]},
+            {key: "site_url", label: "Website URL", type: "text", placeholder: "https://yoursite.com"},
+            {key: "api_key", label: "API Key / App Password", type: "password"}
+        ],
+        "social": [
+            {key: "platform", label: "Platform", type: "select", options: ["facebook", "instagram", "tiktok", "linkedin", "x", "pinterest", "threads"]},
+            {key: "page_id", label: "Page ID / Account ID", type: "text"},
+            {key: "access_token", label: "Access Token", type: "password"}
+        ],
+        "email": [
+            {key: "provider", label: "Provider", type: "select", options: ["smtp", "sendgrid", "mailgun"]},
+            {key: "smtp_host", label: "SMTP Host", type: "text", placeholder: "smtp.gmail.com"},
+            {key: "smtp_port", label: "SMTP Port", type: "number", placeholder: "587"},
+            {key: "smtp_username", label: "Username", type: "text"},
+            {key: "smtp_password", label: "Password / App Password", type: "password"}
+        ],
+        "gmb": [
+            {key: "account_id", label: "GMB Account ID", type: "text"},
+            {key: "location_id", label: "Location ID", type: "text"},
+            {key: "access_token", label: "OAuth Access Token", type: "password"}
+        ],
+        "ads": [
+            {key: "platform", label: "Platform", type: "select", options: ["google", "meta", "tiktok", "linkedin"]},
+            {key: "account_id", label: "Account ID", type: "text"},
+            {key: "access_token", label: "API Key / Token", type: "password"}
+        ]
+    };
+
+    const config = configs[serverName] || [{key: "api_key", label: "API Key", type: "password"}];
+    const fields = config.map(f => {
+        if (f.type === "select") {
+            return `<div class="form-group"><label>${f.label}</label><select id="mcp-${serverName}-${f.key}">${f.options.map(o => `<option value="${o}">${o}</option>`).join('')}</select></div>`;
+        }
+        return `<div class="form-group"><label>${f.label}</label><input type="${f.type}" id="mcp-${serverName}-${f.key}" placeholder="${f.placeholder || ''}"></div>`;
+    }).join('');
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML = `
+        <div style="background:var(--white);border-radius:var(--radius-lg);padding:32px;max-width:500px;width:90%;box-shadow:var(--shadow-lg);">
+            <h2 style="font-size:1.15rem;font-weight:700;margin-bottom:16px;">Configure ${serverName} Server</h2>
+            ${fields}
+            <div id="mcp-config-result" style="margin:8px 0;"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+                <button class="btn btn-gray" onclick="this.closest('[style*=fixed]').remove()">Cancel</button>
+                <button class="btn btn-red" onclick="saveMcpConfig('${serverName}', ${JSON.stringify(config.map(f => f.key))})">Save</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+}
+
+function saveMcpConfig(serverName, fields) {
+    const credentials = {};
+    fields.forEach(key => {
+        const el = document.getElementById('mcp-' + serverName + '-' + key);
+        if (el) credentials[key] = el.value;
+    });
+
+    fetch('/api/mcp/credentials', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({server_name: serverName, platform: credentials.platform || serverName, credentials})
+    })
+    .then(r => r.json())
+    .then(data => {
+        const resultEl = document.getElementById('mcp-config-result');
+        if (resultEl) {
+            resultEl.innerHTML = data.success
+                ? '<span style="color:var(--green);">\u2713 Credentials saved</span>'
+                : '<span style="color:var(--red);">Error: ' + (data.error || 'Unknown') + '</span>';
+        }
+        if (data.success) setTimeout(() => { const m = document.querySelector('[style*=fixed]'); if (m) m.remove(); }, 1000);
+    });
+}
+
 /* ── Init ── */
 window.onload = function() {
     loadPersonalities().then(() => loadAgents());
@@ -1270,6 +1424,7 @@ window.onload = function() {
     populateAgentSelect();
     updateDashboard();
     loadUsers();
+    loadMcpCredentials();
     document.getElementById('config-api-key').addEventListener('input', function() {
         document.getElementById('detect-btn').disabled = !this.value.trim();
     });

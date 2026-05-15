@@ -277,6 +277,18 @@ class TenantManager:
                     processed_at TEXT
                 )
             """,
+            "mcp_credentials": """
+                CREATE TABLE IF NOT EXISTS mcp_credentials (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    server_name TEXT NOT NULL,
+                    platform TEXT,
+                    credential_key TEXT NOT NULL,
+                    credential_value TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    UNIQUE(server_name, platform, credential_key)
+                )
+            """,
         }
 
     # ------------------------------------------------------------------

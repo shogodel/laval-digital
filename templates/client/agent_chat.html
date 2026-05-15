@@ -361,13 +361,13 @@ async function sendMessage() {
 /* ── Execute Agent Response ── */
 function executeAgentResponse(content) {
     if (!content) return alert('No content to execute.');
-    if (!confirm('Send this response to the Executioner for publishing? It will be saved to the appropriate file (blog, social queue, or email queue).')) return;
+    if (!confirm('Send this response via MCP for publishing? It will be routed to the correct platform.')) return;
 
     const btn = event.target;
     btn.disabled = true;
     btn.textContent = 'Sending...';
 
-    fetch('/api/executioner/execute-chat', {
+    fetch('/api/mcp/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent_id: AGENT_ID, content: content })
@@ -375,13 +375,19 @@ function executeAgentResponse(content) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert('Sent to Executioner: ' + (data.result || 'Done'));
+            alert('Executed via MCP: ' + (data.result || 'Done'));
         } else {
             alert('Execution failed: ' + (data.error || 'Unknown error'));
         }
     })
     .catch(err => {
         alert('Network error: ' + err.message);
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = '\u{1F680} Execute';
+    });
+}
     })
     .finally(() => {
         btn.disabled = false;
