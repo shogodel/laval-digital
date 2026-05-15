@@ -208,9 +208,9 @@
 
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            max-width: 1060px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1120px;
             margin: 0 auto;
         }
         .feature-card {
@@ -718,7 +718,7 @@
             .section-title { font-size: 1.7rem; }
             .section-subtitle { font-size: 0.95rem; margin-bottom: 32px; }
 
-            .feature-grid { grid-template-columns: 1fr; gap: 16px; }
+            .feature-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
             .steps-grid { grid-template-columns: 1fr; gap: 16px; }
             .testimonial-grid { grid-template-columns: 1fr; gap: 16px; }
             .comparison-grid { grid-template-columns: 1fr; gap: 20px; }
@@ -792,10 +792,11 @@
 <section class="hero fade-up">
     <div class="container">
         <h1>Meet <span>Frankie</span> — Your AI Marketing Command Center</h1>
-        <p>Speak naturally. Frankie handles your entire digital marketing — SEO, social media, ads, email, reviews, content, and more. 16 specialized AI agents working 24/7. One flat monthly fee. Cancel anytime.</p>
+        <p>Frankie connects to your existing website and runs your entire digital marketing. 16 specialized AI agents. 111+ execution tools across 8 marketing channels. Voice-controlled. PWA-installable. One flat monthly fee. Cancel anytime.</p>
         <div class="hero-buttons">
             <a href="/free-trial" class="btn btn-primary">Try Frankie Free (7 Days)</a>
             <a href="tel:5142431580" class="btn btn-secondary">📞 Call (514) 243-1580</a>
+            <a href="/demo" class="btn btn-secondary">See Live Demo</a>
         </div>
     </div>
 </section>
@@ -807,33 +808,43 @@
         <div class="feature-grid fade-up">
             <div class="feature-card">
                 <div class="icon">🔍</div>
-                <h3>SEO & Content</h3>
-                <p>Frankie optimizes your Google presence, writes blog posts, builds backlinks, and handles technical SEO — all while you sleep.</p>
+                <h3>SEO &amp; Content</h3>
+                <p>Publish to WordPress, Webflow, Shopify, or any CMS. Full site audits. Keyword tracking. Schema markup. 13 specialized tools.</p>
             </div>
             <div class="feature-card">
                 <div class="icon">📱</div>
                 <h3>Social Media</h3>
-                <p>Posts to Facebook, Instagram, TikTok, and more. Frankie creates captions, hashtags, and schedules everything.</p>
-            </div>
-            <div class="feature-card">
-                <div class="icon">💰</div>
-                <h3>Paid Ads</h3>
-                <p>Google Ads, Meta Ads — Frankie writes copy, selects keywords, manages budgets, and A/B tests creative.</p>
+                <p>Post to Facebook, Instagram, TikTok, LinkedIn, X, Pinterest, YouTube, and Threads. Cross-post. Schedule. Hashtag research. 18 tools.</p>
             </div>
             <div class="feature-card">
                 <div class="icon">📧</div>
-                <h3>Email & SMS</h3>
-                <p>Newsletters, promo campaigns, lead nurture sequences, and SMS follow-ups — all automated.</p>
+                <h3>Email Marketing</h3>
+                <p>Campaigns, sequences, newsletters, automation, A/B testing, spam checking. SMTP, SendGrid, or Mailgun. 16 tools.</p>
             </div>
             <div class="feature-card">
-                <div class="icon">⭐</div>
-                <h3>Reputation</h3>
-                <p>Monitors reviews, generates professional responses, and runs review generation campaigns automatically.</p>
+                <div class="icon">📍</div>
+                <h3>Google Business Profile</h3>
+                <p>Posts, reviews, Q&amp;A, products, insights, optimization, voice search, multi-location. 16 tools.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">💰</div>
+                <h3>Paid Advertising</h3>
+                <p>Google Ads, Meta Ads, TikTok Ads, LinkedIn Ads. Keyword research. Retargeting. Local Service Ads. 18 tools.</p>
             </div>
             <div class="feature-card">
                 <div class="icon">📊</div>
-                <h3>Analytics & Reports</h3>
-                <p>Monthly performance reports, lead tracking, conversion analytics — Frankie shows you exactly what's working.</p>
+                <h3>Analytics &amp; Reporting</h3>
+                <p>Real ROI tracking. Executive summaries. Chart-ready data. Lead attribution. Industry benchmarks. 10 tools.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🌐</div>
+                <h3>Website Technical</h3>
+                <p>Uptime monitoring. SSL verification. SEO crawling. DNS lookup. Security scanning. Competitor comparison. 12 tools.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🛒</div>
+                <h3>E-Commerce</h3>
+                <p>Shopify &amp; WooCommerce integration. Inventory tracking. RFM customer analysis. Pricing optimization. Canadian taxes. 15 tools.</p>
             </div>
         </div>
     </div>
@@ -851,13 +862,13 @@
             </div>
             <div class="step-card">
                 <div class="step-number">2</div>
-                <h3>Connect Your Accounts</h3>
-                <p>Frankie guides you through connecting your website, social media, email, and ad platforms. Takes about 5 minutes.</p>
+                <h3>Connect Your Platforms</h3>
+                <p>Frankie guides you through connecting your website, social media, email, and ad accounts. Takes about 5 minutes. Or skip and use Frankie's built-in tools.</p>
             </div>
             <div class="step-card">
                 <div class="step-number">3</div>
-                <h3>Let Frankie Work</h3>
-                <p>Frankie starts optimizing immediately. You approve what you want, or let Frankie run on autopilot. Your phone buzzes when something needs attention.</p>
+                <h3>Frankie Gets to Work</h3>
+                <p>Frankie starts optimizing your marketing immediately. Approve what you want, or let Frankie run on autopilot. Your phone buzzes when something needs attention.</p>
             </div>
         </div>
     </div>
@@ -869,14 +880,16 @@
             <div class="badge">🇨🇦 Trusted by Canadian Businesses</div>
             <h2>One Plan. Everything Included.</h2>
             <div class="price">$597.99<span style="font-size:1rem;font-weight:500;-webkit-text-fill-color:var(--mid-gray);color:var(--mid-gray);">/month</span></div>
-            <p class="price-sub">Cancel anytime. No contracts. No hidden fees.</p>
+            <p class="price-sub">Cancel anytime. No contracts. No hidden fees. No upsells.</p>
             <ul class="features">
                 <li>All 16 AI Marketing Agents</li>
-                <li>Unlimited Tasks & Content Generation</li>
-                <li>Connect All Your Accounts (Social, Email, Ads, Website)</li>
-                <li>Frankie Voice Interface (Speak Naturally)</li>
-                <li>PWA — Install on Any Device</li>
+                <li>8 MCP Servers with 111+ Execution Tools</li>
+                <li>Connect Your Existing Website &amp; Platforms</li>
+                <li>Frankie Voice Interface — Speak Naturally</li>
+                <li>PWA — Install on Any Device (Phone, Tablet, Desktop)</li>
                 <li>7-Day Free Trial — No Credit Card Required</li>
+                <li>Unlimited Tasks &amp; Content Generation</li>
+                <li>Monthly Performance Reports</li>
             </ul>
             <a href="/free-trial" class="btn btn-primary">Start Your Free Trial</a>
             <p class="tax-note">+ applicable taxes based on your province</p>
@@ -888,8 +901,8 @@
     <div class="container fade-up">
         <span class="voice-icon">🎙️</span>
         <h2>Just Talk to Frankie</h2>
-        <p>Open Frankie on your phone or desktop. Say <em>"Frankie, write a blog post about winter plumbing tips and post it to Facebook."</em> Frankie responds, confirms, and executes. Like having a marketing director on speed dial.</p>
-        <p class="note">Voice interface works on Chrome, Edge, and Safari.</p>
+        <p>Open Frankie on your phone or desktop. Say <em>"Frankie, write a blog post about winter plumbing tips and publish it to my website."</em> Frankie responds, confirms, and executes. Like having a marketing director on speed dial.</p>
+        <p class="note">Voice interface works on Chrome, Edge, Safari, and mobile browsers.</p>
     </div>
 </section>
 
@@ -908,8 +921,8 @@
                         <li><span class="label">Monthly Cost</span> <span class="price red">$3,000–$10,000+</span></li>
                         <li><span class="label">Vendors</span> <span class="price red">Multiple agencies</span></li>
                         <li><span class="label">Turnaround</span> <span class="price red">Days to weeks</span></li>
-                        <li><span class="label">Availability</span> <span class="price red">Business hours</span></li>
-                        <li><span class="label">Voice Commands</span> <span class="price red">❌</span></li>
+                        <li><span class="label">Availability</span> <span class="price red">Business hours only</span></li>
+                        <li><span class="label">Execution Tools</span> <span class="price red">Manual, human-dependent</span></li>
                     </ul>
                 </div>
                 <div class="comparison-total-block">
@@ -928,8 +941,8 @@
                         <li><span class="label">Monthly Cost</span> <span class="price green">$597.99</span></li>
                         <li><span class="label">Vendors</span> <span class="price green">One platform</span></li>
                         <li><span class="label">Turnaround</span> <span class="price green">Instant</span></li>
-                        <li><span class="label">Availability</span> <span class="price green">24/7</span></li>
-                        <li><span class="label">Voice Commands</span> <span class="price green">✅ Included</span></li>
+                        <li><span class="label">Availability</span> <span class="price green">24/7 AI-powered</span></li>
+                        <li><span class="label">Execution Tools</span> <span class="price green">111+ across 8 channels</span></li>
                     </ul>
                 </div>
                 <div class="comparison-total-block">
@@ -940,7 +953,7 @@
             </div>
         </div>
         <div class="savings-callout fade-up">
-            💰 <strong>Save 80–94%</strong> compared to traditional agencies — with AI that works 24/7.
+            💰 <strong>Save 80–94%</strong> compared to traditional agencies — with more capabilities.
         </div>
     </div>
 </section>
@@ -971,12 +984,12 @@
         <h2 class="section-title fade-up">Frequently Asked Questions</h2>
         <div class="faq-list fade-up">
             <div class="faq-item">
-                <h4>Do I need technical skills to use Frankie?</h4>
-                <p>No. If you can talk, you can use Frankie. The voice interface lets you speak naturally, and Frankie handles everything else.</p>
+                <h4>Do I need a new website to use Frankie?</h4>
+                <p>No. Frankie connects to your existing website — WordPress, Webflow, Shopify, or anything else. No migration needed.</p>
             </div>
             <div class="faq-item">
-                <h4>Can Frankie post to my existing social media accounts?</h4>
-                <p>Yes. Frankie connects to your Facebook, Instagram, TikTok, LinkedIn, and more using MCP servers. You authorize once, Frankie handles the rest.</p>
+                <h4>Can Frankie actually post to my social media?</h4>
+                <p>Yes. Connect your Facebook, Instagram, TikTok, LinkedIn, and more. Frankie posts directly or schedules for later.</p>
             </div>
             <div class="faq-item">
                 <h4>What if I don't like something Frankie creates?</h4>
@@ -988,7 +1001,11 @@
             </div>
             <div class="faq-item">
                 <h4>What's included in the 7-day free trial?</h4>
-                <p>Full access to all 16 agents, voice interface, and account connections. No credit card required. You'll see real results before you pay a cent.</p>
+                <p>Full access to all 16 agents, 8 MCP servers, voice interface, and platform connections. No credit card required.</p>
+            </div>
+            <div class="faq-item">
+                <h4>Can Frankie handle my Google Business Profile?</h4>
+                <p>Yes. Frankie posts updates, responds to reviews, manages Q&amp;A, uploads photos, and optimizes your profile for local search.</p>
             </div>
         </div>
     </div>
@@ -1010,7 +1027,7 @@
             <h4>Links</h4>
             <p><a href="/demo">Live Demo</a></p>
             <p><a href="/blog">Blog</a></p>
-            <p><a href="/affiliate">Affiliate Program</a></p>
+            <p><a href="/affiliate">Affiliate Program (20% Commission)</a></p>
         </div>
     </div>
     <div class="footer-bottom container">
