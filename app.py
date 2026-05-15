@@ -89,7 +89,7 @@ AGENT_CLASSES = {
 }
 from core.auth import (
     init_auth, User, find_user_by_email, add_user_to_tenant,
-    client_required, affiliate_required, reseller_required,
+    client_required, affiliate_required,
     validate_password, _check_rate_limit, _record_attempt,
 )
 
@@ -104,10 +104,6 @@ tenant_manager = TenantManager()
 from core.affiliates import AffiliateManager
 affiliate_manager = AffiliateManager(tenant_manager)
 
-# Initialize Reseller Manager (persistent DB-backed reseller system)
-from core.resellers import ResellerManager
-reseller_manager = ResellerManager(tenant_manager)
-
 # Initialize Push Manager (PWA push notifications)
 push_manager = PushManager()
 agent_memory = AgentMemory(tenant_manager)
@@ -120,16 +116,6 @@ active_threads: Dict[str, Dict[str, Any]] = {}
 
 # In-memory lead storage (replace with database in production)
 leads: list[Dict[str, Any]] = []
-
-RESELLER_MAP_POLICY = """
-Resellers agree to the following:
-1. Minimum Advertised Price (MAP): All advertised prices must be at or above the MAP.
-2. Resellers may sell at any price they choose in private quotes, phone calls, and
-   one-on-one negotiations. MAP applies only to publicly advertised prices.
-3. Violations will result in a warning, then suspension of reseller privileges.
-4. Resellers keep 100% of their markup above the wholesale price.
-"""
-
 
 # ---------------------------------------------------------------------------
 # Tenant helpers
@@ -236,8 +222,7 @@ def check_session_timeout():
                         return redirect(url_for("client_login"))
                     elif current_user.role == "affiliate":
                         return redirect(url_for("affiliate_login"))
-                    elif current_user.role == "reseller":
-                        return redirect(url_for("reseller_login"))
+
             except Exception:
                 pass
         session["last_active"] = datetime.now().isoformat()
@@ -494,30 +479,6 @@ def affiliate_signup_fr():
     """Serve the French affiliate program signup page."""
     has_ref = "affiliate_ref" in session
     return render_template("affiliate_fr.html", has_ref=has_ref)
-
-
-@app.route("/reseller")
-def reseller_program():
-    """Serve the white-label reseller program page."""
-    return render_template("reseller.html")
-
-
-@app.route("/fr/reseller")
-def reseller_program_fr():
-    """Serve the French white-label reseller program page."""
-    return render_template("reseller_fr.html")
-
-
-@app.route("/contract")
-def contract():
-    """Serve the contract/signup page."""
-    return render_template("contract.html")
-
-
-@app.route("/fr/contract")
-def contract_fr():
-    """Serve the French contract/signup page."""
-    return render_template("contract_fr.html")
 
 
 @app.route("/")
@@ -811,111 +772,6 @@ def affiliate_dashboard():
 
 
 # ---------------------------------------------------------------------------
-# Reseller auth routes
-# ---------------------------------------------------------------------------
-
-@app.route("/reseller/login", methods=["GET", "POST"])
-def reseller_login():
-    """Serve reseller login page and authenticate."""
-    if current_user.is_authenticated and current_user.role == "reseller":
-        return redirect(url_for("reseller_dashboard"))
-    if request.method == "POST":
-        email = request.form.get("email", "").strip()
-        password = request.form.get("password", "")
-
-        if not _check_rate_limit():
-            flash("Too many login attempts. Try again later.", "error")
-            return render_template("reseller/login.html")
-
-        user_row, tenant_id, tenant_type = find_user_by_email(email)
-        if not user_row or user_row["role"] != "reseller":
-            _record_attempt(False)
-            flash("Invalid email or password.", "error")
-            return render_template("reseller/login.html")
-
-        temp_user = User(
-            row_id=user_row["id"], email=user_row["email"],
-            password_hash=user_row["password_hash"], role=user_row["role"],
-            display_name=user_row["display_name"], tenant_id=tenant_id,
-        )
-        if not temp_user.check_password(password):
-            _record_attempt(False)
-            flash("Invalid email or password.", "error")
-            return render_template("reseller/login.html")
-
-        login_user(temp_user)
-        _record_attempt(True)
-        session["tenant_id"] = tenant_id
-        session["user_role"] = "reseller"
-        session["last_active"] = datetime.now().isoformat()
-
-        try:
-            conn = tenant_manager.get_connection(tenant_id, tenant_type)
-            cursor = conn.cursor()
-            cursor.execute(
-                "UPDATE users SET last_login = ? WHERE id = ?",
-                (datetime.now().isoformat(), user_row["id"]),
-            )
-            conn.commit()
-        except Exception:
-            pass
-
-        return redirect(url_for("reseller_dashboard"))
-
-    return render_template("reseller/login.html")
-
-
-@app.route("/reseller/logout")
-def reseller_logout():
-    """Log out reseller and redirect to login."""
-    logout_user()
-    session.clear()
-    flash("You have been logged out.", "success")
-    return redirect(url_for("reseller_login"))
-
-
-@app.route("/reseller/dashboard")
-@reseller_required
-def reseller_dashboard():
-    """Serve the reseller white-label dashboard."""
-    tenant_id = current_user.tenant_id
-
-    reseller_stats = reseller_manager.get_reseller_stats(tenant_id)
-
-    agency_name = ""
-    try:
-        conn = tenant_manager.get_connection(tenant_id, "reseller")
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT business_name FROM client_details WHERE business_name IS NOT NULL LIMIT 1"
-        )
-        row = cursor.fetchone()
-        if row:
-            agency_name = row["business_name"]
-    except Exception:
-        pass
-
-    tier = reseller_stats.get("tier", "standard")
-    pricing = reseller_manager.get_pricing(tier)
-
-    return render_template(
-        "reseller/dashboard.html",
-        clients=reseller_stats.get("clients", []),
-        stats={
-            "total_clients": reseller_stats.get("total_clients", 0),
-            "monthly_recurring": reseller_stats.get("monthly_recurring", 0),
-            "pending_deployments": reseller_stats.get("pending_deployments", 0),
-            "live_sites": reseller_stats.get("live_sites", 0),
-        },
-        agency_name=agency_name,
-        map_pricing=pricing,
-        map_policy=RESELLER_MAP_POLICY,
-        tier_name=tier,
-        mrr_per_client=reseller_stats.get("mrr_per_client", 1500),
-    )
-
-
-# ---------------------------------------------------------------------------
 # API: User management (admin only)
 # ---------------------------------------------------------------------------
 
@@ -934,7 +790,7 @@ def api_list_users():
     try:
         conn = tenant_manager.get_connection(tenant_id)
         cursor = conn.cursor()
-        if role_filter in ("client", "affiliate", "reseller"):
+        if role_filter in ("client", "affiliate"):
             cursor.execute(
                 "SELECT id, email, display_name, role, created_at, last_login "
                 "FROM users WHERE role = ? ORDER BY created_at DESC",
@@ -1041,7 +897,6 @@ def admin_panel_redirect():
     logo_status = request.args.get("logo_uploaded", "")
     tenants = {
         "direct_clients": tenant_manager.list_tenants("direct"),
-        "resellers": tenant_manager.list_tenants("reseller"),
     }
     active_tenant = session.get("active_tenant_id")
     return render_template(
@@ -1116,7 +971,6 @@ def admin_panel_redirect_fr():
     logo_status = request.args.get("logo_uploaded", "")
     tenants = {
         "direct_clients": tenant_manager.list_tenants("direct"),
-        "resellers": tenant_manager.list_tenants("reseller"),
     }
     active_tenant = session.get("active_tenant_id")
     return render_template(
@@ -1296,218 +1150,6 @@ def api_admin_process_payout(code):
     if success:
         return jsonify({"success": True, "message": "Payout processed"})
     return jsonify({"error": "Payout not found or already processed"}), 404
-
-
-# ---------------------------------------------------------------------------
-# API: reseller admin
-# ---------------------------------------------------------------------------
-
-
-_reseller_spots = 17
-
-
-@app.route("/api/reseller/spots", methods=["GET"])
-def api_reseller_spots():
-    return jsonify({"spots_remaining": _reseller_spots})
-
-
-@app.route("/api/admin/reseller/spots", methods=["PUT"])
-def api_admin_set_spots():
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    data = request.json
-    if data and "spots" in data:
-        global _reseller_spots
-        _reseller_spots = int(data["spots"])
-    return jsonify({"spots_remaining": _reseller_spots})
-
-
-@app.route("/api/admin/reseller/tiers", methods=["GET"])
-def api_admin_reseller_tiers():
-    """Return all reseller tiers (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    return jsonify({"tiers": reseller_manager.get_tiers()})
-
-
-@app.route("/api/admin/reseller/tiers/<tier>", methods=["PUT"])
-def api_admin_update_tier(tier):
-    """Update a reseller tier (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    data = request.json
-    if not data:
-        return jsonify({"error": "No data"}), 400
-    ok = reseller_manager.update_tier(tier, **data)
-    return jsonify({"success": ok})
-
-
-@app.route("/api/admin/reseller/pricing", methods=["GET"])
-def api_admin_reseller_pricing():
-    """Return pricing for all tiers (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    tier = request.args.get("tier", "standard")
-    return jsonify({"pricing": reseller_manager.get_pricing(tier)})
-
-
-@app.route("/api/admin/reseller/pricing/<tier>/<package>", methods=["PUT"])
-def api_admin_update_pricing(tier, package):
-    """Update pricing for a specific tier + package (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    data = request.json
-    if not data:
-        return jsonify({"error": "No data"}), 400
-    ok = reseller_manager.update_pricing(tier, package, **data)
-    return jsonify({"success": ok})
-
-
-@app.route("/api/admin/reseller/applications", methods=["GET"])
-def api_admin_reseller_applications():
-    """Return reseller applications (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    status = request.args.get("status", "").strip() or None
-    return jsonify({"applications": reseller_manager.get_applications(status)})
-
-
-@app.route("/api/admin/reseller/applications/<app_id>/process", methods=["POST"])
-def api_admin_process_application(app_id):
-    """Approve or reject a reseller application (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    data = request.json
-    status = data.get("status", "approved") if data else "approved"
-    tier = data.get("tier", "standard") if data else "standard"
-    ok = reseller_manager.process_application(app_id, status, tier)
-    return jsonify({"success": ok})
-
-
-@app.route("/api/contract/submit", methods=["POST"])
-def contract_submit():
-    """Submit a signed agreement and create a user account."""
-    data = request.json
-    name = (data.get("name") or "").strip()
-    business = (data.get("business") or "").strip()
-    email = (data.get("email") or "").strip()
-
-    if not name or not business or not email:
-        return jsonify({"error": "Name, business, and email are required"}), 400
-
-    contract_data = {
-        "id": str(uuid.uuid4()),
-        "name": name,
-        "business": business,
-        "email": email,
-        "phone": data.get("phone", ""),
-        "address": data.get("address", ""),
-        "package": data.get("package", ""),
-        "packageName": data.get("packageName", ""),
-        "totalPrice": data.get("totalPrice", 0),
-        "deposit": data.get("deposit", 0),
-        "affiliateCode": data.get("affiliateCode", ""),
-        "signedAt": data.get("signedAt", datetime.now().isoformat()),
-        "created_at": datetime.now().isoformat(),
-    }
-    leads.append(contract_data)
-
-    password = secrets.token_urlsafe(12) + "A1!"
-    subdomain = business.lower().replace(" ", "-").replace("'", "")[:40]
-    try:
-        tenant_manager.create_tenant_database(subdomain, "direct")
-        add_user_to_tenant(email, password, "client", name, subdomain, "direct")
-        logger.info("Client user created: %s (tenant=%s)", email, subdomain)
-    except Exception as e:
-        logger.error("Failed to create client user for %s: %s", email, e)
-        return jsonify({
-            "success": False,
-            "error": "Account creation failed. Please try again later.",
-            "contract_id": contract_data["id"],
-        }), 500
-
-    logger.info("Contract submitted by %s (%s) — package: %s", name, email, contract_data["package"])
-
-    # Credit affiliate if a valid referral code was attached
-    affiliate_info = None
-    affiliate_code = contract_data.get("affiliateCode", "")
-    if affiliate_code and affiliate_manager.is_valid_code(affiliate_code):
-        commission = round(float(contract_data.get("deposit", 0)) * 0.10, 2)
-        try:
-            commission_id = affiliate_manager.add_commission(
-                affiliate_code, email, name, commission,
-            )
-            if commission_id:
-                aff = affiliate_manager.get_affiliate(affiliate_code)
-                affiliate_info = {
-                    "code": affiliate_code,
-                    "affiliate_name": aff.get("name", "Partner") if aff else "Partner",
-                    "commission": commission,
-                }
-                logger.info(
-                    "Affiliate %s credited $%.2f for referral %s",
-                    affiliate_code, commission, email,
-                )
-        except Exception as e:
-            logger.error(
-                "Failed to credit affiliate %s for %s: %s",
-                affiliate_code, email, e,
-            )
-
-    response_data = {
-        "success": True,
-        "contract_id": contract_data["id"],
-        "password": password,
-        "tenant_id": subdomain,
-        "message": "Your account has been created. Please check your email for login credentials.",
-    }
-    if affiliate_info:
-        response_data["affiliate"] = affiliate_info
-    return jsonify(response_data), 201
-
-
-@app.route("/api/reseller/apply", methods=["POST"])
-def reseller_apply():
-    """Submit a reseller application."""
-    data = request.json
-    agency = (data.get("agencyName") or "").strip()
-    contact = (data.get("contactName") or "").strip()
-    email = (data.get("email") or "").strip()
-
-    if not agency or not contact or not email:
-        return jsonify({"error": "Agency name, contact name, and email are required"}), 400
-
-    try:
-        application = reseller_manager.create_application(
-            agency, contact, email,
-            phone=data.get("phone", ""),
-            client_count=data.get("clientCount", ""),
-        )
-    except Exception as e:
-        logger.error("Failed to create reseller application: %s", e)
-        return jsonify({"success": False, "error": "Application failed. Please try again."}), 500
-
-    password = secrets.token_urlsafe(12) + "A1!"
-    agency_slug = agency.lower().replace(" ", "-").replace("'", "")[:40]
-    try:
-        tenant_manager.create_tenant_database(agency_slug, "reseller")
-        add_user_to_tenant(email, password, "reseller", agency, agency_slug, "reseller")
-        logger.info("Reseller user created: %s (tenant=%s)", email, agency_slug)
-    except Exception as e:
-        logger.error("Failed to create reseller user for %s: %s", email, e)
-        return jsonify({
-            "success": False,
-            "error": "Account creation failed. Please try again later.",
-            "application_id": application["id"],
-        }), 500
-
-    logger.info("Reseller application received — %s (%s)", agency, email)
-    return jsonify({
-        "success": True,
-        "application_id": application["id"],
-        "password": password,
-        "tenant_id": agency_slug,
-    }), 201
 
 
 # ---------------------------------------------------------------------------

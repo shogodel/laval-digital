@@ -126,18 +126,6 @@ def find_user_by_email(email: str):
         except Exception:
             continue
 
-    reseller_tenants = _tm.list_tenants("reseller")
-    for tenant_id in reseller_tenants:
-        try:
-            conn = _tm.get_connection(tenant_id, "reseller")
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (email_lower,))
-            row = cursor.fetchone()
-            if row:
-                return dict(row), tenant_id, "reseller"
-        except Exception:
-            continue
-
     return None, None, None
 
 
@@ -149,10 +137,10 @@ def add_user_to_tenant(email: str, password: str, role: str,
     Args:
         email: User email address.
         password: Plain text password (will be hashed).
-        role: 'client', 'affiliate', or 'reseller'.
+        role: 'client' or 'affiliate'.
         display_name: Human-readable name.
         tenant_id: The tenant identifier.
-        tenant_type: 'direct' or 'reseller'.
+        tenant_type: 'direct'.
 
     Returns:
         Dict with 'success': True and 'user_id' on success,
@@ -163,7 +151,7 @@ def add_user_to_tenant(email: str, password: str, role: str,
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         raise ValueError("Invalid email format.")
 
-    valid_roles = ("client", "affiliate", "reseller")
+    valid_roles = ("client", "affiliate")
     if role not in valid_roles:
         raise ValueError(f"Role must be one of {valid_roles}.")
 
@@ -236,15 +224,3 @@ def affiliate_required(f):
         return f(*args, **kwargs)
     return decorated
 
-
-def reseller_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not current_user.is_authenticated:
-            flash("Please log in to continue.")
-            return redirect(url_for("reseller_login"))
-        if current_user.role != "reseller":
-            flash("Reseller access required.")
-            return redirect(url_for("reseller_login"))
-        return f(*args, **kwargs)
-    return decorated

@@ -398,13 +398,7 @@
                         {% endfor %}
                     </optgroup>
                     {% endif %}
-                    {% if tenants.resellers %}
-                    <optgroup label="Resellers">
-                        {% for t in tenants.resellers %}
-                        <option value="{{ t }}"{% if active_tenant == t %} selected{% endif %}>{{ t }}</option>
-                        {% endfor %}
-                    </optgroup>
-                    {% endif %}
+
                 </select>
                 <a href="/fr/admin" class="btn btn-gray btn-sm">FR</a>
                 <a href="/admin/logout" class="btn btn-red btn-sm">Logout</a>
@@ -519,7 +513,6 @@
                         <option value="">All Roles</option>
                         <option value="client">Client</option>
                         <option value="affiliate">Affiliate</option>
-                        <option value="reseller">Reseller</option>
                     </select>
                     <button class="btn btn-green btn-sm" onclick="showAddUser()">+ Add User</button>
                 </div>
@@ -620,8 +613,7 @@
 
             <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
                 <button class="btn btn-sm {{ 'btn-red' if active_tab == 'partners-affiliates' else 'btn-gray' }}" onclick="showPartnerTab('affiliates')">Affiliates</button>
-                <button class="btn btn-sm btn-gray" onclick="showPartnerTab('applications')">Reseller Applications</button>
-                <button class="btn btn-sm btn-gray" onclick="showPartnerTab('tiers')">Tiers &amp; Pricing</button>
+
             </div>
 
             <div id="partner-affiliates" class="partner-section">
@@ -631,19 +623,6 @@
                 </div>
             </div>
 
-            <div id="partner-applications" class="partner-section" style="display:none;">
-                <div class="card">
-                    <div class="card-header"><h2>Reseller Applications</h2><p>Review and approve reseller applications</p></div>
-                    <div style="overflow-x:auto;" id="applications-list"><p class="empty">Loading...</p></div>
-                </div>
-            </div>
-
-            <div id="partner-tiers" class="partner-section" style="display:none;">
-                <div class="card">
-                    <div class="card-header"><h2>Tiers &amp; Pricing</h2><p>Manage reseller tiers and package pricing</p></div>
-                    <div style="overflow-x:auto;" id="tiers-list"><p class="empty">Loading...</p></div>
-                </div>
-            </div>
         </div>
 
     </main>
@@ -669,7 +648,6 @@
                 <select id="new-user-role">
                     <option value="client">Client</option>
                     <option value="affiliate">Affiliate</option>
-                    <option value="reseller">Reseller</option>
                 </select>
             </div>
             <div id="add-user-error" style="color:var(--red);font-size:0.85rem;margin-bottom:8px;"></div>
@@ -1297,8 +1275,7 @@ function showPartnerTab(name) {
     event.target.classList.remove('btn-gray');
     event.target.classList.add('btn-red');
     if (name === 'affiliates') loadAffiliates();
-    if (name === 'applications') loadApplications();
-    if (name === 'tiers') loadTiers();
+
 }
 
 async function loadAffiliates() {
@@ -1345,111 +1322,6 @@ async function loadAffiliates() {
         list.innerHTML = html;
     } catch (e) {
         document.getElementById('affiliates-list').innerHTML = '<p class="empty">Failed to load affiliates.</p>';
-    }
-}
-
-async function loadApplications() {
-    try {
-        const r = await fetch('/api/admin/reseller/applications');
-        const d = await r.json();
-        const list = document.getElementById('applications-list');
-        if (!d.applications || d.applications.length === 0) {
-            list.innerHTML = '<p class="empty">No pending applications.</p>'; return;
-        }
-        let html = '<table><thead><tr><th>Date</th><th>Agency</th><th>Contact</th><th>Email</th><th>Clients</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
-        d.applications.forEach(a => {
-            html += '<tr><td>' + (a.created_at ? a.created_at.substring(0, 10) : '') + '</td>'
-                + '<td>' + escapeHtml(a.agency_name) + '</td>'
-                + '<td>' + escapeHtml(a.contact_name) + '</td>'
-                + '<td>' + escapeHtml(a.email) + '</td>'
-                + '<td>' + escapeHtml(a.client_count || '') + '</td>'
-                + '<td><span class="badge badge-' + (a.status === 'approved' ? 'green' : a.status === 'pending' ? 'amber' : '') + '">' + a.status + '</span></td>'
-                + '<td>';
-            if (a.status === 'pending') {
-                html += '<button class="btn btn-green btn-sm" onclick="approveApp(\'' + a.id + '\')" style="margin-right:4px;">Approve</button>';
-                html += '<button class="btn btn-gray btn-sm" onclick="rejectApp(\'' + a.id + '\')">Reject</button>';
-            }
-            html += '</td></tr>';
-        });
-        html += '</tbody></table>';
-        list.innerHTML = html;
-    } catch (e) {
-        document.getElementById('applications-list').innerHTML = '<p class="empty">Failed to load applications.</p>';
-    }
-}
-
-async function approveApp(id) {
-    if (!confirm('Approve this reseller application?')) return;
-    try {
-        const r = await fetch('/api/admin/reseller/applications/' + id + '/process', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({status: 'approved', tier: 'standard'})
-        });
-        const d = await r.json();
-        if (d.success) loadApplications();
-        else alert('Failed: ' + (d.error || 'Unknown'));
-    } catch (e) { alert('Error'); }
-}
-
-async function rejectApp(id) {
-    if (!confirm('Reject this reseller application?')) return;
-    try {
-        const r = await fetch('/api/admin/reseller/applications/' + id + '/process', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({status: 'rejected'})
-        });
-        const d = await r.json();
-        if (d.success) loadApplications();
-    } catch (e) { alert('Error'); }
-}
-
-async function loadTiers() {
-    try {
-        const r = await fetch('/api/admin/reseller/tiers');
-        const d = await r.json();
-        const list = document.getElementById('tiers-list');
-        if (!d.tiers || d.tiers.length === 0) {
-            list.innerHTML = '<p class="empty">No tiers configured.</p>'; return;
-        }
-        let html = '<table><thead><tr><th>Tier</th><th>Discount</th><th>Min Clients</th><th>MRR/Client</th><th>Actions</th></tr></thead><tbody>';
-        d.tiers.forEach(t => {
-            html += '<tr><td><strong>' + escapeHtml(t.label || t.tier) + '</strong></td>'
-                + '<td>' + (t.wholesale_discount_pct || 0) + '%</td>'
-                + '<td>' + (t.min_monthly_clients || 0) + '</td>'
-                + '<td>$' + (t.mrr_per_client || 0) + '</td>'
-                + '<td><button class="btn btn-gray btn-sm" onclick="editTier(\'' + t.tier + '\')">Edit</button></td></tr>';
-        });
-        html += '</tbody></table>';
-
-        // Show pricing for each tier
-        for (const tier of d.tiers) {
-            const pr = await fetch('/api/admin/reseller/pricing?tier=' + tier.tier);
-            const pd = await pr.json();
-            if (pd.pricing && Object.keys(pd.pricing).length > 0) {
-                html += '<h3 style="margin-top:20px;font-size:0.9rem;color:var(--gray-500);">' + escapeHtml(tier.label || tier.tier) + ' Pricing</h3>';
-                html += '<table><thead><tr><th>Package</th><th>Wholesale</th><th>MAP</th><th>Suggested</th></tr></thead><tbody>';
-                for (const [pkg, prices] of Object.entries(pd.pricing)) {
-                    html += '<tr><td>' + escapeHtml(pkg) + '</td><td>$' + prices.wholesale + '</td><td>$' + prices.map + '</td><td>$' + prices.suggested + '</td></tr>';
-                }
-                html += '</tbody></table>';
-            }
-        }
-        list.innerHTML = html;
-    } catch (e) {
-        document.getElementById('tiers-list').innerHTML = '<p class="empty">Failed to load tiers.</p>';
-    }
-}
-
-function editTier(tier) {
-    const val = prompt('Enter new MRR per client for ' + tier + ' tier:');
-    if (val !== null && val.trim()) {
-        fetch('/api/admin/reseller/tiers/' + tier, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({mrr: parseFloat(val)})
-        }).then(r => r.json()).then(d => { if (d.success) loadTiers(); });
     }
 }
 
