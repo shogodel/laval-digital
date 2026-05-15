@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laval Digital — AI Marketing Agency for Local Businesses</title>
-    <meta name="description" content="We replace your entire marketing department with AI. SEO, social media, and lead capture for one flat fee.">
+    <title>Frankie — AI Marketing Command Center for Local Businesses</title>
+    <meta name="description" content="Meet Frankie — your 16-agent AI marketing command center. SEO, social media, ads, email, reviews, content, and more. One flat monthly fee. Cancel anytime.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -43,7 +43,6 @@
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
-        /* Navigation */
         nav {
             background: var(--navy);
             padding: 0;
@@ -58,8 +57,9 @@
             align-items: center;
             height: 72px;
         }
-        nav .logo { display: flex; align-items: center; }
-        nav .logo img { height: 48px; width: auto; }
+        nav .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        nav .logo img { height: 40px; width: auto; }
+        nav .logo span { font-size: 1.2rem; font-weight: 800; color: var(--white); letter-spacing: -0.02em; }
         nav ul { list-style: none; display: flex; align-items: center; gap: 8px; }
         nav ul li a {
             color: rgba(255,255,255,0.8);
@@ -101,11 +101,10 @@
         }
         .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.8rem; cursor: pointer; padding: 4px 8px; }
 
-        /* Hero */
         .hero {
             background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 50%, #0d2137 100%);
             color: var(--white);
-            padding: 100px 0 90px;
+            padding: 120px 0 100px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -118,15 +117,14 @@
             pointer-events: none;
         }
         .hero h1 {
-            font-size: 3.2rem;
+            font-size: 3.4rem;
             font-weight: 900;
-            line-height: 1.15;
-            margin-bottom: 24px;
+            line-height: 1.1;
+            margin-bottom: 20px;
             letter-spacing: -0.02em;
             position: relative;
         }
         .hero h1 span {
-            color: var(--orange);
             background: linear-gradient(135deg, var(--orange), #ff6b35);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -179,8 +177,17 @@
             border-color: rgba(255,255,255,0.4);
             transform: translateY(-2px);
         }
+        .btn-outline {
+            background: transparent;
+            color: var(--navy);
+            border: 2px solid var(--navy);
+        }
+        .btn-outline:hover {
+            background: var(--navy);
+            color: var(--white);
+            transform: translateY(-2px);
+        }
 
-        /* Section shared */
         .section { padding: 90px 0; }
         .section-title {
             text-align: center;
@@ -199,89 +206,135 @@
             line-height: 1.7;
         }
 
-        /* Pricing */
-        .pricing {
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1060px;
+            margin: 0 auto;
+        }
+        .feature-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(0,0,0,0.04);
+            padding: 32px 28px;
+            text-align: left;
+            transition: all 0.3s;
+        }
+        .feature-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+        }
+        .feature-card .icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            line-height: 1;
+        }
+        .feature-card h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 8px;
+        }
+        .feature-card p {
+            font-size: 0.88rem;
+            color: var(--mid-gray);
+            line-height: 1.7;
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        .step-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(0,0,0,0.04);
+            padding: 36px 28px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .step-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+        }
+        .step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--orange), #e84040);
+            color: var(--white);
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin: 0 auto 16px;
+        }
+        .step-card h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 10px;
+        }
+        .step-card p {
+            font-size: 0.9rem;
+            color: var(--mid-gray);
+            line-height: 1.7;
+        }
+
+        .pricing-section {
             background: linear-gradient(135deg, #fff5f5 0%, #ffffff 30%, #fafafa 70%, #fff5f5 100%);
             position: relative;
             overflow: hidden;
         }
-        .pricing::before {
+        .pricing-section::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse at 20% 0%, rgba(212,43,43,0.05) 0%, transparent 50%),
-                        radial-gradient(ellipse at 80% 100%, rgba(212,43,43,0.03) 0%, transparent 50%);
+            background: radial-gradient(ellipse at 50% 0%, rgba(212,43,43,0.06) 0%, transparent 50%);
             pointer-events: none;
         }
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 28px;
-            max-width: 1060px;
-            margin: 0 auto;
-            align-items: stretch;
-        }
         .pricing-card {
+            max-width: 560px;
+            margin: 0 auto;
             background: var(--white);
-            border-radius: 20px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-            padding: 40px 32px 36px;
+            border-radius: 24px;
+            box-shadow: 0 8px 40px rgba(212,43,43,0.1), 0 0 0 1px rgba(212,43,43,0.08);
+            padding: 48px 40px 44px;
             text-align: center;
-            border: 1px solid rgba(0,0,0,0.04);
             position: relative;
-            display: flex;
-            flex-direction: column;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
-        .pricing-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--orange), #e84040, var(--orange));
-            opacity: 0.6;
-            transition: opacity 0.3s;
-            border-radius: 20px 20px 0 0;
-        }
-        .pricing-card:hover::before { opacity: 1; }
         .pricing-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 24px 80px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.06);
+            box-shadow: 0 16px 60px rgba(212,43,43,0.18), 0 0 0 1px rgba(212,43,43,0.12);
+            transform: translateY(-4px);
         }
-        .pricing-card.recommended {
-            border-color: var(--orange);
-            box-shadow: 0 0 0 2px var(--orange), 0 8px 32px rgba(212,43,43,0.12);
-            transform: scale(1.03);
-            z-index: 1;
-        }
-        .pricing-card.recommended::before {
-            opacity: 1;
-            background: linear-gradient(90deg, var(--orange), #ff4444, var(--orange));
-            height: 5px;
-            border-radius: 20px 20px 0 0;
-        }
-        .pricing-card.recommended:hover {
-            box-shadow: 0 0 0 2px var(--orange), 0 24px 80px rgba(212,43,43,0.15);
-        }
-        .badge-popular {
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, var(--orange), #e84040);
-            color: var(--white);
-            padding: 5px 24px;
+        .pricing-card .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            color: #991b1b;
+            padding: 6px 20px;
             border-radius: 20px;
-            font-size: 0.7rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            white-space: nowrap;
-            box-shadow: 0 4px 14px rgba(212,43,43,0.35);
-            border: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 20px;
+            border: 1px solid #fecaca;
         }
-        .price-monthly {
-            font-size: 3rem;
+        .pricing-card h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--navy);
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+        .pricing-card .price {
+            font-size: 3.2rem;
             font-weight: 900;
             background: linear-gradient(135deg, var(--orange), #e84040);
             -webkit-background-clip: text;
@@ -289,145 +342,114 @@
             background-clip: text;
             line-height: 1;
             letter-spacing: -0.03em;
-            margin-top: 8px;
+            margin: 16px 0 4px;
         }
-        .price-monthly small {
-            font-size: 1rem;
-            font-weight: 500;
-            -webkit-text-fill-color: var(--mid-gray);
+        .pricing-card .price-sub {
+            font-size: 0.9rem;
             color: var(--mid-gray);
-        }
-        .price-sub {
-            font-size: 0.85rem;
-            color: var(--mid-gray);
-            margin-top: 4px;
-        }
-        .price-once-area {
-            margin-top: 12px;
-            padding: 12px 10px;
-            background: linear-gradient(135deg, #f9fafb, #f3f4f6);
-            border-radius: 12px;
-            border: 1px solid #e5e7eb;
-        }
-        .price-once-area .label { font-size: 0.8rem; color: var(--mid-gray); font-weight: 500; }
-        .price-once {
-            font-size: 1.3rem;
-            font-weight: 800;
-            color: var(--navy);
-        }
-        .price-once s { color: #9ca3af; font-weight: 500; }
-        .save-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #059669, #10b981);
-            color: var(--white);
-            padding: 3px 14px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            margin-left: 6px;
-            box-shadow: 0 2px 8px rgba(5,150,105,0.3);
-        }
-        .financing-plan {
-            font-size: 0.8rem;
-            color: #991b1b;
-            margin-top: 12px;
-            padding: 10px 12px;
-            background: linear-gradient(135deg, #fef2f2, #fee2e2);
-            border-radius: 10px;
-            line-height: 1.5;
-            font-weight: 600;
-        }
-        .pricing-card h3 {
-            font-size: 1.3rem;
-            font-weight: 800;
-            color: var(--navy);
-            margin-bottom: 16px;
-            letter-spacing: -0.02em;
+            margin-bottom: 28px;
         }
         .pricing-card .features {
             list-style: none;
             text-align: left;
-            margin: 24px 0;
-            flex: 1;
+            margin: 0 0 28px;
         }
         .pricing-card .features li {
-            padding: 10px 0 10px 28px;
+            padding: 10px 0 10px 32px;
             border-bottom: 1px solid #f3f4f6;
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             position: relative;
             line-height: 1.5;
         }
         .pricing-card .features li::before {
-            content: "✨";
+            content: "✓";
             position: absolute;
             left: 0;
+            color: var(--green);
+            font-weight: 700;
         }
         .pricing-card .features li:last-child { border-bottom: none; }
-        .pricing-card .features li strong { color: var(--navy); }
         .pricing-card .btn {
-            margin-top: 16px;
+            margin-top: 4px;
             width: 100%;
             justify-content: center;
+            padding: 16px 32px;
+            font-size: 1.05rem;
             background: linear-gradient(135deg, var(--orange), #e84040);
-            box-shadow: 0 4px 16px rgba(212,43,43,0.3);
-            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(212,43,43,0.3);
         }
         .pricing-card .btn:hover {
             transform: scale(1.02);
-            box-shadow: 0 8px 24px rgba(212,43,43,0.4);
+            box-shadow: 0 8px 28px rgba(212,43,43,0.4);
         }
-        .referral-box {
-            max-width: 720px;
-            margin: 36px auto 0;
-            background: linear-gradient(135deg, #fef2f2, #ffe4e4);
-            border: 1px solid #fecaca;
-            border-radius: var(--radius);
-            padding: 24px 28px;
+        .tax-note {
             text-align: center;
-            font-size: 0.95rem;
-            color: #7f1d1d;
-            line-height: 1.7;
+            font-size: 0.85rem;
+            color: var(--mid-gray);
+            margin-top: 16px;
         }
-        .referral-box a {
-            color: var(--orange);
-            font-weight: 700;
-            text-decoration: none;
-            transition: opacity 0.2s;
-        }
-        .referral-box a:hover { opacity: 0.8; }
 
-        /* Comparison — Enhanced */
-        .comparison-section {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        .voice-section {
+            background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 100%);
+            color: var(--white);
+            padding: 90px 0;
+            text-align: center;
             position: relative;
             overflow: hidden;
         }
-        .comparison-section::before {
+        .voice-section::before {
             content: '';
             position: absolute;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: radial-gradient(ellipse at 25% 50%, rgba(239,68,68,0.04) 0%, transparent 50%),
-                        radial-gradient(ellipse at 75% 50%, rgba(5,150,105,0.04) 0%, transparent 50%);
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 100%, var(--orange-glow) 0%, transparent 50%);
             pointer-events: none;
+        }
+        .voice-section .container { position: relative; }
+        .voice-section h2 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 20px;
+        }
+        .voice-section p {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            opacity: 0.85;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        .voice-section .note {
+            font-size: 0.85rem;
+            opacity: 0.6;
+            margin-top: 24px;
+        }
+        .voice-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .comparison-section {
+            background: var(--off-white);
+            position: relative;
+            overflow: hidden;
         }
         .comparison-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 32px;
-            max-width: 960px;
+            max-width: 860px;
             margin: 0 auto;
-            position: relative;
         }
         .comparison-card {
             background: var(--white);
             border-radius: var(--radius-lg);
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.4s;
         }
         .comparison-card:hover {
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-md);
             transform: translateY(-4px);
         }
         .comparison-card.old { border-top: 4px solid #ef4444; }
@@ -438,7 +460,7 @@
             align-items: center;
             gap: 10px;
         }
-        .comparison-header .icon { font-size: 1.6rem; line-height: 1; }
+        .comparison-header .icon { font-size: 1.4rem; }
         .comparison-header h3 {
             font-size: 1.1rem;
             font-weight: 700;
@@ -467,14 +489,6 @@
         .comparison-list .price { font-weight: 700; color: var(--dark); text-align: right; }
         .comparison-list .price.green { color: #059669; }
         .comparison-list .price.red { color: #dc2626; }
-        .popular-tag {
-            font-size: 0.62rem;
-            color: var(--orange);
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            margin-left: 3px;
-            white-space: nowrap;
-        }
         .comparison-total-block {
             padding: 18px 28px;
             text-align: center;
@@ -508,7 +522,7 @@
         }
         .savings-callout {
             text-align: center;
-            max-width: 600px;
+            max-width: 550px;
             margin: 32px auto 0;
             padding: 16px 28px;
             background: linear-gradient(135deg, #ecfdf5, #d1fae5);
@@ -521,204 +535,62 @@
         }
         .savings-callout strong { font-weight: 700; }
 
-        /* How It Works */
-        .how-bg { background: var(--off-white); }
-        .steps-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 24px;
-        }
-        .step-card {
+        .testimonials {
             background: var(--white);
-            padding: 32px 28px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(0,0,0,0.04);
-            transition: all 0.3s;
-            text-align: left;
         }
-        .step-card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-4px);
-        }
-        .step-number {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: var(--orange);
-            margin-bottom: 12px;
-            line-height: 1;
-        }
-        .step-card h3 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--navy);
-            margin-bottom: 10px;
-        }
-        .step-card p {
-            font-size: 0.9rem;
-            color: var(--mid-gray);
-            line-height: 1.7;
-        }
-        .step-card:last-child .step-number { color: var(--green); }
-
-        /* What You Get */
-        .what-you-get { background: var(--white); }
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-            gap: 16px;
-            max-width: 1060px;
-            margin: 0 auto;
-        }
-        .card {
-            background: var(--white);
-            padding: 20px 18px;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(0,0,0,0.04);
-            text-align: left;
-            transition: all 0.3s;
-        }
-        .card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
-        }
-        .card-icon {
-            font-size: 1.6rem;
-            margin-bottom: 8px;
-            line-height: 1;
-        }
-        .card h3 {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--navy);
-            margin-bottom: 6px;
-        }
-        .card p {
-            font-size: 0.78rem;
-            color: var(--mid-gray);
-            line-height: 1.5;
-        }
-        /* See It in Action */
-        .real-world { background: var(--white); }
-        .example-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-        .example-card {
-            background: var(--off-white);
-            border-radius: var(--radius-lg);
-            padding: 36px 32px;
-            border: 1px solid rgba(0,0,0,0.04);
-            transition: box-shadow 0.3s;
-        }
-        .example-card:hover { box-shadow: var(--shadow-md); }
-        .example-card h3 {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: var(--navy);
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .example-card h3 span { font-size: 1.5rem; }
-        .example-step {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
-            align-items: flex-start;
-        }
-        .example-step:last-child { margin-bottom: 0; }
-        .step-circle {
-            flex-shrink: 0;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--orange);
-            color: var(--white);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            font-weight: 700;
-            margin-top: 2px;
-        }
-        .step-content { flex: 1; }
-        .step-content p {
-            font-size: 0.9rem;
-            color: var(--dark);
-            line-height: 1.7;
-        }
-        .step-content strong { color: var(--navy); }
-
-        /* How You'll Get Found */
-        .get-found { background: var(--off-white); }
-        .get-found .cards {
+        .testimonial-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 24px;
             max-width: 1000px;
             margin: 0 auto;
         }
-        .get-found .card {
-            text-align: center;
-            padding: 36px 28px 32px;
+        .testimonial-card {
+            background: var(--off-white);
+            border-radius: var(--radius-lg);
+            padding: 32px 28px;
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: box-shadow 0.3s;
         }
-        .get-found .card-icon {
-            font-size: 2.5rem;
+        .testimonial-card:hover { box-shadow: var(--shadow-md); }
+        .testimonial-card .quote {
+            font-size: 0.9rem;
+            color: var(--dark);
+            line-height: 1.7;
             margin-bottom: 16px;
+            font-style: italic;
         }
-        .get-found .card h3 {
-            font-size: 1.1rem;
+        .testimonial-card .author {
+            font-size: 0.82rem;
+            color: var(--mid-gray);
+            font-weight: 500;
+        }
+
+        .faq-section { background: var(--off-white); }
+        .faq-list {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .faq-item {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+        .faq-item h4 {
+            font-size: 1rem;
             font-weight: 700;
             color: var(--navy);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
-        .get-found .card p {
+        .faq-item p {
             font-size: 0.9rem;
             color: var(--mid-gray);
             line-height: 1.7;
         }
 
-        /* Demo CTA */
-        .demo-cta {
-            padding: 80px 0;
-            background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 100%);
-            color: var(--white);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .demo-cta::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse at 50% 100%, var(--orange-glow) 0%, transparent 50%);
-            pointer-events: none;
-        }
-        .demo-cta h2 {
-            font-size: 2.2rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            margin-bottom: 16px;
-            position: relative;
-        }
-        .demo-cta p {
-            margin-bottom: 28px;
-            opacity: 0.8;
-            font-size: 1.1rem;
-            max-width: 560px;
-            margin-left: auto;
-            margin-right: auto;
-            position: relative;
-        }
-        .demo-cta .hero-buttons { position: relative; }
-
-        /* Footer */
         footer {
             background: #0a1e33;
             color: var(--white);
@@ -750,7 +622,6 @@
             color: rgba(255,255,255,0.4);
         }
 
-        /* Scroll-triggered animations */
         .fade-up {
             opacity: 0;
             transform: translateY(30px);
@@ -761,211 +632,8 @@
             transform: translateY(0);
         }
 
-        /* Mobile */
-        @media (max-width: 768px) {
-            .hamburger { display: block; padding: 8px; }
-            nav .container { height: 64px; }
-            nav ul {
-                display: none;
-                flex-direction: column;
-                width: 100%;
-                gap: 0;
-                padding: 16px 0;
-                border-top: 1px solid rgba(255,255,255,0.08);
-                margin-top: 0;
-                background: var(--navy);
-                position: absolute;
-                top: 64px;
-                left: 0;
-                right: 0;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            }
-            nav ul.open { display: flex; }
-            nav ul li { text-align: center; padding: 4px 0; }
-            nav ul li a { font-size: 1rem; padding: 12px 20px; display: block; }
-            .lang-toggle { margin-left: 0; margin-top: 8px; display: inline-block; }
+        .how-bg { background: var(--off-white); }
 
-            .hero { padding: 48px 0 40px; }
-            .hero h1 { font-size: 1.8rem; }
-            .hero p { font-size: 0.95rem; margin-bottom: 24px; }
-
-            .section { padding: 48px 0; }
-            .section-title { font-size: 1.5rem; margin-bottom: 12px; }
-            .section-subtitle { font-size: 0.9rem; margin-bottom: 28px; }
-
-            .pricing-grid { grid-template-columns: 1fr; gap: 20px; }
-            .pricing-card { padding: 24px 20px; }
-            .pricing-card.recommended { transform: none; margin-top: 4px; }
-            .pricing-card.recommended .badge-popular { top: -8px; font-size: 0.65rem; padding: 4px 18px; }
-            .price-monthly { font-size: 2rem; }
-            .pricing-card ul.features { margin-top: 12px; }
-            .pricing-card ul.features li { font-size: 0.82rem; padding: 6px 0; }
-
-            .comparison-grid { grid-template-columns: 1fr; gap: 16px; }
-            .comparison-body { padding: 4px 16px 12px; }
-            .comparison-header { padding: 16px 16px 12px; }
-            .comparison-total-block { padding: 12px 16px; }
-            .comparison-total-block .total-amount { font-size: 1.3rem; }
-
-            .steps-grid { grid-template-columns: 1fr; gap: 16px; }
-            .step-card { padding: 20px 16px; }
-            .step-number { font-size: 1.5rem; }
-            .cards { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-            .card { padding: 16px 12px; }
-            .card .card-icon { font-size: 1.6rem; margin-bottom: 8px; }
-            .card h3 { font-size: 0.85rem; }
-            .card p { font-size: 0.75rem; }
-
-            .example-grid { grid-template-columns: 1fr; gap: 16px; }
-            .example-card { padding: 24px 20px; }
-
-            .get-found .cards { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-
-            .demo-cta { padding: 40px 0; }
-            .demo-cta h2 { font-size: 1.3rem; }
-            .demo-cta p { font-size: 0.9rem; }
-
-            footer .container { grid-template-columns: 1fr; gap: 24px; }
-            footer { padding: 32px 0 24px; }
-        }
-
-        @media (max-width: 480px) {
-            .hero h1 { font-size: 1.5rem; }
-            .hero p { font-size: 0.9rem; }
-            .hero-buttons .btn { width: 100%; justify-content: center; padding: 11px 20px; font-size: 0.9rem; }
-            .hero-buttons .btn-secondary { width: 100%; }
-            .container { padding: 0 16px; }
-            .pricing-card { padding: 20px 16px; }
-            .price-monthly { font-size: 1.8rem; }
-            .section { padding: 36px 0; }
-            .cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .card { padding: 12px 10px; }
-            .card h3 { font-size: 0.8rem; }
-            .card p { font-size: 0.72rem; }
-            .comparison-list li { flex-direction: column; align-items: flex-start; gap: 2px; font-size: 0.82rem; }
-            .comparison-list .price { text-align: left; }
-            .comparison-total-block .total-amount { font-size: 1.2rem; }
-            .step-card { padding: 16px 12px; }
-            .getting-started .tools-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        }
-        @media (max-width: 400px) {
-            .hero h1 { font-size: 1.3rem; }
-            .hero-buttons .btn { font-size: 0.8rem; padding: 10px 14px; }
-            .cards { grid-template-columns: 1fr 1fr; gap: 8px; }
-            .pricing-card { padding: 18px 14px; }
-            .price-monthly { font-size: 1.6rem; }
-            .price-once-area { padding: 10px; }
-            .own-banner { font-size: 0.8rem; padding: 8px 14px; }
-            .section { padding: 28px 0; }
-            .referral-box { padding: 14px; font-size: 0.8rem; }
-            .comparison-list li { gap: 2px; font-size: 0.78rem; }
-        }
-            nav ul.open { display: flex; }
-            nav ul li { text-align: center; padding: 4px 0; }
-            nav ul li a { font-size: 1rem; padding: 12px 20px; display: block; }
-            .lang-toggle { margin-left: 0; margin-top: 8px; display: inline-block; }
-
-            .hero { padding: 64px 0 56px; }
-            .hero h1 { font-size: 2rem; }
-            .hero p { font-size: 1rem; }
-
-            .section-title { font-size: 1.8rem; }
-            .section-subtitle { font-size: 1rem; }
-
-            .pricing-grid { grid-template-columns: 1fr; gap: 24px; }
-            .pricing-card { padding: 32px 24px; }
-            .pricing-card.recommended { transform: none; margin-top: 4px; }
-            .pricing-card.recommended .badge-popular { top: -8px; font-size: 0.65rem; padding: 4px 18px; }
-            .price-monthly { font-size: 2.4rem; }
-
-            .comparison-grid { grid-template-columns: 1fr; gap: 20px; }
-            .comparison-body { padding: 4px 20px 16px; }
-            .comparison-header { padding: 20px 20px 14px; }
-            .comparison-total-block { padding: 14px 20px; }
-            .comparison-total-block .total-amount { font-size: 1.5rem; }
-
-            .steps-grid { grid-template-columns: 1fr; }
-            .step-card { padding: 24px 20px; }
-            .step-number { font-size: 1.8rem; }
-            .cards { grid-template-columns: 1fr; }
-
-            .example-grid { grid-template-columns: 1fr; }
-            .example-card { padding: 28px 24px; }
-
-            .get-found .cards { grid-template-columns: 1fr; }
-
-            .demo-cta { padding: 56px 0; }
-            .demo-cta h2 { font-size: 1.6rem; }
-
-            footer .container { grid-template-columns: 1fr; gap: 32px; }
-        }
-
-        @media (min-width: 481px) and (max-width: 768px) {
-            .cards { grid-template-columns: repeat(2, 1fr); }
-            .get-found .cards { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        @media (max-width: 480px) {
-            .hero h1 { font-size: 1.7rem; }
-            .hero-buttons .btn { width: 100%; justify-content: center; }
-            .hero-buttons .btn-secondary { width: 100%; }
-            .container { padding: 0 16px; }
-            .comparison-list li { flex-direction: column; align-items: flex-start; gap: 2px; }
-            .comparison-list .price { text-align: left; }
-        }
-
-        @media (max-width: 400px) {
-            #affiliate-banner { font-size: 0.8rem; padding: 10px 8px; }
-        }
-
-        @media (max-height: 700px) {
-            #cookie-notice { bottom: 8px; padding: 12px 16px; }
-        }
-
-        /* Pricing shine & utilities */
-        @keyframes shine {
-            0% { background-position: -200% center; }
-            100% { background-position: 200% center; }
-        }
-        .own-banner {
-            display: inline-block;
-            background: linear-gradient(90deg, #fef2f2, #fee2e2, #fef2f2);
-            background-size: 200% auto;
-            animation: shine 3s ease-in-out infinite;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            color: #991b1b;
-            margin-bottom: 20px;
-            border: 1px solid #fecaca;
-        }
-        .price-sub {
-            font-size: 0.85rem;
-            color: var(--mid-gray);
-            margin-top: 4px;
-        }
-        .tax-note {
-            text-align: center;
-            font-size: 1.1rem;
-            color: var(--mid-gray);
-            margin-top: 16px;
-            font-weight: 500;
-        }
-        .commitment-note {
-            text-align: center;
-            max-width: 720px;
-            margin: 24px auto 0;
-            font-size: 0.85rem;
-            color: #7f1d1d;
-            background: linear-gradient(135deg, #fef2f2, #fee2e2);
-            border: 1px solid #fecaca;
-            border-radius: var(--radius);
-            padding: 16px 20px;
-            line-height: 1.6;
-        }
-
-        /* Cookie Notice */
         #cookie-notice {
             position: fixed;
             bottom: 24px;
@@ -993,19 +661,14 @@
             pointer-events: auto;
             transform: translateX(-50%) translateY(0);
         }
-        #cookie-notice .cookie-icon {
-            font-size: 1.5rem;
-            flex-shrink: 0;
-        }
+        #cookie-notice .cookie-icon { font-size: 1.5rem; flex-shrink: 0; }
         #cookie-notice .cookie-text {
             flex: 1;
             font-size: 0.85rem;
             color: rgba(255,255,255,0.85);
             line-height: 1.5;
         }
-        #cookie-notice .cookie-text strong {
-            color: var(--white);
-        }
+        #cookie-notice .cookie-text strong { color: var(--white); }
         #cookie-notice .cookie-btn {
             flex-shrink: 0;
             background: var(--orange);
@@ -1025,7 +688,64 @@
             transform: scale(1.03);
         }
 
+        @media (max-width: 768px) {
+            .hamburger { display: block; }
+            nav .container { height: 64px; }
+            nav ul {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                gap: 0;
+                padding: 16px 0;
+                border-top: 1px solid rgba(255,255,255,0.08);
+                margin-top: 0;
+                background: var(--navy);
+                position: absolute;
+                top: 64px;
+                left: 0;
+                right: 0;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            }
+            nav ul.open { display: flex; }
+            nav ul li { text-align: center; padding: 4px 0; }
+            nav ul li a { font-size: 1rem; padding: 12px 20px; display: block; }
+            .lang-toggle { margin-left: 0; margin-top: 8px; display: inline-block; }
+
+            .hero { padding: 64px 0 56px; }
+            .hero h1 { font-size: 2rem; }
+            .hero p { font-size: 1rem; }
+            .section { padding: 56px 0; }
+            .section-title { font-size: 1.7rem; }
+            .section-subtitle { font-size: 0.95rem; margin-bottom: 32px; }
+
+            .feature-grid { grid-template-columns: 1fr; gap: 16px; }
+            .steps-grid { grid-template-columns: 1fr; gap: 16px; }
+            .testimonial-grid { grid-template-columns: 1fr; gap: 16px; }
+            .comparison-grid { grid-template-columns: 1fr; gap: 20px; }
+
+            .pricing-card { padding: 36px 24px; }
+            .pricing-card .price { font-size: 2.5rem; }
+
+            .voice-section { padding: 56px 0; }
+            .voice-section h2 { font-size: 1.6rem; }
+
+            footer .container { grid-template-columns: 1fr; gap: 24px; }
+            footer { padding: 32px 0 24px; }
+        }
+
         @media (max-width: 480px) {
+            .hero h1 { font-size: 1.6rem; }
+            .hero p { font-size: 0.9rem; }
+            .hero-buttons .btn { width: 100%; justify-content: center; }
+            .hero-buttons .btn-secondary { width: 100%; }
+            .container { padding: 0 16px; }
+            .pricing-card { padding: 28px 20px; }
+            .pricing-card .price { font-size: 2rem; }
+            .section-title { font-size: 1.4rem; }
+            .voice-section h2 { font-size: 1.3rem; }
+            .comparison-list li { flex-direction: column; align-items: flex-start; gap: 2px; }
+            .faq-item { padding: 18px 20px; }
+
             #cookie-notice {
                 flex-wrap: wrap;
                 gap: 12px;
@@ -1034,146 +754,149 @@
                 width: calc(100% - 32px);
                 border-radius: 14px;
             }
-            #cookie-notice .cookie-btn {
-                width: 100%;
-                text-align: center;
-            }
+            #cookie-notice .cookie-btn { width: 100%; text-align: center; }
+        }
+
+        @media (max-width: 400px) {
+            .hero h1 { font-size: 1.3rem; }
+            .section-title { font-size: 1.2rem; }
         }
     </style>
 </head>
 <body>
 
-<!-- Affiliate Discount Banner (hidden by default) -->
 <div id="affiliate-banner" style="display:none; background:#D42B2B; color:white; text-align:center; padding:12px; font-weight:600;">
     🎉 <span id="affiliate-banner-text">$500 OFF</span> — thanks to your friend's referral! This discount is automatically applied.
 </div>
 
-<!-- Navigation -->
 <nav>
     <div class="container">
-        <a href="/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48"></a>
+        <a href="/" class="logo">
+            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48">
+            <span>Frankie</span>
+        </a>
         <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')" aria-label="Menu">&#9776;</button>
         <ul id="nav-menu">
             <li><a href="/">Home</a></li>
-            <li><a href="/demo">Live Demo</a></li>
+            <li><a href="/demo">Demo</a></li>
             <li><a href="/blog">Blog</a></li>
             <li><a href="/affiliate">Affiliate</a></li>
+            <li><a href="/client/login">Sign In</a></li>
             <li><a href="tel:5142431580">📞 (514) 243-1580</a></li>
-            <li><a href="/contract" class="nav-cta">Get Started</a></li>
+            <li><a href="/free-trial" class="nav-cta">Try Frankie Free</a></li>
             <li><a href="/fr/" class="lang-toggle">FR</a></li>
         </ul>
     </div>
 </nav>
 
-<!-- Hero -->
 <section class="hero fade-up">
     <div class="container">
-        <h1>Your Entire Marketing Department — <span>Powered by AI</span>, for a One-Time Fee</h1>
-        <p>Meet <strong>Frankie</strong> — your 16-AI-agent marketing command center. Website, SEO, social, ads, email, reviews, video, SMS, CRO, outreach, backlinks, technical SEO, content strategy, reporting, and a 24/7 lead chatbot. All working for you. No retainers. No monthly bills. You just pay once and bring your own API keys.</p>
+        <h1>Meet <span>Frankie</span> — Your AI Marketing Command Center</h1>
+        <p>Speak naturally. Frankie handles your entire digital marketing — SEO, social media, ads, email, reviews, content, and more. 16 specialized AI agents working 24/7. One flat monthly fee. Cancel anytime.</p>
         <div class="hero-buttons">
-            <a href="/demo" class="btn btn-primary">See Live Demo</a>
+            <a href="/free-trial" class="btn btn-primary">Try Frankie Free (7 Days)</a>
             <a href="tel:5142431580" class="btn btn-secondary">📞 Call (514) 243-1580</a>
-            <a href="sms:5142431580" class="btn btn-secondary">💬 Text Us</a>
-            <a href="mailto:lavaldigital@gmail.com" class="btn btn-secondary">✉️ Email</a>
         </div>
     </div>
 </section>
 
-<!-- Pricing -->
-<section class="section pricing" id="pricing">
+<section class="section" id="features">
     <div class="container">
-        <h2 class="section-title fade-up">Choose Your Plan</h2>
-        <p class="section-subtitle fade-up">Every plan includes <strong>Frankie</strong> — your 16-agent AI command center. Flexible payment options — monthly or own it outright.</p>
-        <div style="text-align:center;" class="fade-up">
-            <span class="own-banner">🍁 Pay once, save up to $1,500 — limited time</span>
-        </div>
-        <div class="pricing-grid fade-up">
-            <div class="pricing-card">
-                <h3>Core Suite</h3>
-                <p class="price-monthly">$567<small>/mo</small></p>
-                <p class="price-sub">12-month commitment</p>
-                <div class="price-once-area">
-                    <div class="label">Or pay once</div>
-                    <div class="price-once"><s>$8,500</s> $7,500 <span class="save-badge">Save $1,000</span></div>
-                </div>
-                <ul class="features" style="margin-top:16px;">
-                    <li><strong>Local SEO Agent</strong> — Google Maps &amp; organic rankings</li>
-                    <li><strong>Social Media Agent</strong> — weekly posts &amp; engagement</li>
-                    <li><strong>Lead Conversion Chatbot</strong> — 24/7 qualification</li>
-                    <li><strong>Admin Dashboard</strong> — control &amp; approvals</li>
-                    <li><strong>AI-Powered Website</strong> — mobile-optimized, SEO-ready</li>
-                    <li><strong>Domain Setup</strong> — we handle everything</li>
-                    <li><strong>Hosting Included</strong> — no extra fees</li>
-                </ul>
-                <div class="financing-plan">
-                    <strong>12-Month Plan:</strong> 20% upfront ($1,700) + 11 payments of $567/mo
-                </div>
-                <a href="/contract" class="btn btn-primary">Get Core Suite — $567/mo</a>
+        <h2 class="section-title fade-up">What Frankie Does</h2>
+        <p class="section-subtitle fade-up">16 specialized AI agents working as your complete marketing department. One command center. One flat monthly fee.</p>
+        <div class="feature-grid fade-up">
+            <div class="feature-card">
+                <div class="icon">🔍</div>
+                <h3>SEO & Content</h3>
+                <p>Frankie optimizes your Google presence, writes blog posts, builds backlinks, and handles technical SEO — all while you sleep.</p>
             </div>
-            <div class="pricing-card recommended">
-                <div class="badge-popular">⭐ MOST POPULAR</div>
-                <h3>Growth Suite</h3>
-                <p class="price-monthly">$833<small>/mo</small></p>
-                <p class="price-sub">12-month commitment</p>
-                <div class="price-once-area">
-                    <div class="label">Or pay once</div>
-                    <div class="price-once"><s>$12,500</s> $11,000 <span class="save-badge">Save $1,500</span></div>
-                </div>
-                <ul class="features" style="margin-top:16px;">
-                    <li><strong>Everything in Core Suite</strong></li>
-                    <li><strong>Paid Ads Agent</strong> — Google &amp; Meta campaigns</li>
-                    <li><strong>Growth Hacker Agent</strong> — A/B testing &amp; CRO</li>
-                    <li><strong>Reputation Agent</strong> — review management</li>
-                    <li><strong>Email Marketing Agent</strong> — automated campaigns</li>
-                    <li><strong>TikTok/Reels Agent</strong> — short-form video content</li>
-                </ul>
-                <div class="financing-plan">
-                    <strong>12-Month Plan:</strong> 20% upfront ($2,500) + 11 payments of $833/mo
-                </div>
-                <a href="/contract" class="btn btn-primary">Get Growth Suite — $833/mo</a>
+            <div class="feature-card">
+                <div class="icon">📱</div>
+                <h3>Social Media</h3>
+                <p>Posts to Facebook, Instagram, TikTok, and more. Frankie creates captions, hashtags, and schedules everything.</p>
             </div>
-            <div class="pricing-card">
-                <h3>Full Empire</h3>
-                <p class="price-monthly">$1,100<small>/mo</small></p>
-                <p class="price-sub">12-month commitment</p>
-                <div class="price-once-area">
-                    <div class="label">Or pay once</div>
-                    <div class="price-once"><s>$16,500</s> $14,500 <span class="save-badge">Save $2,000</span></div>
-                </div>
-                <ul class="features" style="margin-top:16px;">
-                    <li><strong>All 16 Agents + Frankie</strong> — full suite access</li>
-                    <li><strong>Outreach &amp; Backlinks Agents</strong> — prospecting + link building</li>
-                    <li><strong>Content Strategy &amp; Video Agents</strong> — editorial + YouTube scripts</li>
-                    <li><strong>Technical SEO &amp; CRO Agents</strong> — speed, schema, conversion</li>
-                    <li><strong>SMS Marketing &amp; Reporting Agents</strong> — campaigns + analytics</li>
-                    <li><strong>3 Months Done-For-You Management</strong></li>
-                    <li><strong>Priority Support</strong> — 12h response</li>
-                    <li><strong>Monthly Performance Reports</strong> — auto-generated</li>
-                    <li><strong>Custom API Key Setup</strong> — we configure everything</li>
-                </ul>
-                <div class="financing-plan">
-                    <strong>12-Month Plan:</strong> 20% upfront ($3,300) + 11 payments of $1,100/mo
-                </div>
-                <a href="/contract" class="btn btn-primary">Get Full Empire — $1,100/mo</a>
+            <div class="feature-card">
+                <div class="icon">💰</div>
+                <h3>Paid Ads</h3>
+                <p>Google Ads, Meta Ads — Frankie writes copy, selects keywords, manages budgets, and A/B tests creative.</p>
             </div>
-        </div>
-        <p class="tax-note fade-up">+ applicable taxes based on your province</p>
-        <div class="commitment-note fade-up">
-            🔒 12-Month Commitment, 20% Upfront. All plans include a 12-month agreement with 20% due as a setup fee. The remaining balance is split over 11 monthly payments. Cancel anytime after 12 months.
-        </div>
-        <div class="referral-box fade-up">
-            🔗 <strong>Join Our Affiliate Program</strong><br>
-            Earn <strong>20% commission</strong> per referral — that's up to $3,300 per client.<br>
-            <a href="/affiliate">Become an Affiliate</a>
+            <div class="feature-card">
+                <div class="icon">📧</div>
+                <h3>Email & SMS</h3>
+                <p>Newsletters, promo campaigns, lead nurture sequences, and SMS follow-ups — all automated.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">⭐</div>
+                <h3>Reputation</h3>
+                <p>Monitors reviews, generates professional responses, and runs review generation campaigns automatically.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">📊</div>
+                <h3>Analytics & Reports</h3>
+                <p>Monthly performance reports, lead tracking, conversion analytics — Frankie shows you exactly what's working.</p>
+            </div>
         </div>
     </div>
 </section>
 
-<!-- Comparison -->
+<section class="section how-bg" id="how-it-works">
+    <div class="container">
+        <h2 class="section-title fade-up">How It Works</h2>
+        <p class="section-subtitle fade-up">Get your AI marketing team running in minutes. No setup fees, no technical skills required.</p>
+        <div class="steps-grid fade-up">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <h3>Create Your Account</h3>
+                <p>Sign up in 30 seconds. No credit card required for your 7-day trial.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <h3>Connect Your Accounts</h3>
+                <p>Frankie guides you through connecting your website, social media, email, and ad platforms. Takes about 5 minutes.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <h3>Let Frankie Work</h3>
+                <p>Frankie starts optimizing immediately. You approve what you want, or let Frankie run on autopilot. Your phone buzzes when something needs attention.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section pricing-section" id="pricing">
+    <div class="container">
+        <div class="pricing-card fade-up">
+            <div class="badge">🇨🇦 Trusted by Canadian Businesses</div>
+            <h2>One Plan. Everything Included.</h2>
+            <div class="price">$597.99<span style="font-size:1rem;font-weight:500;-webkit-text-fill-color:var(--mid-gray);color:var(--mid-gray);">/month</span></div>
+            <p class="price-sub">Cancel anytime. No contracts. No hidden fees.</p>
+            <ul class="features">
+                <li>All 16 AI Marketing Agents</li>
+                <li>Unlimited Tasks & Content Generation</li>
+                <li>Connect All Your Accounts (Social, Email, Ads, Website)</li>
+                <li>Frankie Voice Interface (Speak Naturally)</li>
+                <li>PWA — Install on Any Device</li>
+                <li>7-Day Free Trial — No Credit Card Required</li>
+            </ul>
+            <a href="/free-trial" class="btn btn-primary">Start Your Free Trial</a>
+            <p class="tax-note">+ applicable taxes based on your province</p>
+        </div>
+    </div>
+</section>
+
+<section class="voice-section" id="voice">
+    <div class="container fade-up">
+        <span class="voice-icon">🎙️</span>
+        <h2>Just Talk to Frankie</h2>
+        <p>Open Frankie on your phone or desktop. Say <em>"Frankie, write a blog post about winter plumbing tips and post it to Facebook."</em> Frankie responds, confirms, and executes. Like having a marketing director on speed dial.</p>
+        <p class="note">Voice interface works on Chrome, Edge, and Safari.</p>
+    </div>
+</section>
+
 <section class="section comparison-section" id="comparison">
     <div class="container">
-        <h2 class="section-title fade-up">What Are You Paying Right Now?</h2>
-        <p class="section-subtitle fade-up">Traditional agencies charge separately for every service. We give you everything for one flat monthly rate.</p>
+        <h2 class="section-title fade-up">Frankie vs Traditional Agency</h2>
+        <p class="section-subtitle fade-up">See why hundreds of Canadian businesses are switching to AI-powered marketing.</p>
         <div class="comparison-grid fade-up">
             <div class="comparison-card old">
                 <div class="comparison-header">
@@ -1182,241 +905,100 @@
                 </div>
                 <div class="comparison-body">
                     <ul class="comparison-list">
-                        <li><span class="label">Website Setup</span> <span class="price red">$2,000–$5,000</span></li>
-                        <li><span class="label">SEO Monthly</span> <span class="price red">$1,000–$2,500/mo</span></li>
-                        <li><span class="label">Social Media</span> <span class="price red">$800–$2,000/mo</span></li>
-                        <li><span class="label">Paid Ads Management</span> <span class="price red">15–20% of spend</span></li>
-                        <li><span class="label">Email Marketing</span> <span class="price red">$300–$1,000/mo</span></li>
-                        <li><span class="label">Reputation Mgmt</span> <span class="price red">$500–$1,500/mo</span></li>
-                        <li><span class="label">TikTok Content</span> <span class="price red">$500–$2,000/mo</span></li>
-                        <li><span class="label">Video Production</span> <span class="price red">$1,000–$3,000/mo</span></li>
-                        <li><span class="label">Content Strategy</span> <span class="price red">$500–$2,000/mo</span></li>
-                        <li><span class="label">SMS Marketing</span> <span class="price red">$300–$1,000/mo</span></li>
-                        <li><span class="label">CRO &amp; Landing Pages</span> <span class="price red">$500–$2,000/mo</span></li>
-                        <li><span class="label">Technical SEO</span> <span class="price red">$500–$2,000/mo</span></li>
+                        <li><span class="label">Monthly Cost</span> <span class="price red">$3,000–$10,000+</span></li>
+                        <li><span class="label">Vendors</span> <span class="price red">Multiple agencies</span></li>
+                        <li><span class="label">Turnaround</span> <span class="price red">Days to weeks</span></li>
+                        <li><span class="label">Availability</span> <span class="price red">Business hours</span></li>
+                        <li><span class="label">Voice Commands</span> <span class="price red">❌</span></li>
                     </ul>
                 </div>
                 <div class="comparison-total-block">
-                    <span class="total-label">Estimated Monthly Cost</span>
+                    <span class="total-label">Monthly Investment</span>
                     <span class="total-amount">$3,000–$10,000+</span>
-                    <span class="total-sub">per month + separate setup fees</span>
+                    <span class="total-sub">per month + setup fees</span>
                 </div>
             </div>
             <div class="comparison-card new">
                 <div class="comparison-header">
-                    <span class="icon">🚀</span>
-                    <h3>Laval Digital</h3>
+                    <span class="icon">🤖</span>
+                    <h3>Frankie</h3>
                 </div>
                 <div class="comparison-body">
                     <ul class="comparison-list">
-                        <li><span class="label">Core Suite</span> <span class="price green">$708/mo</span></li>
-                        <li><span class="label">Growth Suite <span class="popular-tag">⭐ POPULAR</span></span> <span class="price green">$1,042/mo</span></li>
-                        <li><span class="label">Full Empire</span> <span class="price green">$1,375/mo</span></li>
-                        <li><span class="label">AI-Powered Website</span> <span class="price green">✅ Included</span></li>
-                        <li><span class="label">11 AI Agents</span> <span class="price green">✅ Included</span></li>
-                        <li><span class="label">Admin Dashboard</span> <span class="price green">✅ Included</span></li>
-                        <li><span class="label">Lead Capture Chatbot</span> <span class="price green">✅ Included</span></li>
+                        <li><span class="label">Monthly Cost</span> <span class="price green">$597.99</span></li>
+                        <li><span class="label">Vendors</span> <span class="price green">One platform</span></li>
+                        <li><span class="label">Turnaround</span> <span class="price green">Instant</span></li>
+                        <li><span class="label">Availability</span> <span class="price green">24/7</span></li>
+                        <li><span class="label">Voice Commands</span> <span class="price green">✅ Included</span></li>
                     </ul>
                 </div>
                 <div class="comparison-total-block">
-                    <span class="total-label">Flat Monthly Rate</span>
-                    <span class="total-amount">From $708</span>
+                    <span class="total-label">Monthly Investment</span>
+                    <span class="total-amount">$597.99</span>
                     <span class="total-sub">per month — everything included</span>
                 </div>
             </div>
         </div>
         <div class="savings-callout fade-up">
-            💰 <strong>Save 75–90%</strong> compared to traditional agencies — with AI that works 24/7.
+            💰 <strong>Save 80–94%</strong> compared to traditional agencies — with AI that works 24/7.
         </div>
     </div>
 </section>
 
-<!-- How It Works -->
-<section class="section how-bg">
+<section class="section testimonials" id="testimonials">
     <div class="container">
-        <h2 class="section-title fade-up">How It Works</h2>
-        <p class="section-subtitle fade-up">You don't need to be technical. You just need to show up. We handle the rest.</p>
-        <div class="steps-grid fade-up">
-            <div class="step-card">
-                <div class="step-number">1</div>
-                <h3>Choose Your Offer</h3>
-                <p>Call, text, or email us. We'll discuss your business and pick the right package — one-page site or custom build. Your AI team is called <strong>Frankie</strong> — your 24/7 marketing command center.</p>
+        <h2 class="section-title fade-up">Trusted by Canadian Business Owners</h2>
+        <p class="section-subtitle fade-up">Real feedback from real Frankie users.</p>
+        <div class="testimonial-grid fade-up">
+            <div class="testimonial-card">
+                <p class="quote">"Frankie manages our entire online presence. We just approve posts and watch the leads come in."</p>
+                <p class="author">— Plumbing Company Owner, Laval</p>
             </div>
-            <div class="step-card">
-                <div class="step-number">2</div>
-                <h3>Bring Your Keys (BYOK)</h3>
-                <p>Sign up for API keys from DeepSeek, OpenAI, or Claude (we show you how — it takes 5 minutes). You control the access, we power the system.</p>
+            <div class="testimonial-card">
+                <p class="quote">"I was skeptical about AI, but Frankie writes better ad copy than our old agency."</p>
+                <p class="author">— Electrician, Montreal</p>
             </div>
-            <div class="step-card">
-                <div class="step-number">3</div>
-                <h3>We Build &amp; Launch</h3>
-                <p>We set up your website, configure all 16 agents, connect your social accounts, and activate your admin dashboard with <strong>Frankie</strong> — your AI command center. You get a full training session.</p>
-            </div>
-            <div class="step-card">
-                <div class="step-number">4</div>
-                <h3>Your AI Team Works 24/7</h3>
-                <p>Agents generate content, respond to reviews, post to social media, run ads, qualify leads, and email your customers. You just approve or let them run.</p>
-            </div>
-            <div class="step-card">
-                <div class="step-number">5</div>
-                <h3>You Own Everything</h3>
-                <p>Your website, your content, your data, your accounts. No lock-in. No monthly fees. Cancel anytime — you keep what we built together.</p>
+            <div class="testimonial-card">
+                <p class="quote">"The voice interface is unreal. I talk to Frankie while driving between job sites."</p>
+                <p class="author">— Landscaper, Longueuil</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- What You Get -->
-<section class="section what-you-get">
+<section class="section faq-section" id="faq">
     <div class="container">
-        <h2 class="section-title fade-up">Your <strong>Frankie</strong> AI Suite</h2>
-        <p class="section-subtitle fade-up">16 specialized AI agents, one command center. Each agent is an expert in its domain, coordinated by <strong>Frankie</strong> — your 24/7 marketing co-pilot.</p>
-        <div class="cards fade-up">
-            <div class="card"><div class="card-icon">🔍</div><h3>📍 Local SEO Agent</h3><p>Optimizes your Google Business Profile, ranks you for local keywords, writes service pages, and builds citations.</p></div>
-            <div class="card"><div class="card-icon">📱</div><h3>📱 Social Media Agent</h3><p>Creates and schedules weekly Facebook &amp; Instagram posts. Drives engagement and builds local following.</p></div>
-            <div class="card"><div class="card-icon">💰</div><h3>📢 Paid Ads Agent</h3><p>Architects Google &amp; Meta ad campaigns. Writes ad copy, selects keywords, sets budgets, and A/B tests creative.</p></div>
-            <div class="card"><div class="card-icon">💬</div><h3>🎯 Lead Conversion Agent</h3><p>Qualifies website visitors 24/7 with intelligent chatbot. Books appointments and texts you when a hot lead is ready.</p></div>
-            <div class="card"><div class="card-icon">🚀</div><h3>🚀 Growth Hacker Agent</h3><p>Designs experiments, A/B tests landing pages, analyzes conversion funnels, and finds scalable growth channels.</p></div>
-            <div class="card"><div class="card-icon">⭐</div><h3>⭐ Reputation Agent</h3><p>Monitors reviews across Google, Facebook &amp; Yelp, generates professional responses, and boosts your star rating.</p></div>
-            <div class="card"><div class="card-icon">📧</div><h3>✉️ Email Marketing Agent</h3><p>Creates newsletters, promotional campaigns, and automated sequences that nurture leads and drive repeat business.</p></div>
-            <div class="card"><div class="card-icon">🎬</div><h3>🎬 TikTok/Reels Agent</h3><p>Creates short-form video content for TikTok, Instagram Reels &amp; YouTube Shorts — scripts, hooks, and captions.</p></div>
-            <div class="card"><div class="card-icon">🤝</div><h3>🤝 Outreach Agent</h3><p>Finds prospects, writes personalized outreach emails, creates campaign sequences, and automates follow-ups.</p></div>
-            <div class="card"><div class="card-icon">🔗</div><h3>🔗 Backlinks Agent</h3><p>Builds high-quality backlinks, finds guest post opportunities, audits link profiles, and boosts domain authority.</p></div>
-            <div class="card"><div class="card-icon">📝</div><h3>📝 Content Strategist</h3><p>Plans editorial calendars, repurposes content across channels, writes content briefs, and manages topic clusters.</p></div>
-            <div class="card"><div class="card-icon">⚙️</div><h3>⚙️ Technical SEO Agent</h3><p>Audits site speed, implements schema markup, fixes crawl errors, optimizes sitemaps and core web vitals.</p></div>
-            <div class="card"><div class="card-icon">📐</div><h3>📐 CRO &amp; Landing Pages</h3><p>Optimizes conversion funnels, designs A/B tests, improves landing page copy, and maximizes lead capture.</p></div>
-            <div class="card"><div class="card-icon">🎥</div><h3>🎥 Video Production Agent</h3><p>Writes YouTube scripts, creates explainer videos, produces ad video scripts, and optimizes video SEO.</p></div>
-            <div class="card"><div class="card-icon">💬</div><h3>💬 SMS Marketing Agent</h3><p>Plans SMS campaigns, writes concise promotions, manages opt-in compliance, and sequences text messages.</p></div>
-            <div class="card"><div class="card-icon">📊</div><h3>📊 Analytics &amp; Reports</h3><p>Compiles cross-channel performance, generates monthly client reports, tracks ROI, and delivers executive insights.</p></div>
-            <div class="card"><div class="card-icon">🤖</div><h3>🤖 Frankie Command Center</h3><p>Unified inbox, push notifications, natural language queries, undo, agent personalities, and proactive alerts. Your AI co-pilot.</p></div>
-        </div>
-    </div>
-</section>
-
-<!-- See It in Action -->
-<section class="section real-world">
-    <div class="container">
-        <h2 class="section-title fade-up">See It in Action</h2>
-        <p class="section-subtitle fade-up">Here's exactly how our AI agents turn strangers into paying customers for two very different local businesses.</p>
-        <div class="example-grid fade-up">
-            <div class="example-card">
-                <h3><span>🔧</span> Emergency Plumber in Laval</h3>
-                <div class="example-step">
-                    <div class="step-circle">1</div>
-                    <div class="step-content">
-                        <p>A homeowner searches <strong>"emergency plumber near me"</strong> at midnight. The AI-optimized site (<strong>Local SEO Agent</strong>) appears at the top of Google.</p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">2</div>
-                    <div class="step-content">
-                        <p>The AI chatbot immediately starts a conversation: <strong>"Burst pipe? We'll have someone there in 45 minutes. What's your address?"</strong></p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">3</div>
-                    <div class="step-content">
-                        <p>The AI qualifies the lead by urgency, location, and problem type. Scores it <strong>"HOT"</strong> and sends an instant SMS to the plumber.</p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">4</div>
-                    <div class="step-content">
-                        <p>The plumber calls back in <strong>2 minutes</strong>, books the job. The AI later sends a thank-you email and requests a Google review.</p>
-                    </div>
-                </div>
+        <h2 class="section-title fade-up">Frequently Asked Questions</h2>
+        <div class="faq-list fade-up">
+            <div class="faq-item">
+                <h4>Do I need technical skills to use Frankie?</h4>
+                <p>No. If you can talk, you can use Frankie. The voice interface lets you speak naturally, and Frankie handles everything else.</p>
             </div>
-            <div class="example-card">
-                <h3><span>🌿</span> Landscaper in Laval</h3>
-                <div class="example-step">
-                    <div class="step-circle">1</div>
-                    <div class="step-content">
-                        <p>A homeowner searches <strong>"patio design Laval"</strong> and lands on the landscaper's site, which shows a gallery, trust badges, and a <strong>"Free Quote"</strong> button.</p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">2</div>
-                    <div class="step-content">
-                        <p>The chatbot asks: <strong>"What's your dream project? Budget? Timeline?"</strong> It gathers everything needed for a quote.</p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">3</div>
-                    <div class="step-content">
-                        <p>The AI scores the lead <strong>"Warm"</strong> and sends a detailed summary to the landscaper: vision, budget, phone number.</p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">4</div>
-                    <div class="step-content">
-                        <p>The landscaper calls on <strong>Monday morning</strong> already knowing exactly what the prospect wants, and closes the deal faster.</p>
-                    </div>
-                </div>
+            <div class="faq-item">
+                <h4>Can Frankie post to my existing social media accounts?</h4>
+                <p>Yes. Frankie connects to your Facebook, Instagram, TikTok, LinkedIn, and more using MCP servers. You authorize once, Frankie handles the rest.</p>
+            </div>
+            <div class="faq-item">
+                <h4>What if I don't like something Frankie creates?</h4>
+                <p>You have full approval control. Frankie drafts everything, you approve or reject. Over time, Frankie learns your preferences.</p>
+            </div>
+            <div class="faq-item">
+                <h4>Is there a long-term contract?</h4>
+                <p>No. $597.99/month, cancel anytime. No penalties, no questions asked.</p>
+            </div>
+            <div class="faq-item">
+                <h4>What's included in the 7-day free trial?</h4>
+                <p>Full access to all 16 agents, voice interface, and account connections. No credit card required. You'll see real results before you pay a cent.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- How You'll Get Found -->
-<section class="section get-found">
-    <div class="container">
-        <h2 class="section-title fade-up">How You'll Get Found by Paying Customers</h2>
-        <p class="section-subtitle fade-up">We don't just build a website. We build a 24/7 customer-acquisition machine. Here's how each piece makes sure locals find you when they need you most.</p>
-        <div class="cards fade-up">
-            <div class="card">
-                <div class="card-icon">🔍</div>
-                <h3>Local SEO</h3>
-                <p>Your site and Google Business Profile are automatically optimized for the exact phrases homeowners search. You show up at the top of <strong>"plumber near me"</strong> searches—organically, without paying per click.</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">📣</div>
-                <h3>Paid Ads</h3>
-                <p>While SEO builds, our Paid Ads Agent launches targeted Google and Facebook campaigns that bring immediate calls. You'll have leads within <strong>hours, not weeks</strong>.</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">📱</div>
-                <h3>Social Media</h3>
-                <p>Weekly posts keep your brand in front of locals. When they need you, they remember the company they've seen <strong>helping their neighbors</strong> for months.</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">💬</div>
-                <h3>Instant Chatbot</h3>
-                <p>Every website visitor is greeted, qualified, and captured—<strong>24/7</strong>. You get a text with the lead's phone number within seconds, not days.</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">⭐</div>
-                <h3>Reputation Engine</h3>
-                <p>After every job, the system asks for a review automatically. A steady stream of <strong>5-star reviews</strong> makes you the obvious choice on Google.</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">📈</div>
-                <h3>Growth Hacker</h3>
-                <p>Our AI constantly analyzes what's working and finds low-cost, creative ways to attract even more customers—<strong>free estimates, partnership ideas, referral prompts</strong>.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Demo CTA -->
-<section class="demo-cta fade-up">
-    <div class="container">
-        <h2>See the AI Agents in Action</h2>
-        <p>Try our live demo — ask our AI to generate an SEO plan for your business. No commitment needed.</p>
-        <div class="hero-buttons">
-            <a href="/demo" class="btn btn-primary">Launch Demo</a>
-            <a href="tel:5142431580" class="btn btn-secondary">📞 Call</a>
-            <a href="sms:5142431580" class="btn btn-secondary">💬 Text</a>
-            <a href="mailto:lavaldigital@gmail.com" class="btn btn-secondary">✉️ Email</a>
-        </div>
-    </div>
-</section>
-
-<!-- Footer -->
 <footer>
     <div class="container">
         <div>
-            <h4>🍁 Laval Digital</h4>
-            <p>Proudly Canadian. AI-powered digital agency for local businesses from coast to coast. We replace your entire marketing department with intelligent software — for a single one-time fee.</p>
+            <h4>🤖 Frankie by Laval Digital</h4>
+            <p>AI-powered marketing command center for local businesses. 16 specialized agents. One voice interface. One flat monthly fee. Proudly Canadian. 🍁</p>
         </div>
         <div>
             <h4>Contact</h4>
@@ -1429,7 +1011,6 @@
             <p><a href="/demo">Live Demo</a></p>
             <p><a href="/blog">Blog</a></p>
             <p><a href="/affiliate">Affiliate Program</a></p>
-
         </div>
     </div>
     <div class="footer-bottom container">
@@ -1444,6 +1025,15 @@
 </div>
 
 <script>
+function dismissCookie() {
+    document.getElementById('cookie-notice').classList.remove('show');
+    localStorage.setItem('cookie-notice-dismissed', '1');
+}
+(function() {
+    if (!localStorage.getItem('cookie-notice-dismissed')) {
+        setTimeout(function() { document.getElementById('cookie-notice').classList.add('show'); }, 800);
+    }
+})();
 (function() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -1452,35 +1042,17 @@
             }
         });
     }, { threshold: 0.1 });
-
     document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 })();
-
-function dismissCookie() {
-    const notice = document.getElementById('cookie-notice');
-    notice.classList.remove('show');
-    localStorage.setItem('cookie-notice-dismissed', '1');
-}
-
-(function() {
-    if (!localStorage.getItem('cookie-notice-dismissed')) {
-        setTimeout(function() {
-            document.getElementById('cookie-notice').classList.add('show');
-        }, 800);
+var params = new URLSearchParams(window.location.search);
+var ref = params.get('ref');
+if (ref) {
+    var banner = document.getElementById('affiliate-banner');
+    if (banner) {
+        banner.style.display = 'block';
+        document.title = 'Frankie — ' + ref + "'s Recommendation";
     }
-})();
-
-// Check for affiliate discount on page load
-fetch('/api/affiliate/status')
-    .then(r => r.json())
-    .then(data => {
-        if (data.active && data.discount > 0) {
-            const banner = document.getElementById('affiliate-banner');
-            banner.style.display = 'block';
-            document.getElementById('affiliate-banner-text').textContent =
-                '$' + data.discount + ' OFF';
-        }
-    });
+}
 </script>
 
 </body>

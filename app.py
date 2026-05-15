@@ -89,7 +89,7 @@ AGENT_CLASSES = {
 }
 from core.auth import (
     init_auth, User, find_user_by_email, add_user_to_tenant,
-    client_required, affiliate_required,
+    client_required,
     validate_password, _check_rate_limit, _record_attempt,
 )
 
@@ -732,7 +732,7 @@ def affiliate_logout():
 
 
 @app.route("/affiliate/dashboard")
-@affiliate_required
+@login_required
 def affiliate_dashboard():
     """Serve the affiliate referral dashboard."""
     tenant_id = current_user.tenant_id
@@ -1085,7 +1085,7 @@ def affiliate_signup_api():
 
 
 @app.route("/api/affiliate/commissions", methods=["GET"])
-@affiliate_required
+@login_required
 def api_affiliate_commissions():
     """Return the current affiliate's commission history."""
     tenant_id = current_user.tenant_id
@@ -1100,7 +1100,7 @@ def api_affiliate_commissions():
 
 
 @app.route("/api/affiliate/payouts", methods=["GET"])
-@affiliate_required
+@login_required
 def api_affiliate_payouts():
     """Return the current affiliate's payout history."""
     tenant_id = current_user.tenant_id
@@ -1108,7 +1108,7 @@ def api_affiliate_payouts():
 
 
 @app.route("/api/affiliate/payouts", methods=["POST"])
-@affiliate_required
+@login_required
 def api_request_payout():
     """Request a payout for the current affiliate's pending commissions."""
     tenant_id = current_user.tenant_id

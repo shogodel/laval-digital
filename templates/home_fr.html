@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laval Digital — Agence Marketing IA pour PME</title>
-    <meta name="description" content="On remplace votre département marketing par l'IA. SEO, médias sociaux et capture de leads pour un prix fixe.">
+    <title>Frankie — Centre de Commandement Marketing IA pour PME</title>
+    <meta name="description" content="Rencontrez Frankie — votre centre de commandement marketing avec 16 agents IA. SEO, médias sociaux, annonces, courriels, avis, contenu, et plus. Un prix fixe par mois. Annulez quand vous voulez.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -57,8 +57,9 @@
             align-items: center;
             height: 72px;
         }
-        nav .logo { display: flex; align-items: center; }
-        nav .logo img { height: 48px; width: auto; }
+        nav .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        nav .logo img { height: 40px; width: auto; }
+        nav .logo span { font-size: 1.2rem; font-weight: 800; color: var(--white); letter-spacing: -0.02em; }
         nav ul { list-style: none; display: flex; align-items: center; gap: 8px; }
         nav ul li a {
             color: rgba(255,255,255,0.8);
@@ -103,7 +104,7 @@
         .hero {
             background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 50%, #0d2137 100%);
             color: var(--white);
-            padding: 100px 0 90px;
+            padding: 120px 0 100px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -116,16 +117,15 @@
             pointer-events: none;
         }
         .hero h1 {
-            font-size: 3.2rem;
+            font-size: 3.4rem;
             font-weight: 900;
-            line-height: 1.15;
-            margin-bottom: 24px;
+            line-height: 1.1;
+            margin-bottom: 20px;
             letter-spacing: -0.02em;
             position: relative;
         }
         .hero h1 span {
-            color: var(--orange);
-            background: linear-gradient(135deg, var(--orange), #f5c842);
+            background: linear-gradient(135deg, var(--orange), #3B82F6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -164,7 +164,7 @@
         .btn-primary:hover {
             background: var(--orange-dark);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(212,160,23,0.35);
+            box-shadow: 0 8px 25px rgba(29,78,216,0.35);
         }
         .btn-secondary {
             background: rgba(255,255,255,0.08);
@@ -175,6 +175,16 @@
         .btn-secondary:hover {
             background: rgba(255,255,255,0.15);
             border-color: rgba(255,255,255,0.4);
+            transform: translateY(-2px);
+        }
+        .btn-outline {
+            background: transparent;
+            color: var(--navy);
+            border: 2px solid var(--navy);
+        }
+        .btn-outline:hover {
+            background: var(--navy);
+            color: var(--white);
             transform: translateY(-2px);
         }
 
@@ -196,103 +206,135 @@
             line-height: 1.7;
         }
 
-        .pricing-grid {
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1060px;
+            margin: 0 auto;
+        }
+        .feature-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(0,0,0,0.04);
+            padding: 32px 28px;
+            text-align: left;
+            transition: all 0.3s;
+        }
+        .feature-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+        }
+        .feature-card .icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            line-height: 1;
+        }
+        .feature-card h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 8px;
+        }
+        .feature-card p {
+            font-size: 0.88rem;
+            color: var(--mid-gray);
+            line-height: 1.7;
+        }
+
+        .steps-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 28px;
-            max-width: 1060px;
+            max-width: 960px;
             margin: 0 auto;
-            align-items: stretch;
         }
-        .pricing {
+        .step-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(0,0,0,0.04);
+            padding: 36px 28px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .step-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+        }
+        .step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--orange), #3B82F6);
+            color: var(--white);
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin: 0 auto 16px;
+        }
+        .step-card h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 10px;
+        }
+        .step-card p {
+            font-size: 0.9rem;
+            color: var(--mid-gray);
+            line-height: 1.7;
+        }
+
+        .pricing-section {
             background: linear-gradient(135deg, #eff6ff 0%, #ffffff 30%, #fafafa 70%, #eff6ff 100%);
             position: relative;
             overflow: hidden;
         }
-        .pricing::before {
+        .pricing-section::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse at 20% 0%, rgba(29,78,216,0.05) 0%, transparent 50%),
-                        radial-gradient(ellipse at 80% 100%, rgba(29,78,216,0.03) 0%, transparent 50%);
+            background: radial-gradient(ellipse at 50% 0%, rgba(29,78,216,0.06) 0%, transparent 50%);
             pointer-events: none;
         }
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 28px;
-            max-width: 1060px;
-            margin: 0 auto;
-            align-items: stretch;
-        }
         .pricing-card {
+            max-width: 560px;
+            margin: 0 auto;
             background: var(--white);
-            border-radius: 20px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-            padding: 40px 32px 36px;
+            border-radius: 24px;
+            box-shadow: 0 8px 40px rgba(29,78,216,0.1), 0 0 0 1px rgba(29,78,216,0.08);
+            padding: 48px 40px 44px;
             text-align: center;
-            border: 1px solid rgba(0,0,0,0.04);
             position: relative;
-            display: flex;
-            flex-direction: column;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
-        .pricing-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--orange), #3B82F6, var(--orange));
-            opacity: 0.6;
-            transition: opacity 0.3s;
-            border-radius: 20px 20px 0 0;
-        }
-        .pricing-card:hover::before { opacity: 1; }
         .pricing-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 24px 80px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.06);
+            box-shadow: 0 16px 60px rgba(29,78,216,0.18), 0 0 0 1px rgba(29,78,216,0.12);
+            transform: translateY(-4px);
         }
-        .pricing-card.recommended {
-            border-color: var(--orange);
-            box-shadow: 0 0 0 2px var(--orange), 0 8px 32px rgba(212,43,43,0.12);
-            transform: scale(1.03);
-            z-index: 1;
-        }
-        .pricing-card.recommended::before {
-            opacity: 1;
-            background: linear-gradient(90deg, var(--orange), #2563EB, var(--orange));
-            height: 5px;
-            border-radius: 20px 20px 0 0;
-        }
-        .pricing-card.recommended:hover {
-            box-shadow: 0 0 0 2px var(--orange), 0 24px 80px rgba(212,43,43,0.15);
-        }
-        .badge-popular {
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, var(--orange), #3B82F6);
-            color: var(--white);
-            padding: 5px 24px;
+        .pricing-card .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            color: #1e3a8a;
+            padding: 6px 20px;
             border-radius: 20px;
-            font-size: 0.7rem;
+            font-size: 0.78rem;
             font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            white-space: nowrap;
-            box-shadow: 0 4px 14px rgba(29,78,216,0.35);
-            border: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 20px;
+            border: 1px solid #bfdbfe;
         }
-        .pricing-card h3 {
-            font-size: 1.3rem;
+        .pricing-card h2 {
+            font-size: 1.6rem;
             font-weight: 800;
             color: var(--navy);
-            margin-bottom: 16px;
+            margin-bottom: 8px;
             letter-spacing: -0.02em;
         }
-        .price-monthly {
-            font-size: 3rem;
+        .pricing-card .price {
+            font-size: 3.2rem;
             font-weight: 900;
             background: linear-gradient(135deg, var(--orange), #3B82F6);
             -webkit-background-clip: text;
@@ -300,138 +342,114 @@
             background-clip: text;
             line-height: 1;
             letter-spacing: -0.03em;
-            margin-top: 8px;
+            margin: 16px 0 4px;
         }
-        .price-monthly small {
-            font-size: 1rem;
-            font-weight: 500;
-            -webkit-text-fill-color: var(--mid-gray);
+        .pricing-card .price-sub {
+            font-size: 0.9rem;
             color: var(--mid-gray);
-        }
-        .price-sub {
-            font-size: 0.85rem;
-            color: var(--mid-gray);
-            margin-top: 4px;
-        }
-        .price-once-area {
-            margin-top: 12px;
-            padding: 12px 10px;
-            background: linear-gradient(135deg, #f9fafb, #f3f4f6);
-            border-radius: 12px;
-            border: 1px solid #e5e7eb;
-        }
-        .price-once-area .label { font-size: 0.8rem; color: var(--mid-gray); font-weight: 500; }
-        .price-once {
-            font-size: 1.3rem;
-            font-weight: 800;
-            color: var(--navy);
-        }
-        .price-once s { color: #9ca3af; font-weight: 500; }
-        .save-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #059669, #10b981);
-            color: var(--white);
-            padding: 3px 14px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            margin-left: 6px;
-            box-shadow: 0 2px 8px rgba(5,150,105,0.3);
-        }
-        .financing-plan {
-            font-size: 0.8rem;
-            color: #1e3a8a;
-            margin-top: 12px;
-            padding: 10px 12px;
-            background: linear-gradient(135deg, #eff6ff, #dbeafe);
-            border-radius: 10px;
-            line-height: 1.5;
-            font-weight: 600;
+            margin-bottom: 28px;
         }
         .pricing-card .features {
             list-style: none;
             text-align: left;
-            margin: 24px 0;
-            flex: 1;
+            margin: 0 0 28px;
         }
         .pricing-card .features li {
-            padding: 10px 0 10px 28px;
+            padding: 10px 0 10px 32px;
             border-bottom: 1px solid #f3f4f6;
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             position: relative;
             line-height: 1.5;
         }
         .pricing-card .features li::before {
-            content: "✨";
+            content: "✓";
             position: absolute;
             left: 0;
+            color: var(--green);
+            font-weight: 700;
         }
         .pricing-card .features li:last-child { border-bottom: none; }
-        .pricing-card .features li strong { color: var(--navy); }
         .pricing-card .btn {
-            margin-top: 16px;
+            margin-top: 4px;
             width: 100%;
             justify-content: center;
+            padding: 16px 32px;
+            font-size: 1.05rem;
             background: linear-gradient(135deg, var(--orange), #3B82F6);
-            box-shadow: 0 4px 16px rgba(29,78,216,0.3);
-            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(29,78,216,0.3);
         }
         .pricing-card .btn:hover {
             transform: scale(1.02);
-            box-shadow: 0 8px 24px rgba(29,78,216,0.4);
+            box-shadow: 0 8px 28px rgba(29,78,216,0.4);
         }
-        .referral-box {
-            max-width: 720px;
-            margin: 36px auto 0;
-            background: linear-gradient(135deg, #eff6ff, #dbeafe);
-            border: 1px solid #bfdbfe;
-            border-radius: var(--radius);
-            padding: 24px 28px;
+        .tax-note {
             text-align: center;
-            font-size: 0.95rem;
-            color: #1e3a8a;
-            line-height: 1.7;
+            font-size: 0.85rem;
+            color: var(--mid-gray);
+            margin-top: 16px;
         }
-        .referral-box a {
-            color: var(--orange);
-            font-weight: 700;
-            text-decoration: none;
-            transition: opacity 0.2s;
-        }
-        .referral-box a:hover { opacity: 0.8; }
 
-        /* Comparison — Enhanced */
-        .comparison-section {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        .voice-section {
+            background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 100%);
+            color: var(--white);
+            padding: 90px 0;
+            text-align: center;
             position: relative;
             overflow: hidden;
         }
-        .comparison-section::before {
+        .voice-section::before {
             content: '';
             position: absolute;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: radial-gradient(ellipse at 25% 50%, rgba(239,68,68,0.04) 0%, transparent 50%),
-                        radial-gradient(ellipse at 75% 50%, rgba(5,150,105,0.04) 0%, transparent 50%);
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 100%, var(--orange-glow) 0%, transparent 50%);
             pointer-events: none;
+        }
+        .voice-section .container { position: relative; }
+        .voice-section h2 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 20px;
+        }
+        .voice-section p {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            opacity: 0.85;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        .voice-section .note {
+            font-size: 0.85rem;
+            opacity: 0.6;
+            margin-top: 24px;
+        }
+        .voice-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .comparison-section {
+            background: var(--off-white);
+            position: relative;
+            overflow: hidden;
         }
         .comparison-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 32px;
-            max-width: 960px;
+            max-width: 860px;
             margin: 0 auto;
-            position: relative;
         }
         .comparison-card {
             background: var(--white);
             border-radius: var(--radius-lg);
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.4s;
         }
         .comparison-card:hover {
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-md);
             transform: translateY(-4px);
         }
         .comparison-card.old { border-top: 4px solid #ef4444; }
@@ -442,7 +460,7 @@
             align-items: center;
             gap: 10px;
         }
-        .comparison-header .icon { font-size: 1.6rem; line-height: 1; }
+        .comparison-header .icon { font-size: 1.4rem; }
         .comparison-header h3 {
             font-size: 1.1rem;
             font-weight: 700;
@@ -471,14 +489,6 @@
         .comparison-list .price { font-weight: 700; color: var(--dark); text-align: right; }
         .comparison-list .price.green { color: #059669; }
         .comparison-list .price.red { color: #dc2626; }
-        .popular-tag {
-            font-size: 0.62rem;
-            color: var(--orange);
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            margin-left: 3px;
-            white-space: nowrap;
-        }
         .comparison-total-block {
             padding: 18px 28px;
             text-align: center;
@@ -512,7 +522,7 @@
         }
         .savings-callout {
             text-align: center;
-            max-width: 600px;
+            max-width: 550px;
             margin: 32px auto 0;
             padding: 16px 28px;
             background: linear-gradient(135deg, #ecfdf5, #d1fae5);
@@ -525,229 +535,61 @@
         }
         .savings-callout strong { font-weight: 700; }
 
-        .how-bg { background: var(--off-white); }
-        .steps-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 24px;
-        }
-        .step-card {
+        .testimonials {
             background: var(--white);
-            padding: 32px 28px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(0,0,0,0.04);
-            transition: all 0.3s;
-            text-align: left;
         }
-        .step-card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-4px);
-        }
-        .step-number {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: var(--orange);
-            margin-bottom: 12px;
-            line-height: 1;
-        }
-        .step-card h3 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--navy);
-            margin-bottom: 10px;
-        }
-        .step-card p {
-            font-size: 0.9rem;
-            color: var(--mid-gray);
-            line-height: 1.7;
-        }
-        .step-card:last-child .step-number { color: var(--green); }
-
-        .what-you-get { background: var(--white); }
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-            gap: 16px;
-            max-width: 1060px;
-            margin: 0 auto;
-        }
-        .card {
-            background: var(--white);
-            padding: 20px 18px;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(0,0,0,0.04);
-            text-align: left;
-            transition: all 0.3s;
-        }
-        .card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
-        }
-        .card-icon {
-            font-size: 1.6rem;
-            margin-bottom: 8px;
-            line-height: 1;
-        }
-        .card h3 {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--navy);
-            margin-bottom: 6px;
-        }
-        .card p {
-            font-size: 0.78rem;
-            color: var(--mid-gray);
-            line-height: 1.5;
-        }
-        .card {
-            background: var(--white);
-            padding: 32px 28px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(0,0,0,0.04);
-            text-align: left;
-            transition: all 0.3s;
-        }
-        .card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-3px);
-        }
-        .card-icon {
-            font-size: 2.2rem;
-            margin-bottom: 16px;
-            line-height: 1;
-        }
-        .card h3 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--navy);
-            margin-bottom: 8px;
-        }
-        .card p {
-            font-size: 0.9rem;
-            color: var(--mid-gray);
-            line-height: 1.7;
-        }
-
-        /* See It in Action */
-        .real-world { background: var(--white); }
-        .example-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-        .example-card {
-            background: var(--off-white);
-            border-radius: var(--radius-lg);
-            padding: 36px 32px;
-            border: 1px solid rgba(0,0,0,0.04);
-            transition: box-shadow 0.3s;
-        }
-        .example-card:hover { box-shadow: var(--shadow-md); }
-        .example-card h3 {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: var(--navy);
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .example-card h3 span { font-size: 1.5rem; }
-        .example-step {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
-            align-items: flex-start;
-        }
-        .example-step:last-child { margin-bottom: 0; }
-        .step-circle {
-            flex-shrink: 0;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--orange);
-            color: var(--white);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            font-weight: 700;
-            margin-top: 2px;
-        }
-        .step-content { flex: 1; }
-        .step-content p {
-            font-size: 0.9rem;
-            color: var(--dark);
-            line-height: 1.7;
-        }
-        .step-content strong { color: var(--navy); }
-
-        /* How You'll Get Found */
-        .get-found { background: var(--off-white); }
-        .get-found .cards {
+        .testimonial-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 24px;
             max-width: 1000px;
             margin: 0 auto;
         }
-        .get-found .card {
-            text-align: center;
-            padding: 36px 28px 32px;
+        .testimonial-card {
+            background: var(--off-white);
+            border-radius: var(--radius-lg);
+            padding: 32px 28px;
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: box-shadow 0.3s;
         }
-        .get-found .card-icon {
-            font-size: 2.5rem;
+        .testimonial-card:hover { box-shadow: var(--shadow-md); }
+        .testimonial-card .quote {
+            font-size: 0.9rem;
+            color: var(--dark);
+            line-height: 1.7;
             margin-bottom: 16px;
+            font-style: italic;
         }
-        .get-found .card h3 {
-            font-size: 1.1rem;
+        .testimonial-card .author {
+            font-size: 0.82rem;
+            color: var(--mid-gray);
+            font-weight: 500;
+        }
+
+        .faq-section { background: var(--off-white); }
+        .faq-list {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .faq-item {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+        .faq-item h4 {
+            font-size: 1rem;
             font-weight: 700;
             color: var(--navy);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
-        .get-found .card p {
+        .faq-item p {
             font-size: 0.9rem;
             color: var(--mid-gray);
             line-height: 1.7;
         }
-
-        .demo-cta {
-            padding: 80px 0;
-            background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 100%);
-            color: var(--white);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .demo-cta::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse at 50% 100%, var(--orange-glow) 0%, transparent 50%);
-            pointer-events: none;
-        }
-        .demo-cta h2 {
-            font-size: 2.2rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            margin-bottom: 16px;
-            position: relative;
-        }
-        .demo-cta p {
-            margin-bottom: 28px;
-            opacity: 0.8;
-            font-size: 1.1rem;
-            max-width: 560px;
-            margin-left: auto;
-            margin-right: auto;
-            position: relative;
-        }
-        .demo-cta .hero-buttons { position: relative; }
 
         footer {
             background: #0a1e33;
@@ -790,210 +632,8 @@
             transform: translateY(0);
         }
 
-        @media (max-width: 768px) {
-            .hamburger { display: block; padding: 8px; }
-            nav .container { height: 64px; }
-            nav ul {
-                display: none;
-                flex-direction: column;
-                width: 100%;
-                gap: 0;
-                padding: 16px 0;
-                border-top: 1px solid rgba(255,255,255,0.08);
-                margin-top: 0;
-                background: var(--navy);
-                position: absolute;
-                top: 64px;
-                left: 0;
-                right: 0;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            }
-            nav ul.open { display: flex; }
-            nav ul li { text-align: center; padding: 4px 0; }
-            nav ul li a { font-size: 1rem; padding: 12px 20px; display: block; }
-            .lang-toggle { margin-left: 0; margin-top: 8px; display: inline-block; }
+        .how-bg { background: var(--off-white); }
 
-            .hero { padding: 48px 0 40px; }
-            .hero h1 { font-size: 1.8rem; }
-            .hero p { font-size: 0.95rem; margin-bottom: 24px; }
-
-            .section { padding: 48px 0; }
-            .section-title { font-size: 1.5rem; margin-bottom: 12px; }
-            .section-subtitle { font-size: 0.9rem; margin-bottom: 28px; }
-
-            .pricing-grid { grid-template-columns: 1fr; gap: 20px; }
-            .pricing-card { padding: 24px 20px; }
-            .pricing-card.recommended { transform: none; margin-top: 4px; }
-            .pricing-card.recommended .badge-popular { top: -8px; font-size: 0.65rem; padding: 4px 18px; }
-            .price-monthly { font-size: 2rem; }
-            .pricing-card ul.features { margin-top: 12px; }
-            .pricing-card ul.features li { font-size: 0.82rem; padding: 6px 0; }
-
-            .comparison-grid { grid-template-columns: 1fr; gap: 16px; }
-            .comparison-body { padding: 4px 16px 12px; }
-            .comparison-header { padding: 16px 16px 12px; }
-            .comparison-total-block { padding: 12px 16px; }
-            .comparison-total-block .total-amount { font-size: 1.3rem; }
-
-            .steps-grid { grid-template-columns: 1fr; gap: 16px; }
-            .step-card { padding: 20px 16px; }
-            .step-number { font-size: 1.5rem; }
-            .cards { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-            .card { padding: 16px 12px; }
-            .card .card-icon { font-size: 1.6rem; margin-bottom: 8px; }
-            .card h3 { font-size: 0.85rem; }
-            .card p { font-size: 0.75rem; }
-
-            .example-grid { grid-template-columns: 1fr; gap: 16px; }
-            .example-card { padding: 24px 20px; }
-
-            .get-found .cards { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-
-            .demo-cta { padding: 40px 0; }
-            .demo-cta h2 { font-size: 1.3rem; }
-            .demo-cta p { font-size: 0.9rem; }
-
-            footer .container { grid-template-columns: 1fr; gap: 24px; }
-            footer { padding: 32px 0 24px; }
-        }
-
-        @media (max-width: 480px) {
-            .hero h1 { font-size: 1.5rem; }
-            .hero p { font-size: 0.9rem; }
-            .hero-buttons .btn { width: 100%; justify-content: center; padding: 11px 20px; font-size: 0.9rem; }
-            .hero-buttons .btn-secondary { width: 100%; }
-            .container { padding: 0 16px; }
-            .pricing-card { padding: 20px 16px; }
-            .price-monthly { font-size: 1.8rem; }
-            .section { padding: 36px 0; }
-            .cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .card { padding: 12px 10px; }
-            .card h3 { font-size: 0.8rem; }
-            .card p { font-size: 0.72rem; }
-            .comparison-list li { flex-direction: column; align-items: flex-start; gap: 2px; font-size: 0.82rem; }
-            .comparison-list .price { text-align: left; }
-            .comparison-total-block .total-amount { font-size: 1.2rem; }
-            .step-card { padding: 16px 12px; }
-            .getting-started .tools-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        }
-        @media (max-width: 400px) {
-            .hero h1 { font-size: 1.3rem; }
-            .hero-buttons .btn { font-size: 0.8rem; padding: 10px 14px; }
-            .cards { grid-template-columns: 1fr 1fr; gap: 8px; }
-            .pricing-card { padding: 18px 14px; }
-            .price-monthly { font-size: 1.6rem; }
-            .price-once-area { padding: 10px; }
-            .own-banner { font-size: 0.8rem; padding: 8px 14px; }
-            .section { padding: 28px 0; }
-            .referral-box { padding: 14px; font-size: 0.8rem; }
-            .comparison-list li { gap: 2px; font-size: 0.78rem; }
-        }
-            nav ul.open { display: flex; }
-            nav ul li { text-align: center; padding: 4px 0; }
-            nav ul li a { font-size: 1rem; padding: 12px 20px; display: block; }
-            .lang-toggle { margin-left: 0; margin-top: 8px; display: inline-block; }
-
-            .hero { padding: 64px 0 56px; }
-            .hero h1 { font-size: 2rem; }
-            .hero p { font-size: 1rem; }
-
-            .section-title { font-size: 1.8rem; }
-            .section-subtitle { font-size: 1rem; }
-
-            .pricing-grid { grid-template-columns: 1fr; gap: 24px; }
-            .pricing-card { padding: 32px 24px; }
-            .pricing-card.recommended { transform: none; margin-top: 4px; }
-            .pricing-card.recommended .badge-popular { top: -8px; font-size: 0.65rem; padding: 4px 18px; }
-            .price-monthly { font-size: 2.4rem; }
-
-            .comparison-grid { grid-template-columns: 1fr; gap: 20px; }
-            .comparison-body { padding: 4px 20px 16px; }
-            .comparison-header { padding: 20px 20px 14px; }
-            .comparison-total-block { padding: 14px 20px; }
-            .comparison-total-block .total-amount { font-size: 1.5rem; }
-
-            .steps-grid { grid-template-columns: 1fr; }
-            .step-card { padding: 24px 20px; }
-            .step-number { font-size: 1.8rem; }
-            .cards { grid-template-columns: 1fr; }
-
-            .example-grid { grid-template-columns: 1fr; }
-            .example-card { padding: 28px 24px; }
-
-            .get-found .cards { grid-template-columns: 1fr; }
-
-            .demo-cta { padding: 56px 0; }
-            .demo-cta h2 { font-size: 1.6rem; }
-
-            footer .container { grid-template-columns: 1fr; gap: 32px; }
-        }
-
-        @media (min-width: 481px) and (max-width: 768px) {
-            .cards { grid-template-columns: repeat(2, 1fr); }
-            .get-found .cards { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        @media (max-width: 480px) {
-            .hero h1 { font-size: 1.7rem; }
-            .hero-buttons .btn { width: 100%; justify-content: center; }
-            .hero-buttons .btn-secondary { width: 100%; }
-            .container { padding: 0 16px; }
-            .comparison-list li { flex-direction: column; align-items: flex-start; gap: 2px; }
-            .comparison-list .price { text-align: left; }
-        }
-
-        @media (max-width: 400px) {
-            #affiliate-banner { font-size: 0.8rem; padding: 10px 8px; }
-        }
-
-        @media (max-height: 700px) {
-            #cookie-notice { bottom: 8px; padding: 12px 16px; }
-        }
-
-        /* Pricing shine & utilities */
-        @keyframes shine {
-            0% { background-position: -200% center; }
-            100% { background-position: 200% center; }
-        }
-        .own-banner {
-            display: inline-block;
-            background: linear-gradient(90deg, #eff6ff, #dbeafe, #eff6ff);
-            background-size: 200% auto;
-            animation: shine 3s ease-in-out infinite;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            color: #1e3a8a;
-            margin-bottom: 20px;
-            border: 1px solid #bfdbfe;
-        }
-        .price-sub {
-            font-size: 0.85rem;
-            color: var(--mid-gray);
-            margin-top: 4px;
-        }
-        .tax-note {
-            text-align: center;
-            font-size: 1.1rem;
-            color: var(--mid-gray);
-            margin-top: 16px;
-            font-weight: 500;
-        }
-        .commitment-note {
-            text-align: center;
-            max-width: 720px;
-            margin: 24px auto 0;
-            font-size: 0.85rem;
-            color: #1e3a8a;
-            background: linear-gradient(135deg, #eff6ff, #dbeafe);
-            border: 1px solid #bfdbfe;
-            border-radius: var(--radius);
-            padding: 16px 20px;
-            line-height: 1.6;
-        }
-
-        /* Cookie Notice */
         #cookie-notice {
             position: fixed;
             bottom: 24px;
@@ -1021,19 +661,14 @@
             pointer-events: auto;
             transform: translateX(-50%) translateY(0);
         }
-        #cookie-notice .cookie-icon {
-            font-size: 1.5rem;
-            flex-shrink: 0;
-        }
+        #cookie-notice .cookie-icon { font-size: 1.5rem; flex-shrink: 0; }
         #cookie-notice .cookie-text {
             flex: 1;
             font-size: 0.85rem;
             color: rgba(255,255,255,0.85);
             line-height: 1.5;
         }
-        #cookie-notice .cookie-text strong {
-            color: var(--white);
-        }
+        #cookie-notice .cookie-text strong { color: var(--white); }
         #cookie-notice .cookie-btn {
             flex-shrink: 0;
             background: var(--orange);
@@ -1053,7 +688,64 @@
             transform: scale(1.03);
         }
 
+        @media (max-width: 768px) {
+            .hamburger { display: block; }
+            nav .container { height: 64px; }
+            nav ul {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                gap: 0;
+                padding: 16px 0;
+                border-top: 1px solid rgba(255,255,255,0.08);
+                margin-top: 0;
+                background: var(--navy);
+                position: absolute;
+                top: 64px;
+                left: 0;
+                right: 0;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            }
+            nav ul.open { display: flex; }
+            nav ul li { text-align: center; padding: 4px 0; }
+            nav ul li a { font-size: 1rem; padding: 12px 20px; display: block; }
+            .lang-toggle { margin-left: 0; margin-top: 8px; display: inline-block; }
+
+            .hero { padding: 64px 0 56px; }
+            .hero h1 { font-size: 2rem; }
+            .hero p { font-size: 1rem; }
+            .section { padding: 56px 0; }
+            .section-title { font-size: 1.7rem; }
+            .section-subtitle { font-size: 0.95rem; margin-bottom: 32px; }
+
+            .feature-grid { grid-template-columns: 1fr; gap: 16px; }
+            .steps-grid { grid-template-columns: 1fr; gap: 16px; }
+            .testimonial-grid { grid-template-columns: 1fr; gap: 16px; }
+            .comparison-grid { grid-template-columns: 1fr; gap: 20px; }
+
+            .pricing-card { padding: 36px 24px; }
+            .pricing-card .price { font-size: 2.5rem; }
+
+            .voice-section { padding: 56px 0; }
+            .voice-section h2 { font-size: 1.6rem; }
+
+            footer .container { grid-template-columns: 1fr; gap: 24px; }
+            footer { padding: 32px 0 24px; }
+        }
+
         @media (max-width: 480px) {
+            .hero h1 { font-size: 1.6rem; }
+            .hero p { font-size: 0.9rem; }
+            .hero-buttons .btn { width: 100%; justify-content: center; }
+            .hero-buttons .btn-secondary { width: 100%; }
+            .container { padding: 0 16px; }
+            .pricing-card { padding: 28px 20px; }
+            .pricing-card .price { font-size: 2rem; }
+            .section-title { font-size: 1.4rem; }
+            .voice-section h2 { font-size: 1.3rem; }
+            .comparison-list li { flex-direction: column; align-items: flex-start; gap: 2px; }
+            .faq-item { padding: 18px 20px; }
+
             #cookie-notice {
                 flex-wrap: wrap;
                 gap: 12px;
@@ -1062,31 +754,36 @@
                 width: calc(100% - 32px);
                 border-radius: 14px;
             }
-            #cookie-notice .cookie-btn {
-                width: 100%;
-                text-align: center;
-            }
+            #cookie-notice .cookie-btn { width: 100%; text-align: center; }
+        }
+
+        @media (max-width: 400px) {
+            .hero h1 { font-size: 1.3rem; }
+            .section-title { font-size: 1.2rem; }
         }
     </style>
 </head>
 <body>
 
-<!-- Affiliate Discount Banner (hidden by default) -->
 <div id="affiliate-banner" style="display:none; background:#D42B2B; color:white; text-align:center; padding:12px; font-weight:600;">
     🎉 <span id="affiliate-banner-text">500 $ DE RABAIS</span> — grâce au parrainage de votre ami! Ce rabais est automatiquement appliqué.
 </div>
 
 <nav>
     <div class="container">
-        <a href="/fr/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48"></a>
+        <a href="/fr/" class="logo">
+            <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48">
+            <span>Frankie</span>
+        </a>
         <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')" aria-label="Menu">&#9776;</button>
         <ul id="nav-menu">
             <li><a href="/fr/">Accueil</a></li>
             <li><a href="/fr/demo">Démo</a></li>
             <li><a href="/fr/blogue">Blogue</a></li>
             <li><a href="/fr/affiliate">Affiliation</a></li>
+            <li><a href="/client/login">Connexion</a></li>
             <li><a href="tel:5142431580">📞 (514) 243-1580</a></li>
-            <li><a href="/fr/contract" class="nav-cta">Commencer</a></li>
+            <li><a href="/fr/essai-gratuit" class="nav-cta">Essayer Frankie</a></li>
             <li><a href="/" class="lang-toggle">EN</a></li>
         </ul>
     </div>
@@ -1094,110 +791,112 @@
 
 <section class="hero fade-up">
     <div class="container">
-        <h1>Votre Département Marketing au Complet — <span>Propulsé par l'IA</span>, pour un Prix Unique</h1>
-        <p>Rencontrez <strong>Frankie</strong> — votre centre de commande marketing avec 16 agents IA. Site Web, SEO, réseaux sociaux, annonces, courriels, avis, vidéo, SMS, CRO, prospection, backlinks, SEO technique, stratégie de contenu, rapports et un chatbot 24/7. Tout travaille pour vous. Sans abonnement. Vous payez une fois et apportez vos clés API.</p>
+        <h1>Rencontrez <span>Frankie</span> — Votre Centre de Commandement Marketing IA</h1>
+        <p>Parlez naturellement. Frankie gère tout votre marketing numérique — SEO, médias sociaux, annonces, courriels, avis, contenu, et plus. 16 agents IA spécialisés qui travaillent 24/7. Un prix fixe par mois. Annulez quand vous voulez.</p>
         <div class="hero-buttons">
-            <a href="/fr/demo" class="btn btn-primary">Voir la Démo</a>
+            <a href="/fr/essai-gratuit" class="btn btn-primary">Essayez Frankie (7 jours gratuits)</a>
             <a href="tel:5142431580" class="btn btn-secondary">📞 Appelez (514) 243-1580</a>
-            <a href="sms:5142431580" class="btn btn-secondary">💬 Textez-nous</a>
-            <a href="mailto:lavaldigital@gmail.com" class="btn btn-secondary">✉️ Courriel</a>
         </div>
     </div>
 </section>
 
-<section class="section pricing" id="pricing">
+<section class="section" id="features">
     <div class="container">
-        <h2 class="section-title fade-up">Choisissez Votre Plan</h2>
-        <p class="section-subtitle fade-up">Chaque plan inclut <strong>Frankie</strong> — votre centre de commande de 16 agents IA. Options de paiement flexibles — mensuel ou propriété directe.</p>
-        <div style="text-align:center;" class="fade-up">
-            <span class="own-banner">⚜️ Payez une fois, économisez jusqu'à 1 500 $ — offre limitée</span>
-        </div>
-        <div class="pricing-grid fade-up">
-            <div class="pricing-card">
-                <h3>Offre de Base</h3>
-                <p class="price-monthly">567 $<small>/mois</small></p>
-                <p class="price-sub">Engagement de 12 mois</p>
-                <div class="price-once-area">
-                    <div class="label">Ou payez une fois</div>
-                    <div class="price-once"><s>8 500 $</s> 7 500 $ <span class="save-badge">Économisez 1 000 $</span></div>
-                </div>
-                <ul class="features" style="margin-top:16px;">
-                    <li><strong>Agent SEO Local</strong> — classement Google Maps &amp; organique</li>
-                    <li><strong>Agent Médias Sociaux</strong> — publications et engagement hebdo</li>
-                    <li><strong>Chatbot de Conversion</strong> — qualification 24/7</li>
-                    <li><strong>Tableau de Bord Admin</strong> — contrôle et approbations</li>
-                    <li><strong>Site Web IA</strong> — optimisé mobile et SEO</li>
-                    <li><strong>Hébergement Inclus</strong> — sans frais supplémentaires</li>
-                </ul>
-                <div class="financing-plan">
-                    <strong>Plan 12 Mois :</strong> 20 % d'avance (1 700 $) + 11 paiements de 567 $/mois
-                </div>
-                <a href="/fr/contract" class="btn btn-primary">Obtenir Offre de Base — 567 $/mois</a>
+        <h2 class="section-title fade-up">Ce Que Frankie Fait</h2>
+        <p class="section-subtitle fade-up">16 agents IA spécialisés qui travaillent comme votre département marketing complet. Un centre de commandement. Un prix fixe par mois.</p>
+        <div class="feature-grid fade-up">
+            <div class="feature-card">
+                <div class="icon">🔍</div>
+                <h3>SEO & Contenu</h3>
+                <p>Frankie optimise votre présence Google, rédige des articles de blog, crée des backlinks et gère le SEO technique — tout pendant que vous dormez.</p>
             </div>
-            <div class="pricing-card recommended">
-                <div class="badge-popular">⭐ LE PLUS POPULAIRE</div>
-                <h3>Offre Croissance</h3>
-                <p class="price-monthly">833 $<small>/mois</small></p>
-                <p class="price-sub">Engagement de 12 mois</p>
-                <div class="price-once-area">
-                    <div class="label">Ou payez une fois</div>
-                    <div class="price-once"><s>12 500 $</s> 11 000 $ <span class="save-badge">Économisez 1 500 $</span></div>
-                </div>
-                <ul class="features" style="margin-top:16px;">
-                    <li><strong>Tout dans l'Offre de Base</strong></li>
-                    <li><strong>Agent Publicités Payantes</strong> — campagnes Google et Meta</li>
-                    <li><strong>Agent Growth Hacker</strong> — tests A/B et optimisation</li>
-                    <li><strong>Agent de Réputation</strong> — gestion des avis</li>
-                    <li><strong>Agent Marketing Courriel</strong> — campagnes automatisées</li>
-                    <li><strong>Agent TikTok/Reels</strong> — contenu vidéo court</li>
-                </ul>
-                <div class="financing-plan">
-                    <strong>Plan 12 Mois :</strong> 20 % d'avance (2 500 $) + 11 paiements de 833 $/mois
-                </div>
-                <a href="/fr/contract" class="btn btn-primary">Obtenir Offre Croissance — 833 $/mois</a>
+            <div class="feature-card">
+                <div class="icon">📱</div>
+                <h3>Médias Sociaux</h3>
+                <p>Publie sur Facebook, Instagram, TikTok, et plus. Frankie crée des légendes, des hashtags et planifie tout.</p>
             </div>
-            <div class="pricing-card">
-                <h3>Offre Complète</h3>
-                <p class="price-monthly">1 100 $<small>/mois</small></p>
-                <p class="price-sub">Engagement de 12 mois</p>
-                <div class="price-once-area">
-                    <div class="label">Ou payez une fois</div>
-                    <div class="price-once"><s>16 500 $</s> 14 500 $ <span class="save-badge">Économisez 2 000 $</span></div>
-                </div>
-                <ul class="features" style="margin-top:16px;">
-                    <li><strong>Les 16 Agents + Frankie</strong> — accès complet à la suite</li>
-                    <li><strong>Agents Prospection &amp; Backlinks</strong> — campagnes + liens</li>
-                    <li><strong>Agents Contenu &amp; Vidéo</strong> — calendrier + scripts YouTube</li>
-                    <li><strong>Agents SEO Technique &amp; CRO</strong> — vitesse, données structurées, conversion</li>
-                    <li><strong>Agents SMS Marketing &amp; Rapports</strong> — campagnes + analyses</li>
-                    <li><strong>3 Mois de Gestion Clé en Main</strong></li>
-                    <li><strong>Support Prioritaire</strong> — réponse sous 12h</li>
-                    <li><strong>Rapports de Performance Mensuels</strong> — générés automatiquement</li>
-                    <li><strong>Configuration Clés API</strong> — on configure tout</li>
-                </ul>
-                <div class="financing-plan">
-                    <strong>Plan 12 Mois :</strong> 20 % d'avance (3 300 $) + 11 paiements de 1 100 $/mois
-                </div>
-                <a href="/fr/contract" class="btn btn-primary">Obtenir Offre Complète — 1 100 $/mois</a>
+            <div class="feature-card">
+                <div class="icon">💰</div>
+                <h3>Annonces Payantes</h3>
+                <p>Google Ads, Meta Ads — Frankie rédige les textes, choisit les mots-clés, gère les budgets et teste A/B les créations.</p>
             </div>
-        </div>
-        <p class="tax-note fade-up">+ taxes applicables selon votre province</p>
-        <div class="commitment-note fade-up">
-            🔒 Engagement de 12 Mois, 20 % d'Avance. Tous les plans incluent une entente de 12 mois avec 20 % dû comme frais de mise en place. Le solde restant est réparti sur 11 paiements mensuels. Annulez en tout temps après 12 mois.
-        </div>
-        <div class="referral-box fade-up">
-            🔗 <strong>Joignez Notre Programme d'Affiliation</strong><br>
-            Gagnez <strong>20 % de commission</strong> par référencement — jusqu'à 3 300 $ par client.<br>
-            <a href="/fr/affiliate">Devenez un Affilié</a>
+            <div class="feature-card">
+                <div class="icon">📧</div>
+                <h3>Courriels & SMS</h3>
+                <p>Infolettres, campagnes promotionnelles, séquences de nurturing et suivis SMS — tout automatisé.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">⭐</div>
+                <h3>Réputation</h3>
+                <p>Surveille les avis, génère des réponses professionnelles et lance des campagnes de collecte d'avis automatiquement.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">📊</div>
+                <h3>Analyses & Rapports</h3>
+                <p>Rapports de performance mensuels, suivi des leads, analyses de conversion — Frankie vous montre ce qui fonctionne.</p>
+            </div>
         </div>
     </div>
 </section>
 
-<!-- Comparison -->
+<section class="section how-bg" id="how-it-works">
+    <div class="container">
+        <h2 class="section-title fade-up">Comment Ça Marche</h2>
+        <p class="section-subtitle fade-up">Mettez votre équipe marketing IA en route en quelques minutes. Sans frais d'installation, sans compétences techniques requises.</p>
+        <div class="steps-grid fade-up">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <h3>Créez Votre Compte</h3>
+                <p>Inscrivez-vous en 30 secondes. Aucune carte de crédit requise pour votre essai de 7 jours.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <h3>Connectez Vos Comptes</h3>
+                <p>Frankie vous guide pour connecter votre site web, médias sociaux, courriels et plateformes publicitaires. Prend environ 5 minutes.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <h3>Laissez Frankie Travailler</h3>
+                <p>Frankie commence à optimiser immédiatement. Vous approuvez ce que vous voulez, ou laissez Frankie fonctionner en mode pilote automatique.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section pricing-section" id="pricing">
+    <div class="container">
+        <div class="pricing-card fade-up">
+            <div class="badge">⚜️ Approuvé par les Entreprises Québécoises</div>
+            <h2>Un Plan. Tout Inclus.</h2>
+            <div class="price">597,99 $<span style="font-size:1rem;font-weight:500;-webkit-text-fill-color:var(--mid-gray);color:var(--mid-gray);">/mois</span></div>
+            <p class="price-sub">Annulez quand vous voulez. Sans contrat. Sans frais cachés.</p>
+            <ul class="features">
+                <li>Tous les 16 Agents IA Marketing</li>
+                <li>Tâches et Génération de Contenu Illimitées</li>
+                <li>Connectez Tous Vos Comptes (Sociaux, Courriels, Annonces, Site Web)</li>
+                <li>Interface Vocale Frankie (Parlez Naturellement)</li>
+                <li>PWA — Installez sur N'importe Quel Appareil</li>
+                <li>Essai Gratuit de 7 Jours — Aucune Carte de Crédit Requise</li>
+            </ul>
+            <a href="/fr/essai-gratuit" class="btn btn-primary">Commencer Votre Essai Gratuit</a>
+            <p class="tax-note">+ taxes applicables selon votre province</p>
+        </div>
+    </div>
+</section>
+
+<section class="voice-section" id="voice">
+    <div class="container fade-up">
+        <span class="voice-icon">🎙️</span>
+        <h2>Parlez à Frankie</h2>
+        <p>Ouvrez Frankie sur votre téléphone ou ordinateur. Dites <em>"Frankie, rédige un article de blog sur les astuces de plomberie d'hiver et publie-le sur Facebook."</em> Frankie répond, confirme et exécute. Comme avoir un directeur marketing sur votre téléphone.</p>
+        <p class="note">L'interface vocale fonctionne sur Chrome, Edge et Safari.</p>
+    </div>
+</section>
+
 <section class="section comparison-section" id="comparison">
     <div class="container">
-        <h2 class="section-title fade-up">Combien Payez-Vous en Ce Moment?</h2>
-        <p class="section-subtitle fade-up">Les agences traditionnelles facturent chaque service séparément. Nous vous offrons tout pour un tarif mensuel fixe.</p>
+        <h2 class="section-title fade-up">Frankie vs Agence Traditionnelle</h2>
+        <p class="section-subtitle fade-up">Découvrez pourquoi des centaines d'entreprises canadiennes passent au marketing par IA.</p>
         <div class="comparison-grid fade-up">
             <div class="comparison-card old">
                 <div class="comparison-header">
@@ -1206,229 +905,91 @@
                 </div>
                 <div class="comparison-body">
                     <ul class="comparison-list">
-                        <li><span class="label">Site Web</span> <span class="price red">2 000 $–5 000 $</span></li>
-                        <li><span class="label">SEO Mensuel</span> <span class="price red">1 000 $–2 500 $/mois</span></li>
-                        <li><span class="label">Médias Sociaux</span> <span class="price red">800 $–2 000 $/mois</span></li>
-                        <li><span class="label">Gestion d'Annonces</span> <span class="price red">15–20 % des dépenses</span></li>
-                        <li><span class="label">Marketing Courriel</span> <span class="price red">300 $–1 000 $/mois</span></li>
-                        <li><span class="label">Gestion de Réputation</span> <span class="price red">500 $–1 500 $/mois</span></li>
-                        <li><span class="label">Contenu TikTok</span> <span class="price red">500 $–2 000 $/mois</span></li>
-                        <li><span class="label">Production Vidéo</span> <span class="price red">1 000 $–3 000 $/mois</span></li>
-                        <li><span class="label">Stratégie de Contenu</span> <span class="price red">500 $–2 000 $/mois</span></li>
-                        <li><span class="label">Marketing SMS</span> <span class="price red">300 $–1 000 $/mois</span></li>
-                        <li><span class="label">CRO &amp; Pages d'Atterrissage</span> <span class="price red">500 $–2 000 $/mois</span></li>
-                        <li><span class="label">SEO Technique</span> <span class="price red">500 $–2 000 $/mois</span></li>
+                        <li><span class="label">Coût Mensuel</span> <span class="price red">3 000 $–10 000 $+</span></li>
+                        <li><span class="label">Fournisseurs</span> <span class="price red">Multiples agences</span></li>
+                        <li><span class="label">Délais</span> <span class="price red">Jours à semaines</span></li>
+                        <li><span class="label">Disponibilité</span> <span class="price red">Heures de bureau</span></li>
+                        <li><span class="label">Commandes Vocales</span> <span class="price red">❌</span></li>
                     </ul>
                 </div>
                 <div class="comparison-total-block">
-                    <span class="total-label">Coût Mensuel Estimé</span>
+                    <span class="total-label">Investissement Mensuel</span>
                     <span class="total-amount">3 000 $–10 000 $+</span>
-                    <span class="total-sub">par mois + frais de configuration</span>
+                    <span class="total-sub">par mois + frais d'installation</span>
                 </div>
             </div>
             <div class="comparison-card new">
                 <div class="comparison-header">
-                    <span class="icon">🚀</span>
-                    <h3>Laval Digital</h3>
+                    <span class="icon">🤖</span>
+                    <h3>Frankie</h3>
                 </div>
                 <div class="comparison-body">
                     <ul class="comparison-list">
-                        <li><span class="label">Offre de Base</span> <span class="price green">567 $/mois</span></li>
-                        <li><span class="label">Offre Croissance <span class="popular-tag">⭐ POPULAIRE</span></span> <span class="price green">833 $/mois</span></li>
-                        <li><span class="label">Offre Complète</span> <span class="price green">1 100 $/mois</span></li>
-                        <li><span class="label">Site Web IA</span> <span class="price green">✅ Inclus</span></li>
-                        <li><span class="label">11 Agents IA</span> <span class="price green">✅ Inclus</span></li>
-                        <li><span class="label">Tableau de Bord</span> <span class="price green">✅ Inclus</span></li>
-                        <li><span class="label">Chatbot de Leads</span> <span class="price green">✅ Inclus</span></li>
+                        <li><span class="label">Coût Mensuel</span> <span class="price green">597,99 $</span></li>
+                        <li><span class="label">Fournisseurs</span> <span class="price green">Une plateforme</span></li>
+                        <li><span class="label">Délais</span> <span class="price green">Instantané</span></li>
+                        <li><span class="label">Disponibilité</span> <span class="price green">24/7</span></li>
+                        <li><span class="label">Commandes Vocales</span> <span class="price green">✅ Inclus</span></li>
                     </ul>
                 </div>
                 <div class="comparison-total-block">
-                    <span class="total-label">Tarif Mensuel Fixe</span>
-                    <span class="total-amount">Dès 567 $</span>
+                    <span class="total-label">Investissement Mensuel</span>
+                    <span class="total-amount">597,99 $</span>
                     <span class="total-sub">par mois — tout inclus</span>
                 </div>
             </div>
         </div>
         <div class="savings-callout fade-up">
-            💰 <strong>Économisez 75–90 %</strong> comparé aux agences traditionnelles — avec une IA qui travaille 24/7.
+            💰 <strong>Économisez 80–94 %</strong> comparé aux agences traditionnelles — avec une IA qui travaille 24/7.
         </div>
     </div>
 </section>
 
-<!-- How It Works -->
-<section class="section how-bg">
+<section class="section testimonials" id="testimonials">
     <div class="container">
-        <h2 class="section-title fade-up">Comment Ça Marche</h2>
-        <p class="section-subtitle fade-up">Pas besoin d'être technique. Il suffit de se présenter. On s'occupe du reste.</p>
-        <div class="steps-grid fade-up">
-            <div class="step-card">
-                <div class="step-number">1</div>
-                <h3>Choisissez Votre Offre</h3>
-                <p>Appelez, textez ou écrivez-nous. On discute de votre entreprise et on choisit le bon forfait. Votre équipe IA s'appelle <strong>Frankie</strong> — votre centre de commande marketing 24/7.</p>
+        <h2 class="section-title fade-up">Approuvé par des Entrepreneurs Canadiens</h2>
+        <p class="section-subtitle fade-up">Des commentaires réels d'utilisateurs de Frankie.</p>
+        <div class="testimonial-grid fade-up">
+            <div class="testimonial-card">
+                <p class="quote">"Frankie gère toute notre présence en ligne. On approuve les publications et on regarde les leads entrer."</p>
+                <p class="author">— Propriétaire d'entreprise de plomberie, Laval</p>
             </div>
-            <div class="step-card">
-                <div class="step-number">2</div>
-                <h3>Apportez Vos Clés (BYOK)</h3>
-                <p>Inscrivez-vous pour des clés API DeepSeek, OpenAI ou Claude (on vous montre comment — ça prend 5 minutes). Vous contrôlez l'accès, on alimente le système.</p>
+            <div class="testimonial-card">
+                <p class="quote">"J'étais sceptique à propos de l'IA, mais Frankie écrit de meilleurs textes publicitaires que notre ancienne agence."</p>
+                <p class="author">— Électricien, Montréal</p>
             </div>
-            <div class="step-card">
-                <div class="step-number">3</div>
-                <h3>On Construit &amp; Lance</h3>
-                <p>On installe votre site web, on configure tous les 16 agents, on connecte vos comptes sociaux et on active votre tableau de bord avec <strong>Frankie</strong> — votre centre de commande IA. Vous recevez une formation complète.</p>
-            </div>
-            <div class="step-card">
-                <div class="step-number">4</div>
-                <h3>Votre Équipe IA Travaille 24/7</h3>
-                <p>Les agents génèrent du contenu, répondent aux avis, publient sur les réseaux sociaux, gèrent les annonces, qualifient les prospects et envoient des courriels. Vous approuvez ou vous laissez faire.</p>
-            </div>
-            <div class="step-card">
-                <div class="step-number">5</div>
-                <h3>Vous Possédez Tout</h3>
-                <p>Votre site web, votre contenu, vos données, vos comptes. Sans verrou. Sans frais mensuels. Annulez quand vous voulez — vous gardez ce qu'on a construit ensemble.</p>
+            <div class="testimonial-card">
+                <p class="quote">"L'interface vocale est incroyable. Je parle à Frankie en conduisant entre les chantiers."</p>
+                <p class="author">— Paysagiste, Longueuil</p>
             </div>
         </div>
     </div>
 </section>
 
-<section class="section what-you-get">
+<section class="section faq-section" id="faq">
     <div class="container">
-        <h2 class="section-title fade-up">Votre Suite <strong>Frankie</strong></h2>
-        <p class="section-subtitle fade-up">16 agents IA spécialisés, un seul centre de commande. Chaque agent est un expert dans son domaine, coordonné par <strong>Frankie</strong> — votre copilote marketing 24/7.</p>
-        <div class="cards fade-up">
-            <div class="card"><div class="card-icon">🔍</div><h3>📍 Agent SEO Local</h3><p>Optimise votre profil Google Business, vous classe localement, rédige des pages de service et construit des citations.</p></div>
-            <div class="card"><div class="card-icon">📱</div><h3>📱 Agent Médias Sociaux</h3><p>Crée et planifie des publications Facebook &amp; Instagram. Stimule l'engagement et développe votre audience locale.</p></div>
-            <div class="card"><div class="card-icon">💰</div><h3>📢 Agent Annonces Payantes</h3><p>Élabore des campagnes Google &amp; Meta. Rédige des textes, sélectionne des mots-clés et optimise les budgets.</p></div>
-            <div class="card"><div class="card-icon">💬</div><h3>🎯 Agent Conversion</h3><p>Qualifie les visiteurs 24/7. Prend des rendez-vous et vous alerte quand un prospect est prêt.</p></div>
-            <div class="card"><div class="card-icon">🚀</div><h3>🚀 Agent Growth Hacker</h3><p>Conçoit des expériences, teste A/B, analyse les entonnoirs de conversion et trouve des canaux de croissance.</p></div>
-            <div class="card"><div class="card-icon">⭐</div><h3>⭐ Agent Réputation</h3><p>Surveille les avis, génère des réponses professionnelles et améliore votre cote d'étoiles.</p></div>
-            <div class="card"><div class="card-icon">📧</div><h3>✉️ Agent Marketing Courriel</h3><p>Crée des infolettres, des campagnes et des séquences automatisées qui fidélisent.</p></div>
-            <div class="card"><div class="card-icon">🎬</div><h3>🎬 Agent TikTok/Reels</h3><p>Crée du contenu vidéo court — scripts, accroches et légendes pour TikTok, Reels et Shorts.</p></div>
-            <div class="card"><div class="card-icon">🤝</div><h3>🤝 Agent Prospection</h3><p>Trouve des prospects, rédige des courriels personnalisés, crée des campagnes et automatise les suivis.</p></div>
-            <div class="card"><div class="card-icon">🔗</div><h3>🔗 Agent Backlinks</h3><p>Construit des liens de qualité, trouve des opportunités de publication, audite les profils de liens.</p></div>
-            <div class="card"><div class="card-icon">📝</div><h3>📝 Stratège de Contenu</h3><p>Planifie des calendriers éditoriaux, adapte le contenu pour tous les canaux et gère les sujets.</p></div>
-            <div class="card"><div class="card-icon">⚙️</div><h3>⚙️ Agent SEO Technique</h3><p>Audite la vitesse, implémente les données structurées, corrige les erreurs d'exploration.</p></div>
-            <div class="card"><div class="card-icon">📐</div><h3>📐 Agent CRO</h3><p>Optimise les entonnoirs de conversion, conçoit des tests A/B et améliore les pages d'atterrissage.</p></div>
-            <div class="card"><div class="card-icon">🎥</div><h3>🎥 Agent Vidéo</h3><p>Rédige des scripts YouTube, crée des vidéos explicatives et produit des scripts publicitaires.</p></div>
-            <div class="card"><div class="card-icon">💬</div><h3>💬 Agent SMS</h3><p>Planifie des campagnes SMS, rédige des promotions concises et gère la conformité.</p></div>
-            <div class="card"><div class="card-icon">📊</div><h3>📊 Agent Rapports</h3><p>Compile la performance, génère des rapports mensuels, suit le ROI et livre des informations.</p></div>
-            <div class="card"><div class="card-icon">🤖</div><h3>🤖 Frankie</h3><p>Centre de commande unifié, notifications push, requêtes en langage naturel, undo, personnalités d'agents et alertes proactives. Votre copilote IA.</p></div>
-        </div>
-    </div>
-</section>
-
-<!-- See It in Action -->
-<section class="section real-world">
-    <div class="container">
-        <h2 class="section-title fade-up">Voyez-le en Action</h2>
-        <p class="section-subtitle fade-up">Voici exactement comment nos agents IA transforment des inconnus en clients payants pour deux entreprises locales très différentes.</p>
-        <div class="example-grid fade-up">
-            <div class="example-card">
-                <h3><span>🔧</span> Plombier d'Urgence à Laval</h3>
-                <div class="example-step">
-                    <div class="step-circle">1</div>
-                    <div class="step-content">
-                        <p>Un propriétaire cherche <strong>"plombier d'urgence près de chez moi"</strong> à minuit. Le site optimisé par l'IA (<strong>Agent SEO Local</strong>) apparaît en haut de Google.</p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">2</div>
-                    <div class="step-content">
-                        <p>Le chatbot IA entame immédiatement la conversation : <strong>"Tuyau brisé ? On aura quelqu'un chez vous dans 45 minutes. Quelle est votre adresse ?"</strong></p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">3</div>
-                    <div class="step-content">
-                        <p>L'IA qualifie le lead par urgence, emplacement et type de problème. Elle le classe <strong>"CHAUD"</strong> et envoie un SMS instantané au plombier.</p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">4</div>
-                    <div class="step-content">
-                        <p>Le plombier rappelle en <strong>2 minutes</strong>, prend le contrat. L'IA envoie ensuite un courriel de remerciement et demande un avis Google.</p>
-                    </div>
-                </div>
+        <h2 class="section-title fade-up">Foire Aux Questions</h2>
+        <div class="faq-list fade-up">
+            <div class="faq-item">
+                <h4>Ai-je besoin de compétences techniques pour utiliser Frankie?</h4>
+                <p>Non. Si vous savez parler, vous pouvez utiliser Frankie. L'interface vocale vous permet de parler naturellement, et Frankie s'occupe du reste.</p>
             </div>
-            <div class="example-card">
-                <h3><span>🌿</span> Paysagiste à Laval</h3>
-                <div class="example-step">
-                    <div class="step-circle">1</div>
-                    <div class="step-content">
-                        <p>Un propriétaire cherche <strong>"design patio Laval"</strong> et atterrit sur le site du paysagiste, qui affiche une galerie, des sceaux de confiance et un bouton <strong>"Devis Gratuit"</strong>.</p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">2</div>
-                    <div class="step-content">
-                        <p>Le chatbot demande : <strong>"Quel est votre projet de rêve ? Budget ? Échéancier ?"</strong> Il recueille tout ce qu'il faut pour un devis.</p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">3</div>
-                    <div class="step-content">
-                        <p>L'IA classe le lead <strong>"Tiède"</strong> et envoie un résumé détaillé au paysagiste : vision, budget, numéro de téléphone.</p>
-                    </div>
-                </div>
-                <div class="example-step">
-                    <div class="step-circle">4</div>
-                    <div class="step-content">
-                        <p>Le paysagiste appelle <strong>lundi matin</strong> en sachant exactement ce que le prospect veut, et conclut l'affaire plus rapidement.</p>
-                    </div>
-                </div>
+            <div class="faq-item">
+                <h4>Frankie peut-il publier sur mes comptes de médias sociaux existants?</h4>
+                <p>Oui. Frankie se connecte à vos Facebook, Instagram, TikTok, LinkedIn, et plus via des serveurs MCP. Vous autorisez une fois, Frankie gère le reste.</p>
             </div>
-        </div>
-    </div>
-</section>
-
-<!-- How You'll Get Found -->
-<section class="section get-found">
-    <div class="container">
-        <h2 class="section-title fade-up">Comment Vous Serez Trouvé par des Clients Payants</h2>
-        <p class="section-subtitle fade-up">On ne se contente pas de construire un site web. On construit une machine d'acquisition de clients 24/7. Voici comment chaque pièce fait en sorte que les gens du coin vous trouvent quand ils ont le plus besoin de vous.</p>
-        <div class="cards fade-up">
-            <div class="card">
-                <div class="card-icon">🔍</div>
-                <h3>SEO Local</h3>
-                <p>Votre site et votre profil Google d'affaires sont automatiquement optimisés pour les termes exacts que recherchent les propriétaires. Vous apparaissez en haut des recherches <strong>"plombier près de chez moi"</strong> — de façon organique, sans payer par clic.</p>
+            <div class="faq-item">
+                <h4>Et si je n'aime pas quelque chose que Frankie crée?</h4>
+                <p>Vous avez un contrôle d'approbation complet. Frankie rédige tout, vous approuvez ou rejetez. Avec le temps, Frankie apprend vos préférences.</p>
             </div>
-            <div class="card">
-                <div class="card-icon">📣</div>
-                <h3>Annonces Payantes</h3>
-                <p>Pendant que le SEO fait son travail, notre agent lance des campagnes Google et Facebook ciblées qui génèrent des appels immédiats. Vous aurez des leads en <strong>quelques heures, pas en semaines</strong>.</p>
+            <div class="faq-item">
+                <h4>Y a-t-il un contrat à long terme?</h4>
+                <p>Non. 597,99 $/mois, annulez quand vous voulez. Sans pénalités, sans poser de questions.</p>
             </div>
-            <div class="card">
-                <div class="card-icon">📱</div>
-                <h3>Médias Sociaux</h3>
-                <p>Des publications hebdomadaires gardent votre marque devant les gens du coin. Quand ils ont besoin de vous, ils se souviennent de l'entreprise qui <strong>aide leurs voisins</strong> depuis des mois.</p>
+            <div class="faq-item">
+                <h4>Qu'est-ce qui est inclus dans l'essai gratuit de 7 jours?</h4>
+                <p>Accès complet à tous les 16 agents, l'interface vocale et les connexions de comptes. Aucune carte de crédit requise. Vous verrez des résultats concrets avant de payer.</p>
             </div>
-            <div class="card">
-                <div class="card-icon">💬</div>
-                <h3>Chatbot Instantané</h3>
-                <p>Chaque visiteur du site est accueilli, qualifié et capturé — <strong>24h/24</strong>. Vous recevez un texto avec le numéro du lead en quelques secondes, pas en jours.</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">⭐</div>
-                <h3>Moteur de Réputation</h3>
-                <p>Après chaque travail, le système demande un avis automatiquement. Un flux constant d'<strong>avis 5 étoiles</strong> fait de vous le choix évident sur Google.</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">📈</div>
-                <h3>Growth Hacker</h3>
-                <p>Notre IA analyse constamment ce qui fonctionne et trouve des moyens créatifs et économiques d'attirer encore plus de clients — <strong>soumissions gratuites, idées de partenariats, invitations à référer</strong>.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="demo-cta fade-up">
-    <div class="container">
-        <h2>Voyez les Agents IA en Action</h2>
-        <p>Essayez notre démo en direct — demandez à notre IA de générer un plan SEO pour votre entreprise. Aucun engagement requis.</p>
-        <div class="hero-buttons">
-            <a href="/fr/demo" class="btn btn-primary">Lancer la Démo</a>
-            <a href="tel:5142431580" class="btn btn-secondary">📞 Appelez</a>
-            <a href="sms:5142431580" class="btn btn-secondary">💬 Textez</a>
-            <a href="mailto:lavaldigital@gmail.com" class="btn btn-secondary">✉️ Courriel</a>
         </div>
     </div>
 </section>
@@ -1436,8 +997,8 @@
 <footer>
     <div class="container">
         <div>
-            <h4>⚜️ Laval Digital</h4>
-            <p>Fièrement Québécois. Agence numérique propulsée par l'IA pour les PME d'ici. On remplace tout votre département marketing par un logiciel intelligent — pour des frais uniques.</p>
+            <h4>🤖 Frankie par Laval Digital</h4>
+            <p>Centre de commandement marketing IA pour les entreprises locales. 16 agents spécialisés. Une interface vocale. Un prix fixe par mois. Fièrement Canadien. ⚜️</p>
         </div>
         <div>
             <h4>Contact</h4>
@@ -1450,7 +1011,6 @@
             <p><a href="/fr/demo">Démo en Direct</a></p>
             <p><a href="/fr/blogue">Blogue</a></p>
             <p><a href="/fr/affiliate">Programme d'Affiliation</a></p>
-
         </div>
     </div>
     <div class="footer-bottom container">
@@ -1465,6 +1025,15 @@
 </div>
 
 <script>
+function dismissCookie() {
+    document.getElementById('cookie-notice').classList.remove('show');
+    localStorage.setItem('cookie-notice-dismissed', '1');
+}
+(function() {
+    if (!localStorage.getItem('cookie-notice-dismissed')) {
+        setTimeout(function() { document.getElementById('cookie-notice').classList.add('show'); }, 800);
+    }
+})();
 (function() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -1473,35 +1042,17 @@
             }
         });
     }, { threshold: 0.1 });
-
     document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 })();
-
-function dismissCookie() {
-    const notice = document.getElementById('cookie-notice');
-    notice.classList.remove('show');
-    localStorage.setItem('cookie-notice-dismissed', '1');
-}
-
-(function() {
-    if (!localStorage.getItem('cookie-notice-dismissed')) {
-        setTimeout(function() {
-            document.getElementById('cookie-notice').classList.add('show');
-        }, 800);
+var params = new URLSearchParams(window.location.search);
+var ref = params.get('ref');
+if (ref) {
+    var banner = document.getElementById('affiliate-banner');
+    if (banner) {
+        banner.style.display = 'block';
+        document.title = 'Frankie — recommandé par ' + ref;
     }
-})();
-
-// Check for affiliate discount on page load
-fetch('/api/affiliate/status')
-    .then(r => r.json())
-    .then(data => {
-        if (data.active && data.discount > 0) {
-            const banner = document.getElementById('affiliate-banner');
-            banner.style.display = 'block';
-            document.getElementById('affiliate-banner-text').textContent =
-                data.discount + ' $ DE RABAIS';
-        }
-    });
+}
 </script>
 
 </body>

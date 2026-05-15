@@ -129,15 +129,15 @@ def find_user_by_email(email: str):
     return None, None, None
 
 
-def add_user_to_tenant(email: str, password: str, role: str,
-                       display_name: str, tenant_id: str,
+def add_user_to_tenant(email: str, password: str, role: str = "user",
+                       display_name: str = "", tenant_id: str = "",
                        tenant_type: str = "direct") -> dict:
     """Create a new user in the specified tenant database.
 
     Args:
         email: User email address.
         password: Plain text password (will be hashed).
-        role: 'client' or 'affiliate'.
+        role: User role (default 'user').
         display_name: Human-readable name.
         tenant_id: The tenant identifier.
         tenant_type: 'direct'.
@@ -150,10 +150,6 @@ def add_user_to_tenant(email: str, password: str, role: str,
 
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         raise ValueError("Invalid email format.")
-
-    valid_roles = ("client", "affiliate")
-    if role not in valid_roles:
-        raise ValueError(f"Role must be one of {valid_roles}.")
 
     if not _tm:
         raise RuntimeError("Tenant manager not initialized.")
@@ -210,17 +206,3 @@ def client_required(f):
             return redirect(url_for("client_login"))
         return f(*args, **kwargs)
     return decorated
-
-
-def affiliate_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not current_user.is_authenticated:
-            flash("Please log in to continue.")
-            return redirect(url_for("affiliate_login"))
-        if current_user.role != "affiliate":
-            flash("Affiliate access required.")
-            return redirect(url_for("affiliate_login"))
-        return f(*args, **kwargs)
-    return decorated
-
