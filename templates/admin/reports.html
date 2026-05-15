@@ -1,17 +1,11 @@
 <div class="tab-content" id="tab-reports">
     <div class="topbar">
-        <div><h1>Monthly Reports</h1></div>
+        <div><h1>Your Monthly Reports</h1></div>
     </div>
 
     <div class="card">
-        <div class="card-header"><h2>Generate Monthly Report</h2><p>Create a printable PDF-style HTML report for any client</p></div>
+        <div class="card-header"><h2>Generate Your Monthly Report</h2><p>See exactly what Frankie did for your business this month</p></div>
         <div class="form-row">
-            <div class="form-group">
-                <label>Client</label>
-                <select id="report-client-select">
-                    <option value="">-- Select a client --</option>
-                </select>
-            </div>
             <div class="form-group">
                 <label>Month</label>
                 <select id="report-month">
@@ -36,14 +30,33 @@
         </div>
         <div style="display:flex;gap:10px;align-items:center;margin-top:4px;">
             <button class="btn btn-red" onclick="generateReport()">Generate Report</button>
-            <button class="btn btn-green" onclick="emailReport()" id="email-report-btn" disabled>Email Report to Client</button>
+            <button class="btn btn-green" onclick="emailReport()" id="email-report-btn" disabled>Email My Report</button>
+            <button class="btn btn-gray" onclick="downloadReport()" id="download-report-btn" disabled>Download PDF</button>
             <span id="report-result"></span>
         </div>
+        <div id="last-report-info" style="font-size:0.78rem;color:var(--gray-400);margin-top:10px;"></div>
     </div>
 
     <div class="card" id="report-preview-card" style="display:none;">
-        <div class="card-header"><h2>Report Preview</h2></div>
+        <div class="card-header">
+            <h2>Report Preview</h2>
+            <button class="btn btn-gray btn-sm" onclick="printReport()">Print</button>
+        </div>
         <iframe id="report-preview" style="width:100%;height:600px;border:1px solid var(--gray-200);border-radius:var(--radius);background:var(--white);"></iframe>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2>Report History</h2><p>Previously generated reports</p></div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr><th>Month</th><th>Generated</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="report-history-table">
+                    <tr><td colspan="3" class="empty">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -52,7 +65,9 @@ let lastReportHtml = '';
 
 function populateReportYears() {
     const sel = document.getElementById('report-year');
-    const currentYear = new Date().getFullYear();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
     for (let y = currentYear; y >= currentYear - 3; y--) {
         const opt = document.createElement('option');
         opt.value = y;
@@ -60,30 +75,12 @@ function populateReportYears() {
         if (y === currentYear) opt.selected = true;
         sel.appendChild(opt);
     }
-}
-
-function populateReportClients() {
-    const sel = document.getElementById('report-client-select');
-    fetch('/api/tenants')
-        .then(r => r.json())
-        .then(data => {
-            (data.direct_clients || []).forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t; opt.textContent = t;
-                sel.appendChild(opt);
-            });
-        });
+    document.getElementById('report-month').value = currentMonth;
 }
 
 function generateReport() {
-    const tenantId = document.getElementById('report-client-select').value;
     const month = document.getElementById('report-month').value;
     const year = document.getElementById('report-year').value;
-
-    if (!tenantId) {
-        document.getElementById('report-result').innerHTML = '<span style="color:var(--red);">Please select a client.</span>';
-        return;
-    }
 
     const resultEl = document.getElementById('report-result');
     resultEl.innerHTML = '<span style="color:var(--blue);">Generating report...</span>';
@@ -91,7 +88,7 @@ function generateReport() {
     fetch('/api/analytics/report/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant_id: tenantId, month: parseInt(month), year: parseInt(year) })
+        body: JSON.stringify({ month: parseInt(month), year: parseInt(year) })
     })
     .then(r => r.json())
     .then(data => {
@@ -102,7 +99,9 @@ function generateReport() {
             preview.src = URL.createObjectURL(blob);
             document.getElementById('report-preview-card').style.display = 'block';
             document.getElementById('email-report-btn').disabled = false;
+            document.getElementById('download-report-btn').disabled = false;
             resultEl.innerHTML = '<span style="color:var(--green);">Report generated successfully.</span>';
+            updateLastReportInfo(month, year);
         } else {
             resultEl.innerHTML = '<span style="color:var(--red);">' + (data.error || 'Failed to generate report.') + '</span>';
         }
@@ -112,8 +111,13 @@ function generateReport() {
     });
 }
 
+function updateLastReportInfo(month, year) {
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const el = document.getElementById('last-report-info');
+    el.textContent = 'Last report: ' + months[parseInt(month) - 1] + ' ' + year + ' (just generated)';
+}
+
 function emailReport() {
-    const tenantId = document.getElementById('report-client-select').value;
     const month = document.getElementById('report-month').value;
     const year = document.getElementById('report-year').value;
     const resultEl = document.getElementById('report-result');
@@ -125,7 +129,7 @@ function emailReport() {
     fetch('/api/analytics/report/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant_id: tenantId, month: parseInt(month), year: parseInt(year), html: lastReportHtml })
+        body: JSON.stringify({ month: parseInt(month), year: parseInt(year), html: lastReportHtml })
     })
     .then(r => r.json())
     .then(data => {
@@ -140,6 +144,95 @@ function emailReport() {
     });
 }
 
+function downloadReport() {
+    if (!lastReportHtml) return;
+    const blob = new Blob([lastReportHtml], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'frankie_report.html';
+    a.click();
+}
+
+function printReport() {
+    if (!lastReportHtml) return;
+    const w = window.open('', '_blank');
+    w.document.write(lastReportHtml);
+    w.document.close();
+    w.onload = function() { w.print(); };
+}
+
+function loadReportHistory() {
+    fetch('/api/analytics/reports/history')
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('report-history-table');
+            const reports = data.reports || [];
+            if (!reports.length) {
+                tbody.innerHTML = '<tr><td colspan="3" class="empty">No reports generated yet.</td></tr>';
+                return;
+            }
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            tbody.innerHTML = reports.map(r => {
+                const label = months[r.month - 1] + ' ' + r.year;
+                const genDate = r.created_at ? new Date(r.created_at).toLocaleDateString() : '—';
+                return '<tr>'
+                    + '<td><strong>' + label + '</strong></td>'
+                    + '<td>' + genDate + '</td>'
+                    + '<td>'
+                    + '<a href="#" onclick="viewHistoryReport(\'' + r.id + '\');return false;" style="color:var(--blue);margin-right:8px;">View</a>'
+                    + '<a href="#" onclick="downloadHistoryReport(\'' + r.id + '\');return false;" style="color:var(--blue);margin-right:8px;">Download</a>'
+                    + '<a href="#" onclick="emailHistoryReport(\'' + r.id + '\');return false;" style="color:var(--blue);">Email</a>'
+                    + '</td>'
+                    + '</tr>';
+            }).join('');
+        })
+        .catch(() => {
+            document.getElementById('report-history-table').innerHTML = '<tr><td colspan="3" class="empty">Failed to load history.</td></tr>';
+        });
+}
+
+function viewHistoryReport(reportId) {
+    fetch('/api/analytics/report/' + reportId)
+        .then(r => r.json())
+        .then(data => {
+            if (data.html) {
+                lastReportHtml = data.html;
+                const preview = document.getElementById('report-preview');
+                const blob = new Blob([data.html], { type: 'text/html' });
+                preview.src = URL.createObjectURL(blob);
+                document.getElementById('report-preview-card').style.display = 'block';
+                document.getElementById('email-report-btn').disabled = false;
+                document.getElementById('download-report-btn').disabled = false;
+            }
+        });
+}
+
+function downloadHistoryReport(reportId) {
+    fetch('/api/analytics/report/' + reportId)
+        .then(r => r.json())
+        .then(data => {
+            if (data.html) {
+                const blob = new Blob([data.html], { type: 'text/html' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'frankie_report_' + reportId + '.html';
+                a.click();
+            }
+        });
+}
+
+function emailHistoryReport(reportId) {
+    fetch('/api/analytics/report/' + reportId + '/email', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Report emailed successfully!');
+            } else {
+                alert('Failed to send: ' + (data.error || 'Unknown error'));
+            }
+        });
+}
+
 populateReportYears();
-populateReportClients();
+loadReportHistory();
 </script>
