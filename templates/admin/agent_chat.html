@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat with {{ agent.agent_id }} — Laval Digital Admin</title>
+    <title>Frankie — AI Marketing Command Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -34,13 +34,13 @@
         .topbar-center .status-dot.online { background: var(--green); }
         .topbar-center .status-dot.offline { background: var(--gray-400); }
         .topbar-right { display: flex; align-items: center; gap: 10px; }
-        .topbar-right .model-badge { font-size: 0.75rem; background: rgba(255,255,255,0.12); padding: 3px 10px; border-radius: 20px; color: rgba(255,255,255,0.85); }
 
         /* ── Layout ── */
         .chat-layout { display: flex; flex: 1; overflow: hidden; }
 
         /* ── Left Sidebar ── */
         .left-panel { width: 250px; background: var(--white); border-right: 1px solid var(--gray-200); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+        .left-panel .frankie-brand { padding: 14px 16px; font-size: 1.05rem; font-weight: 700; color: var(--navy); border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; gap: 8px; }
         .left-panel .section-header { padding: 14px 16px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray-500); border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; }
         .left-panel .section-header button { background: var(--red); color: var(--white); border: none; border-radius: var(--radius); padding: 4px 12px; font-size: 0.75rem; cursor: pointer; font-family: inherit; font-weight: 600; transition: background 0.12s; }
         .left-panel .section-header button:hover { background: var(--red-dark); }
@@ -58,8 +58,6 @@
         .chat-header { padding: 12px 24px; background: var(--white); border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
         .chat-header .agent-label { font-size: 0.85rem; font-weight: 600; color: var(--gray-700); }
         .chat-header .agent-label span { font-weight: 400; color: var(--gray-500); }
-        .chat-header .thinking-toggle { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--gray-500); cursor: pointer; }
-        .chat-header .thinking-toggle input[type="checkbox"] { accent-color: var(--red); }
         .chat-messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
         .message { max-width: 75%; padding: 12px 16px; border-radius: var(--radius-lg); font-size: 0.9rem; line-height: 1.55; word-wrap: break-word; white-space: pre-wrap; }
         .message.user { align-self: flex-end; background: var(--blue); color: var(--white); border-bottom-right-radius: 4px; }
@@ -70,14 +68,19 @@
         .message .thinking-box { background: var(--gray-50); border: 1px dashed var(--gray-300); border-radius: var(--radius); padding: 10px 14px; margin-top: 8px; font-size: 0.8rem; color: var(--gray-500); font-style: italic; line-height: 1.5; display: none; }
         .message .thinking-box.visible { display: block; }
         .empty-chat { text-align: center; padding: 60px 20px; color: var(--gray-400); }
-        .empty-chat p { font-size: 0.9rem; margin-top: 8px; }
-        .empty-chat .big-icon { font-size: 3rem; }
+        .empty-chat .big-icon { font-size: 3.5rem; margin-bottom: 12px; }
+        .empty-chat h3 { font-size: 1.15rem; font-weight: 700; color: var(--gray-700); margin-bottom: 8px; }
+        .empty-chat p { font-size: 0.9rem; margin-top: 4px; color: var(--gray-400); line-height: 1.5; }
+        .example-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 20px; }
+        .example-chip { padding: 8px 16px; font-size: 0.82rem; font-weight: 500; background: var(--white); border: 1px solid var(--gray-200); border-radius: 20px; color: var(--gray-600); cursor: pointer; transition: all 0.15s; font-family: inherit; box-shadow: var(--shadow); }
+        .example-chip:hover { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
         .typing-indicator { align-self: flex-start; display: flex; gap: 4px; padding: 12px 16px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); border-bottom-left-radius: 4px; box-shadow: var(--shadow); }
         .typing-indicator span { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-400); animation: typing 1.2s infinite; }
         .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
         .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes typing { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
-        .chat-input-area { padding: 16px 24px; background: var(--white); border-top: 1px solid var(--gray-200); display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; }
+        .chat-input-area { padding: 16px 24px; padding-bottom: 8px; background: var(--white); border-top: 1px solid var(--gray-200); flex-shrink: 0; }
+        .chat-input-row { display: flex; gap: 10px; align-items: flex-end; }
         .chat-input-area textarea { flex: 1; padding: 10px 14px; font-size: 0.9rem; font-family: inherit; border: 1px solid var(--gray-300); border-radius: var(--radius-lg); resize: none; outline: none; min-height: 44px; max-height: 120px; line-height: 1.5; transition: border-color 0.15s; }
         .chat-input-area textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         .chat-input-area button { padding: 10px 24px; font-size: 0.85rem; font-weight: 600; font-family: inherit; border: none; border-radius: var(--radius-lg); cursor: pointer; transition: all 0.15s; white-space: nowrap; background: var(--red); color: var(--white); height: 44px; }
@@ -87,12 +90,10 @@
         .chat-input-area .mic-btn:hover { background: var(--gray-200); color: var(--gray-900); }
         .chat-input-area .mic-btn.recording { background: var(--red); color: var(--white); animation: pulse 1s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .chat-input-hint { text-align: center; font-size: 0.72rem; color: var(--gray-400); padding: 6px 0 4px; }
         .msg-speak-btn { display: inline-block; margin-top: 8px; margin-left: 4px; font-size: 0.72rem; cursor: pointer; background: none; border: 1px solid var(--gray-300); border-radius: var(--radius); padding: 4px 10px; transition: all 0.12s; font-family: inherit; color: var(--gray-500); }
         .msg-speak-btn:hover { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
         .msg-speak-btn.speaking { background: var(--green-bg); border-color: var(--green); color: var(--green); }
-        .panic-btn { background: #dc2626; color: white; border: none; border-radius: var(--radius); padding: 4px 12px; font-size: 0.78rem; font-weight: 700; cursor: pointer; animation: pulse 0.8s infinite; font-family: inherit; }
-        .panic-btn.active { display: inline-flex !important; align-items: center; gap: 4px; }
-        .panic-btn:hover { background: #b91c1c; }
         .autonomy-badge { font-size: 0.68rem; background: rgba(255,255,255,0.12); padding: 2px 8px; border-radius: 12px; color: rgba(255,255,255,0.7); }
         .autonomy-badge.auto { background: rgba(5,150,105,0.3); color: #6ee7b7; }
         .autonomy-badge.suggest { background: rgba(217,119,6,0.3); color: #fcd34d; }
@@ -131,9 +132,11 @@
         .quick-actions .qa-btn:hover { background: var(--gray-50); border-color: var(--gray-300); }
         .quick-actions .qa-btn.primary { background: var(--red); color: var(--white); border-color: var(--red); text-align: center; font-weight: 600; }
         .quick-actions .qa-btn.primary:hover { background: var(--red-dark); border-color: var(--red-dark); }
-        .right-panel .back-link { padding: 16px; text-align: center; border-top: 1px solid var(--gray-200); margin-top: auto; }
-        .right-panel .back-link a { font-size: 0.85rem; color: var(--gray-500); font-weight: 500; }
-        .right-panel .back-link a:hover { color: var(--red); }
+
+        /* ── Voice Toast ── */
+        .voice-toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--navy); color: var(--white); padding: 12px 24px; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); font-size: 0.85rem; z-index: 100; display: none; align-items: center; gap: 10px; max-width: 480px; text-align: center; line-height: 1.4; }
+        .voice-toast .close-toast { background: none; border: none; color: rgba(255,255,255,0.5); font-size: 1.2rem; cursor: pointer; padding: 0 4px; font-family: inherit; }
+        .voice-toast .close-toast:hover { color: var(--white); }
 
         /* ── Responsive ── */
         .sidebar-toggle { display: none; background: none; border: none; color: rgba(255,255,255,0.7); font-size: 1.3rem; cursor: pointer; padding: 4px; }
@@ -160,8 +163,7 @@
     <div class="topbar">
         <div class="topbar-left">
             <button class="sidebar-toggle" onclick="togglePanel('left')" title="Threads">&#9776;</button>
-            <a href="/admin">&larr; Admin</a>
-            <button id="panic-btn" class="panic-btn" onclick="togglePanic()" title="Emergency stop" style="display:none;">&#9888; Stop</button>
+            <a href="/frankie">&larr; Dashboard</a>
         </div>
         <div class="topbar-center">
             <span class="status-dot {{ 'online' if agent.enabled else 'offline' }}" id="agent-status-dot"></span>
@@ -169,7 +171,6 @@
             <span class="autonomy-badge" id="autonomy-badge"></span>
         </div>
         <div class="topbar-right">
-            <span class="model-badge">{{ agent.model }}</span>
             <button class="sidebar-toggle" onclick="togglePanel('right')" title="Info">&#9432;</button>
         </div>
     </div>
@@ -177,6 +178,7 @@
 <div class="chat-layout">
     <!-- LEFT COLUMN: Threads + Tools -->
     <div class="left-panel" id="panel-left">
+        <div class="frankie-brand">🤖 Frankie</div>
         <div class="section-header">
             Threads
             <button onclick="startNewThread()">+ New</button>
@@ -195,23 +197,27 @@
     <!-- CENTER COLUMN: Chat -->
     <div class="chat-main">
         <div class="chat-header">
-            <div class="agent-label">{{ agent_name }} <span>({{ agent.model }})</span></div>
-            <label class="thinking-toggle" title="Show agent's reasoning">
-                <input type="checkbox" id="show-thinking" onchange="toggleThinking()">
-                Show thinking
-            </label>
+            <div class="agent-label">Frankie <span>&mdash; AI Marketing Command Center</span></div>
         </div>
         <div class="chat-messages" id="chat-messages">
             <div class="empty-chat" id="empty-chat">
-                <div class="big-icon">&#129302;</div>
-                <p>Start a conversation with <strong>{{ agent_name }}</strong>.</p>
-                <p style="font-size:0.8rem;color:var(--gray-400);">Type a message below to begin.</p>
+                <div class="big-icon">🤖</div>
+                <h3>I'm Frankie — your AI marketing command center.</h3>
+                <p>I can write content, manage your SEO, run ads, post to social media, handle email campaigns, and more. Just tell me what you need.</p>
+                <div class="example-chips">
+                    <button class="example-chip" onclick="useChip('Write a blog post for my business about common customer questions')">📝 Write a blog post for my business</button>
+                    <button class="example-chip" onclick="useChip('Create this week social media posts for my business')">📱 Create this week's social media posts</button>
+                    <button class="example-chip" onclick="useChip('Show me my marketing performance and analytics')">📊 Show me my marketing performance</button>
+                </div>
             </div>
         </div>
         <div class="chat-input-area">
-            <textarea id="msg-input" rows="1" placeholder="Type your message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
-            <button id="mic-btn" class="mic-btn" onclick="toggleMic()" title="Voice input">&#127908;</button>
-            <button id="send-btn" onclick="sendMessage()">Send</button>
+            <div class="chat-input-row">
+                <textarea id="msg-input" rows="1" placeholder="Talk to Frankie... (or type)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+                <button id="mic-btn" class="mic-btn" onclick="toggleMic()" title="Voice input">&#127908;</button>
+                <button id="send-btn" onclick="sendMessage()">Send</button>
+            </div>
+            <div class="chat-input-hint">Try: "Frankie, write a blog post about winter plumbing tips"</div>
         </div>
     </div>
 
@@ -219,7 +225,6 @@
         <div class="right-panel" id="panel-right">
             <div class="info-card">
                 <h3 id="info-agent-name">{{ agent_name }}</h3>
-                <div class="info-row"><span class="label">Model</span><span class="value" id="info-model">{{ agent.model }}</span></div>
                 <div class="info-row"><span class="label">Status</span><span class="value" id="info-status">{{ 'Enabled' if agent.enabled else 'Disabled' }}</span></div>
                 <div class="info-row"><span class="label">Tasks</span><span class="value" id="info-tasks">--</span></div>
                 <div class="info-row"><span class="label">Success Rate</span><span class="value" id="info-rate">--</span></div>
@@ -239,7 +244,7 @@
             <div class="info-card">
                 <h3 style="font-size:0.85rem;margin-bottom:6px;">&#127908; Speech</h3>
                 <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer;">
-                    <input type="checkbox" id="speech-toggle" onchange="toggleSpeech()">
+                    <input type="checkbox" id="speech-toggle" onchange="toggleSpeech()" checked>
                     Enable voice
                 </label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer;margin-top:6px;">
@@ -250,12 +255,14 @@
             <div class="quick-actions">
                 <button class="qa-btn" onclick="copyLastResponse()">&#128203; Copy Last Response</button>
                 <button class="qa-btn" onclick="startNewThread()">&#128260; New Thread</button>
-                <button class="qa-btn primary" onclick="window.location.href='/admin'">&#8592; Back to Admin</button>
-            </div>
-            <div class="back-link">
-                <a href="/admin">&larr; Back to Admin Panel</a>
+                <button class="qa-btn primary" onclick="window.location.href='/frankie'">&#8592; Dashboard</button>
             </div>
         </div>
+</div>
+
+<div id="voice-toast" class="voice-toast">
+    <span>👋 Hi! I'm Frankie. You can type or talk to me. Enable voice for the full Jarvis experience.</span>
+    <button class="close-toast" onclick="document.getElementById('voice-toast').style.display='none'">&times;</button>
 </div>
 
 <script>
@@ -283,15 +290,15 @@ function togglePanel(name) {
     document.getElementById('panel-' + name).classList.toggle('open');
 }
 
-function toggleThinking() {
-    SHOW_THINKING = document.getElementById('show-thinking').checked;
-    document.querySelectorAll('.thinking-box').forEach(b => b.classList.toggle('visible', SHOW_THINKING));
-}
-
 function escapeHtml(text) {
     const d = document.createElement('div');
     d.textContent = text;
     return d.innerHTML;
+}
+
+function useChip(text) {
+    document.getElementById('msg-input').value = text;
+    sendMessage();
 }
 
 /* ── Tools ── */
@@ -370,7 +377,7 @@ function appendMessage(role, content, thinking, scroll, meta) {
         if (content) LAST_RESPONSE = content;
         if (thinking) {
             const tb = document.createElement('div');
-            tb.className = 'thinking-box' + (SHOW_THINKING ? ' visible' : '');
+            tb.className = 'thinking-box';
             tb.textContent = thinking;
             div.querySelector('.msg-sender').insertAdjacentElement('afterend', tb);
         }
@@ -387,7 +394,6 @@ function appendMessage(role, content, thinking, scroll, meta) {
         div.appendChild(speakBtn);
     }
 
-    // Show autonomy + confidence on auto/silent executed messages
     if (role === 'agent' && arguments[4]) {
         const meta = arguments[4];
         if (meta.autonomy && meta.autonomy !== 'manual') {
@@ -509,40 +515,6 @@ function executeAgentResponse(content) {
     });
 }
 
-/* ── Panic / Resume ── */
-async function togglePanic() {
-    const btn = document.getElementById('panic-btn');
-    try {
-        if (btn.classList.contains('active')) {
-            const r = await fetch('/api/orchestrator/resume', { method: 'POST' });
-            const d = await r.json();
-            btn.classList.remove('active');
-            btn.style.display = 'none';
-        } else {
-            const r = await fetch('/api/orchestrator/panic', { method: 'POST' });
-            const d = await r.json();
-            btn.classList.add('active');
-            btn.textContent = '\u26A0\uFE0F Panicked — Resume';
-        }
-    } catch (e) { console.error('Panic toggle failed', e); }
-}
-
-async function checkPanicStatus() {
-    try {
-        const r = await fetch('/api/orchestrator/status');
-        const d = await r.json();
-        const btn = document.getElementById('panic-btn');
-        if (d.panicked) {
-            btn.classList.add('active');
-            btn.style.display = 'inline-flex';
-            btn.textContent = '\u26A0\uFE0F Panicked — Resume';
-        } else {
-            btn.classList.remove('active');
-            btn.style.display = 'none';
-        }
-    } catch (e) {}
-}
-
 /* ── Activity Feed ── */
 async function loadActivity() {
     try {
@@ -618,8 +590,8 @@ function copyLastResponse() {
     });
 }
 
-/* ── Speech (optional, browser-native with server fallback) ── */
-let SPEECH_ENABLED = false;
+/* ── Speech ── */
+let SPEECH_ENABLED = true;
 let RECOGNITION = null;
 let IS_RECORDING = false;
 let MEDIA_RECORDER = null;
@@ -634,7 +606,6 @@ function getSpeechLang() {
     return c === 'fr' ? 'fr-FR' : 'en-US';
 }
 
-/* Browser-native Speech Recognition (Chrome/Edge) */
 function initRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
@@ -659,7 +630,6 @@ function initRecognition() {
     };
 }
 
-/* Fallback: Server-side STT via MediaRecorder */
 async function startServerSTT() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -693,7 +663,6 @@ async function startServerSTT() {
     }
 }
 
-/* Toggle microphone */
 async function toggleMic() {
     if (!SPEECH_ENABLED) {
         alert('Enable voice in the right panel first.');
@@ -710,7 +679,6 @@ async function toggleMic() {
     }
     IS_RECORDING = true;
     document.getElementById('mic-btn').classList.add('recording');
-    /* Try browser SpeechRecognition first, fall back to server STT */
     if (RECOGNITION) {
         try {
             RECOGNITION.lang = getSpeechLang();
@@ -718,7 +686,6 @@ async function toggleMic() {
             return;
         } catch (e) {}
     }
-    /* Fallback: server-side STT */
     const ok = await startServerSTT();
     if (!ok) {
         IS_RECORDING = false;
@@ -726,7 +693,6 @@ async function toggleMic() {
     }
 }
 
-/* Browser-native Text-to-Speech */
 function speakText(text) {
     if (!SPEECH_ENABLED || !text) return;
     if (!window.speechSynthesis) return;
@@ -739,7 +705,6 @@ function speakText(text) {
     window.speechSynthesis.speak(utterance);
 }
 
-/* Toggle speech on/off */
 function toggleSpeech() {
     SPEECH_ENABLED = document.getElementById('speech-toggle').checked;
     if (SPEECH_ENABLED) {
@@ -754,7 +719,6 @@ function toggleSpeech() {
     }
 }
 
-/* Auto-speak agent responses if enabled */
 const origAppendMessage = appendMessage;
 appendMessage = function(role, content, thinking, scroll) {
     origAppendMessage(role, content, thinking, scroll);
@@ -769,7 +733,6 @@ document.getElementById('msg-input').addEventListener('input', function() {
     this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
 
-// Load agent stats
 fetch('/api/agents/' + AGENT_ID).then(r => r.json()).then(a => {
     if (a.task_count !== undefined) document.getElementById('info-tasks').textContent = a.task_count;
     if (a.success_count !== undefined && a.task_count > 0) {
@@ -780,10 +743,15 @@ fetch('/api/agents/' + AGENT_ID).then(r => r.json()).then(a => {
 loadTools();
 loadThreads();
 loadAutonomy();
-checkPanicStatus();
 loadActivity();
-setInterval(loadActivity, 10000); // poll activity every 10s
-setInterval(checkPanicStatus, 5000); // poll panic every 5s
+setInterval(loadActivity, 10000);
+
+/* Show voice toast on first load if speech synthesis available */
+setTimeout(() => {
+    if (window.speechSynthesis && !SPEECH_ENABLED) {
+        document.getElementById('voice-toast').style.display = 'flex';
+    }
+}, 500);
 </script>
 </body>
 </html>
