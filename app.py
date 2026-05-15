@@ -29,6 +29,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# MCP Server imports
+from mcp import init_mcp_servers, get_all_mcp_servers, get_mcp_server, get_all_mcp_tools
+
 if not os.getenv("DEEPSEEK_API_KEY"):
     raise RuntimeError(
         "DEEPSEEK_API_KEY environment variable is required. "
@@ -408,6 +411,10 @@ for agent_id, config in AGENT_CONFIGS.items():
     cls = AGENT_CLASSES.get(agent_id)
     if cls:
         agent_registry[agent_id] = cls(agent_id, config)
+
+# Initialize MCP Servers for execution
+mcp_servers = init_mcp_servers()
+logger.info(f"MCP servers ready: {list(mcp_servers.keys())}")
 
 # Agent display metadata for chat interfaces
 AGENT_META: Dict[str, Dict[str, str]] = {
@@ -3735,6 +3742,63 @@ def api_training_feedback():
     helpful = data.get("helpful")
     logger.info("Training feedback: slug=%s helpful=%s", slug, helpful)
     return jsonify({"success": True})
+
+
+# ---------------------------------------------------------------------------
+# MCP Server API routes
+# ---------------------------------------------------------------------------
+
+@app.route("/api/mcp/servers", methods=["GET"])
+def list_mcp_servers():
+    """List all available MCP servers and their status."""
+    servers = {}
+    for name, server in get_all_mcp_servers().items():
+        servers[name] = server.get_status()
+    return jsonify({"servers": servers})
+
+
+@app.route("/api/mcp/servers/<server_name>/tools", methods=["GET"])
+def list_mcp_tools(server_name):
+    """List all tools for a specific MCP server."""
+    server = get_mcp_server(server_name)
+    if not server:
+        return jsonify({"error": f"MCP server '{server_name}' not found"}), 404
+    return jsonify({"server": server_name, "tools": server.list_tools()})
+
+
+@app.route("/api/mcp/call", methods=["POST"])
+def call_mcp_tool():
+    """Call a tool on an MCP server.
+
+    Request body:
+    {
+        "server": "seo",
+        "tool": "publish_blog_post",
+        "params": {
+            "content": "Blog post content...",
+            "title": "My Blog Post",
+            "cms_type": "wordpress",
+            "api_credentials": {...}
+        }
+    }
+    """
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    server_name = data.get("server", "")
+    tool_name = data.get("tool", "")
+    params = data.get("params", {})
+
+    if not server_name or not tool_name:
+        return jsonify({"error": "server and tool are required"}), 400
+
+    server = get_mcp_server(server_name)
+    if not server:
+        return jsonify({"error": f"MCP server '{server_name}' not found"}), 404
+
+    result = server.call_tool(tool_name, **params)
+    return jsonify(result)
 
 
 # ---------------------------------------------------------------------------

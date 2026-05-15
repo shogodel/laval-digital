@@ -1,0 +1,24 @@
+{
+  "servers": {
+    "seo": {
+      "enabled": true,
+      "description": "Content publishing to WordPress, Webflow, Netlify, and custom sites"
+    },
+    "social": {
+      "enabled": false,
+      "description": "Social media posting to Facebook, Instagram, TikTok, LinkedIn (coming soon)"
+    },
+    "email": {
+      "enabled": false,
+      "description": "Email marketing via SendGrid, Mailgun, Gmail SMTP (coming soon)"
+    },
+    "gmb": {
+      "enabled": false,
+      "description": "Google Business Profile management (coming soon)"
+    },
+    "ads": {
+      "enabled": false,
+      "description": "Google Ads and Meta Ads campaign management (coming soon)"
+    }
+  }
+}
