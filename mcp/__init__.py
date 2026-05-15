@@ -10,6 +10,9 @@ from .social_server import SocialMCPServer
 from .email_server import EmailMCPServer
 from .gmb_server import GMBMCPServer
 from .ads_server import AdsMCPServer
+from .analytics_server import AnalyticsMCPServer
+from .website_server import WebsiteMCPServer
+from .ecommerce_server import EcommerceMCPServer
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +43,18 @@ def init_mcp_servers() -> Dict[str, MCPServer]:
     # Register Ads server
     ads = AdsMCPServer()
     _mcp_servers[ads.name] = ads
+
+    # Register Analytics server
+    analytics = AnalyticsMCPServer()
+    _mcp_servers[analytics.name] = analytics
+
+    # Register Website server
+    website = WebsiteMCPServer()
+    _mcp_servers[website.name] = website
+
+    # Register E-Commerce server
+    ecommerce = EcommerceMCPServer()
+    _mcp_servers[ecommerce.name] = ecommerce
 
     logger.info(f"MCP servers initialized: {list(_mcp_servers.keys())}")
     return _mcp_servers
