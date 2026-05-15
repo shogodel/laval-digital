@@ -19,6 +19,7 @@ class MCPServer:
         self.name = name
         self.description = description
         self.tools: Dict[str, Callable] = {}
+        self.tool_descriptions: Dict[str, str] = {}
         self._register_tools()
 
     def _register_tools(self) -> None:
@@ -34,8 +35,7 @@ class MCPServer:
             description: Human-readable description for Frankie
         """
         self.tools[name] = func
-        if description:
-            func.__doc__ = description
+        self.tool_descriptions[name] = description or (func.__doc__ or "No description")
         logger.info(f"[{self.name}] Registered tool: {name}")
 
     def call_tool(self, tool_name: str, **kwargs) -> Dict[str, Any]:
@@ -64,8 +64,8 @@ class MCPServer:
     def list_tools(self) -> List[Dict[str, str]]:
         """Return all registered tools with descriptions."""
         return [
-            {"name": name, "description": func.__doc__ or "No description"}
-            for name, func in self.tools.items()
+            {"name": name, "description": self.tool_descriptions.get(name, "No description")}
+            for name in self.tools
         ]
 
     def get_status(self) -> Dict[str, Any]:
