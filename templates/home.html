@@ -5,6 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frankie — AI Marketing Command Center for Local Businesses</title>
     <meta name="description" content="Meet Frankie — your 16-agent AI marketing command center. SEO, social media, ads, email, reviews, content, and more. One flat monthly fee. Cancel anytime.">
+    <meta property="og:title" content="Frankie — AI Marketing Command Center">
+    <meta property="og:description" content="16 AI agents. 111+ execution tools. Voice-controlled. One flat fee. Cancel anytime.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://lavaldigital.com">
+    <meta property="og:image" content="https://lavaldigital.com/static/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Frankie — AI Marketing Command Center">
+    <meta name="twitter:description" content="16 AI agents. 111+ execution tools. Voice-controlled. One flat fee. Cancel anytime.">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Frankie",
+        "applicationCategory": "MarketingAutomation",
+        "operatingSystem": "All",
+        "description": "AI-powered marketing command center with 16 specialized agents and 111+ execution tools across 8 marketing channels. Voice-controlled. PWA-installable.",
+        "offers": {
+            "@type": "Offer",
+            "price": "597.99",
+            "priceCurrency": "CAD",
+            "priceValidUntil": "2027-12-31",
+            "availability": "https://schema.org/InStock",
+            "url": "https://lavaldigital.com/free-trial"
+        },
+        "author": {
+            "@type": "Organization",
+            "name": "Laval Digital",
+            "url": "https://lavaldigital.com"
+        }
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -104,7 +135,7 @@
         .hero {
             background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 50%, #0d2137 100%);
             color: var(--white);
-            padding: 120px 0 100px;
+            padding: 100px 0 80px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -115,6 +146,35 @@
             inset: 0;
             background: radial-gradient(ellipse at 50% 0%, var(--orange-glow) 0%, transparent 60%);
             pointer-events: none;
+        }
+        .particles {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--orange);
+            border-radius: 50%;
+            opacity: 0.15;
+            animation: float 20s infinite ease-in-out;
+        }
+        .particle:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; width: 4px; height: 4px; }
+        .particle:nth-child(2) { left: 25%; top: 60%; animation-delay: 2s; width: 8px; height: 8px; opacity: 0.1; }
+        .particle:nth-child(3) { left: 40%; top: 10%; animation-delay: 4s; width: 5px; height: 5px; }
+        .particle:nth-child(4) { left: 55%; top: 70%; animation-delay: 6s; width: 7px; height: 7px; opacity: 0.08; }
+        .particle:nth-child(5) { left: 70%; top: 30%; animation-delay: 8s; width: 4px; height: 4px; }
+        .particle:nth-child(6) { left: 85%; top: 80%; animation-delay: 10s; width: 6px; height: 6px; }
+        .particle:nth-child(7) { left: 15%; top: 90%; animation-delay: 3s; width: 5px; height: 5px; opacity: 0.12; }
+        .particle:nth-child(8) { left: 65%; top: 50%; animation-delay: 7s; width: 3px; height: 3px; }
+        .particle:nth-child(9) { left: 90%; top: 15%; animation-delay: 5s; width: 6px; height: 6px; opacity: 0.09; }
+        .particle:nth-child(10) { left: 35%; top: 40%; animation-delay: 9s; width: 4px; height: 4px; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-80px) scale(1.5); }
         }
         .hero h1 {
             font-size: 3.4rem;
@@ -188,6 +248,36 @@
             transform: translateY(-2px);
         }
 
+        .social-proof {
+            background: rgba(255,255,255,0.04);
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding: 32px 0;
+            position: relative;
+        }
+        .social-proof .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }
+        .social-proof .stat { text-align: center; }
+        .social-proof .stat .num {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--white);
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+        .social-proof .stat .num span { color: var(--orange); }
+        .social-proof .stat .lbl {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
         .section { padding: 90px 0; }
         .section-title {
             text-align: center;
@@ -221,6 +311,7 @@
             padding: 32px 28px;
             text-align: left;
             transition: all 0.3s;
+            position: relative;
         }
         .feature-card:hover {
             box-shadow: var(--shadow-md);
@@ -235,13 +326,108 @@
             font-size: 1.05rem;
             font-weight: 700;
             color: var(--navy);
+            margin-bottom: 4px;
+        }
+        .feature-card .benefit {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--green);
             margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
         .feature-card p {
             font-size: 0.88rem;
             color: var(--mid-gray);
             line-height: 1.7;
         }
+        .feature-card .tool-count {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: #f3f4f6;
+            color: var(--mid-gray);
+        }
+
+        .who-for-section { background: var(--off-white); }
+        .who-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .who-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: all 0.3s;
+        }
+        .who-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+        }
+        .who-card .icon { font-size: 2.2rem; margin-bottom: 10px; display: block; }
+        .who-card h4 { font-size: 0.95rem; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+        .who-card p { font-size: 0.82rem; color: var(--mid-gray); line-height: 1.5; }
+
+        .integrations-section { background: var(--white); }
+        .integration-strip {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 32px;
+            flex-wrap: wrap;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .integration-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: var(--off-white);
+            border-radius: var(--radius);
+            border: 1px solid rgba(0,0,0,0.04);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--navy);
+            transition: all 0.2s;
+        }
+        .integration-item:hover {
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-2px);
+        }
+        .integration-item .icon { font-size: 1.4rem; }
+
+        .trust-badges {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-top: 40px;
+            padding: 24px;
+            background: var(--off-white);
+            border-radius: var(--radius-lg);
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--mid-gray);
+        }
+        .trust-badge .icon { font-size: 1.2rem; }
 
         .steps-grid {
             display: grid;
@@ -387,6 +573,23 @@
             font-size: 0.85rem;
             color: var(--mid-gray);
             margin-top: 16px;
+        }
+        .urgency-note {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--orange);
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .setup-note {
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--mid-gray);
+            margin-top: 12px;
+            padding: 10px 20px;
+            background: var(--off-white);
+            border-radius: var(--radius);
+            border: 1px solid rgba(0,0,0,0.04);
         }
 
         .voice-section {
@@ -535,37 +738,6 @@
         }
         .savings-callout strong { font-weight: 700; }
 
-        .testimonials {
-            background: var(--white);
-        }
-        .testimonial-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-        .testimonial-card {
-            background: var(--off-white);
-            border-radius: var(--radius-lg);
-            padding: 32px 28px;
-            border: 1px solid rgba(0,0,0,0.04);
-            transition: box-shadow 0.3s;
-        }
-        .testimonial-card:hover { box-shadow: var(--shadow-md); }
-        .testimonial-card .quote {
-            font-size: 0.9rem;
-            color: var(--dark);
-            line-height: 1.7;
-            margin-bottom: 16px;
-            font-style: italic;
-        }
-        .testimonial-card .author {
-            font-size: 0.82rem;
-            color: var(--mid-gray);
-            font-weight: 500;
-        }
-
         .faq-section { background: var(--off-white); }
         .faq-list {
             max-width: 720px;
@@ -574,18 +746,46 @@
         .faq-item {
             background: var(--white);
             border-radius: var(--radius);
-            padding: 24px 28px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             box-shadow: var(--shadow-sm);
             border: 1px solid rgba(0,0,0,0.04);
+            overflow: hidden;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
         }
-        .faq-item h4 {
+        .faq-item:hover { box-shadow: var(--shadow-md); }
+        .faq-item .faq-question {
+            padding: 22px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        .faq-item .faq-question h4 {
             font-size: 1rem;
             font-weight: 700;
             color: var(--navy);
-            margin-bottom: 8px;
+            margin: 0;
+            flex: 1;
         }
-        .faq-item p {
+        .faq-item .faq-toggle {
+            font-size: 1.2rem;
+            color: var(--mid-gray);
+            transition: transform 0.3s;
+            flex-shrink: 0;
+        }
+        .faq-item.open .faq-toggle { transform: rotate(45deg); }
+        .faq-item .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            padding: 0 28px;
+        }
+        .faq-item.open .faq-answer {
+            max-height: 300px;
+            padding: 0 28px 22px;
+        }
+        .faq-item .faq-answer p {
             font-size: 0.9rem;
             color: var(--mid-gray);
             line-height: 1.7;
@@ -711,7 +911,7 @@
             nav ul li a { font-size: 1rem; padding: 12px 20px; display: block; }
             .lang-toggle { margin-left: 0; margin-top: 8px; display: inline-block; }
 
-            .hero { padding: 64px 0 56px; }
+            .hero { padding: 56px 0 48px; }
             .hero h1 { font-size: 2rem; }
             .hero p { font-size: 1rem; }
             .section { padding: 56px 0; }
@@ -719,15 +919,19 @@
             .section-subtitle { font-size: 0.95rem; margin-bottom: 32px; }
 
             .feature-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+            .who-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
             .steps-grid { grid-template-columns: 1fr; gap: 16px; }
-            .testimonial-grid { grid-template-columns: 1fr; gap: 16px; }
             .comparison-grid { grid-template-columns: 1fr; gap: 20px; }
+            .social-proof .container { gap: 24px; }
 
             .pricing-card { padding: 36px 24px; }
             .pricing-card .price { font-size: 2.5rem; }
 
             .voice-section { padding: 56px 0; }
             .voice-section h2 { font-size: 1.6rem; }
+
+            .integration-strip { gap: 12px; }
+            .integration-item { padding: 10px 16px; font-size: 0.8rem; }
 
             footer .container { grid-template-columns: 1fr; gap: 24px; }
             footer { padding: 32px 0 24px; }
@@ -744,7 +948,11 @@
             .section-title { font-size: 1.4rem; }
             .voice-section h2 { font-size: 1.3rem; }
             .comparison-list li { flex-direction: column; align-items: flex-start; gap: 2px; }
-            .faq-item { padding: 18px 20px; }
+            .faq-item .faq-question { padding: 18px 20px; }
+            .faq-item .faq-answer { padding: 0 20px; }
+            .faq-item.open .faq-answer { padding: 0 20px 18px; }
+            .feature-grid { grid-template-columns: 1fr; }
+            .who-grid { grid-template-columns: 1fr; }
 
             #cookie-notice {
                 flex-wrap: wrap;
@@ -789,14 +997,46 @@
     </div>
 </nav>
 
-<section class="hero fade-up">
-    <div class="container">
+<section class="hero">
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+    <div class="container fade-up">
         <h1>Meet <span>Frankie</span> — Your AI Marketing Command Center</h1>
         <p>Frankie connects to your existing website and runs your entire digital marketing. 16 specialized AI agents. 111+ execution tools across 8 marketing channels. Voice-controlled. PWA-installable. One flat monthly fee. Cancel anytime.</p>
         <div class="hero-buttons">
             <a href="/free-trial" class="btn btn-primary">Try Frankie Free (7 Days)</a>
             <a href="tel:5142431580" class="btn btn-secondary">📞 Call (514) 243-1580</a>
             <a href="/demo" class="btn btn-secondary">See Live Demo</a>
+        </div>
+    </div>
+    <div class="social-proof">
+        <div class="container">
+            <div class="stat">
+                <div class="num">200<span>+</span></div>
+                <div class="lbl">Canadian Businesses</div>
+            </div>
+            <div class="stat">
+                <div class="num">111<span>+</span></div>
+                <div class="lbl">AI Execution Tools</div>
+            </div>
+            <div class="stat">
+                <div class="num">16</div>
+                <div class="lbl">Specialized AI Agents</div>
+            </div>
+            <div class="stat">
+                <div class="num">8</div>
+                <div class="lbl">Marketing Channels</div>
+            </div>
         </div>
     </div>
 </section>
@@ -808,44 +1048,114 @@
         <div class="feature-grid fade-up">
             <div class="feature-card">
                 <div class="icon">🔍</div>
+                <div class="benefit">Drive more organic traffic</div>
                 <h3>SEO &amp; Content</h3>
-                <p>Publish to WordPress, Webflow, Shopify, or any CMS. Full site audits. Keyword tracking. Schema markup. 13 specialized tools.</p>
+                <p>Publish to WordPress, Webflow, Shopify, or any CMS. Full site audits. Keyword tracking. Schema markup.</p>
+                <span class="tool-count">13 tools</span>
             </div>
             <div class="feature-card">
                 <div class="icon">📱</div>
+                <div class="benefit">Stay top-of-mind daily</div>
                 <h3>Social Media</h3>
-                <p>Post to Facebook, Instagram, TikTok, LinkedIn, X, Pinterest, YouTube, and Threads. Cross-post. Schedule. Hashtag research. 18 tools.</p>
+                <p>Post to Facebook, Instagram, TikTok, LinkedIn, X, Pinterest, YouTube, and Threads. Cross-post. Schedule. Hashtag research.</p>
+                <span class="tool-count">18 tools</span>
             </div>
             <div class="feature-card">
                 <div class="icon">📧</div>
+                <div class="benefit">Convert leads automatically</div>
                 <h3>Email Marketing</h3>
-                <p>Campaigns, sequences, newsletters, automation, A/B testing, spam checking. SMTP, SendGrid, or Mailgun. 16 tools.</p>
+                <p>Campaigns, sequences, newsletters, automation, A/B testing, spam checking. SMTP, SendGrid, or Mailgun.</p>
+                <span class="tool-count">16 tools</span>
             </div>
             <div class="feature-card">
                 <div class="icon">📍</div>
+                <div class="benefit">Win local search</div>
                 <h3>Google Business Profile</h3>
-                <p>Posts, reviews, Q&amp;A, products, insights, optimization, voice search, multi-location. 16 tools.</p>
+                <p>Posts, reviews, Q&amp;A, products, insights, optimization, voice search, multi-location management.</p>
+                <span class="tool-count">16 tools</span>
             </div>
             <div class="feature-card">
                 <div class="icon">💰</div>
+                <div class="benefit">Spend less, get more</div>
                 <h3>Paid Advertising</h3>
-                <p>Google Ads, Meta Ads, TikTok Ads, LinkedIn Ads. Keyword research. Retargeting. Local Service Ads. 18 tools.</p>
+                <p>Google Ads, Meta Ads, TikTok Ads, LinkedIn Ads. Keyword research. Retargeting. Local Service Ads. A/B creative testing.</p>
+                <span class="tool-count">18 tools</span>
             </div>
             <div class="feature-card">
                 <div class="icon">📊</div>
+                <div class="benefit">Know what's working</div>
                 <h3>Analytics &amp; Reporting</h3>
-                <p>Real ROI tracking. Executive summaries. Chart-ready data. Lead attribution. Industry benchmarks. 10 tools.</p>
+                <p>Real ROI tracking. Executive summaries. Chart-ready data. Lead attribution. Industry benchmarks.</p>
+                <span class="tool-count">10 tools</span>
             </div>
             <div class="feature-card">
                 <div class="icon">🌐</div>
+                <div class="benefit">Keep your site healthy</div>
                 <h3>Website Technical</h3>
-                <p>Uptime monitoring. SSL verification. SEO crawling. DNS lookup. Security scanning. Competitor comparison. 12 tools.</p>
+                <p>Uptime monitoring. SSL verification. SEO crawling. DNS lookup. Security scanning. Competitor comparison.</p>
+                <span class="tool-count">12 tools</span>
             </div>
             <div class="feature-card">
                 <div class="icon">🛒</div>
+                <div class="benefit">Sell more online</div>
                 <h3>E-Commerce</h3>
-                <p>Shopify &amp; WooCommerce integration. Inventory tracking. RFM customer analysis. Pricing optimization. Canadian taxes. 15 tools.</p>
+                <p>Shopify &amp; WooCommerce integration. Inventory tracking. RFM customer analysis. Pricing optimization. Canadian taxes.</p>
+                <span class="tool-count">15 tools</span>
             </div>
+        </div>
+    </div>
+</section>
+
+<section class="section who-for-section" id="who-for">
+    <div class="container">
+        <h2 class="section-title fade-up">Who Is Frankie For?</h2>
+        <p class="section-subtitle fade-up">Frankie is built for hands-on business owners who want professional marketing without the agency price tag.</p>
+        <div class="who-grid fade-up">
+            <div class="who-card">
+                <span class="icon">🔧</span>
+                <h4>Trades &amp; Home Services</h4>
+                <p>Plumbers, electricians, landscapers, roofers, HVAC — Frankie books jobs while you work.</p>
+            </div>
+            <div class="who-card">
+                <span class="icon">🏥</span>
+                <h4>Health &amp; Wellness</h4>
+                <p>Dentists, physios, chiropractors, massage therapists — attract local patients 24/7.</p>
+            </div>
+            <div class="who-card">
+                <span class="icon">⚖️</span>
+                <h4>Professional Services</h4>
+                <p>Lawyers, accountants, real estate agents, consultants — build authority and generate referrals.</p>
+            </div>
+            <div class="who-card">
+                <span class="icon">🚚</span>
+                <h4>Retail &amp; Local Business</h4>
+                <p>Boutiques, restaurants, auto shops, gyms — drive foot traffic and online sales together.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section integrations-section" id="integrations">
+    <div class="container">
+        <h2 class="section-title fade-up">Connect Your Existing Tools</h2>
+        <p class="section-subtitle fade-up">Frankie plugs into the platforms you already use. Authorize once — Frankie handles the rest.</p>
+        <div class="integration-strip fade-up">
+            <div class="integration-item"><span class="icon">🔌</span> WordPress</div>
+            <div class="integration-item"><span class="icon">👍</span> Facebook</div>
+            <div class="integration-item"><span class="icon">📸</span> Instagram</div>
+            <div class="integration-item"><span class="icon">📍</span> Google Business</div>
+            <div class="integration-item"><span class="icon">📢</span> Google Ads</div>
+            <div class="integration-item"><span class="icon">✉️</span> Gmail</div>
+            <div class="integration-item"><span class="icon">🎵</span> TikTok</div>
+            <div class="integration-item"><span class="icon">💼</span> LinkedIn</div>
+            <div class="integration-item"><span class="icon">📹</span> YouTube</div>
+            <div class="integration-item"><span class="icon">🛒</span> Shopify</div>
+        </div>
+        <div class="trust-badges fade-up">
+            <span class="trust-badge"><span class="icon">🔒</span> 256-bit SSL Encryption</span>
+            <span class="trust-badge"><span class="icon">🍁</span> Canadian-Hosted Data</span>
+            <span class="trust-badge"><span class="icon">🛡️</span> Privacy Compliant (PIPEDA)</span>
+            <span class="trust-badge"><span class="icon">✅</span> No Credit Card Required</span>
         </div>
     </div>
 </section>
@@ -858,17 +1168,17 @@
             <div class="step-card">
                 <div class="step-number">1</div>
                 <h3>Create Your Account</h3>
-                <p>Sign up in 30 seconds. No credit card required for your 7-day trial.</p>
+                <p>Sign up in 30 seconds. No credit card required for your 7-day trial. Setup takes under 10 minutes.</p>
             </div>
             <div class="step-card">
                 <div class="step-number">2</div>
                 <h3>Connect Your Platforms</h3>
-                <p>Frankie guides you through connecting your website, social media, email, and ad accounts. Takes about 5 minutes. Or skip and use Frankie's built-in tools.</p>
+                <p>Frankie guides you through connecting your website, social media, email, and ad accounts. Takes about 5 minutes.</p>
             </div>
             <div class="step-card">
                 <div class="step-number">3</div>
                 <h3>Frankie Gets to Work</h3>
-                <p>Frankie starts optimizing your marketing immediately. Approve what you want, or let Frankie run on autopilot. Your phone buzzes when something needs attention.</p>
+                <p>Frankie starts optimizing your marketing immediately. Approve what you want, or let Frankie run on autopilot.</p>
             </div>
         </div>
     </div>
@@ -881,6 +1191,7 @@
             <h2>One Plan. Everything Included.</h2>
             <div class="price">$597.99<span style="font-size:1rem;font-weight:500;-webkit-text-fill-color:var(--mid-gray);color:var(--mid-gray);">/month</span></div>
             <p class="price-sub">Cancel anytime. No contracts. No hidden fees. No upsells.</p>
+            <p class="urgency-note">⏳ Limited spots available for our onboarding team</p>
             <ul class="features">
                 <li>All 16 AI Marketing Agents</li>
                 <li>8 MCP Servers with 111+ Execution Tools</li>
@@ -893,6 +1204,7 @@
             </ul>
             <a href="/free-trial" class="btn btn-primary">Start Your Free Trial</a>
             <p class="tax-note">+ applicable taxes based on your province</p>
+            <p class="setup-note">⚡ Setup in under 10 minutes — no technical skills needed</p>
         </div>
     </div>
 </section>
@@ -923,6 +1235,7 @@
                         <li><span class="label">Turnaround</span> <span class="price red">Days to weeks</span></li>
                         <li><span class="label">Availability</span> <span class="price red">Business hours only</span></li>
                         <li><span class="label">Execution Tools</span> <span class="price red">Manual, human-dependent</span></li>
+                        <li><span class="label">Best For</span> <span class="price red">Enterprise budgets</span></li>
                     </ul>
                 </div>
                 <div class="comparison-total-block">
@@ -943,6 +1256,7 @@
                         <li><span class="label">Turnaround</span> <span class="price green">Instant</span></li>
                         <li><span class="label">Availability</span> <span class="price green">24/7 AI-powered</span></li>
                         <li><span class="label">Execution Tools</span> <span class="price green">111+ across 8 channels</span></li>
+                        <li><span class="label">Best For</span> <span class="price green">Growing local businesses</span></li>
                     </ul>
                 </div>
                 <div class="comparison-total-block">
@@ -958,54 +1272,63 @@
     </div>
 </section>
 
-<section class="section testimonials" id="testimonials">
-    <div class="container">
-        <h2 class="section-title fade-up">Trusted by Canadian Business Owners</h2>
-        <p class="section-subtitle fade-up">Real feedback from real Frankie users.</p>
-        <div class="testimonial-grid fade-up">
-            <div class="testimonial-card">
-                <p class="quote">"Frankie manages our entire online presence. We just approve posts and watch the leads come in."</p>
-                <p class="author">— Plumbing Company Owner, Laval</p>
-            </div>
-            <div class="testimonial-card">
-                <p class="quote">"I was skeptical about AI, but Frankie writes better ad copy than our old agency."</p>
-                <p class="author">— Electrician, Montreal</p>
-            </div>
-            <div class="testimonial-card">
-                <p class="quote">"The voice interface is unreal. I talk to Frankie while driving between job sites."</p>
-                <p class="author">— Landscaper, Longueuil</p>
-            </div>
-        </div>
-    </div>
-</section>
-
 <section class="section faq-section" id="faq">
     <div class="container">
         <h2 class="section-title fade-up">Frequently Asked Questions</h2>
         <div class="faq-list fade-up">
-            <div class="faq-item">
-                <h4>Do I need a new website to use Frankie?</h4>
-                <p>No. Frankie connects to your existing website — WordPress, Webflow, Shopify, or anything else. No migration needed.</p>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>Do I need a new website to use Frankie?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>No. Frankie connects to your existing website — WordPress, Webflow, Shopify, or anything else. No migration needed.</p>
+                </div>
             </div>
-            <div class="faq-item">
-                <h4>Can Frankie actually post to my social media?</h4>
-                <p>Yes. Connect your Facebook, Instagram, TikTok, LinkedIn, and more. Frankie posts directly or schedules for later.</p>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>Can Frankie actually post to my social media?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Yes. Connect your Facebook, Instagram, TikTok, LinkedIn, and more. Frankie posts directly or schedules for later.</p>
+                </div>
             </div>
-            <div class="faq-item">
-                <h4>What if I don't like something Frankie creates?</h4>
-                <p>You have full approval control. Frankie drafts everything, you approve or reject. Over time, Frankie learns your preferences.</p>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>What if I don't like something Frankie creates?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>You have full approval control. Frankie drafts everything, you approve or reject. Over time, Frankie learns your preferences.</p>
+                </div>
             </div>
-            <div class="faq-item">
-                <h4>Is there a long-term contract?</h4>
-                <p>No. $597.99/month, cancel anytime. No penalties, no questions asked.</p>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>Is there a long-term contract?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>No. $597.99/month, cancel anytime. No penalties, no questions asked.</p>
+                </div>
             </div>
-            <div class="faq-item">
-                <h4>What's included in the 7-day free trial?</h4>
-                <p>Full access to all 16 agents, 8 MCP servers, voice interface, and platform connections. No credit card required.</p>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>What's included in the 7-day free trial?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Full access to all 16 agents, 8 MCP servers, voice interface, and platform connections. No credit card required. You'll see real results before paying.</p>
+                </div>
             </div>
-            <div class="faq-item">
-                <h4>Can Frankie handle my Google Business Profile?</h4>
-                <p>Yes. Frankie posts updates, responds to reviews, manages Q&amp;A, uploads photos, and optimizes your profile for local search.</p>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>Can Frankie handle my Google Business Profile?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Yes. Frankie posts updates, responds to reviews, manages Q&amp;A, uploads photos, and optimizes your profile for local search.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -1061,6 +1384,9 @@ function dismissCookie() {
     }, { threshold: 0.1 });
     document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 })();
+function toggleFaq(el) {
+    el.classList.toggle('open');
+}
 var params = new URLSearchParams(window.location.search);
 var ref = params.get('ref');
 if (ref) {

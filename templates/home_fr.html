@@ -5,6 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frankie — Centre de Commandement Marketing IA pour PME</title>
     <meta name="description" content="Rencontrez Frankie — votre centre de commandement marketing avec 16 agents IA. SEO, médias sociaux, annonces, courriels, avis, contenu, et plus. Un prix fixe par mois. Annulez quand vous voulez.">
+    <meta property="og:title" content="Frankie — Centre de Commandement Marketing IA">
+    <meta property="og:description" content="16 agents IA. 111+ outils d'exécution. Commande vocale. Un prix fixe. Annulez quand vous voulez.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://lavaldigital.com">
+    <meta property="og:image" content="https://lavaldigital.com/static/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Frankie — Centre de Commandement Marketing IA">
+    <meta name="twitter:description" content="16 agents IA. 111+ outils d'exécution. Commande vocale. Un prix fixe. Annulez quand vous voulez.">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Frankie",
+        "applicationCategory": "MarketingAutomation",
+        "operatingSystem": "All",
+        "description": "Centre de commandement marketing IA avec 16 agents spécialisés et plus de 111 outils d'exécution sur 8 canaux marketing. Commande vocale. Installable comme PWA.",
+        "offers": {
+            "@type": "Offer",
+            "price": "597.99",
+            "priceCurrency": "CAD",
+            "priceValidUntil": "2027-12-31",
+            "availability": "https://schema.org/InStock",
+            "url": "https://lavaldigital.com/fr/essai-gratuit"
+        },
+        "author": {
+            "@type": "Organization",
+            "name": "Laval Digital",
+            "url": "https://lavaldigital.com"
+        }
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -104,7 +135,7 @@
         .hero {
             background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 50%, #0d2137 100%);
             color: var(--white);
-            padding: 120px 0 100px;
+            padding: 100px 0 80px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -115,6 +146,35 @@
             inset: 0;
             background: radial-gradient(ellipse at 50% 0%, var(--orange-glow) 0%, transparent 60%);
             pointer-events: none;
+        }
+        .particles {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--orange);
+            border-radius: 50%;
+            opacity: 0.15;
+            animation: float 20s infinite ease-in-out;
+        }
+        .particle:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; width: 4px; height: 4px; }
+        .particle:nth-child(2) { left: 25%; top: 60%; animation-delay: 2s; width: 8px; height: 8px; opacity: 0.1; }
+        .particle:nth-child(3) { left: 40%; top: 10%; animation-delay: 4s; width: 5px; height: 5px; }
+        .particle:nth-child(4) { left: 55%; top: 70%; animation-delay: 6s; width: 7px; height: 7px; opacity: 0.08; }
+        .particle:nth-child(5) { left: 70%; top: 30%; animation-delay: 8s; width: 4px; height: 4px; }
+        .particle:nth-child(6) { left: 85%; top: 80%; animation-delay: 10s; width: 6px; height: 6px; }
+        .particle:nth-child(7) { left: 15%; top: 90%; animation-delay: 3s; width: 5px; height: 5px; opacity: 0.12; }
+        .particle:nth-child(8) { left: 65%; top: 50%; animation-delay: 7s; width: 3px; height: 3px; }
+        .particle:nth-child(9) { left: 90%; top: 15%; animation-delay: 5s; width: 6px; height: 6px; opacity: 0.09; }
+        .particle:nth-child(10) { left: 35%; top: 40%; animation-delay: 9s; width: 4px; height: 4px; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-80px) scale(1.5); }
         }
         .hero h1 {
             font-size: 3.4rem;
@@ -188,6 +248,36 @@
             transform: translateY(-2px);
         }
 
+        .social-proof {
+            background: rgba(255,255,255,0.04);
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding: 32px 0;
+            position: relative;
+        }
+        .social-proof .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }
+        .social-proof .stat { text-align: center; }
+        .social-proof .stat .num {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--white);
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+        .social-proof .stat .num span { color: var(--orange); }
+        .social-proof .stat .lbl {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.5);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
         .section { padding: 90px 0; }
         .section-title {
             text-align: center;
@@ -208,9 +298,9 @@
 
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            max-width: 1060px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1120px;
             margin: 0 auto;
         }
         .feature-card {
@@ -221,6 +311,7 @@
             padding: 32px 28px;
             text-align: left;
             transition: all 0.3s;
+            position: relative;
         }
         .feature-card:hover {
             box-shadow: var(--shadow-md);
@@ -235,13 +326,108 @@
             font-size: 1.05rem;
             font-weight: 700;
             color: var(--navy);
+            margin-bottom: 4px;
+        }
+        .feature-card .benefit {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--green);
             margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
         .feature-card p {
             font-size: 0.88rem;
             color: var(--mid-gray);
             line-height: 1.7;
         }
+        .feature-card .tool-count {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: #f3f4f6;
+            color: var(--mid-gray);
+        }
+
+        .who-for-section { background: var(--off-white); }
+        .who-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .who-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: all 0.3s;
+        }
+        .who-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+        }
+        .who-card .icon { font-size: 2.2rem; margin-bottom: 10px; display: block; }
+        .who-card h4 { font-size: 0.95rem; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+        .who-card p { font-size: 0.82rem; color: var(--mid-gray); line-height: 1.5; }
+
+        .integrations-section { background: var(--white); }
+        .integration-strip {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 32px;
+            flex-wrap: wrap;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .integration-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: var(--off-white);
+            border-radius: var(--radius);
+            border: 1px solid rgba(0,0,0,0.04);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--navy);
+            transition: all 0.2s;
+        }
+        .integration-item:hover {
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-2px);
+        }
+        .integration-item .icon { font-size: 1.4rem; }
+
+        .trust-badges {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-top: 40px;
+            padding: 24px;
+            background: var(--off-white);
+            border-radius: var(--radius-lg);
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--mid-gray);
+        }
+        .trust-badge .icon { font-size: 1.2rem; }
 
         .steps-grid {
             display: grid;
@@ -349,6 +535,13 @@
             color: var(--mid-gray);
             margin-bottom: 28px;
         }
+        .pricing-card .urgency-note {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--orange);
+            font-weight: 600;
+            margin-top: 8px;
+        }
         .pricing-card .features {
             list-style: none;
             text-align: left;
@@ -387,6 +580,16 @@
             font-size: 0.85rem;
             color: var(--mid-gray);
             margin-top: 16px;
+        }
+        .setup-note {
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--mid-gray);
+            margin-top: 12px;
+            padding: 10px 20px;
+            background: var(--off-white);
+            border-radius: var(--radius);
+            border: 1px solid rgba(0,0,0,0.04);
         }
 
         .voice-section {
@@ -535,37 +738,6 @@
         }
         .savings-callout strong { font-weight: 700; }
 
-        .testimonials {
-            background: var(--white);
-        }
-        .testimonial-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-        .testimonial-card {
-            background: var(--off-white);
-            border-radius: var(--radius-lg);
-            padding: 32px 28px;
-            border: 1px solid rgba(0,0,0,0.04);
-            transition: box-shadow 0.3s;
-        }
-        .testimonial-card:hover { box-shadow: var(--shadow-md); }
-        .testimonial-card .quote {
-            font-size: 0.9rem;
-            color: var(--dark);
-            line-height: 1.7;
-            margin-bottom: 16px;
-            font-style: italic;
-        }
-        .testimonial-card .author {
-            font-size: 0.82rem;
-            color: var(--mid-gray);
-            font-weight: 500;
-        }
-
         .faq-section { background: var(--off-white); }
         .faq-list {
             max-width: 720px;
@@ -574,18 +746,46 @@
         .faq-item {
             background: var(--white);
             border-radius: var(--radius);
-            padding: 24px 28px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             box-shadow: var(--shadow-sm);
             border: 1px solid rgba(0,0,0,0.04);
+            overflow: hidden;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
         }
-        .faq-item h4 {
+        .faq-item:hover { box-shadow: var(--shadow-md); }
+        .faq-item .faq-question {
+            padding: 22px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        .faq-item .faq-question h4 {
             font-size: 1rem;
             font-weight: 700;
             color: var(--navy);
-            margin-bottom: 8px;
+            margin: 0;
+            flex: 1;
         }
-        .faq-item p {
+        .faq-item .faq-toggle {
+            font-size: 1.2rem;
+            color: var(--mid-gray);
+            transition: transform 0.3s;
+            flex-shrink: 0;
+        }
+        .faq-item.open .faq-toggle { transform: rotate(45deg); }
+        .faq-item .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            padding: 0 28px;
+        }
+        .faq-item.open .faq-answer {
+            max-height: 300px;
+            padding: 0 28px 22px;
+        }
+        .faq-item .faq-answer p {
             font-size: 0.9rem;
             color: var(--mid-gray);
             line-height: 1.7;
@@ -711,23 +911,27 @@
             nav ul li a { font-size: 1rem; padding: 12px 20px; display: block; }
             .lang-toggle { margin-left: 0; margin-top: 8px; display: inline-block; }
 
-            .hero { padding: 64px 0 56px; }
+            .hero { padding: 56px 0 48px; }
             .hero h1 { font-size: 2rem; }
             .hero p { font-size: 1rem; }
             .section { padding: 56px 0; }
             .section-title { font-size: 1.7rem; }
             .section-subtitle { font-size: 0.95rem; margin-bottom: 32px; }
 
-            .feature-grid { grid-template-columns: 1fr; gap: 16px; }
+            .feature-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+            .who-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
             .steps-grid { grid-template-columns: 1fr; gap: 16px; }
-            .testimonial-grid { grid-template-columns: 1fr; gap: 16px; }
             .comparison-grid { grid-template-columns: 1fr; gap: 20px; }
+            .social-proof .container { gap: 24px; }
 
             .pricing-card { padding: 36px 24px; }
             .pricing-card .price { font-size: 2.5rem; }
 
             .voice-section { padding: 56px 0; }
             .voice-section h2 { font-size: 1.6rem; }
+
+            .integration-strip { gap: 12px; }
+            .integration-item { padding: 10px 16px; font-size: 0.8rem; }
 
             footer .container { grid-template-columns: 1fr; gap: 24px; }
             footer { padding: 32px 0 24px; }
@@ -744,7 +948,11 @@
             .section-title { font-size: 1.4rem; }
             .voice-section h2 { font-size: 1.3rem; }
             .comparison-list li { flex-direction: column; align-items: flex-start; gap: 2px; }
-            .faq-item { padding: 18px 20px; }
+            .faq-item .faq-question { padding: 18px 20px; }
+            .faq-item .faq-answer { padding: 0 20px; }
+            .faq-item.open .faq-answer { padding: 0 20px 18px; }
+            .feature-grid { grid-template-columns: 1fr; }
+            .who-grid { grid-template-columns: 1fr; }
 
             #cookie-notice {
                 flex-wrap: wrap;
@@ -789,14 +997,46 @@
     </div>
 </nav>
 
-<section class="hero fade-up">
-    <div class="container">
+<section class="hero">
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+    <div class="container fade-up">
         <h1>Rencontrez <span>Frankie</span> — Votre Centre de Commandement Marketing IA</h1>
-        <p>Parlez naturellement. Frankie gère tout votre marketing numérique — SEO, médias sociaux, annonces, courriels, avis, contenu, et plus. 16 agents IA spécialisés qui travaillent 24/7. Un prix fixe par mois. Annulez quand vous voulez.</p>
+        <p>Frankie se connecte à votre site web existant et gère tout votre marketing numérique. 16 agents IA spécialisés. Plus de 111 outils d'exécution sur 8 canaux marketing. Commande vocale. Installable comme PWA. Un prix fixe par mois. Annulez quand vous voulez.</p>
         <div class="hero-buttons">
             <a href="/fr/essai-gratuit" class="btn btn-primary">Essayez Frankie (7 jours gratuits)</a>
             <a href="tel:5142431580" class="btn btn-secondary">📞 Appelez (514) 243-1580</a>
             <a href="/fr/demo" class="btn btn-secondary">Voir la Démo</a>
+        </div>
+    </div>
+    <div class="social-proof">
+        <div class="container">
+            <div class="stat">
+                <div class="num">200<span>+</span></div>
+                <div class="lbl">Entreprises Canadiennes</div>
+            </div>
+            <div class="stat">
+                <div class="num">111<span>+</span></div>
+                <div class="lbl">Outils IA</div>
+            </div>
+            <div class="stat">
+                <div class="num">16</div>
+                <div class="lbl">Agents IA Spécialisés</div>
+            </div>
+            <div class="stat">
+                <div class="num">8</div>
+                <div class="lbl">Canaux Marketing</div>
+            </div>
         </div>
     </div>
 </section>
@@ -808,34 +1048,114 @@
         <div class="feature-grid fade-up">
             <div class="feature-card">
                 <div class="icon">🔍</div>
+                <div class="benefit">Générez plus de trafic</div>
                 <h3>SEO & Contenu</h3>
-                <p>Frankie optimise votre présence Google, rédige des articles de blog, crée des backlinks et gère le SEO technique — tout pendant que vous dormez.</p>
+                <p>Publiez sur WordPress, Webflow, Shopify ou tout CMS. Audits de site complets, suivi de mots-clés et balisage de schéma.</p>
+                <span class="tool-count">13 outils</span>
             </div>
             <div class="feature-card">
                 <div class="icon">📱</div>
+                <div class="benefit">Restez dans l'esprit de vos clients</div>
                 <h3>Médias Sociaux</h3>
-                <p>Publie sur Facebook, Instagram, TikTok, et plus. Frankie crée des légendes, des hashtags et planifie tout.</p>
-            </div>
-            <div class="feature-card">
-                <div class="icon">💰</div>
-                <h3>Annonces Payantes</h3>
-                <p>Google Ads, Meta Ads — Frankie rédige les textes, choisit les mots-clés, gère les budgets et teste A/B les créations.</p>
+                <p>Facebook, Instagram, TikTok, LinkedIn, X, Pinterest, YouTube et Threads. Programmation croisée et recherche de hashtags.</p>
+                <span class="tool-count">18 outils</span>
             </div>
             <div class="feature-card">
                 <div class="icon">📧</div>
-                <h3>Courriels & SMS</h3>
-                <p>Infolettres, campagnes promotionnelles, séquences de nurturing et suivis SMS — tout automatisé.</p>
+                <div class="benefit">Convertissez automatiquement</div>
+                <h3>Marketing Courriel</h3>
+                <p>Campagnes, séquences, infolettres, automatisation, tests A/B et vérification anti-pourriel. SMTP, SendGrid ou Mailgun.</p>
+                <span class="tool-count">16 outils</span>
             </div>
             <div class="feature-card">
-                <div class="icon">⭐</div>
-                <h3>Réputation</h3>
-                <p>Surveille les avis, génère des réponses professionnelles et lance des campagnes de collecte d'avis automatiquement.</p>
+                <div class="icon">📍</div>
+                <div class="benefit">Gagnez la recherche locale</div>
+                <h3>Google Business Profile</h3>
+                <p>Publications, avis, questions-réponses, produits, analyses, optimisation vocale et gestion multi-succursales.</p>
+                <span class="tool-count">16 outils</span>
+            </div>
+            <div class="feature-card">
+                <div class="icon">💰</div>
+                <div class="benefit">Dépensez moins, obtenez plus</div>
+                <h3>Annonces Payantes</h3>
+                <p>Google Ads, Meta Ads, TikTok Ads, LinkedIn Ads. Recherche de mots-clés, reciblage et tests A/B de créations.</p>
+                <span class="tool-count">18 outils</span>
             </div>
             <div class="feature-card">
                 <div class="icon">📊</div>
+                <div class="benefit">Sachez ce qui fonctionne</div>
                 <h3>Analyses & Rapports</h3>
-                <p>Rapports de performance mensuels, suivi des leads, analyses de conversion — Frankie vous montre ce qui fonctionne.</p>
+                <p>Suivi du ROI en temps réel, résumés exécutifs, données prêtes pour graphiques, attribution de leads et références sectorielles.</p>
+                <span class="tool-count">10 outils</span>
             </div>
+            <div class="feature-card">
+                <div class="icon">🌐</div>
+                <div class="benefit">Gardez votre site en santé</div>
+                <h3>Technique Site Web</h3>
+                <p>Surveillance de disponibilité, vérification SSL, exploration SEO, DNS, analyses de sécurité et comparaison de concurrents.</p>
+                <span class="tool-count">12 outils</span>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🛒</div>
+                <div class="benefit">Vendez plus en ligne</div>
+                <h3>Commerce Électronique</h3>
+                <p>Intégration Shopify et WooCommerce, suivi des stocks, analyse RFM, optimisation des prix et taxes canadiennes.</p>
+                <span class="tool-count">15 outils</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section who-for-section" id="who-for">
+    <div class="container">
+        <h2 class="section-title fade-up">Pour Qui Est Frankie?</h2>
+        <p class="section-subtitle fade-up">Frankie est conçu pour les entrepreneurs qui veulent un marketing professionnel sans le prix d'une agence.</p>
+        <div class="who-grid fade-up">
+            <div class="who-card">
+                <span class="icon">🔧</span>
+                <h4>Métiers & Services</h4>
+                <p>Plombiers, électriciens, paysagistes, couvreurs, CVAC — Frankie gère les rendez-vous pendant que vous travaillez.</p>
+            </div>
+            <div class="who-card">
+                <span class="icon">🏥</span>
+                <h4>Santé & Mieux-Être</h4>
+                <p>Dentistes, physiothérapeutes, chiropraticiens, massothérapeutes — attirez des patients locaux 24/7.</p>
+            </div>
+            <div class="who-card">
+                <span class="icon">⚖️</span>
+                <h4>Services Professionnels</h4>
+                <p>Avocats, comptables, agents immobiliers, consultants — bâtissez votre autorité et générez des références.</p>
+            </div>
+            <div class="who-card">
+                <span class="icon">🚚</span>
+                <h4>Commerce de Détail</h4>
+                <p>Boutiques, restaurants, garages, gyms — stimulez le trafic piétonnier et les ventes en ligne simultanément.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section integrations-section" id="integrations">
+    <div class="container">
+        <h2 class="section-title fade-up">Connectez Vos Outils Existants</h2>
+        <p class="section-subtitle fade-up">Frankie s'intègre aux plateformes que vous utilisez déjà. Autorisez une fois — Frankie s'occupe du reste.</p>
+        <div class="integration-strip fade-up">
+            <div class="integration-item"><span class="icon">🔌</span> WordPress</div>
+            <div class="integration-item"><span class="icon">👍</span> Facebook</div>
+            <div class="integration-item"><span class="icon">📸</span> Instagram</div>
+            <div class="integration-item"><span class="icon">📍</span> Google Business</div>
+            <div class="integration-item"><span class="icon">📢</span> Google Ads</div>
+            <div class="integration-item"><span class="icon">✉️</span> Gmail</div>
+            <div class="integration-item"><span class="icon">🎵</span> TikTok</div>
+            <div class="integration-item"><span class="icon">💼</span> LinkedIn</div>
+            <div class="integration-item"><span class="icon">📹</span> YouTube</div>
+            <div class="integration-item"><span class="icon">🛒</span> Shopify</div>
+        </div>
+        <div class="trust-badges fade-up">
+            <span class="trust-badge"><span class="icon">🔒</span> Chiffrement SSL 256-bit</span>
+            <span class="trust-badge"><span class="icon">🍁</span> Données Hébergées au Canada</span>
+            <span class="trust-badge"><span class="icon">🛡️</span> Conforme à la Vie Privée (PIPEDA)</span>
+            <span class="trust-badge"><span class="icon">✅</span> Aucune Carte de Crédit Requise</span>
         </div>
     </div>
 </section>
@@ -848,7 +1168,7 @@
             <div class="step-card">
                 <div class="step-number">1</div>
                 <h3>Créez Votre Compte</h3>
-                <p>Inscrivez-vous en 30 secondes. Aucune carte de crédit requise pour votre essai de 7 jours.</p>
+                <p>Inscrivez-vous en 30 secondes. Aucune carte de crédit requise pour votre essai de 7 jours. Configuration en moins de 10 minutes.</p>
             </div>
             <div class="step-card">
                 <div class="step-number">2</div>
@@ -871,16 +1191,20 @@
             <h2>Un Plan. Tout Inclus.</h2>
             <div class="price">597,99 $<span style="font-size:1rem;font-weight:500;-webkit-text-fill-color:var(--mid-gray);color:var(--mid-gray);">/mois</span></div>
             <p class="price-sub">Annulez quand vous voulez. Sans contrat. Sans frais cachés.</p>
+            <p class="urgency-note">⏳ Places limitées pour notre équipe d'intégration</p>
             <ul class="features">
                 <li>Tous les 16 Agents IA Marketing</li>
-                <li>Tâches et Génération de Contenu Illimitées</li>
+                <li>8 Serveurs MCP avec 111+ Outils d'Exécution</li>
                 <li>Connectez Tous Vos Comptes (Sociaux, Courriels, Annonces, Site Web)</li>
                 <li>Interface Vocale Frankie (Parlez Naturellement)</li>
                 <li>PWA — Installez sur N'importe Quel Appareil</li>
                 <li>Essai Gratuit de 7 Jours — Aucune Carte de Crédit Requise</li>
+                <li>Tâches et Génération de Contenu Illimitées</li>
+                <li>Rapports de Performance Mensuels</li>
             </ul>
             <a href="/fr/essai-gratuit" class="btn btn-primary">Commencer Votre Essai Gratuit</a>
             <p class="tax-note">+ taxes applicables selon votre province</p>
+            <p class="setup-note">⚡ Configuration en moins de 10 minutes — aucune compétence technique requise</p>
         </div>
     </div>
 </section>
@@ -910,7 +1234,8 @@
                         <li><span class="label">Fournisseurs</span> <span class="price red">Multiples agences</span></li>
                         <li><span class="label">Délais</span> <span class="price red">Jours à semaines</span></li>
                         <li><span class="label">Disponibilité</span> <span class="price red">Heures de bureau</span></li>
-                        <li><span class="label">Commandes Vocales</span> <span class="price red">❌</span></li>
+                        <li><span class="label">Outils d'Exécution</span> <span class="price red">Manuel, dépendant des humains</span></li>
+                        <li><span class="label">Idéal Pour</span> <span class="price red">Budget d'entreprise</span></li>
                     </ul>
                 </div>
                 <div class="comparison-total-block">
@@ -930,7 +1255,8 @@
                         <li><span class="label">Fournisseurs</span> <span class="price green">Une plateforme</span></li>
                         <li><span class="label">Délais</span> <span class="price green">Instantané</span></li>
                         <li><span class="label">Disponibilité</span> <span class="price green">24/7</span></li>
-                        <li><span class="label">Commandes Vocales</span> <span class="price green">✅ Inclus</span></li>
+                        <li><span class="label">Outils d'Exécution</span> <span class="price green">111+ sur 8 canaux</span></li>
+                        <li><span class="label">Idéal Pour</span> <span class="price green">PME en croissance</span></li>
                     </ul>
                 </div>
                 <div class="comparison-total-block">
@@ -946,50 +1272,63 @@
     </div>
 </section>
 
-<section class="section testimonials" id="testimonials">
-    <div class="container">
-        <h2 class="section-title fade-up">Approuvé par des Entrepreneurs Canadiens</h2>
-        <p class="section-subtitle fade-up">Des commentaires réels d'utilisateurs de Frankie.</p>
-        <div class="testimonial-grid fade-up">
-            <div class="testimonial-card">
-                <p class="quote">"Frankie gère toute notre présence en ligne. On approuve les publications et on regarde les leads entrer."</p>
-                <p class="author">— Propriétaire d'entreprise de plomberie, Laval</p>
-            </div>
-            <div class="testimonial-card">
-                <p class="quote">"J'étais sceptique à propos de l'IA, mais Frankie écrit de meilleurs textes publicitaires que notre ancienne agence."</p>
-                <p class="author">— Électricien, Montréal</p>
-            </div>
-            <div class="testimonial-card">
-                <p class="quote">"L'interface vocale est incroyable. Je parle à Frankie en conduisant entre les chantiers."</p>
-                <p class="author">— Paysagiste, Longueuil</p>
-            </div>
-        </div>
-    </div>
-</section>
-
 <section class="section faq-section" id="faq">
     <div class="container">
         <h2 class="section-title fade-up">Foire Aux Questions</h2>
         <div class="faq-list fade-up">
-            <div class="faq-item">
-                <h4>Ai-je besoin de compétences techniques pour utiliser Frankie?</h4>
-                <p>Non. Si vous savez parler, vous pouvez utiliser Frankie. L'interface vocale vous permet de parler naturellement, et Frankie s'occupe du reste.</p>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>Ai-je besoin de compétences techniques pour utiliser Frankie?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Non. Si vous savez parler, vous pouvez utiliser Frankie. L'interface vocale vous permet de parler naturellement, et Frankie s'occupe du reste.</p>
+                </div>
             </div>
-            <div class="faq-item">
-                <h4>Frankie peut-il publier sur mes comptes de médias sociaux existants?</h4>
-                <p>Oui. Frankie se connecte à vos Facebook, Instagram, TikTok, LinkedIn, et plus via des serveurs MCP. Vous autorisez une fois, Frankie gère le reste.</p>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>Frankie peut-il publier sur mes comptes de médias sociaux existants?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Oui. Frankie se connecte à vos Facebook, Instagram, TikTok, LinkedIn, et plus via des serveurs MCP. Vous autorisez une fois, Frankie gère le reste.</p>
+                </div>
             </div>
-            <div class="faq-item">
-                <h4>Et si je n'aime pas quelque chose que Frankie crée?</h4>
-                <p>Vous avez un contrôle d'approbation complet. Frankie rédige tout, vous approuvez ou rejetez. Avec le temps, Frankie apprend vos préférences.</p>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>Et si je n'aime pas quelque chose que Frankie crée?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Vous avez un contrôle d'approbation complet. Frankie rédige tout, vous approuvez ou rejetez. Avec le temps, Frankie apprend vos préférences.</p>
+                </div>
             </div>
-            <div class="faq-item">
-                <h4>Y a-t-il un contrat à long terme?</h4>
-                <p>Non. 597,99 $/mois, annulez quand vous voulez. Sans pénalités, sans poser de questions.</p>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>Y a-t-il un contrat à long terme?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Non. 597,99 $/mois, annulez quand vous voulez. Sans pénalités, sans poser de questions.</p>
+                </div>
             </div>
-            <div class="faq-item">
-                <h4>Qu'est-ce qui est inclus dans l'essai gratuit de 7 jours?</h4>
-                <p>Accès complet à tous les 16 agents, l'interface vocale et les connexions de comptes. Aucune carte de crédit requise. Vous verrez des résultats concrets avant de payer.</p>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>Qu'est-ce qui est inclus dans l'essai gratuit de 7 jours?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Accès complet à tous les 16 agents, 8 serveurs MCP, l'interface vocale et les connexions de comptes. Aucune carte de crédit requise. Vous verrez des résultats concrets avant de payer.</p>
+                </div>
+            </div>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-question">
+                    <h4>Frankie peut-il gérer mon profil Google Business?</h4>
+                    <span class="faq-toggle">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Oui. Frankie publie des mises à jour, répond aux avis, gère les Q&R, télécharge des photos et optimise votre profil pour la recherche locale.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -999,7 +1338,7 @@
     <div class="container">
         <div>
             <h4>🤖 Frankie par Laval Digital</h4>
-            <p>Centre de commandement marketing IA pour les entreprises locales. 16 agents spécialisés. Une interface vocale. Un prix fixe par mois. Fièrement Canadien. ⚜️</p>
+            <p>Centre de commandement marketing IA pour les entreprises locales. 16 agents spécialisés. Interface vocale. Un prix fixe par mois. Fièrement Canadien. ⚜️</p>
         </div>
         <div>
             <h4>Contact</h4>
@@ -1011,7 +1350,7 @@
             <h4>Liens</h4>
             <p><a href="/fr/demo">Démo en Direct</a></p>
             <p><a href="/fr/blogue">Blogue</a></p>
-            <p><a href="/fr/affiliate">Programme d'Affiliation</a></p>
+            <p><a href="/fr/affiliate">Programme d'Affiliation (20% Commission)</a></p>
         </div>
     </div>
     <div class="footer-bottom container">
@@ -1045,6 +1384,9 @@ function dismissCookie() {
     }, { threshold: 0.1 });
     document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 })();
+function toggleFaq(el) {
+    el.classList.toggle('open');
+}
 var params = new URLSearchParams(window.location.search);
 var ref = params.get('ref');
 if (ref) {
