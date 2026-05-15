@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agent Dashboard — Laval Digital</title>
+    <title>Frankie Command Center</title>
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#D42B2B">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -105,11 +105,11 @@
 <body>
 <div class="topbar">
     <div class="topbar-left">
-        <a href="/admin">&larr; Admin Panel</a>
-        <a href="/admin/analytics">Analytics</a>
+        <a href="/">&larr; Home</a>
+        <a href="/frankie/analytics">Analytics</a>
     </div>
     <div class="topbar-center">
-        <h1>&#9889; Agent Command Center <span>live</span></h1>
+        <h1>&#9889; Frankie Command Center <span>live</span></h1>
     </div>
         <div class="topbar-right">
             <button id="panic-btn" class="panic-btn" onclick="togglePanic()">&#9888; Stop All</button>
@@ -127,7 +127,7 @@
             <div class="stat-card"><div class="stat-value blue" id="stat-total">--</div><div class="stat-label">Total Events</div></div>
             <div class="stat-card"><div class="stat-value green" id="stat-executed">--</div><div class="stat-label">Executed</div></div>
             <div class="stat-card"><div class="stat-value red" id="stat-failed">--</div><div class="stat-label">Failed</div></div>
-            <div class="stat-card"><div class="stat-value" id="stat-pending">--</div><div class="stat-label">Pending Approval</div></div>
+            <div class="stat-card"><div class="stat-value" id="stat-pending">--</div><div class="stat-label">Needs Your Review</div></div>
         </div>
         <div class="agent-grid" id="agent-grid">
             {% for aid, meta in agents.items() %}
@@ -147,6 +147,7 @@
             </div>
             {% endfor %}
         </div>
+        <div style="text-align:center;padding:8px 0 4px;font-size:0.65rem;color:var(--gray-400);letter-spacing:0.04em;">&#129302; Frankie</div>
     </div>
     <div class="feed-panel">
         <div class="feed-header">
@@ -164,7 +165,7 @@
             <div class="feed-empty">Loading...</div>
         </div>
         <div class="ask-bar">
-            <input type="text" id="ask-input" placeholder="Ask Frankie anything..." onkeydown="if(event.key==='Enter') askFrankie()">
+            <input type="text" id="ask-input" placeholder="Talk to Frankie..." onkeydown="if(event.key==='Enter') askFrankie()">
             <button onclick="askFrankie()">Ask</button>
             <div class="ask-response" id="ask-response"></div>
         </div>
