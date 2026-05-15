@@ -543,57 +543,106 @@
                     <button type="submit" class="btn btn-red" style="white-space:nowrap;">Upload</button>
                 </form>
             </div>
+
             <div class="card">
-                <div class="card-header"><h2>Executioner Settings</h2><p>SMTP and social media API credentials</p></div>
-                <div class="settings-grid">
-                    <div>
-                        <h3>SMTP</h3>
-                        <div class="form-group"><label>Host</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
-                        <div class="form-group"><label>Port</label><input type="number" id="smtp-port" placeholder="587"></div>
-                        <div class="form-group"><label>Username</label><input type="text" id="smtp-username" placeholder="user@gmail.com"></div>
-                        <div class="form-group"><label>Password</label><input type="password" id="smtp-password" placeholder="App password"></div>
-                        <div class="form-group"><label>From Email</label><input type="text" id="smtp-from" placeholder="info@lavalplumbing.com"></div>
-                        <div class="form-group"><label><input type="checkbox" id="smtp-tls" checked> Use TLS</label></div>
-                    </div>
-                    <div>
-                        <h3>Unified Social Media API</h3>
-                        <p style="font-size:0.85em;color:var(--gray-500);margin-bottom:12px;">
-                            Connect all your social platforms at once using a unified API key (e.g., from SocialAPI, Buffer, or Hootsuite). 
-                            This single key manages publishing to Facebook, Instagram, TikTok, YouTube, LinkedIn, and more.
-                        </p>
-                        <div class="form-group">
-                            <label>API Provider</label>
-                            <select id="social-api-provider">
-                                <option value="socialapi">SocialAPI (Recommended)</option>
-                                <option value="buffer">Buffer</option>
-                                <option value="hootsuite">Hootsuite</option>
-                                <option value="custom">Custom/Multi-Platform</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Unified API Key</label>
-                            <div style="display:flex; gap:8px;">
-                                <input type="password" id="unified-social-api-key" placeholder="Paste your unified API key here">
-                                <button class="btn btn-gray btn-sm" onclick="validateSocialApiKey()">Test Connection</button>
+                <div class="card-header"><h2>Connected Platforms</h2><p>Connect your existing accounts so Frankie can publish directly</p></div>
+                <p style="font-size:0.85rem;color:var(--gray-500);margin-bottom:16px;">Click any platform below to connect it. Frankie will guide you through a simple setup — no technical knowledge required.</p>
+                <div id="platform-connections">
+                    <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <strong>🌐 Your Website</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">WordPress, Webflow, Shopify, Wix, Squarespace, or any site</p>
                             </div>
-                            <div id="social-key-validation-result"></div>
+                            <button class="btn btn-gray btn-sm" onclick="showSimpleConnect('website')">Connect</button>
                         </div>
-                        <div id="connected-accounts-list" style="margin-top:16px;">
-                            <p style="font-size:0.85em;color:var(--gray-500);">Connected accounts will appear here after a successful test.</p>
+                        <div id="connect-website" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
+                            <p style="font-size:0.85rem;margin-bottom:8px;">What kind of website do you have?</p>
+                            <select id="website-type" style="margin-bottom:8px;">
+                                <option value="wordpress">WordPress</option>
+                                <option value="webflow">Webflow</option>
+                                <option value="shopify">Shopify</option>
+                                <option value="wix">Wix</option>
+                                <option value="squarespace">Squarespace</option>
+                                <option value="other">Other / Custom</option>
+                            </select>
+                            <input type="text" id="website-url" placeholder="https://yoursite.com" style="margin-bottom:8px;">
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:8px;">Frankie will analyze your site and optimize it. No password needed for basic features.</p>
+                            <button class="btn btn-green btn-sm" onclick="saveSimpleConnect('website')">Save & Connect</button>
+                            <span id="connect-website-result"></span>
+                        </div>
+                    </div>
+
+                    <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <strong>📱 Facebook & Instagram</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Post directly to your Facebook Page and Instagram account</p>
+                            </div>
+                            <button class="btn btn-gray btn-sm" onclick="showSimpleConnect('facebook')">Connect</button>
+                        </div>
+                        <div id="connect-facebook" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
+                            <p style="font-size:0.85rem;margin-bottom:8px;">Click the button below to connect your Facebook Page. You'll be redirected to Facebook to authorize Frankie. It takes about 30 seconds.</p>
+                            <button class="btn btn-green btn-sm" onclick="alert('Facebook connection will open a popup. Make sure popups are allowed for this site.')">🔗 Connect Facebook Page</button>
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">Frankie will be able to: create posts, read engagement, and manage your page.</p>
+                        </div>
+                    </div>
+
+                    <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <strong>📧 Your Email</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Send newsletters and campaigns through your email account</p>
+                            </div>
+                            <button class="btn btn-gray btn-sm" onclick="showSimpleConnect('email')">Connect</button>
+                        </div>
+                        <div id="connect-email" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
+                            <p style="font-size:0.85rem;margin-bottom:8px;">Enter your email credentials. For Gmail, you'll need an App Password (we'll show you how).</p>
+                            <input type="email" id="email-address" placeholder="you@gmail.com" style="margin-bottom:8px;">
+                            <input type="password" id="email-password" placeholder="App Password (not your regular password)" style="margin-bottom:8px;">
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:8px;">
+                                <strong>Using Gmail?</strong> 
+                                <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--blue);">Create an App Password here</a> — it takes 30 seconds. 
+                                Select "Mail" and "Other", name it "Frankie", and paste the 16-character code above.
+                            </p>
+                            <button class="btn btn-green btn-sm" onclick="saveSimpleConnect('email')">Save & Connect</button>
+                            <span id="connect-email-result"></span>
+                        </div>
+                    </div>
+
+                    <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <strong>📍 Google Business Profile</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Post updates and respond to reviews on your Google listing</p>
+                            </div>
+                            <button class="btn btn-gray btn-sm" onclick="showSimpleConnect('google')">Connect</button>
+                        </div>
+                        <div id="connect-google" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
+                            <p style="font-size:0.85rem;margin-bottom:8px;">To connect Google Business Profile, we need you to add Frankie as a manager.</p>
+                            <ol style="font-size:0.82rem;color:var(--gray-600);padding-left:20px;line-height:1.8;">
+                                <li>Go to <a href="https://business.google.com" target="_blank" style="color:var(--blue);">business.google.com</a></li>
+                                <li>Click "Users" in the left menu</li>
+                                <li>Click "Add" and enter: <strong>lavaldigital@gmail.com</strong></li>
+                                <li>Select "Manager" role and click "Invite"</li>
+                            </ol>
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">Once you've sent the invite, Frankie can start managing your profile within 24 hours.</p>
+                        </div>
+                    </div>
+
+                    <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <strong>📢 TikTok</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Create and schedule TikTok content</p>
+                            </div>
+                            <button class="btn btn-gray btn-sm" onclick="showSimpleConnect('tiktok')">Connect</button>
+                        </div>
+                        <div id="connect-tiktok" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
+                            <p style="font-size:0.85rem;margin-bottom:8px;">TikTok connection coming soon. For now, Frankie will draft your content and you can post it manually.</p>
                         </div>
                     </div>
                 </div>
-                <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
-                    <button class="btn btn-gray" onclick="loadExecutionerSettings()">Reload</button>
-                    <button class="btn btn-green" onclick="saveExecutionerSettings()">Save Settings</button>
-                    <input type="email" id="smtp-test-email" placeholder="Your email for test" style="width:auto;flex:1;min-width:160px;">
-                    <button class="btn btn-gray btn-sm" onclick="testSmtp(event)">📧 Send Test Email</button>
-                    <span id="executioner-settings-result"></span>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header"><h2>MCP Server Credentials</h2><p>Connect your platforms for live execution</p></div>
-                <div id="mcp-credentials-list"></div>
             </div>
         </div>
 
@@ -642,8 +691,49 @@
 
 <div class="tab-content" id="tab-mcp">
     <div class="card">
-        <div class="card-header"><h2>MCP Server Status</h2><p>Real-time connection status for all execution servers</p></div>
-        <div id="mcp-server-list"><p class="empty">Loading...</p></div>
+        <div class="card-header"><h2>What Frankie Can Do For You</h2><p>All the ways Frankie helps your business — no technical setup required</p></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="agent-card enabled" style="padding:16px;">
+                <strong>🔍 SEO & Content</strong>
+                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Write and publish blog posts, optimize your site for Google, build backlinks, track keywords</p>
+                <span class="badge badge-idle">13 tools</span>
+            </div>
+            <div class="agent-card enabled" style="padding:16px;">
+                <strong>📱 Social Media</strong>
+                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Post to Facebook, Instagram, TikTok, LinkedIn, X, Pinterest, YouTube, Threads</p>
+                <span class="badge badge-idle">18 tools</span>
+            </div>
+            <div class="agent-card enabled" style="padding:16px;">
+                <strong>📧 Email</strong>
+                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Send campaigns, create sequences, A/B test, track opens and clicks</p>
+                <span class="badge badge-idle">16 tools</span>
+            </div>
+            <div class="agent-card enabled" style="padding:16px;">
+                <strong>📍 Google Business</strong>
+                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Post updates, respond to reviews, manage Q&A, track rankings</p>
+                <span class="badge badge-idle">16 tools</span>
+            </div>
+            <div class="agent-card enabled" style="padding:16px;">
+                <strong>💰 Advertising</strong>
+                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Google Ads, Meta Ads, TikTok Ads, LinkedIn Ads, retargeting</p>
+                <span class="badge badge-idle">18 tools</span>
+            </div>
+            <div class="agent-card enabled" style="padding:16px;">
+                <strong>📊 Analytics</strong>
+                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Track ROI, generate reports, analyze trends, compare periods</p>
+                <span class="badge badge-idle">10 tools</span>
+            </div>
+            <div class="agent-card enabled" style="padding:16px;">
+                <strong>🌐 Website</strong>
+                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Monitor uptime, check SSL, scan for SEO issues, track competitors</p>
+                <span class="badge badge-idle">12 tools</span>
+            </div>
+            <div class="agent-card enabled" style="padding:16px;">
+                <strong>🛒 E-Commerce</strong>
+                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Manage products, track inventory, analyze customers, optimize pricing</p>
+                <span class="badge badge-idle">8 tools</span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -659,7 +749,7 @@ document.querySelectorAll('.sidebar-nav a[data-tab]').forEach(link => {
         document.getElementById('tab-' + tab).classList.add('active');
         document.getElementById('page-title').textContent = this.textContent.trim();
         if (window.innerWidth <= 640) toggleSidebar();
-        if (tab === 'mcp') loadMcpServers();
+
     });
 });
 
@@ -1064,115 +1154,7 @@ function saveAgentConfig() {
     });
 }
 
-/* ── Executioner Settings ── */
-function loadExecutionerSettings() {
-    fetch('/api/executioner/settings')
-        .then(r => r.json())
-        .then(s => {
-            document.getElementById('smtp-host').value = s.smtp_host || '';
-            document.getElementById('smtp-port').value = s.smtp_port || 587;
-            document.getElementById('smtp-username').value = s.smtp_username || '';
-            document.getElementById('smtp-password').value = s.smtp_password || '';
-            document.getElementById('smtp-from').value = s.smtp_from_email || '';
-            document.getElementById('smtp-tls').checked = s.smtp_use_tls !== false;
-            document.getElementById('social-api-provider').value = s.social_api_provider || 'socialapi';
-            document.getElementById('unified-social-api-key').value = s.social_api_key || '';
-        })
-        .catch(() => {});
-}
 
-function saveExecutionerSettings() {
-    const settings = {
-        smtp_host: document.getElementById('smtp-host').value,
-        smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
-        smtp_username: document.getElementById('smtp-username').value,
-        smtp_password: document.getElementById('smtp-password').value,
-        smtp_from_email: document.getElementById('smtp-from').value,
-        smtp_use_tls: document.getElementById('smtp-tls').checked,
-        social_api_provider: document.getElementById('social-api-provider').value,
-        unified_social_api_key: document.getElementById('unified-social-api-key').value,
-    };
-    fetch('/api/executioner/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
-    })
-    .then(r => r.json())
-    .then(() => {
-        document.getElementById('executioner-settings-result').innerHTML = '<span style="color:var(--green);">Saved!</span>';
-        setTimeout(() => { document.getElementById('executioner-settings-result').textContent = ''; }, 3000);
-    })
-    .catch(err => {
-        document.getElementById('executioner-settings-result').innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>';
-    });
-}
-
-function testSmtp(event) {
-    const testEmail = document.getElementById('smtp-test-email').value;
-    if (!testEmail) return alert('Please enter a test email address.');
-    const btn = event.target;
-    btn.disabled = true;
-    btn.textContent = 'Sending...';
-
-    fetch('/api/executioner/test-smtp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            to_email: testEmail,
-            smtp_host: document.getElementById('smtp-host').value,
-            smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
-            smtp_username: document.getElementById('smtp-username').value,
-            smtp_password: document.getElementById('smtp-password').value,
-            smtp_from_email: document.getElementById('smtp-from').value || document.getElementById('smtp-username').value,
-            smtp_use_tls: document.getElementById('smtp-tls').checked
-        })
-    })
-    .then(r => r.json())
-    .then(data => {
-        const msg = data.success ? '✅ Test email sent! Check your inbox.' : '❌ Failed: ' + data.error;
-        document.getElementById('executioner-settings-result').innerHTML =
-            '<span style="color:' + (data.success ? 'var(--green)' : 'var(--red)') + ';">' + msg + '</span>';
-    })
-    .catch(err => {
-        document.getElementById('executioner-settings-result').innerHTML =
-            '<span style="color:var(--red);">Error: ' + err.message + '</span>';
-    })
-    .finally(() => {
-        btn.disabled = false;
-        btn.textContent = '📧 Send Test Email';
-    });
-}
-
-/* ── Unified Social API ── */
-function validateSocialApiKey() {
-    const provider = document.getElementById('social-api-provider').value;
-    const apiKey = document.getElementById('unified-social-api-key').value;
-    if (!apiKey) return alert('Please enter your Unified API Key.');
-
-    const resultDiv = document.getElementById('social-key-validation-result');
-    resultDiv.innerHTML = '<span style="color:var(--blue);">Testing connection...</span>';
-
-    fetch('/api/executioner/validate-social-key', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, api_key: apiKey })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            resultDiv.innerHTML = '<span style="color:var(--green);">✅ Connection successful!</span>';
-            const accountsHtml = (data.accounts || []).map(acc =>
-                `<div class="agent-card enabled" style="padding:10px;margin:4px 0;">
-                    <span style="font-weight:700;">${acc.platform || acc.name}</span> — ${acc.account_name}
-                    <span class="status-badge status-completed">Connected</span>
-                </div>`
-            ).join('');
-            document.getElementById('connected-accounts-list').innerHTML = accountsHtml;
-        } else {
-            resultDiv.innerHTML = `<span style="color:var(--red);">❌ Connection failed: ${data.error}</span>`;
-        }
-    });
-}
 
 /* ── User Management ── */
 function loadUsers() {
@@ -1272,144 +1254,55 @@ function escapeHtml(t) {
     return d.innerHTML;
 }
 
-/* ── MCP Servers ── */
-function loadMcpServers() {
-    fetch('/api/mcp/servers')
-        .then(r => r.json())
-        .then(data => {
-            const servers = data.servers || {};
-            const html = Object.entries(servers).map(([name, status]) => `
-                <div class="agent-card enabled" style="padding:16px;margin-bottom:8px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <div>
-                            <strong style="font-size:1rem;">${name}</strong>
-                            <span class="badge badge-idle" style="margin-left:8px;">${status.tools} tools</span>
-                        </div>
-                        <span class="status-dot online" style="width:10px;height:10px;border-radius:50%;background:var(--green);"></span>
-                    </div>
-                    <div style="font-size:0.8rem;color:var(--gray-500);margin-top:4px;">${status.description}</div>
-                    <div style="margin-top:8px;">
-                        <button class="btn btn-gray btn-xs" onclick="testMcpServer('${name}')">Test Connection</button>
-                        <span id="mcp-test-${name}"></span>
-                    </div>
-                </div>
-            `).join('');
-            document.getElementById('mcp-server-list').innerHTML = html || '<p class="empty">No MCP servers found.</p>';
-        });
+/* ── Simple Platform Connection Functions ── */
+function showSimpleConnect(platform) {
+    const el = document.getElementById('connect-' + platform);
+    if (el) {
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
 }
 
-function testMcpServer(serverName) {
-    const resultEl = document.getElementById('mcp-test-' + serverName);
-    resultEl.innerHTML = '<span style="color:var(--blue);">Testing...</span>';
-    fetch('/api/mcp/servers/' + serverName + '/tools')
-        .then(r => r.json())
-        .then(data => {
-            if (data.tools) {
-                resultEl.innerHTML = '<span style="color:var(--green);">\u2713 Connected \u2014 ' + data.count + ' tools available</span>';
-            } else {
-                resultEl.innerHTML = '<span style="color:var(--red);">\u2717 Failed: ' + (data.error || 'Unknown') + '</span>';
-            }
-        })
-        .catch(err => {
-            resultEl.innerHTML = '<span style="color:var(--red);">\u2717 Error: ' + err.message + '</span>';
-        });
-}
-
-function loadMcpCredentials() {
-    fetch('/api/mcp/servers')
-        .then(r => r.json())
-        .then(data => {
-            const servers = data.servers || {};
-            const html = Object.entries(servers).map(([name, status]) => `
-                <div class="settings-grid" style="margin-bottom:12px;padding:12px;border:1px solid var(--gray-200);border-radius:var(--radius);">
-                    <div>
-                        <strong>${name}</strong>
-                        <p style="font-size:0.8rem;color:var(--gray-500);">${status.description}</p>
-                    </div>
-                    <div>
-                        <button class="btn btn-gray btn-sm" onclick="configureMcpServer('${name}')">Configure</button>
-                    </div>
-                </div>
-            `).join('');
-            document.getElementById('mcp-credentials-list').innerHTML = html || '<p class="empty">No MCP servers found.</p>';
-        });
-}
-
-function configureMcpServer(serverName) {
-    const configs = {
-        "seo": [
-            {key: "cms_type", label: "CMS Type", type: "select", options: ["wordpress", "webflow", "shopify", "wix", "squarespace", "ghost", "contentful", "netlify", "file"]},
-            {key: "site_url", label: "Website URL", type: "text", placeholder: "https://yoursite.com"},
-            {key: "api_key", label: "API Key / App Password", type: "password"}
-        ],
-        "social": [
-            {key: "platform", label: "Platform", type: "select", options: ["facebook", "instagram", "tiktok", "linkedin", "x", "pinterest", "threads"]},
-            {key: "page_id", label: "Page ID / Account ID", type: "text"},
-            {key: "access_token", label: "Access Token", type: "password"}
-        ],
-        "email": [
-            {key: "provider", label: "Provider", type: "select", options: ["smtp", "sendgrid", "mailgun"]},
-            {key: "smtp_host", label: "SMTP Host", type: "text", placeholder: "smtp.gmail.com"},
-            {key: "smtp_port", label: "SMTP Port", type: "number", placeholder: "587"},
-            {key: "smtp_username", label: "Username", type: "text"},
-            {key: "smtp_password", label: "Password / App Password", type: "password"}
-        ],
-        "gmb": [
-            {key: "account_id", label: "GMB Account ID", type: "text"},
-            {key: "location_id", label: "Location ID", type: "text"},
-            {key: "access_token", label: "OAuth Access Token", type: "password"}
-        ],
-        "ads": [
-            {key: "platform", label: "Platform", type: "select", options: ["google", "meta", "tiktok", "linkedin"]},
-            {key: "account_id", label: "Account ID", type: "text"},
-            {key: "access_token", label: "API Key / Token", type: "password"}
-        ]
-    };
-
-    const config = configs[serverName] || [{key: "api_key", label: "API Key", type: "password"}];
-    const fields = config.map(f => {
-        if (f.type === "select") {
-            return `<div class="form-group"><label>${f.label}</label><select id="mcp-${serverName}-${f.key}">${f.options.map(o => `<option value="${o}">${o}</option>`).join('')}</select></div>`;
-        }
-        return `<div class="form-group"><label>${f.label}</label><input type="${f.type}" id="mcp-${serverName}-${f.key}" placeholder="${f.placeholder || ''}"></div>`;
-    }).join('');
-
-    const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;display:flex;align-items:center;justify-content:center;';
-    modal.innerHTML = `
-        <div style="background:var(--white);border-radius:var(--radius-lg);padding:32px;max-width:500px;width:90%;box-shadow:var(--shadow-lg);">
-            <h2 style="font-size:1.15rem;font-weight:700;margin-bottom:16px;">Configure ${serverName} Server</h2>
-            ${fields}
-            <div id="mcp-config-result" style="margin:8px 0;"></div>
-            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
-                <button class="btn btn-gray" onclick="this.closest('[style*=fixed]').remove()">Cancel</button>
-                <button class="btn btn-red" onclick="saveMcpConfig('${serverName}', ${JSON.stringify(config.map(f => f.key))})">Save</button>
-            </div>
-        </div>`;
-    document.body.appendChild(modal);
-}
-
-function saveMcpConfig(serverName, fields) {
-    const credentials = {};
-    fields.forEach(key => {
-        const el = document.getElementById('mcp-' + serverName + '-' + key);
-        if (el) credentials[key] = el.value;
-    });
-
+function saveSimpleConnect(platform) {
+    const resultEl = document.getElementById('connect-' + platform + '-result');
+    if (!resultEl) return;
+    
+    let serverName, credentials = {};
+    
+    if (platform === 'website') {
+        serverName = 'seo';
+        credentials = {
+            cms_type: document.getElementById('website-type')?.value || 'other',
+            site_url: document.getElementById('website-url')?.value || ''
+        };
+    } else if (platform === 'email') {
+        serverName = 'email';
+        credentials = {
+            provider: 'smtp',
+            smtp_host: 'smtp.gmail.com',
+            smtp_port: '587',
+            smtp_username: document.getElementById('email-address')?.value || '',
+            smtp_password: document.getElementById('email-password')?.value || ''
+        };
+    } else {
+        resultEl.innerHTML = '<span style="color:var(--green);">✓ Setup instructions saved! Frankie will guide you through the next steps.</span>';
+        return;
+    }
+    
+    resultEl.innerHTML = '<span style="color:var(--blue);">Saving...</span>';
+    
     fetch('/api/mcp/credentials', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({server_name: serverName, platform: credentials.platform || serverName, credentials})
+        body: JSON.stringify({server_name: serverName, platform: platform, credentials: credentials})
     })
     .then(r => r.json())
     .then(data => {
-        const resultEl = document.getElementById('mcp-config-result');
-        if (resultEl) {
-            resultEl.innerHTML = data.success
-                ? '<span style="color:var(--green);">\u2713 Credentials saved</span>'
-                : '<span style="color:var(--red);">Error: ' + (data.error || 'Unknown') + '</span>';
-        }
-        if (data.success) setTimeout(() => { const m = document.querySelector('[style*=fixed]'); if (m) m.remove(); }, 1000);
+        resultEl.innerHTML = data.success 
+            ? '<span style="color:var(--green);">✓ Connected! Frankie can now publish to your ' + platform + '.</span>'
+            : '<span style="color:var(--red);">Error: ' + (data.error || 'Please try again.') + '</span>';
+    })
+    .catch(() => {
+        resultEl.innerHTML = '<span style="color:var(--red);">Connection failed. Please try again.</span>';
     });
 }
 
@@ -1420,11 +1313,9 @@ window.onload = function() {
     loadApprovals();
     loadPendingExecutions();
     loadExecutions();
-    loadExecutionerSettings();
     populateAgentSelect();
     updateDashboard();
     loadUsers();
-    loadMcpCredentials();
     document.getElementById('config-api-key').addEventListener('input', function() {
         document.getElementById('detect-btn').disabled = !this.value.trim();
     });
