@@ -225,13 +225,13 @@ class Orchestrator:
                     return {"success": True, "action": "deleted", "file": path}
         return {"success": False, "action": "no_undo_available"}
 
-    def _record_feedback(self, tenant_id: str, agent_id: str, draft: str, approved: bool) -> None:
-        if self._memory and tenant_id:
-            self._memory.record_feedback(tenant_id, agent_id, "approval", draft, approved)
+    def _record_feedback(self, user_id: int, agent_id: str, draft: str, approved: bool) -> None:
+        if self._memory and user_id:
+            self._memory.record_feedback(user_id, agent_id, "approval", draft, approved)
 
-    def _publish_finding(self, tenant_id: str, agent_id: str, summary: str) -> None:
-        if self._memory and tenant_id:
-            self._memory.publish_finding(tenant_id, agent_id, "agent_output", summary)
+    def _publish_finding(self, user_id: int, agent_id: str, summary: str) -> None:
+        if self._memory and user_id:
+            self._memory.publish_finding(user_id, agent_id, "agent_output", summary)
         self._findings_board.setdefault(agent_id, []).append({"summary": summary, "ts": datetime.now(timezone.utc).isoformat()})
 
     def _send_push(self, event_type: str, agent: str, data: Dict[str, Any]) -> None:
@@ -369,26 +369,10 @@ class Orchestrator:
         thread_id: str,
         language: Optional[str] = None,
         autonomy_config: Optional[Dict[str, Dict[str, Any]]] = None,
-        tenant_id: str = "",
+        user_id: int = 0,
         source: str = "chat",
     ) -> Dict[str, Any]:
-        """Process a user message, applying the autonomy policy if configured.
-
-        This is the legacy method for the admin panel which supports autonomy
-        levels (manual/suggest/auto/silent). The chat interface uses
-        ``process_message()`` instead.
-
-        Args:
-            user_message: The user's text input.
-            thread_id: Conversation thread identifier.
-            language: Detected or provided language code.
-            autonomy_config: Per-agent autonomy settings keyed by agent_id.
-                Each value: ``{autonomy: str, confidence_threshold: float}``.
-            source: ``"chat"`` (admin panel) or ``"frankie"`` (conversational).
-
-        Returns:
-            Dict with response + status.
-        """
+        """Process a user message, applying the autonomy policy if configured."""
         message_lower = user_message.strip().lower()
 
         if self.is_panicked:
@@ -407,14 +391,14 @@ class Orchestrator:
             "approve", "approved", "yes", "execute", "run it", "go ahead", "confirm",
             "approuvé", "approuve", "oui", "exécute", "exécuter", "confirmer",
         ):
-            return self._handle_approval(thread_id, approved=True, tenant_id=tenant_id)
+            return self._handle_approval(thread_id, approved=True, user_id=user_id)
         elif message_lower in (
             "reject", "rejected", "no", "discard", "cancel", "stop",
             "non", "rejeté", "rejeter", "annuler", "supprimer",
         ):
-            return self._handle_approval(thread_id, approved=False, tenant_id=tenant_id)
+            return self._handle_approval(thread_id, approved=False, user_id=user_id)
 
-        return self._route_and_respond(user_message, thread_id, language, autonomy_config, tenant_id, source)
+        return self._route_and_respond(user_message, thread_id, language, autonomy_config, user_id, source)
 
     def _route_and_respond(
         self,
@@ -422,7 +406,7 @@ class Orchestrator:
         thread_id: str,
         language: str,
         autonomy_config: Optional[Dict[str, Dict[str, Any]]] = None,
-        tenant_id: str = "",
+        user_id: int = 0,
         source: str = "chat",
     ) -> Dict[str, Any]:
         lang_label = "français" if language == "fr" else "english"
@@ -603,7 +587,7 @@ class Orchestrator:
                 "pending_approval": False,
             }
 
-    def _handle_approval(self, thread_id: str, approved: bool, tenant_id: str = "") -> Dict[str, Any]:
+    def _handle_approval(self, thread_id: str, approved: bool, user_id: int = 0) -> Dict[str, Any]:
         if thread_id not in self._pending_drafts:
             return {
                 "response": "I don't have any pending content to approve or reject. Send me a new request and I'll generate something for you!",
@@ -652,8 +636,8 @@ class Orchestrator:
             })
 
             # Record feedback (memory)
-            self._record_feedback(draft_info.get("tenant_id", ""), agent_name, draft, True)
-            self._publish_finding(draft_info.get("tenant_id", ""), agent_name, f"Approved draft: {draft[:80]}...")
+            self._record_feedback(user_id, agent_name, draft, True)
+            self._publish_finding(user_id, agent_name, f"Approved draft: {draft[:80]}...")
 
             # Track for undo
             self._last_execution = {

@@ -11,6 +11,8 @@ from flask import session, request, flash, redirect, url_for
 from flask_login import LoginManager, UserMixin, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from core import database
+
 login_manager = LoginManager()
 
 # File-based rate limit storage (persists across workers)
@@ -37,23 +39,18 @@ def _save_rate_limits(data: dict) -> None:
     except Exception:
         pass
 
-# Tenant manager reference — set by init_auth()
-_tm = None
-
 
 class User(UserMixin):
     def __init__(self, row_id: int, email: str, password_hash: str,
-                 role: str, display_name: str, tenant_id: str):
-        self.id = f"{tenant_id}:{row_id}"
-        self.db_id = row_id
+                 role: str, display_name: str):
+        self.id = row_id
         self.email = email
         self.password_hash = password_hash
         self.role = role
         self.display_name = display_name
-        self.tenant_id = tenant_id
 
     def get_id(self) -> str:
-        return self.id
+        return str(self.id)
 
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
@@ -65,32 +62,21 @@ class User(UserMixin):
     def is_active(self) -> bool:
         return True
 
+    @property
+    def tenant_id(self) -> str:
+        return str(self.id)
 
-def init_auth(app, tenant_manager):
-    """Initialize Flask-Login with the application and tenant manager.
 
-    Args:
-        app: The Flask application.
-        tenant_manager: The TenantManager instance for database access.
-    """
-    global _tm
-    _tm = tenant_manager
-
+def init_auth(app):
+    """Initialize Flask-Login with the application."""
     login_manager.init_app(app)
     login_manager.login_view = None
     login_manager.login_message = "Please log in to continue."
 
     @login_manager.user_loader
     def load_user(user_id: str) -> Optional[User]:
-        parts = user_id.split(":", 1)
-        if len(parts) != 2:
-            return None
-        tenant_id, user_db_id = parts
         try:
-            conn = _tm.get_connection(tenant_id)
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM users WHERE id = ?", (int(user_db_id),))
-            row = cursor.fetchone()
+            row = database.get_user_by_id(int(user_id))
             if row:
                 return User(
                     row_id=row["id"],
@@ -98,7 +84,6 @@ def init_auth(app, tenant_manager):
                     password_hash=row["password_hash"],
                     role=row["role"],
                     display_name=row["display_name"],
-                    tenant_id=tenant_id,
                 )
         except Exception:
             pass
@@ -132,73 +117,34 @@ def _record_attempt(success: bool = True) -> None:
         _save_rate_limits(data)
 
 
-def find_user_by_email(email: str):
-    """Search all tenant databases for a user by email.
-
-    Returns:
-        Tuple of (user_row_dict, tenant_id, tenant_type) or (None, None, None).
-    """
-    if not _tm:
-        return None, None, None
-
-    email_lower = email.lower().strip()
-
-    direct_tenants = _tm.list_tenants("direct")
-    for tenant_id in direct_tenants:
-        try:
-            conn = _tm.get_connection(tenant_id)
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM users WHERE LOWER(email) = ?", (email_lower,))
-            row = cursor.fetchone()
-            if row:
-                return dict(row), tenant_id, "direct"
-        except Exception:
-            continue
-
-    return None, None, None
+def find_user_by_email(email: str) -> Optional[dict]:
+    """Find a user by email in the single platform database."""
+    return database.get_user_by_email(email.lower().strip())
 
 
 def add_user_to_tenant(email: str, password: str, role: str = "user",
                        display_name: str = "", tenant_id: str = "",
                        tenant_type: str = "direct") -> dict:
-    """Create a new user in the specified tenant database.
+    """Create a new user in the platform database."""
+    return create_user(email, password, role, display_name)
 
-    Args:
-        email: User email address.
-        password: Plain text password (will be hashed).
-        role: User role (default 'user').
-        display_name: Human-readable name.
-        tenant_id: The tenant identifier.
-        tenant_type: 'direct'.
 
-    Returns:
-        Dict with 'success': True and 'user_id' on success,
-        or 'success': False and 'error' message.
-    """
+def create_user(email: str, password: str, role: str = "user",
+                display_name: str = "") -> dict:
+    """Validate password, hash it, and create a user in the platform DB."""
     _validate_password(password)
 
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         raise ValueError("Invalid email format.")
 
-    if not _tm:
-        raise RuntimeError("Tenant manager not initialized.")
-
     password_hash = generate_password_hash(password)
-    now = datetime.utcnow().isoformat()
 
     try:
-        conn = _tm.get_connection(tenant_id, tenant_type)
-        cursor = conn.cursor()
-        cursor.execute(
-            """INSERT INTO users (email, password_hash, role, display_name, tenant_id, created_at)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (email.lower().strip(), password_hash, role, display_name, tenant_id, now),
-        )
-        conn.commit()
-        return {"success": True, "user_id": cursor.lastrowid}
+        uid = database.create_user(email.lower().strip(), password_hash, role, display_name)
+        return {"success": True, "user_id": uid}
     except Exception as e:
-        if "UNIQUE constraint" in str(e):
-            raise ValueError("A user with this email already exists in this tenant.")
+        if "UNIQUE" in str(e):
+            raise ValueError("A user with this email already exists.")
         raise RuntimeError(f"Failed to create user: {e}")
 
 
@@ -234,43 +180,14 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
-# Backward compatibility alias
+
 client_required = login_required
 
 
 def create_user_and_tenant(email: str, password: str, display_name: str = "") -> dict:
-    """Create a new tenant database and user account in one step.
-
-    Args:
-        email: User email address.
-        password: Plain text password (will be hashed).
-        display_name: Human-readable name.
-
-    Returns:
-        Dict with 'success', 'user_id', 'tenant_id', and 'password' or 'error'.
-    """
-    import secrets
-
-    if not _tm:
-        raise RuntimeError("Tenant manager not initialized.")
-
-    tenant_id = email.lower().split('@')[0].replace('.', '-').replace('_', '-')[:40]
-
+    """Create a user account (no separate tenant DB anymore)."""
     try:
-        _tm.create_tenant_database(tenant_id, "direct")
-    except Exception as e:
-        return {"success": False, "error": f"Failed to create tenant: {str(e)}"}
-
-    try:
-        result = add_user_to_tenant(
-            email=email,
-            password=password,
-            role="user",
-            display_name=display_name or email.split('@')[0],
-            tenant_id=tenant_id,
-            tenant_type="direct"
-        )
-        result["tenant_id"] = tenant_id
+        result = create_user(email, password, "user", display_name)
         return result
     except Exception as e:
         return {"success": False, "error": str(e)}

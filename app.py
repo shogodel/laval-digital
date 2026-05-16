@@ -105,7 +105,6 @@ from core.events import get_event_bus
 from core.push import PushManager
 from core.memory import AgentMemory
 from core.monitor import monitor as proactive_monitor
-from core.tenant_manager import TenantManager
 from agents.local_seo_agent import LocalSEOAgent
 from agents.social_media_agent import SocialMediaAgent
 from agents.lead_conversion_agent import LeadConversionAgent
@@ -224,20 +223,22 @@ logging.getLogger().addHandler(_console_handler)
 
 logging.getLogger().setLevel(logging.INFO)
 
-
-# Initialize Tenant Manager for multi-tenant database isolation
+# Initialize the single Frankie database
+from core import database
+from core.tenant_manager import TenantManager
+database.init_db()
 tenant_manager = TenantManager()
 
-# Initialize Affiliate Manager (persistent DB-backed affiliate system)
+# Initialize Affiliate Manager
 from core.affiliates import AffiliateManager
-affiliate_manager = AffiliateManager(tenant_manager)
+affiliate_manager = AffiliateManager()
 
 # Initialize Push Manager (PWA push notifications)
 push_manager = PushManager()
-agent_memory = AgentMemory(tenant_manager)
+agent_memory = AgentMemory()
 
-# Initialize Flask-Login auth with tenant manager reference
-login_manager = init_auth(app, tenant_manager)
+# Initialize Flask-Login auth
+login_manager = init_auth(app)
 
 # Store active threads and their states (in-memory cache for orchestrator resume)
 active_threads: Dict[str, Dict[str, Any]] = {}
@@ -2709,7 +2710,7 @@ proactive_monitor.start(get_orchestrator, lambda: push_manager)
 
 # Start scheduler
 from core.scheduler import SchedulerManager
-scheduler_manager = SchedulerManager(tenant_manager, get_orchestrator)
+scheduler_manager = SchedulerManager(get_orchestrator)
 scheduler_manager.start()
 
 
