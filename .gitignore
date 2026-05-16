@@ -59,6 +59,10 @@ gunicorn.log
 *.db
 data/frankie.db
 
+# Runtime state files
+data/login_attempts.json
+data/push_subscriptions.jsonl
+
 # Credentials (NEVER commit)
 credentials.json
 secrets.json

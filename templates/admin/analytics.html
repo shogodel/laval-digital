@@ -87,13 +87,14 @@ function loadAnalytics() {
             renderFailuresByTool(data.failures_by_tool || {});
 
             const tbody = document.getElementById('analytics-activity-table');
-            if (data.recent_events && data.recent_events.length) {
-                tbody.innerHTML = data.recent_events.map(e => `
+            const events = data.recent_executions || data.recent_events || [];
+            if (events.length) {
+                tbody.innerHTML = events.map(e => `
                     <tr>
                         <td>${formatDate(e.timestamp)}</td>
-                        <td><strong>${e.agent || '—'}</strong></td>
-                        <td>${e.action || e.type || '—'}</td>
-                        <td>${e.result || e.status || '—'}</td>
+                        <td><strong>${e.agent_name || e.agent || '—'}</strong></td>
+                        <td>${e.tool_name || e.action || e.type || '—'}</td>
+                        <td>${e.success !== undefined ? (e.success ? '✅ Success' : '❌ Failed') : (e.result || e.status || '—')}</td>
                     </tr>
                 `).join('');
             } else {
@@ -181,9 +182,11 @@ function renderFailuresByTool(failures) {
 }
 
 function exportAnalyticsCSV() {
+    const events = analyticsData.recent_executions || analyticsData.recent_events || [];
     const rows = [['Date', 'Agent', 'Action', 'Result']];
-    (analyticsData.recent_events || []).forEach(e => {
-        rows.push([e.timestamp || '', e.agent || '', e.action || e.type || '', e.result || e.status || '']);
+    events.forEach(e => {
+        const result = e.success !== undefined ? (e.success ? 'Success' : 'Failed') : (e.result || '');
+        rows.push([e.timestamp || '', e.agent_name || e.agent || '', e.tool_name || e.action || '', result]);
     });
     const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });

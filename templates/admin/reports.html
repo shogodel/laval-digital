@@ -102,6 +102,11 @@ function generateReport() {
             document.getElementById('download-report-btn').disabled = false;
             resultEl.innerHTML = '<span style="color:var(--green);">Report generated successfully.</span>';
             updateLastReportInfo(month, year);
+            fetch('/api/analytics/report/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ month: parseInt(month), year: parseInt(year), html: data.html })
+            }).then(function() { loadReportHistory(); }).catch(function() {});
         } else {
             resultEl.innerHTML = '<span style="color:var(--red);">' + (data.error || 'Failed to generate report.') + '</span>';
         }

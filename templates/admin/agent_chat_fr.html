@@ -285,7 +285,7 @@ function useChip(text) {
 }
 
 function loadTools() {
-    const tools = TOOLS_MAP[AGENT_ID];
+    const tools = TOOLS_MAP[AGENT_ID] || [];
     let list = [];
     if (Array.isArray(tools)) {
         list = tools;
@@ -442,7 +442,7 @@ async function sendMessage() {
         const r = await fetch('/api/agents/' + AGENT_ID + '/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text, thread_id: CURRENT_THREAD })
+            body: JSON.stringify({ message: text, thread_id: CURRENT_THREAD, language: getLangCode() })
         });
         const data = await r.json();
         hideTyping();

@@ -214,7 +214,8 @@ window.frankie = {
                     self.greeting.innerHTML = timeGreeting + '! ' + extra;
                     // Show suggestions as clickable chips that ask Frankie about them
                     var chipsHtml = data.suggestions.map(function(s) {
-                        return '<button class="suggestion-chip" onclick="frankie.ask(\'Can you help me fix: ' + s.replace(/'/g, "\\'").replace(/"/g, '&quot;') + '\')">' + s.substring(0, 60) + '...</button>';
+                        var safe = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        return '<button class="suggestion-chip" onclick="frankie.ask(\'Can you help me fix: ' + safe + '\')">' + escapeHtml(s.substring(0, 60)) + '...</button>';
                     }).join('');
                     // Also add standard chips
                     chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'How are my agents doing?\')">📊 Agent status</button>';

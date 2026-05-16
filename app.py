@@ -1489,6 +1489,27 @@ def get_agents():
     return jsonify({"agents": agents_status})
 
 
+@app.route("/api/agents/<agent_id>", methods=["GET"])
+def get_agent_stats(agent_id):
+    """Get stats for a specific agent (for the agent chat panel)."""
+    if agent_id not in agent_registry:
+        return jsonify({"error": "Agent not found"}), 404
+    tenant_id = str(current_user.id) if not current_user.is_anonymous else None
+    stats = {"agent_id": agent_id, "task_count": 0, "success_count": 0, "failure_count": 0, "enabled": agent_registry[agent_id].enabled, "model": agent_registry[agent_id].model}
+    if tenant_id:
+        try:
+            conn = database._get_conn()
+            row = conn.execute(
+                "SELECT task_count, success_count, failure_count FROM agent_configs WHERE agent_id = ? AND user_id = ?",
+                (agent_id, int(tenant_id)),
+            ).fetchone()
+            if row:
+                stats.update(dict(row))
+        except Exception:
+            pass
+    return jsonify(stats)
+
+
 @app.route("/api/agents/<agent_id>/toggle", methods=["POST"])
 def toggle_agent(agent_id):
     """Toggle agent on/off."""
@@ -2665,7 +2686,7 @@ def api_skip_action(action_id):
 @app.route("/api/actions/bridge/email", methods=["POST"])
 def api_set_email_bridge():
     """Configure the email bridge for the current user."""
-    if not current_user.is_authenticated:
+    if not current_user.is_authenticated and not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     if not data:
@@ -3455,6 +3476,8 @@ def api_analytics_summary():
             "success_count": total_success,
             "fail_count": total_fail,
             "avg_success_rate": avg_sr,
+            "active_agents": len(all_tasks_per_agent),
+            "total_agents": len(database.DEFAULT_AGENTS),
             "leads_this_month": total_leads,
             "tasks_this_month": total_tasks,
             "leads_by_month": leads_by_month,
@@ -3558,7 +3581,7 @@ def api_analytics_generate_report():
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
     data = request.json
-    user_id = data.get("user_id")
+    user_id = data.get("user_id") or session.get("active_user_id")
     month = data.get("month")
     year = data.get("year")
     if not user_id:
@@ -3566,6 +3589,69 @@ def api_analytics_generate_report():
     engine = AnalyticsEngine(int(user_id))
     html = engine.generate_monthly_report(year, month)
     return jsonify({"html": html})
+
+
+# In-memory report history store (survives within a process lifetime)
+_report_history: list = []
+
+
+@app.route("/api/analytics/report/save", methods=["POST"])
+def api_analytics_save_report():
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    report_id = uuid.uuid4().hex[:12]
+    entry = {
+        "id": report_id,
+        "user_id": data.get("user_id", ""),
+        "month": data.get("month"),
+        "year": data.get("year"),
+        "html": data.get("html", ""),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    _report_history.insert(0, entry)
+    _report_history[:] = _report_history[:100]
+    return jsonify({"success": True, "id": report_id})
+
+
+@app.route("/api/analytics/reports/history", methods=["GET"])
+def api_analytics_report_history():
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    user_id = request.args.get("user_id", "")
+    reports = [r for r in _report_history if not user_id or r.get("user_id") == user_id]
+    safe = [{"id": r["id"], "month": r["month"], "year": r["year"], "created_at": r["created_at"]} for r in reports]
+    return jsonify({"reports": safe})
+
+
+@app.route("/api/analytics/report/<report_id>", methods=["GET"])
+def api_analytics_get_report(report_id):
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    for r in _report_history:
+        if r["id"] == report_id:
+            return jsonify({"html": r["html"]})
+    return jsonify({"error": "Report not found"}), 404
+
+
+@app.route("/api/analytics/report/<report_id>/email", methods=["POST"])
+def api_analytics_email_saved_report(report_id):
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    report = None
+    for r in _report_history:
+        if r["id"] == report_id:
+            report = r
+            break
+    if not report:
+        return jsonify({"error": "Report not found"}), 404
+    # Forward to the existing email endpoint
+    from flask import request as _flask_req
+    with app.test_request_context(json={"html": report["html"], "user_id": report["user_id"]}):
+        try:
+            return api_analytics_email_report()
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/api/analytics/report/email", methods=["POST"])
@@ -3583,7 +3669,7 @@ def api_analytics_email_report():
     try:
         engine = AnalyticsEngine(int(user_id))
         biz_row = engine._fetchone("SELECT business_name, email FROM client_details LIMIT 1")
-        business_name = biz_row["business_name"] if biz_row else tenant_id
+        business_name = biz_row["business_name"] if biz_row else user_id
         client_email = biz_row["email"] if biz_row else None
         if not client_email:
             return jsonify({"error": "No client email found"}), 400
