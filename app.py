@@ -148,14 +148,19 @@ app.session_cookie_samesite = "Lax"
 if os.getenv("DEV_MODE", "").lower() not in ("true", "1"):
     app.session_cookie_secure = True
 
+# Public API routes that don't require authentication
+_API_PUBLIC: set = {
+    "/api/affiliate/status",
+    "/api/affiliate/signup",
+}
+
 # CSRF protection
 csrf = CSRFProtect(app)
-csrf.exempt(_API_PUBLIC)
 
 
 @app.context_processor
 def inject_csrf_token():
-    return dict(csrf_token=generate_csrf())
+    return dict(csrf_token=generate_csrf)
 
 
 @app.after_request
@@ -181,13 +186,6 @@ def add_security_headers(response):
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRFToken, Authorization"
     return response
-
-
-# Public API routes that don't require authentication
-_API_PUBLIC: set = {
-    "/api/affiliate/status",
-    "/api/affiliate/signup",
-}
 
 
 @app.before_request
@@ -1217,6 +1215,7 @@ def inject_logo():
 # ---------------------------------------------------------------------------
 
 @app.route("/api/affiliate/status")
+@csrf.exempt
 def affiliate_status():
     """Return current affiliate status for the visitor."""
     ref_code = session.get("affiliate_ref")
@@ -1233,6 +1232,7 @@ def affiliate_status():
 
 
 @app.route("/api/affiliate/signup", methods=["POST"])
+@csrf.exempt
 def affiliate_signup_api():
     """Register a new affiliate and return their referral code."""
     data = request.json
