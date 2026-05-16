@@ -25,8 +25,6 @@ class TenantManager:
 
     Architecture: Database-per-tenant.
     - Direct clients: /tenants/direct/<client_id>.db
-    - Resellers: /tenants/resellers/<reseller_id>/reseller.db
-    - Reseller clients: /tenants/resellers/<reseller_id>/<client_id>.db
 
     Each tenant database contains its own:
     - Agent configurations (api keys, LLM preferences, on/off states)
@@ -45,7 +43,6 @@ class TenantManager:
         """
         self.base_path = Path(base_path)
         self.direct_path = self.base_path / "direct"
-        self.reseller_path = self.base_path / "resellers"
         self._lock = threading.Lock()
         self._thread_local = threading.local()
         self._last_used: Dict[str, str] = {}
@@ -59,7 +56,6 @@ class TenantManager:
         """Create the tenant directory structure if it does not exist."""
         try:
             self.direct_path.mkdir(parents=True, exist_ok=True)
-            self.reseller_path.mkdir(parents=True, exist_ok=True)
         except OSError as e:
             logger.error("Failed to create tenant directories: %s", e)
             raise
@@ -68,14 +64,12 @@ class TenantManager:
     # Database path helpers
     # ------------------------------------------------------------------
 
-    def _get_db_path(self, tenant_id: str, tenant_type: str,
-                     reseller_id: Optional[str] = None) -> Path:
+    def _get_db_path(self, tenant_id: str, tenant_type: str = "direct") -> Path:
         """Resolve the database file path for a tenant without creating it.
 
         Args:
             tenant_id: Unique identifier for the tenant.
-            tenant_type: ``"direct"``, ``"reseller"``, or ``"reseller_client"``.
-            reseller_id: Required when tenant_type is ``"reseller_client"``.
+            tenant_type: ``"direct"``.
 
         Returns:
             Resolved Path to the database file.
@@ -87,12 +81,6 @@ class TenantManager:
         if tenant_type == "direct":
             resolved = (self.direct_path / f"{tenant_id}.db").resolve()
             allowed = self.direct_path.resolve()
-        elif tenant_type == "reseller":
-            resolved = (self.reseller_path / tenant_id / "reseller.db").resolve()
-            allowed = self.reseller_path.resolve()
-        elif tenant_type == "reseller_client":
-            resolved = (self.reseller_path / reseller_id / f"{tenant_id}.db").resolve()
-            allowed = self.reseller_path.resolve()
         else:
             raise ValueError(f"Invalid tenant_type: {tenant_type}")
 
@@ -211,7 +199,7 @@ class TenantManager:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     email TEXT NOT NULL UNIQUE,
                     password_hash TEXT NOT NULL,
-                    role TEXT NOT NULL CHECK(role IN ('client', 'affiliate', 'reseller')),
+                    role TEXT NOT NULL CHECK(role IN ('client', 'affiliate')),
                     display_name TEXT NOT NULL,
                     tenant_id TEXT NOT NULL,
                     created_at TEXT NOT NULL,
@@ -380,14 +368,12 @@ class TenantManager:
     # ------------------------------------------------------------------
 
     def create_tenant_database(self, tenant_id: str,
-                               tenant_type: str = "direct",
-                               reseller_id: Optional[str] = None) -> str:
+                               tenant_type: str = "direct") -> str:
         """Create a new tenant database with all required tables and seed data.
 
         Args:
             tenant_id: Unique identifier for the tenant.
-            tenant_type: ``"direct"``, ``"reseller"``, or ``"reseller_client"``.
-            reseller_id: Required when tenant_type is ``"reseller_client"``.
+            tenant_type: ``"direct"``.
 
         Returns:
             Absolute path to the created database file.
@@ -396,7 +382,7 @@ class TenantManager:
             ValueError: If tenant_type is unknown.
             sqlite3.Error: If database creation fails.
         """
-        db_path = self._get_db_path(tenant_id, tenant_type, reseller_id)
+        db_path = self._get_db_path(tenant_id, tenant_type)
 
         try:
             db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -446,8 +432,7 @@ class TenantManager:
             raise
 
     def get_connection(self, tenant_id: str,
-                       tenant_type: str = "direct",
-                       reseller_id: Optional[str] = None) -> sqlite3.Connection:
+                       tenant_type: str = "direct") -> sqlite3.Connection:
         """Return a cached database connection for a tenant.
 
         Creates the database on first access if it does not exist.
@@ -455,13 +440,12 @@ class TenantManager:
 
         Args:
             tenant_id: Unique identifier for the tenant.
-            tenant_type: ``"direct"``, ``"reseller"``, or ``"reseller_client"``.
-            reseller_id: Required when tenant_type is ``"reseller_client"``.
+            tenant_type: ``"direct"``.
 
         Returns:
             ``sqlite3.Connection`` with ``row_factory = sqlite3.Row``.
         """
-        cache_key = f"{tenant_type}:{reseller_id or 'none'}:{tenant_id}"
+        cache_key = f"{tenant_id}"
 
         if not hasattr(self._thread_local, "connections"):
             self._thread_local.connections = {}
@@ -470,10 +454,10 @@ class TenantManager:
             self._last_used[cache_key] = datetime.now(timezone.utc).isoformat()
             return self._thread_local.connections[cache_key]
 
-        db_path = self._get_db_path(tenant_id, tenant_type, reseller_id)
+        db_path = self._get_db_path(tenant_id, tenant_type)
 
         if not db_path.exists():
-            self.create_tenant_database(tenant_id, tenant_type, reseller_id)
+            self.create_tenant_database(tenant_id, tenant_type)
 
         conn = sqlite3.connect(str(db_path))
         conn.row_factory = sqlite3.Row
@@ -488,16 +472,14 @@ class TenantManager:
         return conn
 
     def close_connection(self, tenant_id: str,
-                         tenant_type: str = "direct",
-                         reseller_id: Optional[str] = None) -> None:
+                         tenant_type: str = "direct") -> None:
         """Close and remove a single tenant connection from the cache.
 
         Args:
             tenant_id: Unique identifier for the tenant.
-            tenant_type: ``"direct"``, ``"reseller"``, or ``"reseller_client"``.
-            reseller_id: Required when tenant_type is ``"reseller_client"``.
+            tenant_type: ``"direct"``.
         """
-        cache_key = f"{tenant_type}:{reseller_id or 'none'}:{tenant_id}"
+        cache_key = f"{tenant_id}"
 
         if not hasattr(self._thread_local, "connections"):
             return
@@ -508,13 +490,11 @@ class TenantManager:
             conn.close()
             logger.debug("Closed connection for tenant %s", tenant_id)
 
-    def list_tenants(self, tenant_type: str = "direct",
-                     reseller_id: Optional[str] = None) -> List[str]:
+    def list_tenants(self, tenant_type: str = "direct") -> List[str]:
         """List all tenant identifiers of a given type.
 
         Args:
-            tenant_type: ``"direct"``, ``"reseller"``, or ``"reseller_client"``.
-            reseller_id: Required when tenant_type is ``"reseller_client"``.
+            tenant_type: ``"direct"``.
 
         Returns:
             List of tenant ID strings.
@@ -522,16 +502,6 @@ class TenantManager:
         try:
             if tenant_type == "direct":
                 return [p.stem for p in self.direct_path.glob("*.db")]
-
-            if tenant_type == "reseller":
-                return [p.parent.name for p in self.reseller_path.glob("*/reseller.db")]
-
-            if tenant_type == "reseller_client":
-                return [
-                    p.stem
-                    for p in (self.reseller_path / reseller_id).glob("*.db")
-                    if p.stem != "reseller"
-                ]
 
             logger.warning("list_tenants called with unknown type: %s", tenant_type)
             return []
@@ -541,23 +511,21 @@ class TenantManager:
             return []
 
     def delete_tenant(self, tenant_id: str,
-                      tenant_type: str = "direct",
-                      reseller_id: Optional[str] = None) -> bool:
+                      tenant_type: str = "direct") -> bool:
         """Delete a tenant database and remove its cached connection.
 
         Args:
             tenant_id: Unique identifier for the tenant.
-            tenant_type: ``"direct"``, ``"reseller"``, or ``"reseller_client"``.
-            reseller_id: Required when tenant_type is ``"reseller_client"``.
+            tenant_type: ``"direct"``.
 
         Returns:
             ``True`` if the database was deleted, ``False`` if it did not exist.
         """
         # Close and remove from cache first
-        self.close_connection(tenant_id, tenant_type, reseller_id)
+        self.close_connection(tenant_id, tenant_type)
 
         try:
-            db_path = self._get_db_path(tenant_id, tenant_type, reseller_id)
+            db_path = self._get_db_path(tenant_id, tenant_type)
             if db_path.exists():
                 db_path.unlink()
                 logger.info("Deleted tenant database: %s", db_path)

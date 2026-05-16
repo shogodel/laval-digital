@@ -2422,7 +2422,6 @@ def admin_dashboard():
         return redirect(url_for("admin_login"))
     tenants = {
         "direct_clients": tenant_manager.list_tenants("direct"),
-        "resellers": tenant_manager.list_tenants("reseller"),
     }
     active_tenant = session.get("active_tenant_id")
     return render_template(
@@ -3249,11 +3248,9 @@ def list_tenants():
         return jsonify({"error": "Unauthorized"}), 401
 
     direct = tenant_manager.list_tenants("direct")
-    resellers = tenant_manager.list_tenants("reseller")
 
     return jsonify({
         "direct_clients": direct,
-        "resellers": resellers,
         "active_tenant": session.get("active_tenant_id"),
     })
 
@@ -3551,7 +3548,6 @@ def admin_analytics_page():
         return redirect(url_for("admin_login"))
     tenants = {
         "direct_clients": tenant_manager.list_tenants("direct"),
-        "resellers": tenant_manager.list_tenants("reseller"),
     }
     active_tenant = session.get("active_tenant_id")
     return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
@@ -3564,7 +3560,6 @@ def admin_reports_page():
         return redirect(url_for("admin_login"))
     tenants = {
         "direct_clients": tenant_manager.list_tenants("direct"),
-        "resellers": tenant_manager.list_tenants("reseller"),
     }
     active_tenant = session.get("active_tenant_id")
     return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
@@ -3906,7 +3901,6 @@ def admin_managed_page():
         return redirect(url_for("admin_login"))
     tenants = {
         "direct_clients": tenant_manager.list_tenants("direct"),
-        "resellers": tenant_manager.list_tenants("reseller"),
     }
     active_tenant = session.get("active_tenant_id")
     return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)

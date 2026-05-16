@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-RUN mkdir -p /app/tenants/direct /app/tenants/resellers /app/backups /app/logs /app/content /app/data \
+RUN mkdir -p /app/tenants/direct /app/backups /app/logs /app/content /app/data \
     && chown -R appuser:appgroup /app/tenants /app/backups /app/logs /app/content /app/data
 
 EXPOSE 5000

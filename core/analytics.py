@@ -15,12 +15,10 @@ class AnalyticsEngine:
     Results are cached in-memory with a 1-hour TTL.
     """
 
-    def __init__(self, tenant_id: str, tenant_manager, tenant_type: str = "direct",
-                 reseller_id: Optional[str] = None):
+    def __init__(self, tenant_id: str, tenant_manager, tenant_type: str = "direct"):
         self.tenant_id = tenant_id
         self.tm = tenant_manager
         self.tenant_type = tenant_type
-        self.reseller_id = reseller_id
         self._cache: Dict[str, tuple] = {}
         self._cache_ttl = timedelta(hours=1)
         self._lock = threading.Lock()
@@ -54,7 +52,7 @@ class AnalyticsEngine:
     def _conn(self):
         """Get the tenant database connection."""
         return self.tm.get_connection(
-            self.tenant_id, self.tenant_type, self.reseller_id
+            self.tenant_id, self.tenant_type
         )
 
     def _fetchall(self, sql: str, params: tuple = ()) -> List[dict]:

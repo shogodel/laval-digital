@@ -1203,7 +1203,7 @@ function loadUsers() {
                         <tr>
                             <td>${u.email}</td>
                             <td>${u.display_name || '—'}</td>
-                            <td><span class="badge badge-${u.role === 'client' ? 'blue' : u.role === 'affiliate' ? 'amber' : 'green'}">${u.role}</span></td>
+                            <td><span class="badge badge-${u.role === 'client' ? 'blue' : 'amber'}">${u.role}</span></td>
                             <td>${u.created_at ? u.created_at.slice(0,10) : '—'}</td>
                             <td>${u.last_login ? u.last_login.slice(0,10) : '—'}</td>
                             <td><button class="btn btn-gray btn-xs" onclick="deleteUser(${u.id})">Delete</button></td>
