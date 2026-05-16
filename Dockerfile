@@ -3,7 +3,7 @@ FROM python:3.12-slim-bookworm
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    sqlite3 \
+    sqlite3 curl \
     && rm -rf /var/lib/apt/lists/* \
     && addgroup --system --gid 1001 appgroup \
     && adduser --system --uid 1001 --gid 1001 --no-create-home appuser

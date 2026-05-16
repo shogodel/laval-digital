@@ -53,6 +53,11 @@ content/
 # Logs
 *.log
 logs/
+gunicorn.log
+
+# Database files (runtime data)
+*.db
+data/frankie.db
 
 # Credentials (NEVER commit)
 credentials.json

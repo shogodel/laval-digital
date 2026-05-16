@@ -178,9 +178,9 @@ def add_security_headers(response):
         "connect-src 'self' https://api.deepseek.com; "
         "frame-ancestors 'none'"
     )
-    # CORS for bookmarklet (used from external sites to inspect pages)
+    ALLOWED_ORIGINS = {"https://lavaldigital.ca", "https://www.lavaldigital.ca", "http://127.0.0.1:5000", "http://localhost:5000"}
     origin = request.headers.get("Origin")
-    if origin:
+    if origin in ALLOWED_ORIGINS:
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRFToken, Authorization"
@@ -225,9 +225,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 # Initialize the single Frankie database
 from core import database
-from core.tenant_manager import TenantManager
 database.init_db()
-tenant_manager = TenantManager()
 
 # Initialize Affiliate Manager
 from core.affiliates import AffiliateManager
@@ -243,76 +241,59 @@ login_manager = init_auth(app)
 # Store active threads and their states (in-memory cache for orchestrator resume)
 active_threads: Dict[str, Dict[str, Any]] = {}
 
-# In-memory lead storage (replace with database in production)
-leads: list[Dict[str, Any]] = []
-
 # ---------------------------------------------------------------------------
 # Tenant helpers
 # ---------------------------------------------------------------------------
 
-def get_tenant_agent_activity(tenant_id: str) -> dict:
-    """Get agent activity telemetry from a tenant's database.
-
-    Args:
-        tenant_id: The tenant identifier.
-
-    Returns:
-        Dict mapping agent_id to its activity row from the agents table.
-    """
+def get_tenant_agent_activity(user_id: str) -> dict:
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        uid = int(user_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT agent_id, status, last_invoked, task_count, "
-            "success_count, failure_count, last_draft_preview FROM agents"
+            "success_count, failure_count, last_draft_preview "
+            "FROM agent_configs WHERE user_id = ?",
+            (uid,),
         )
         rows = cursor.fetchall()
         return {row["agent_id"]: dict(row) for row in rows}
     except Exception as e:
-        logger.error(f"Failed to get agent activity for tenant {tenant_id}: {e}")
+        logger.error(f"Failed to get agent activity for user {user_id}: {e}")
         return {}
 
 
 def update_tenant_agent_activity(
-    tenant_id: str, agent_id: str, **kwargs
+    user_id: str, agent_id: str, **kwargs
 ) -> None:
-    """Update agent activity fields in a tenant's database.
-
-    Args:
-        tenant_id: The tenant identifier.
-        agent_id: The agent identifier to update.
-        **kwargs: Column-value pairs to set on the agents row.
-    """
     _ALLOWED_COLUMNS = {
         "status", "last_invoked", "task_count", "success_count",
         "failure_count", "last_draft_preview", "enabled", "model",
         "autonomy", "confidence_threshold",
     }
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        uid = int(user_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         for key, value in kwargs.items():
             if key not in _ALLOWED_COLUMNS:
                 raise ValueError(f"Invalid column name: {key}")
             cursor.execute(
-                f"UPDATE agents SET \"{key}\" = ? WHERE agent_id = ?",
-                (value, agent_id),
+                f"UPDATE agent_configs SET \"{key}\" = ? WHERE agent_id = ? AND user_id = ?",
+                (value, agent_id, uid),
             )
         conn.commit()
     except Exception as e:
         logger.error(
-            f"Failed to update agent activity for {agent_id} in tenant {tenant_id}: {e}"
+            f"Failed to update agent activity for {agent_id} for user {user_id}: {e}"
         )
 
 
-def get_current_tenant() -> Optional[str]:
-    """Resolve the current tenant from the admin session.
-
-    Returns:
-        Tenant ID string, or None if no tenant context is active.
-    """
+def get_current_user_id() -> Optional[str]:
+    if current_user.is_authenticated:
+        return str(current_user.id)
     if session.get("admin_logged_in"):
-        return session.get("active_tenant_id", None)
+        return session.get("active_user_id")
     return None
 
 
@@ -639,11 +620,7 @@ def health():
     status = {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
     # Check DB connectivity
     try:
-        tenant_manager.get_connection("_health_check")
-    except Exception:
-        tenant_manager.create_tenant_database("_health_check", "direct")
-    try:
-        conn = tenant_manager.get_connection("_health_check")
+        conn = database._get_conn()
         conn.execute("SELECT 1")
         conn.close()
         status["database"] = "ok"
@@ -714,7 +691,7 @@ def client_login():
             flash("Too many login attempts. Try again later.", "error")
             return render_template("client/login.html")
 
-        user_row, tenant_id, tenant_type = find_user_by_email(email)
+        user_row = find_user_by_email(email)
         if not user_row or user_row["role"] != "client":
             _record_attempt(False)
             flash("Invalid email or password.", "error")
@@ -723,7 +700,7 @@ def client_login():
         temp_user = User(
             row_id=user_row["id"], email=user_row["email"],
             password_hash=user_row["password_hash"], role=user_row["role"],
-            display_name=user_row["display_name"], tenant_id=tenant_id,
+            display_name=user_row["display_name"],
         )
         if not temp_user.check_password(password):
             _record_attempt(False)
@@ -732,13 +709,13 @@ def client_login():
 
         login_user(temp_user)
         _record_attempt(True)
-        session["tenant_id"] = tenant_id
+        session["tenant_id"] = str(user_row["id"])
         session["user_role"] = "client"
         session["last_active"] = datetime.now().isoformat()
 
         # Update last_login
         try:
-            conn = tenant_manager.get_connection(tenant_id, tenant_type)
+            conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE users SET last_login = ? WHERE id = ?",
@@ -794,14 +771,14 @@ def client_agent_chat_fr(agent_id):
 @client_required
 def client_dashboard():
     """Serve the client project dashboard."""
-    tenant_id = current_user.tenant_id
+    tenant_id = current_user.id
 
     # Gather payment info from tenant database
     payments = []
     total_paid = 0
     total_owed = 0
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM payments ORDER BY installment_number")
         for row in cursor.fetchall():
@@ -819,7 +796,7 @@ def client_dashboard():
     managed = False
     managed_since = None
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT site_url, managed_service, managed_since FROM client_details LIMIT 1"
@@ -864,7 +841,7 @@ def affiliate_login():
             flash("Too many login attempts. Try again later.", "error")
             return render_template("affiliate/login.html")
 
-        user_row, tenant_id, tenant_type = find_user_by_email(email)
+        user_row = find_user_by_email(email)
         if not user_row or user_row["role"] != "affiliate":
             _record_attempt(False)
             flash("Invalid email or password.", "error")
@@ -873,7 +850,7 @@ def affiliate_login():
         temp_user = User(
             row_id=user_row["id"], email=user_row["email"],
             password_hash=user_row["password_hash"], role=user_row["role"],
-            display_name=user_row["display_name"], tenant_id=tenant_id,
+            display_name=user_row["display_name"],
         )
         if not temp_user.check_password(password):
             _record_attempt(False)
@@ -882,12 +859,12 @@ def affiliate_login():
 
         login_user(temp_user)
         _record_attempt(True)
-        session["tenant_id"] = tenant_id
+        session["tenant_id"] = str(user_row["id"])
         session["user_role"] = "affiliate"
         session["last_active"] = datetime.now().isoformat()
 
         try:
-            conn = tenant_manager.get_connection(tenant_id, tenant_type)
+            conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE users SET last_login = ? WHERE id = ?",
@@ -915,7 +892,7 @@ def affiliate_logout():
 @login_required
 def affiliate_dashboard():
     """Serve the affiliate referral dashboard."""
-    tenant_id = current_user.tenant_id
+    tenant_id = current_user.id
 
     # Gather affiliate profile from platform DB
     aff = affiliate_manager.get_affiliate(tenant_id)
@@ -961,14 +938,14 @@ def api_list_users():
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
 
-    tenant_id = session.get("active_tenant_id")
+    tenant_id = session.get("active_user_id")
     if not tenant_id:
         return jsonify({"error": "No client selected"}), 400
 
     role_filter = request.args.get("role", "").strip().lower()
 
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         if role_filter in ("client", "affiliate"):
             cursor.execute(
@@ -993,7 +970,7 @@ def api_add_user():
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
 
-    tenant_id = session.get("active_tenant_id")
+    tenant_id = session.get("active_user_id")
     if not tenant_id:
         return jsonify({"error": "No client selected"}), 400
 
@@ -1025,12 +1002,12 @@ def api_delete_user(user_id):
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
 
-    tenant_id = session.get("active_tenant_id")
+    tenant_id = session.get("active_user_id")
     if not tenant_id:
         return jsonify({"error": "No client selected"}), 400
 
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
@@ -1081,9 +1058,9 @@ def admin_panel_redirect():
         return redirect(url_for("admin_login"))
     logo_status = request.args.get("logo_uploaded", "")
     tenants = {
-        "direct_clients": tenant_manager.list_tenants("direct"),
+        "direct_clients": database.list_users(role='user'),
     }
-    active_tenant = session.get("active_tenant_id")
+    active_tenant = session.get("active_user_id")
     return render_template(
         "admin.html",
         logo_uploaded=logo_status,
@@ -1160,9 +1137,9 @@ def admin_panel_redirect_fr():
         return redirect(url_for("admin_login_fr"))
     logo_status = request.args.get("logo_uploaded", "")
     tenants = {
-        "direct_clients": tenant_manager.list_tenants("direct"),
+        "direct_clients": database.list_users(role='user'),
     }
-    active_tenant = session.get("active_tenant_id")
+    active_tenant = session.get("active_user_id")
     return render_template(
         "admin_fr.html",
         logo_uploaded=logo_status,
@@ -1351,21 +1328,23 @@ def api_admin_process_payout(code):
 @app.route("/api/leads", methods=["GET", "POST"])
 def handle_leads():
     """Capture and list lead form submissions."""
+    conn = database._get_conn()
     if request.method == "POST":
         data = request.json
-        lead = {
-            "id": str(uuid.uuid4()),
-            "name": data.get("name", ""),
-            "phone": data.get("phone", ""),
-            "service": data.get("service", ""),
-            "urgency": data.get("urgency", ""),
-            "created_at": datetime.now().isoformat(),
-        }
-        if not lead["name"] or not lead["phone"]:
+        name = data.get("name", "")
+        phone = data.get("phone", "")
+        if not name or not phone:
             return jsonify({"error": "Name and phone are required"}), 400
-        leads.append(lead)
-        return jsonify({"status": "ok", "lead": lead}), 201
-    return jsonify({"leads": leads})
+        lead_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            "INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (lead_id, 0, name, phone, data.get("service", ""), data.get("urgency", ""), now),
+        )
+        conn.commit()
+        return jsonify({"status": "ok", "lead": {"id": lead_id, "name": name, "phone": phone}}), 201
+    rows = conn.execute("SELECT * FROM leads ORDER BY created_at DESC LIMIT 100").fetchall()
+    return jsonify({"leads": [dict(r) for r in rows]})
 
 
 # ---------------------------------------------------------------------------
@@ -1375,7 +1354,7 @@ def handle_leads():
 @app.route("/api/agents", methods=["GET"])
 def get_agents():
     """Get status and activity telemetry of all agents."""
-    tenant_id = get_current_tenant()
+    tenant_id = str(current_user.id) if not current_user.is_anonymous else None
 
     agents_status = []
 
@@ -1421,14 +1400,14 @@ def toggle_agent(agent_id):
     agent.enabled = not agent.enabled
 
     # Persist toggle to tenant database only if a tenant is selected
-    tenant_id = get_current_tenant()
+    tenant_id = str(current_user.id) if not current_user.is_anonymous else None
     if tenant_id:
         try:
-            conn = tenant_manager.get_connection(tenant_id)
+            conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE agents SET enabled = ? WHERE agent_id = ?",
-                (int(agent.enabled), agent_id),
+                "UPDATE agent_configs SET enabled = ? WHERE agent_id = ? AND user_id = ?",
+                (int(agent.enabled), agent_id, int(tenant_id)),
             )
             conn.commit()
         except Exception:
@@ -1447,10 +1426,12 @@ def get_agent_config(agent_id):
     if agent_id not in AGENT_CONFIGS:
         return jsonify({"error": "Agent not found"}), 404
     config = AGENT_CONFIGS[agent_id]
+    api_key = config.get("credentials", {}).get("api_key", "")
+    masked_key = ("****" + api_key[-4:]) if api_key and len(api_key) > 4 else ""
     return jsonify({
         "agent_id": agent_id,
         "model": config.get("model", "deepseek-chat"),
-        "api_key": config.get("credentials", {}).get("api_key", ""),
+        "api_key": masked_key,
         "api_base": config.get("credentials", {}).get("api_base", ""),
     })
 
@@ -1910,17 +1891,24 @@ def submit_task():
     try:
         orch = get_orchestrator()
 
-        # Load autonomy settings if tenant is active
+        user_id = get_current_user_id()
         autonomy_config = None
-        tenant_id = get_current_tenant()
-        if tenant_id:
-            autonomy_config = tenant_manager.get_agent_autonomy(tenant_id)
+        if user_id:
+            conn = database._get_conn()
+            rows = conn.execute(
+                "SELECT agent_id, autonomy, confidence_threshold FROM agent_configs WHERE user_id = ?",
+                (int(user_id),),
+            ).fetchall()
+            autonomy_config = {
+                r["agent_id"]: {"autonomy": r["autonomy"], "confidence_threshold": r["confidence_threshold"]}
+                for r in rows
+            }
 
         result = orch.process_message(
             user_request, thread_id,
             language=language or None,
             autonomy_config=autonomy_config,
-            tenant_id=tenant_id or "",
+            user_id=int(user_id) if user_id else 0,
         )
 
         return jsonify(result)
@@ -2143,12 +2131,12 @@ def api_undo():
 @app.route("/api/frankie/inspect", methods=["GET"])
 def api_frankie_inspect():
     """Frankie inspects the client's live website and returns actionable suggestions."""
-    tenant_id = get_current_tenant() or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
-    if not tenant_id:
-        return jsonify({"suggestions": [], "error": "No tenant"})
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"suggestions": [], "error": "No user"})
     try:
-        conn = tenant_manager.get_connection(tenant_id)
-        row = conn.execute("SELECT site_url, business_name, city, niche FROM client_details LIMIT 1").fetchone()
+        conn = database._get_conn()
+        row = conn.execute("SELECT site_url, business_name, city, niche FROM client_details WHERE user_id = ? LIMIT 1", (int(user_id),)).fetchone()
     except Exception:
         row = None
     if not row or not row.get("site_url"):
@@ -2225,19 +2213,25 @@ def api_dashboard_ask():
     lang = "fr" if (session.get("lang") == "fr" or (request.accept_languages and request.accept_languages.best and request.accept_languages.best.startswith("fr"))) else "en"
     try:
         orch = get_orchestrator()
-        tenant_id = get_current_tenant() or ""
-
-        # Route through orchestrator — this handles both questions and actions
+        user_id = get_current_user_id()
         autonomy_config = None
-        if tenant_id:
-            autonomy_config = tenant_manager.get_agent_autonomy(tenant_id)
+        if user_id:
+            conn = database._get_conn()
+            rows = conn.execute(
+                "SELECT agent_id, autonomy, confidence_threshold FROM agent_configs WHERE user_id = ?",
+                (int(user_id),),
+            ).fetchall()
+            autonomy_config = {
+                r["agent_id"]: {"autonomy": r["autonomy"], "confidence_threshold": r["confidence_threshold"]}
+                for r in rows
+            }
 
         result = orch.process_message(
             user_message=query,
             thread_id="frankie-" + uuid.uuid4().hex[:8],
             language=lang if lang else None,
             autonomy_config=autonomy_config,
-            tenant_id=tenant_id,
+            user_id=int(user_id) if user_id else 0,
             source="frankie",
         )
 
@@ -2314,52 +2308,17 @@ def api_personalities():
 
 @app.route("/api/onboarding/status", methods=["GET"])
 def api_onboarding_status():
-    """Return onboarding completion status for the current tenant."""
-    tenant_id = get_current_tenant() or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
-    if not tenant_id:
-        return jsonify({"onboarded": False, "error": "No tenant"}), 400
-    try:
-        conn = tenant_manager.get_connection(tenant_id)
-        row = conn.execute("SELECT services FROM client_details WHERE id = 1").fetchone()
-        services = json.loads(row["services"]) if row and row["services"] else {}
-        onboarded = services.get("onboarding_complete", False)
-        steps = {
-            "welcome": services.get("onboard_welcome", False),
-            "agents": services.get("onboard_agents", False),
-            "autonomy": services.get("onboard_autonomy", False),
-            "done": onboarded,
-        }
-        return jsonify({"onboarded": onboarded, "steps": steps})
-    except Exception:
-        return jsonify({"onboarded": False, "steps": {}})
+    """Return onboarding completion status for the current user."""
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"onboarded": False, "error": "No user"}), 400
+    return jsonify({"onboarded": True, "steps": {"welcome": True, "agents": True, "autonomy": True, "done": True}})
 
 
 @app.route("/api/onboarding/step", methods=["POST"])
 def api_onboarding_step():
-    """Mark an onboarding step as complete."""
-    tenant_id = get_current_tenant() or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
-    if not tenant_id:
-        return jsonify({"error": "No tenant"}), 400
-    data = request.json
-    step = (data or {}).get("step", "")
-    if step not in ("welcome", "agents", "autonomy", "complete"):
-        return jsonify({"error": "Invalid step"}), 400
-    try:
-        conn = tenant_manager.get_connection(tenant_id)
-        row = conn.execute("SELECT services FROM client_details WHERE id = 1").fetchone()
-        services = json.loads(row["services"]) if row and row["services"] else {}
-        if step == "complete":
-            services["onboarding_complete"] = True
-        else:
-            services[f"onboard_{step}"] = True
-        conn.execute(
-            "INSERT OR REPLACE INTO client_details (id, services) VALUES (1, ?)",
-            (json.dumps(services),),
-        )
-        conn.commit()
-        return jsonify({"success": True})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    """Stub — onboarding was removed. Always returns success."""
+    return jsonify({"success": True})
 
 
 # ---------------------------------------------------------------------------
@@ -2373,7 +2332,7 @@ def api_list_schedules():
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
     tenant_id = request.args.get("tenant_id", "")
-    schedules = scheduler_manager.get_schedules(tenant_id=tenant_id or None)
+    schedules = scheduler_manager.get_schedules(user_id=int(tenant_id) if tenant_id else None)
     return jsonify({"schedules": schedules, "enabled": scheduler_manager.enabled})
 
 
@@ -2392,7 +2351,7 @@ def api_create_schedule():
     lang = data.get("language", "en")
     if not all([tenant_id, agent_id, task, cron]):
         return jsonify({"error": "tenant_id, agent_id, task, and cron are required"}), 400
-    sid = scheduler_manager.create_schedule(tenant_id, agent_id, task, cron, lang)
+    sid = scheduler_manager.create_schedule(int(tenant_id), agent_id, task, cron, lang)
     return jsonify({"id": sid, "success": True}), 201
 
 
@@ -2421,14 +2380,8 @@ def admin_dashboard():
     """Serve the real-time agent dashboard."""
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
-    tenants = {
-        "direct_clients": tenant_manager.list_tenants("direct"),
-    }
-    active_tenant = session.get("active_tenant_id")
     return render_template(
         "admin/dashboard.html",
-        tenants=tenants,
-        active_tenant=active_tenant,
         agents=AGENT_META,
     )
 
@@ -2443,7 +2396,7 @@ def admin_connector():
     """Serve the connector setup page (bookmarklet + email bridge)."""
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
-    tenant_id = session.get("active_tenant_id", "your-tenant")
+    tenant_id = session.get("active_user_id", "your-tenant")
     base_url = request.url_root.rstrip("/")
     bookmarklet_code = (
         'javascript:(function(){var s=document.createElement("script");'
@@ -2464,7 +2417,7 @@ def admin_connector():
 
 def _get_pending_actions(tenant_id: str, status: str = "pending") -> list:
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT id, agent_name, tool_name, provider, content, subject, status, created_at "
@@ -2483,7 +2436,7 @@ def _add_pending_action(
 ) -> str:
     action_id = uuid.uuid4().hex[:12]
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO pending_actions (id, agent_name, tool_name, provider, content, subject, status, created_at) "
@@ -2499,7 +2452,7 @@ def _add_pending_action(
 
 def _confirm_pending_action(tenant_id: str, action_id: str) -> Dict[str, Any]:
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT id, agent_name, tool_name, content FROM pending_actions WHERE id = ? AND status = 'pending'",
@@ -2528,7 +2481,7 @@ def _confirm_pending_action(tenant_id: str, action_id: str) -> Dict[str, Any]:
 @app.route("/api/actions/pending", methods=["GET"])
 def api_pending_actions():
     """Return pending actions for the current tenant (used by bookmarklet)."""
-    tenant_id = session.get("active_tenant_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    tenant_id = session.get("active_user_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
     if not tenant_id:
         return jsonify({"actions": []})
     actions = _get_pending_actions(tenant_id)
@@ -2556,7 +2509,7 @@ def api_sms_pending():
 @app.route("/api/actions/<action_id>/confirm", methods=["POST"])
 def api_confirm_action(action_id):
     """Confirm and execute a pending action (called by bookmarklet or email bridge)."""
-    tenant_id = session.get("active_tenant_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    tenant_id = session.get("active_user_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
     if not tenant_id:
         return jsonify({"error": "No tenant context"}), 400
     result = _confirm_pending_action(tenant_id, action_id)
@@ -2594,11 +2547,11 @@ def api_sms_mark_sent():
 @app.route("/api/actions/<action_id>/skip", methods=["POST"])
 def api_skip_action(action_id):
     """Skip/discard a pending action without executing."""
-    tenant_id = session.get("active_tenant_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
+    tenant_id = session.get("active_user_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
     if not tenant_id:
         return jsonify({"error": "No tenant context"}), 400
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE pending_actions SET status = 'skipped', completed_at = ? WHERE id = ? AND status = 'pending'",
@@ -2627,7 +2580,7 @@ def api_set_email_bridge():
         "password": data.get("password", ""),
     }
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "INSERT OR REPLACE INTO client_details (id, email, services) "
@@ -2664,7 +2617,7 @@ def _email_bridge_handler(action: str, subject: str, body: str, tenant_id: str) 
         actions = _get_pending_actions(tenant_id)
         if actions:
             try:
-                conn = tenant_manager.get_connection(tenant_id)
+                conn = database._get_conn()
                 cursor = conn.cursor()
                 cursor.execute(
                     "UPDATE pending_actions SET status = 'skipped', completed_at = ? WHERE id = ?",
@@ -2716,10 +2669,13 @@ scheduler_manager.start()
 
 @app.route("/api/agents/<agent_id>/autonomy", methods=["GET", "PUT"])
 def api_agent_autonomy(agent_id):
-    """Get or update autonomy settings for an agent in the current tenant."""
-    tenant_id = get_current_tenant()
-    if not tenant_id:
-        return jsonify({"error": "No tenant selected"}), 400
+    """Get or update autonomy settings for an agent in the current user."""
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"error": "No user selected"}), 400
+
+    conn = database._get_conn()
+    uid = int(user_id)
 
     if request.method == "PUT":
         data = request.json
@@ -2732,22 +2688,34 @@ def api_agent_autonomy(agent_id):
         if autonomy not in ("manual", "suggest", "auto", "silent"):
             return jsonify({"error": f"Invalid autonomy '{autonomy}'. Must be one of: manual, suggest, auto, silent"}), 400
 
-        tenant_manager.set_agent_autonomy(tenant_id, agent_id, autonomy, threshold)
+        conn.execute(
+            "UPDATE agent_configs SET autonomy = ?, confidence_threshold = ? WHERE user_id = ? AND agent_id = ?",
+            (autonomy, threshold, uid, agent_id),
+        )
+        conn.commit()
         return jsonify({"agent_id": agent_id, "autonomy": autonomy, "confidence_threshold": threshold})
 
-    # GET: return current settings
-    configs = tenant_manager.get_agent_autonomy(tenant_id)
+    rows = conn.execute(
+        "SELECT agent_id, autonomy, confidence_threshold FROM agent_configs WHERE user_id = ?",
+        (uid,),
+    ).fetchall()
+    configs = {r["agent_id"]: {"autonomy": r["autonomy"], "confidence_threshold": r["confidence_threshold"]} for r in rows}
     cfg = configs.get(agent_id, {"autonomy": "manual", "confidence_threshold": 0.7})
     return jsonify({"agent_id": agent_id, **cfg})
 
 
 @app.route("/api/agents/autonomy/bulk", methods=["GET"])
 def api_all_agent_autonomy():
-    """Get autonomy settings for all agents in the current tenant."""
-    tenant_id = get_current_tenant()
-    if not tenant_id:
-        return jsonify({"error": "No tenant selected"}), 400
-    configs = tenant_manager.get_agent_autonomy(tenant_id)
+    """Get autonomy settings for all agents in the current user."""
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"error": "No user selected"}), 400
+    conn = database._get_conn()
+    rows = conn.execute(
+        "SELECT agent_id, autonomy, confidence_threshold FROM agent_configs WHERE user_id = ?",
+        (int(user_id),),
+    ).fetchall()
+    configs = {r["agent_id"]: {"autonomy": r["autonomy"], "confidence_threshold": r["confidence_threshold"]} for r in rows}
     return jsonify({"autonomy": configs})
 
 
@@ -2762,7 +2730,7 @@ def respond_approval(thread_id):
     data = request.json
     approved = data.get("approved", False)
     now_iso = datetime.now().isoformat()
-    tenant_id = get_current_tenant()
+    tenant_id = get_current_user_id()
 
     orch = get_orchestrator()
 
@@ -2780,7 +2748,7 @@ def respond_approval(thread_id):
     # Fallback: check tenant database if no in-memory draft found
     if tenant_id:
         try:
-            conn = tenant_manager.get_connection(tenant_id)
+            conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT routed_agent, agent_draft FROM threads WHERE thread_id = ?",
@@ -2870,7 +2838,7 @@ def invoke_agent(agent_id):
     if not task:
         return jsonify({"error": "No task provided"}), 400
 
-    tenant_id = get_current_tenant()
+    tenant_id = get_current_user_id()
     now_iso = datetime.now().isoformat()
 
     try:
@@ -2962,18 +2930,19 @@ def agent_chat(agent_id):
         from core.base_agent import BaseAgent
         language = BaseAgent._detect_language(message)
 
-    tenant_id = get_current_tenant()
+    tenant_id = str(current_user.id) if not current_user.is_anonymous else None
     now_iso = datetime.now().isoformat()
 
     # Build conversation context from previous messages in this thread
     conversation_context = ""
     if tenant_id:
         try:
-            conn = tenant_manager.get_connection(tenant_id)
+            uid = int(tenant_id)
+            conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT agent_task, agent_draft FROM threads WHERE thread_id = ? ORDER BY created_at ASC LIMIT 20",
-                (thread_id,)
+                "SELECT agent_task, agent_draft FROM threads WHERE thread_id = ? AND user_id = ? ORDER BY created_at ASC LIMIT 20",
+                (thread_id, uid)
             )
             history = cursor.fetchall()
             if history:
@@ -3006,13 +2975,14 @@ def agent_chat(agent_id):
         # Store the conversation turn in the tenant database
         if tenant_id:
             try:
-                conn = tenant_manager.get_connection(tenant_id)
+                uid = int(tenant_id)
+                conn = database._get_conn()
                 cursor = conn.cursor()
                 cursor.execute(
                     """INSERT INTO threads
-                       (thread_id, routed_agent, agent_task, agent_draft, status, created_at, updated_at)
-                       VALUES (?, ?, ?, ?, 'chat', ?, ?)""",
-                    (thread_id, agent_id, message, draft, now_iso, now_iso)
+                       (thread_id, routed_agent, agent_task, agent_draft, status, created_at, updated_at, user_id)
+                       VALUES (?, ?, ?, ?, 'chat', ?, ?, ?)""",
+                    (thread_id, agent_id, message, draft, now_iso, now_iso, uid)
                 )
                 conn.commit()
             except Exception:
@@ -3053,12 +3023,12 @@ def get_agent_threads(agent_id):
     if agent_id not in agent_registry:
         return jsonify({"error": f"Agent '{agent_id}' not found"}), 404
 
-    tenant_id = get_current_tenant()
+    tenant_id = get_current_user_id()
     if not tenant_id:
         return jsonify({"threads": []})
 
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             """SELECT DISTINCT thread_id,
@@ -3091,12 +3061,12 @@ def get_agent_thread_history(agent_id, thread_id):
     if agent_id not in agent_registry:
         return jsonify({"error": f"Agent '{agent_id}' not found"}), 404
 
-    tenant_id = get_current_tenant()
+    tenant_id = get_current_user_id()
     if not tenant_id:
         return jsonify({"messages": []})
 
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             """SELECT agent_task, agent_draft, created_at
@@ -3126,7 +3096,7 @@ def get_agent_thread_history(agent_id, thread_id):
 def api_list_threads():
     """List chat threads for the current tenant, optionally filtered by agent."""
     if session.get("admin_logged_in"):
-        tenant_id = session.get("active_tenant_id")
+        tenant_id = session.get("active_user_id")
     else:
         tenant_id = getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
     if not tenant_id:
@@ -3134,7 +3104,7 @@ def api_list_threads():
 
     agent_filter = request.args.get("agent", "")
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         if agent_filter:
             cursor.execute(
@@ -3162,14 +3132,14 @@ def api_list_threads():
 def api_get_thread_messages(thread_id):
     """Get all messages in a chat thread."""
     if session.get("admin_logged_in"):
-        tenant_id = session.get("active_tenant_id")
+        tenant_id = session.get("active_user_id")
     else:
         tenant_id = getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
     if not tenant_id:
         return jsonify({"messages": []})
 
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT agent_task, agent_draft, result FROM threads WHERE thread_id = ? AND status = 'chat' ORDER BY created_at ASC",
@@ -3192,7 +3162,7 @@ def api_client_list_threads():
     tenant_id = current_user.tenant_id
     agent_filter = request.args.get("agent", "")
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         if agent_filter:
             cursor.execute(
@@ -3222,7 +3192,7 @@ def api_client_get_thread_messages(thread_id):
     """Get all messages in a chat thread for the current client."""
     tenant_id = current_user.tenant_id
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT agent_task, agent_draft FROM threads WHERE thread_id = ? AND status = 'chat' ORDER BY created_at ASC",
@@ -3248,11 +3218,11 @@ def list_tenants():
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
 
-    direct = tenant_manager.list_tenants("direct")
+    direct = [str(u["id"]) for u in database.list_users(role='user')]
 
     return jsonify({
         "direct_clients": direct,
-        "active_tenant": session.get("active_tenant_id"),
+        "active_tenant": session.get("active_user_id"),
     })
 
 
@@ -3266,13 +3236,13 @@ def switch_tenant():
     tenant_id = data.get("tenant_id")
 
     if tenant_id:
-        session["active_tenant_id"] = tenant_id
+        session["active_user_id"] = tenant_id
         return jsonify({
             "active_tenant": tenant_id,
             "message": f"Switched to {tenant_id}",
         })
     else:
-        session.pop("active_tenant_id", None)
+        session.pop("active_user_id", None)
         return jsonify({
             "active_tenant": None,
             "message": "Client cleared",
@@ -3288,17 +3258,17 @@ from core.analytics import AnalyticsEngine
 
 @app.route("/api/analytics/summary")
 def api_analytics_summary():
-    """Return summary analytics for a tenant or all tenants (admin)."""
-    tenant_id = request.args.get("client", "").strip()
+    """Return summary analytics for a user or all users (admin)."""
+    user_id = request.args.get("client", "").strip()
     days = int(request.args.get("days", 30))
     end_date = datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
 
     is_admin = session.get("admin_logged_in", False)
-    session_tenant = session.get("active_tenant_id") or getattr(current_user, "tenant_id", None)
+    session_user = session.get("active_user_id") or getattr(current_user, "id", None)
 
-    if tenant_id and is_admin:
-        engine = AnalyticsEngine(tenant_id, tenant_manager)
+    if user_id and is_admin:
+        engine = AnalyticsEngine(int(user_id))
         perf = engine.get_performance_summary()
         leads = engine.get_lead_metrics(start_date, end_date)
         agents = engine.get_agent_metrics(start_date, end_date)
@@ -3326,7 +3296,7 @@ def api_analytics_summary():
                 "SELECT agent_name, tool_name, success, timestamp FROM execution_log ORDER BY timestamp DESC LIMIT 50"
             ),
             "per_client": [{
-                "tenant_id": tenant_id,
+                "user_id": user_id,
                 "leads": perf.get("leads_this_month", 0),
                 "tasks": perf.get("tasks_this_month", 0),
                 "success_rate": perf.get("success_rate", 0),
@@ -3335,9 +3305,8 @@ def api_analytics_summary():
         })
 
     if is_admin:
-        all_tenants = tenant_manager.list_tenants("direct")
-        engine = AnalyticsEngine("_admin_", tenant_manager)
-        summary = engine.get_admin_summary(all_tenants)
+        all_users = database.list_users(role='user')
+        all_user_ids = [str(u["id"]) for u in all_users]
         total_leads = 0
         total_tasks = 0
         total_success = 0
@@ -3347,8 +3316,8 @@ def api_analytics_summary():
         all_leads_by_month = {}
         all_recent_leads = []
         all_recent_execs = []
-        for tid in all_tenants:
-            e = AnalyticsEngine(tid, tenant_manager)
+        for uid in all_user_ids:
+            e = AnalyticsEngine(int(uid))
             perf = e.get_performance_summary()
             leads_m = e.get_lead_metrics(start_date, end_date)
             agents_m = e.get_agent_metrics(start_date, end_date)
@@ -3378,7 +3347,7 @@ def api_analytics_summary():
         for a in all_tasks_per_agent.values():
             a["success_rate"] = round((a["success"] / a["total"] * 100) if a["total"] else 0, 1)
         leads_by_month = [{"label": k, "count": v} for k, v in sorted(all_leads_by_month.items())]
-        total_clients = len(all_tenants)
+        total_clients = len(all_user_ids)
         avg_sr = round((total_success / (total_success + total_fail) * 100) if (total_success + total_fail) else 0, 1)
         return jsonify({
             "total_clients": total_clients,
@@ -3394,11 +3363,10 @@ def api_analytics_summary():
             "failures_by_tool": all_failures_by_tool,
             "recent_leads": sorted(all_recent_leads, key=lambda x: x.get("name", ""))[:20],
             "recent_executions": sorted(all_recent_execs, key=lambda x: x.get("timestamp", ""), reverse=True)[:20],
-            "per_client": summary.get("per_client", []),
         })
 
-    if not is_admin and session_tenant:
-        engine = AnalyticsEngine(session_tenant, tenant_manager)
+    if not is_admin and session_user:
+        engine = AnalyticsEngine(int(session_user))
         perf = engine.get_performance_summary()
         leads = engine.get_lead_metrics(start_date, end_date)
         agents = engine.get_agent_metrics(start_date, end_date)
@@ -3452,36 +3420,36 @@ def _leads_by_month(engine, months: int = 6) -> list:
 @app.route("/api/analytics/leads")
 def api_analytics_leads():
     """Return lead metrics for a date range."""
-    tenant_id = request.args.get("client", "").strip() or session.get("active_tenant_id") or getattr(current_user, "tenant_id", None)
+    user_id = request.args.get("client", "").strip() or session.get("active_user_id") or getattr(current_user, "id", None)
     start = request.args.get("start")
     end = request.args.get("end")
-    if not tenant_id:
-        return jsonify({"error": "No tenant context"}), 400
-    engine = AnalyticsEngine(tenant_id, tenant_manager)
+    if not user_id:
+        return jsonify({"error": "No user context"}), 400
+    engine = AnalyticsEngine(int(user_id))
     return jsonify(engine.get_lead_metrics(start, end))
 
 
 @app.route("/api/analytics/agents")
 def api_analytics_agents():
     """Return agent performance metrics."""
-    tenant_id = request.args.get("client", "").strip() or session.get("active_tenant_id") or getattr(current_user, "tenant_id", None)
+    user_id = request.args.get("client", "").strip() or session.get("active_user_id") or getattr(current_user, "id", None)
     start = request.args.get("start")
     end = request.args.get("end")
-    if not tenant_id:
-        return jsonify({"error": "No tenant context"}), 400
-    engine = AnalyticsEngine(tenant_id, tenant_manager)
+    if not user_id:
+        return jsonify({"error": "No user context"}), 400
+    engine = AnalyticsEngine(int(user_id))
     return jsonify(engine.get_agent_metrics(start, end))
 
 
 @app.route("/api/analytics/executions")
 def api_analytics_executions():
     """Return execution metrics."""
-    tenant_id = request.args.get("client", "").strip() or session.get("active_tenant_id") or getattr(current_user, "tenant_id", None)
+    user_id = request.args.get("client", "").strip() or session.get("active_user_id") or getattr(current_user, "id", None)
     start = request.args.get("start")
     end = request.args.get("end")
-    if not tenant_id:
-        return jsonify({"error": "No tenant context"}), 400
-    engine = AnalyticsEngine(tenant_id, tenant_manager)
+    if not user_id:
+        return jsonify({"error": "No user context"}), 400
+    engine = AnalyticsEngine(int(user_id))
     return jsonify(engine.get_execution_metrics(start, end))
 
 
@@ -3491,12 +3459,12 @@ def api_analytics_generate_report():
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
     data = request.json
-    tenant_id = data.get("tenant_id")
+    user_id = data.get("user_id")
     month = data.get("month")
     year = data.get("year")
-    if not tenant_id:
-        return jsonify({"error": "tenant_id required"}), 400
-    engine = AnalyticsEngine(tenant_id, tenant_manager)
+    if not user_id:
+        return jsonify({"error": "user_id required"}), 400
+    engine = AnalyticsEngine(int(user_id))
     html = engine.generate_monthly_report(year, month)
     return jsonify({"html": html})
 
@@ -3507,14 +3475,14 @@ def api_analytics_email_report():
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
     data = request.json
-    tenant_id = data.get("tenant_id")
+    user_id = data.get("user_id")
     month = data.get("month")
     year = data.get("year")
     html = data.get("html")
-    if not tenant_id or not html:
-        return jsonify({"error": "tenant_id and html are required"}), 400
+    if not user_id or not html:
+        return jsonify({"error": "user_id and html are required"}), 400
     try:
-        engine = AnalyticsEngine(tenant_id, tenant_manager)
+        engine = AnalyticsEngine(int(user_id))
         biz_row = engine._fetchone("SELECT business_name, email FROM client_details LIMIT 1")
         business_name = biz_row["business_name"] if biz_row else tenant_id
         client_email = biz_row["email"] if biz_row else None
@@ -3548,9 +3516,9 @@ def admin_analytics_page():
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
     tenants = {
-        "direct_clients": tenant_manager.list_tenants("direct"),
+        "direct_clients": [str(u["id"]) for u in database.list_users(role='user')],
     }
-    active_tenant = session.get("active_tenant_id")
+    active_tenant = session.get("active_user_id")
     return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
 
 
@@ -3560,9 +3528,9 @@ def admin_reports_page():
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
     tenants = {
-        "direct_clients": tenant_manager.list_tenants("direct"),
+        "direct_clients": [str(u["id"]) for u in database.list_users(role='user')],
     }
-    active_tenant = session.get("active_tenant_id")
+    active_tenant = session.get("active_user_id")
     return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
 
 
@@ -3577,8 +3545,8 @@ def client_analytics_page():
 @client_required
 def client_analytics_report():
     """Generate and serve a printable monthly report for the client."""
-    tenant_id = current_user.tenant_id
-    engine = AnalyticsEngine(tenant_id, tenant_manager)
+    user_id = current_user.id
+    engine = AnalyticsEngine(user_id)
     html = engine.generate_monthly_report()
     return html, 200, {"Content-Type": "text/html"}
 
@@ -3597,7 +3565,7 @@ def client_managed_services():
     tenant_id = current_user.tenant_id
     managed = False
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT managed_service FROM client_details LIMIT 1"
@@ -3617,7 +3585,7 @@ def api_managed_upgrade():
     tenant_id = current_user.tenant_id
     now_iso = datetime.now().isoformat()
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE client_details SET managed_service = 1, managed_since = ?",
@@ -3651,7 +3619,7 @@ def api_managed_cancel():
     tenant_id = current_user.tenant_id
     now_iso = datetime.now().isoformat()
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE client_details SET managed_service = 0 WHERE managed_service = 1"
@@ -3682,7 +3650,7 @@ def api_managed_clients():
         return jsonify({"error": "Unauthorized"}), 401
 
     filter_mode = request.args.get("filter", "active")
-    all_tenants = tenant_manager.list_tenants("direct")
+    all_tenants = [str(u["id"]) for u in database.list_users(role='user')]
     clients = []
     total_mrr = 0
     total_pending = 0
@@ -3690,7 +3658,7 @@ def api_managed_clients():
 
     for tid in all_tenants:
         try:
-            conn = tenant_manager.get_connection(tid)
+            conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT managed_service, managed_since, package FROM client_details LIMIT 1"
@@ -3775,7 +3743,7 @@ def api_managed_pause():
     if not tenant_id:
         return jsonify({"error": "tenant_id required"}), 400
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE client_details SET managed_service = 0 WHERE managed_service = 1"
@@ -3798,7 +3766,7 @@ def api_managed_resume():
         return jsonify({"error": "tenant_id required"}), 400
     now_iso = datetime.now().isoformat()
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE client_details SET managed_service = 1, managed_since = ?",
@@ -3821,7 +3789,7 @@ def api_managed_bulk_approve():
     if not tenant_id:
         return jsonify({"error": "tenant_id required"}), 400
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT thread_id, routed_agent, agent_draft FROM threads WHERE status = 'pending_approval'"
@@ -3875,11 +3843,11 @@ def api_managed_mrr():
     """Return total MRR from managed services (admin only)."""
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
-    all_tenants = tenant_manager.list_tenants("direct")
+    all_tenants = [str(u["id"]) for u in database.list_users(role='user')]
     active_count = 0
     for tid in all_tenants:
         try:
-            conn = tenant_manager.get_connection(tid)
+            conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute("SELECT managed_service FROM client_details LIMIT 1")
             row = cursor.fetchone()
@@ -3901,9 +3869,9 @@ def admin_managed_page():
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
     tenants = {
-        "direct_clients": tenant_manager.list_tenants("direct"),
+        "direct_clients": [str(u["id"]) for u in database.list_users(role='user')],
     }
-    active_tenant = session.get("active_tenant_id")
+    active_tenant = session.get("active_user_id")
     return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
 
 
@@ -4021,12 +3989,12 @@ def call_mcp_tool():
 @app.route("/api/mcp/credentials", methods=["GET"])
 def get_mcp_credentials():
     """Get stored MCP credentials for the current tenant."""
-    tenant_id = get_current_tenant()
+    tenant_id = get_current_user_id()
     if not tenant_id:
         return jsonify({"credentials": {}, "error": "No tenant selected"}), 400
 
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute("SELECT server_name, platform, credential_key, credential_value FROM mcp_credentials")
         creds = {}
@@ -4041,7 +4009,7 @@ def get_mcp_credentials():
 @app.route("/api/mcp/credentials", methods=["POST"])
 def save_mcp_credentials():
     """Save MCP credentials for the current tenant."""
-    tenant_id = get_current_tenant()
+    tenant_id = get_current_user_id()
     if not tenant_id:
         return jsonify({"error": "No tenant selected"}), 400
 
@@ -4054,7 +4022,7 @@ def save_mcp_credentials():
         return jsonify({"error": "server_name is required"}), 400
 
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         now = datetime.now().isoformat()
 
@@ -4074,12 +4042,12 @@ def save_mcp_credentials():
 @app.route("/api/mcp/credentials/<server_name>", methods=["DELETE"])
 def delete_mcp_credentials(server_name):
     """Delete all credentials for an MCP server."""
-    tenant_id = get_current_tenant()
+    tenant_id = get_current_user_id()
     if not tenant_id:
         return jsonify({"error": "No tenant selected"}), 400
 
     try:
-        conn = tenant_manager.get_connection(tenant_id)
+        conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM mcp_credentials WHERE server_name = ?", (server_name,))
         conn.commit()
@@ -4103,26 +4071,7 @@ def execute_via_mcp():
     if not agent_id or not content:
         return jsonify({"error": "agent_id and content are required"}), 400
 
-    agent_mcp_map = {
-        "local_seo": ("seo", "publish_blog_post"),
-        "content_strategist": ("seo", "publish_blog_post"),
-        "technical_seo": ("seo", "run_site_audit"),
-        "backlinks": ("seo", "find_backlink_opportunities"),
-        "social_media": ("social", "post_to_facebook"),
-        "tiktok": ("social", "post_to_tiktok"),
-        "lead_conversion": ("email", "send_email"),
-        "email_marketing": ("email", "send_campaign"),
-        "outreach": ("email", "send_email"),
-        "reputation": ("gmb", "respond_to_review"),
-        "paid_ads": ("ads", "create_google_ads_campaign"),
-        "growth_hacker": ("analytics", "analyze_trends"),
-        "cro": ("website", "audit_seo_health"),
-        "video": ("social", "post_to_tiktok"),
-        "sms_marketing": ("email", "send_email"),
-        "reporting": ("analytics", "generate_monthly_report"),
-    }
-
-    mapping = agent_mcp_map.get(agent_id)
+    mapping = AGENT_MCP_ROUTING.get(agent_id)
     if not mapping:
         return jsonify({"error": f"No MCP mapping for agent '{agent_id}'"}), 400
 

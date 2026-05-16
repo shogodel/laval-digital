@@ -29,6 +29,10 @@ services:
     volumes:
       - ./tenants:/app/tenants
       - ./backups:/app/backups
+      - ./data:/app/data
+      - ./.env:/app/.env:ro
+    environment:
+      - PYTHONUNBUFFERED=1
     command: >
       sh -c "while true; do
         python scripts/backup.py;

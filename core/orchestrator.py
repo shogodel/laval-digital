@@ -105,7 +105,7 @@ Always include the approval prompt at the end."""
 WELCOME_PROMPT = """You are the Orchestrator for Laval Digital's AI marketing automation platform.
 A new user has just opened a conversation with you. Greet them warmly and explain what you can do.
 
-You have 10 specialized agents that can help with:
+You have 16 specialized agents that can help with:
 - Local SEO (Google Business Profile, local rankings)
 - Social Media management (content creation, scheduling)
 - Lead Conversion (follow-up sequences, CRM)
@@ -116,6 +116,12 @@ You have 10 specialized agents that can help with:
 - TikTok content (short-form video)
 - Outreach & Prospecting
 - Backlinks & Link Building
+- Content Strategy (editorial calendars, content repurposing)
+- Technical SEO (schema, speed, sitemaps)
+- Analytics & Reporting (performance summaries, ROI)
+- CRO & Landing Pages (conversion optimization)
+- Video Production (YouTube scripts, explainers)
+- SMS Marketing (campaigns, compliance)
 
 Your response should:
 1. Welcome the user in a friendly way
@@ -207,8 +213,8 @@ class Orchestrator:
             return {"response": response, "agent": "orchestrator", "status": "welcome"}
         except Exception as e:
             logger.error("Welcome message failed: %s", e)
-            fallback_en = "Hi! I'm your AI marketing team. I have 10 specialized agents ready to help with SEO, social media, ads, email, and more. What's your business and what would you like help with?"
-            fallback_fr = "Bonjour ! Je suis votre équipe marketing IA. J'ai 10 agents spécialisés prêts à vous aider avec le SEO, les réseaux sociaux, les annonces, les courriels et plus encore. Parlez-moi de votre entreprise et de ce que vous aimeriez améliorer."
+            fallback_en = "Hi! I'm your AI marketing team. I have 16 specialized agents ready to help with SEO, social media, ads, email, and more. What's your business and what would you like help with?"
+            fallback_fr = "Bonjour ! Je suis votre équipe marketing IA. J'ai 16 agents spécialisés prêts à vous aider avec le SEO, les réseaux sociaux, les annonces, les courriels et plus encore. Parlez-moi de votre entreprise et de ce que vous aimeriez améliorer."
             return {"response": fallback_fr if language == "fr" else fallback_en, "agent": "orchestrator", "status": "welcome"}
 
     def undo_last(self) -> Optional[Dict[str, Any]]:
@@ -253,117 +259,7 @@ class Orchestrator:
             logger.error("Suggestions failed: %s", e)
             return {"response": "", "agent": "orchestrator", "status": "suggestions"}
 
-    # ------------------------------------------------------------------
-    # Chat-based message processing (primary Frankie entry point)
-    # ------------------------------------------------------------------
-
-    def process_message(self, user_message: str, thread_id: str) -> Dict[str, Any]:
-        """Process a user message from the Frankie chat interface.
-
-        This is the primary entry point for the chat-based Frankie experience.
-        It immediately routes the message to the appropriate agent and returns
-        a response — no LangGraph interrupts, no approval pause.
-
-        Args:
-            user_message: The user's chat message
-            thread_id: Unique thread identifier for conversation continuity
-
-        Returns:
-            Dict with keys: response, agent, status, thread_id, pending_approval
-        """
-        message_lower = user_message.strip().lower()
-
-        if self.is_panicked:
-            return {
-                "response": "⚠️ All agents are stopped. Click Resume to continue.",
-                "agent": "orchestrator",
-                "status": "panicked",
-                "thread_id": thread_id,
-                "pending_approval": False,
-            }
-
-        if message_lower in ("approve", "approved", "yes", "execute", "run it"):
-            return self._handle_chat_approval(thread_id, approved=True)
-        elif message_lower in ("reject", "rejected", "no", "discard", "cancel"):
-            return self._handle_chat_approval(thread_id, approved=False)
-
-        return self._route_and_respond_chat(user_message, thread_id)
-
-    def _route_and_respond_chat(self, user_message: str, thread_id: str) -> Dict[str, Any]:
-        """Route a chat message to the appropriate agent and return an immediate response."""
-        try:
-            prompt = ROUTING_PROMPT.format(user_request=user_message, language="english")
-            response = self._llm_adapter.invoke(
-                system_prompt="You are a helpful AI orchestrator for local business marketing.",
-                user_message=prompt
-            )
-            agent_name = self._extract_agent_from_response(response)
-
-            if not hasattr(self, '_pending_drafts'):
-                self._pending_drafts = {}
-
-            self._pending_drafts[thread_id] = {
-                "agent": agent_name,
-                "draft": response,
-                "task": user_message,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-
-            return {
-                "response": response,
-                "agent": agent_name,
-                "status": "pending_approval",
-                "thread_id": thread_id,
-                "pending_approval": True
-            }
-
-        except Exception as e:
-            logger.error(f"Chat routing failed: {e}")
-            return {
-                "response": f"I had trouble processing that request. Could you rephrase it? Error: {str(e)}",
-                "agent": "unknown",
-                "status": "error",
-                "thread_id": thread_id,
-                "pending_approval": False
-            }
-
-    def _handle_chat_approval(self, thread_id: str, approved: bool) -> Dict[str, Any]:
-        """Handle approval/rejection from the chat interface."""
-        if not hasattr(self, '_pending_drafts') or thread_id not in self._pending_drafts:
-            return {
-                "response": "I don't have any pending content to approve or reject. Send me a new request!",
-                "agent": "orchestrator",
-                "status": "no_pending",
-                "thread_id": thread_id,
-                "pending_approval": False
-            }
-
-        draft_info = self._pending_drafts.pop(thread_id)
-
-        if approved:
-            return {
-                "response": f"✅ Approved! The content from **{draft_info['agent']}** has been sent for execution.\n\nYou can now ask me for something else.",
-                "agent": draft_info["agent"],
-                "status": "approved",
-                "thread_id": thread_id,
-                "pending_approval": False,
-                "approved_draft": draft_info["draft"],
-                "agent_for_execution": draft_info["agent"]
-            }
-        else:
-            return {
-                "response": f"❌ Rejected. The content from **{draft_info['agent']}** has been discarded. Send me a new request and I'll try again!",
-                "agent": draft_info["agent"],
-                "status": "rejected",
-                "thread_id": thread_id,
-                "pending_approval": False
-            }
-
-    # ------------------------------------------------------------------
-    # Legacy autonomy-based message processing (backward compatible)
-    # ------------------------------------------------------------------
-
-    def process_message_with_autonomy(
+    def _route_and_respond(
         self,
         user_message: str,
         thread_id: str,
@@ -556,7 +452,7 @@ class Orchestrator:
                 "language": language,
                 "confidence": confidence,
                 "autonomy": autonomy_level,
-                "tenant_id": tenant_id,
+                "user_id": user_id,
                 "created_at": now_iso,
             }
 

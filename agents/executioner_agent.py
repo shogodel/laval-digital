@@ -433,6 +433,9 @@ class ExecutionerAgent:
     def _select_tool(self, agent_name: str) -> str:
         """Auto-select a tool based on the source agent name.
 
+        Uses AGENT_MCP_ROUTING from mcp/__init__ as the single source of truth,
+        then maps MCP tool names to Executioner built-in tool names.
+
         Args:
             agent_name: Name of the agent that produced the draft.
 
@@ -442,31 +445,33 @@ class ExecutionerAgent:
         Raises:
             ExecutionerError: If ``agent_name`` has no mapped tool.
         """
-        mapping = {
-            "local_seo": "publish_blog_post",
-            "social_media": "post_to_social",
-            "lead_conversion": "send_email",
-            "paid_ads": "post_to_social",
-            "growth_hacker": "publish_blog_post",
-            "reputation": "send_email",
-            "email_marketing": "send_email",
-            "tiktok": "post_to_social",
-            "outreach": "send_email",
-            "backlinks": "publish_blog_post",
-            "content_strategy": "save_content_calendar",
-            "cro": "save_cro_analysis",
-            "video": "save_video_script",
-            "sms_marketing": "save_sms_campaign",
-            "technical_seo": "save_technical_seo_report",
-            "reporting": "save_report",
+        from mcp import AGENT_MCP_ROUTING
+
+        mcp_tool_to_local = {
+            "publish_blog_post": "publish_blog_post",
+            "post_to_facebook": "post_to_social",
+            "post_to_tiktok": "post_to_social",
+            "post_to_youtube": "post_to_social",
+            "send_email": "send_email",
+            "send_campaign": "send_email",
+            "respond_to_review": "update_gmb",
+            "create_google_ads_campaign": "post_to_social",
+            "analyze_trends": "save_report",
+            "find_backlink_opportunities": "publish_blog_post",
+            "run_site_audit": "save_technical_seo_report",
+            "track_conversions": "save_cro_analysis",
+            "generate_monthly_report": "save_report",
         }
-        tool = mapping.get(agent_name)
-        if not tool:
-            raise ExecutionerError(
-                f"No tool mapping for agent '{agent_name}'. "
-                f"Provide an explicit tool_name or register a mapping."
-            )
-        return tool
+        mapping_entry = AGENT_MCP_ROUTING.get(agent_name)
+        if mapping_entry:
+            _, mcp_tool = mapping_entry
+            local_tool = mcp_tool_to_local.get(mcp_tool)
+            if local_tool and local_tool in self.tool_registry:
+                return local_tool
+        raise ExecutionerError(
+            f"No tool mapping for agent '{agent_name}'. "
+            f"Provide an explicit tool_name or register a mapping."
+        )
 
     def get_available_tools(self, agent_name: str) -> list:
         """Return all tools available for a given agent, including alternatives.
