@@ -8,10 +8,6 @@ const CACHE_NAME = 'laval-digital-v1';
 const PRECACHE_URLS = [
   '/admin/dashboard',
   '/admin',
-  '/api/orchestrator/status',
-  '/api/events/history',
-  '/api/events/stats',
-  '/api/orchestrator/activity',
   '/static/logo.svg',
 ];
 
@@ -70,7 +66,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // HTML pages: network-first, fallback to cache
+  // HTML pages: network-first, fallback to cache or offline page
   event.respondWith(
     fetch(event.request).then(response => {
       return caches.open(CACHE_NAME).then(cache => {
@@ -80,7 +76,10 @@ self.addEventListener('fetch', event => {
     }).catch(() => {
       return caches.match(event.request).then(cached => {
         if (cached) return cached;
-        return caches.match('/admin/dashboard');
+        return new Response(
+          '<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1><title>Offline</title><style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0f2b45;color:#fff;text-align:center}</style></head><body><div><h1>You are offline</h1><p>Reconnect to access Frankie.</p></div></body></html>',
+          { status: 503, headers: { 'Content-Type': 'text/html' } }
+        );
       });
     })
   );

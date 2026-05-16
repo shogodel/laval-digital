@@ -52,7 +52,7 @@ class _Monitor:
         now = time.time()
 
         # 1. Pending approvals alert
-        pending = len(orch._pending_drafts)
+        pending = len(orch.get_pending_drafts())
         if pending > 0 and self._can_alert("pending", now):
             push.send(
                 title=f"📋 {pending} approval{'s' if pending > 1 else ''} pending",
@@ -62,8 +62,9 @@ class _Monitor:
             self._last_alert["pending"] = now
 
         # 2. Stale activity check
-        if orch._activity_feed:
-            last_activity = orch._activity_feed[0].get("timestamp", "")
+        activities = orch.get_activity_feed(1)
+        if activities:
+            last_activity = activities[0].get("timestamp", "")
             if last_activity:
                 try:
                     last_dt = datetime.fromisoformat(last_activity)

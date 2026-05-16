@@ -400,12 +400,15 @@ class AnalyticsEngine:
 
         month_name = datetime(year, month, 1).strftime("%B %Y")
 
+        def _h(val):
+            return str(val).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
         # Build agent activity rows
         agent_rows_html = ""
         for a in agent_m.get("tasks_per_agent", []):
             agent_rows_html += f"""
             <tr>
-                <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">{a['agent']}</td>
+                <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">{_h(a['agent'])}</td>
                 <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;text-align:center;">{a['total']}</td>
                 <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;text-align:center;color:#059669;">{a['success']}</td>
                 <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;text-align:center;color:#dc2626;">{a['fail']}</td>
@@ -418,7 +421,7 @@ class AnalyticsEngine:
                                 key=lambda x: x[1], reverse=True):
             source_rows += f"""
             <tr>
-                <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">{src}</td>
+                <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">{_h(src)}</td>
                 <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;text-align:center;">{cnt}</td>
             </tr>"""
 
@@ -442,7 +445,7 @@ class AnalyticsEngine:
 </head>
 <body>
   <h1>Monthly Performance Report</h1>
-  <p class="subtitle">{business_name} &mdash; {month_name}</p>
+  <p class="subtitle">{_h(business_name)} &mdash; {month_name}</p>
 
   <div class="summary">
     <div class="stat"><div class="val">{summary.get('leads_this_month', 0)}</div><div class="lbl">Leads</div></div>
@@ -453,7 +456,7 @@ class AnalyticsEngine:
   </div>
 
   <h2>Executive Summary</h2>
-  <p>During {month_name}, {business_name} generated {summary.get('leads_this_month', 0)} leads with a {lead_m.get('conversion_rate', 0)}% conversion rate. The AI agents completed {summary.get('tasks_this_month', 0)} tasks with a {summary.get('success_rate', 0)}% execution success rate. {summary.get('active_agents', 0)} of {summary.get('total_agents', 0)} agents were active throughout the period.</p>
+  <p>During {month_name}, {_h(business_name)} generated {summary.get('leads_this_month', 0)} leads with a {lead_m.get('conversion_rate', 0)}% conversion rate. The AI agents completed {summary.get('tasks_this_month', 0)} tasks with a {summary.get('success_rate', 0)}% execution success rate. {summary.get('active_agents', 0)} of {summary.get('total_agents', 0)} agents were active throughout the period.</p>
 
   <h2>Lead Generation</h2>
   <table>

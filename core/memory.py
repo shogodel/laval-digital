@@ -8,7 +8,7 @@ coordinate with each other.
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -146,7 +146,7 @@ class AgentMemory:
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (uuid.uuid4().hex[:12], tenant_id, source_agent, finding_type,
                  summary[:200], detail[:2000], datetime.now(timezone.utc).isoformat(),
-                 datetime.now(timezone.utc).isoformat()),
+                 (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()),
             )
             conn.commit()
         except Exception as e:

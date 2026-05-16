@@ -19,6 +19,18 @@
     "ads": {
       "enabled": true,
       "description": "Ad campaign management — Google Ads, Meta Ads"
+    },
+    "analytics": {
+      "enabled": true,
+      "description": "Analytics and reporting — cross-channel ROI, trends, benchmarks"
+    },
+    "website": {
+      "enabled": true,
+      "description": "Website technical — audit, SEO health, DNS, SSL, security checks"
+    },
+    "ecommerce": {
+      "enabled": true,
+      "description": "E-Commerce — product management, inventory, order processing, analytics"
     }
   }
 }

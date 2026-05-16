@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#D42B2B">
     <link rel="manifest" href="/static/manifest.json">
@@ -486,6 +487,7 @@
                     </div>
                 </div>
                 <form method="POST" action="/admin/logo" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="file" name="logo" accept=".png,.svg" required style="width:auto;flex:1;min-width:200px;">
                     <button type="submit" class="btn btn-red" style="white-space:nowrap;">Télécharger</button>
                 </form>
@@ -598,6 +600,28 @@
 </div>
 
 <script>
+/* ── CSRF: patch fetch to include X-CSRFToken on all non-GET requests ── */
+(function() {
+    var token = document.querySelector('meta[name="csrf-token"]');
+    if (!token) return;
+    var origFetch = window.fetch;
+    window.fetch = function(url, opts) {
+        opts = opts || {};
+        if (!opts.method || opts.method === 'GET' || opts.method === 'HEAD' || opts.method === 'OPTIONS') {
+            return origFetch.call(this, url, opts);
+        }
+        opts.headers = opts.headers || {};
+        if (opts.headers instanceof Headers) {
+            if (!opts.headers.has('X-CSRFToken')) {
+                opts.headers.append('X-CSRFToken', token.content);
+            }
+        } else {
+            opts.headers['X-CSRFToken'] = opts.headers['X-CSRFToken'] || token.content;
+        }
+        return origFetch.call(this, url, opts);
+    };
+})();
+
 /* ── Navigation par onglets ── */
 document.querySelectorAll('.sidebar-nav a[data-tab]').forEach(link => {
     link.addEventListener('click', function(e) {

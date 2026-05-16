@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Automated SQLite backup script.
+"""Automated SQLite backup script with encryption and integrity checking.
 
-Copies all tenant databases to a timestamped backup directory.
+Copies all tenant databases to a timestamped backup directory with optional
+Fernet encryption if BACKUP_ENCRYPTION_KEY is set in the environment.
+
 Run daily via cron: 0 3 * * * /var/www/laval-digital/venv/bin/python /var/www/laval-digital/scripts/backup.py
 
 Keeps the last 7 daily backups and 4 weekly backups.
@@ -11,7 +13,6 @@ import datetime
 import json
 import os
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -21,18 +22,124 @@ TENANTS_DIR = BASE_DIR / "tenants"
 DAYS_TO_KEEP = 7
 WEEKS_TO_KEEP = 4
 
+# Optional encryption key (Fernet 32-byte base64-encoded)
+_ENCRYPTION_KEY = os.environ.get("BACKUP_ENCRYPTION_KEY", "")
+
+
+def _get_fernet():
+    """Return a Fernet cipher if BACKUP_ENCRYPTION_KEY is set, else None."""
+    if not _ENCRYPTION_KEY:
+        return None
+    try:
+        from cryptography.fernet import Fernet
+        return Fernet(_ENCRYPTION_KEY)
+    except Exception as e:
+        print(f"Warning: BACKUP_ENCRYPTION_KEY set but Fernet init failed: {e}")
+        return None
+
+
+def _encrypt_file(src: Path, dst: Path, fernet) -> bool:
+    """Encrypt src to dst using Fernet."""
+    try:
+        data = src.read_bytes()
+        encrypted = fernet.encrypt(data)
+        dst.write_bytes(encrypted)
+        return True
+    except Exception as e:
+        print(f"Encryption failed for {src}: {e}")
+        return False
+
+
+def _verify_backup(src_path: Path, backup_path: Path) -> bool:
+    """Verify backup integrity by comparing row counts and running integrity_check."""
+    try:
+        import sqlite3
+        src_conn = sqlite3.connect(str(src_path))
+        src_checksum = src_conn.execute("PRAGMA integrity_check").fetchone()[0]
+        src_count = src_conn.execute(
+            "SELECT SUM(cnt) FROM (SELECT COUNT(*) as cnt FROM agents UNION ALL "
+            "SELECT COUNT(*) FROM threads UNION ALL SELECT COUNT(*) FROM execution_log)"
+        ).fetchone()[0]
+        src_conn.close()
+
+        bak_conn = sqlite3.connect(str(backup_path))
+        bak_checksum = bak_conn.execute("PRAGMA integrity_check").fetchone()[0]
+        bak_count = bak_conn.execute(
+            "SELECT SUM(cnt) FROM (SELECT COUNT(*) as cnt FROM agents UNION ALL "
+            "SELECT COUNT(*) FROM threads UNION ALL SELECT COUNT(*) FROM execution_log)"
+        ).fetchone()[0]
+        bak_conn.close()
+
+        if src_checksum != "ok" or bak_checksum != "ok":
+            print(f"Integrity check FAILED for {backup_path}")
+            return False
+        if src_count != bak_count:
+            print(f"Row count mismatch: source={src_count}, backup={bak_count}")
+            return False
+        return True
+    except Exception as e:
+        print(f"Backup verification failed for {backup_path}: {e}")
+        return False
+
 
 def backup_sqlite(src_path: Path, dst_path: Path) -> bool:
-    """Use SQLite's .backup command for safe online backup."""
+    """Use SQLite's .backup command for safe online backup with optional encryption."""
     try:
-        subprocess.run(
-            ["sqlite3", str(src_path), f".backup '{dst_path}'"],
-            capture_output=True, timeout=30, check=True,
-        )
-        return True
+        dst_path.parent.mkdir(parents=True, exist_ok=True)
+        import sqlite3
+
+        if _ENCRYPTION_KEY:
+            fernet = _get_fernet()
+            if fernet:
+                # Backup to temp path, then encrypt
+                temp_path = dst_path.with_suffix(".tmp.db")
+                conn = sqlite3.connect(str(src_path))
+                backup_conn = sqlite3.connect(str(temp_path))
+                with backup_conn:
+                    conn.backup(backup_conn)
+                backup_conn.close()
+                conn.close()
+                if not _encrypt_file(temp_path, dst_path.with_suffix(".enc"), fernet):
+                    temp_path.unlink(missing_ok=True)
+                    return False
+                temp_path.unlink(missing_ok=True)
+                return True
+
+        # Unencrypted fallback
+        conn = sqlite3.connect(str(src_path))
+        backup_conn = sqlite3.connect(str(dst_path))
+        with backup_conn:
+            conn.backup(backup_conn)
+        backup_conn.close()
+        conn.close()
+
+        # Verify integrity
+        return _verify_backup(src_path, dst_path)
     except Exception as e:
         print(f"Failed to backup {src_path}: {e}")
         return False
+
+
+def _safe_rmtree(path: Path) -> None:
+    """Safely remove a directory tree with basic path safety check."""
+    try:
+        resolved = path.resolve()
+        allowed = BACKUP_ROOT.resolve()
+        if not str(resolved).startswith(str(allowed) + "/"):
+            print(f"Refusing to remove {resolved}: outside backup root")
+            return
+        shutil.rmtree(path)
+        print(f"Cleaned: {path}")
+    except Exception as e:
+        print(f"Failed to clean {path}: {e}")
+
+
+def _try_parse_date(name: str):
+    """Try to parse a directory name as a date, returning None on failure."""
+    try:
+        return datetime.datetime.strptime(name, "%Y-%m-%d")
+    except ValueError:
+        return None
 
 
 def main():
@@ -50,14 +157,18 @@ def main():
         return
 
     count = 0
+    errors = 0
     for db_file in sorted(TENANTS_DIR.rglob("*.db")):
         rel = db_file.relative_to(TENANTS_DIR)
         dst = daily_dir / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         if backup_sqlite(db_file, dst):
             count += 1
+        else:
+            errors += 1
 
-    print(f"Backed up {count} databases to {daily_dir}")
+    print(f"Backed up {count} databases to {daily_dir}" +
+          (f" ({errors} errors)" if errors else ""))
 
     # Also copy to weekly if not already done this week
     weekly_dst = weekly_dir / date_str
@@ -66,16 +177,31 @@ def main():
         print(f"Copied to weekly backup: {weekly_dst}")
 
     # Clean old daily backups
-    for d in sorted((BACKUP_ROOT / "daily").iterdir()):
-        if d.is_dir() and (now - datetime.datetime.strptime(d.name, "%Y-%m-%d")).days > DAYS_TO_KEEP:
-            shutil.rmtree(d)
-            print(f"Cleaned old daily backup: {d}")
+    daily_parent = BACKUP_ROOT / "daily"
+    if daily_parent.exists():
+        for d in sorted(daily_parent.iterdir()):
+            parsed = _try_parse_date(d.name)
+            if d.is_dir() and parsed and (now - parsed).days > DAYS_TO_KEEP:
+                _safe_rmtree(d)
 
     # Clean old weekly backups
-    weeks = sorted((BACKUP_ROOT / "weekly").iterdir(), reverse=True)
-    for w in weeks[WEEKS_TO_KEEP:]:
-        shutil.rmtree(w)
-        print(f"Cleaned old weekly backup: {w}")
+    weekly_parent = BACKUP_ROOT / "weekly"
+    if weekly_parent.exists():
+        weeks = sorted(weekly_parent.iterdir(), reverse=True)
+        for w in weeks[WEEKS_TO_KEEP:]:
+            _safe_rmtree(w)
+
+    # Offsite sync via rsync (BACKUP_OFFSITE_DEST)
+    offsite_dest = os.environ.get("BACKUP_OFFSITE_DEST", "")
+    if offsite_dest:
+        import subprocess
+        src = str(daily_dir) + "/"
+        rc = subprocess.call(["rsync", "-a", "--delete", src, offsite_dest],
+                             timeout=120)
+        if rc == 0:
+            print(f"Synced to offsite destination: {offsite_dest}")
+        else:
+            print(f"Offsite sync failed (rsync exit code {rc})")
 
 
 if __name__ == "__main__":

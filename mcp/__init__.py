@@ -3,7 +3,7 @@ Frankie MCP Server Registry.
 Discovers and manages all MCP servers.
 """
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 from .base_server import MCPServer
 from .seo_server import SEOMCPServer
 from .social_server import SocialMCPServer
@@ -18,6 +18,26 @@ logger = logging.getLogger(__name__)
 
 # Registry of all active MCP servers
 _mcp_servers: Dict[str, MCPServer] = {}
+
+# ── Single source of truth: agent → MCP server/tool routing ──────
+AGENT_MCP_ROUTING: Dict[str, Tuple[str, str]] = {
+    "local_seo": ("seo", "publish_blog_post"),
+    "social_media": ("social", "post_to_facebook"),
+    "lead_conversion": ("email", "send_email"),
+    "paid_ads": ("ads", "create_google_ads_campaign"),
+    "growth_hacker": ("analytics", "analyze_trends"),
+    "reputation": ("gmb", "respond_to_review"),
+    "email_marketing": ("email", "send_campaign"),
+    "tiktok": ("social", "post_to_tiktok"),
+    "outreach": ("email", "send_email"),
+    "backlinks": ("seo", "find_backlink_opportunities"),
+    "content_strategy": ("seo", "publish_blog_post"),
+    "cro": ("website", "track_conversions"),
+    "technical_seo": ("seo", "run_site_audit"),
+    "video": ("social", "post_to_youtube"),
+    "sms_marketing": ("email", "send_email"),
+    "reporting": ("analytics", "generate_monthly_report"),
+}
 
 
 def init_mcp_servers() -> Dict[str, MCPServer]:

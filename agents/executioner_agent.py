@@ -193,26 +193,8 @@ class ExecutionerAgent:
         """
         # Try MCP execution first
         try:
-            from mcp import get_mcp_server
-            mcp_mapping = {
-                "local_seo": ("seo", "publish_blog_post"),
-                "social_media": ("social", "post_to_facebook"),
-                "lead_conversion": ("email", "send_email"),
-                "paid_ads": ("ads", "create_google_ads_campaign"),
-                "growth_hacker": ("analytics", "analyze_trends"),
-                "reputation": ("gmb", "respond_to_review"),
-                "email_marketing": ("email", "send_campaign"),
-                "tiktok": ("social", "post_to_tiktok"),
-                "outreach": ("email", "send_email"),
-                "backlinks": ("seo", "find_backlink_opportunities"),
-                "content_strategist": ("seo", "publish_blog_post"),
-                "cro": ("website", "audit_seo_health"),
-                "technical_seo": ("seo", "run_site_audit"),
-                "video": ("social", "post_to_tiktok"),
-                "sms_marketing": ("email", "send_email"),
-                "reporting": ("analytics", "generate_monthly_report"),
-            }
-            mapping = mcp_mapping.get(agent_name)
+            from mcp import get_mcp_server, AGENT_MCP_ROUTING
+            mapping = AGENT_MCP_ROUTING.get(agent_name)
             if mapping:
                 server_name, mcp_tool = mapping
                 mcp_server = get_mcp_server(server_name)
@@ -1034,13 +1016,6 @@ class ExecutionerAgent:
                         except json.JSONDecodeError:
                             continue
         return None
-
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
 
     agent = ExecutionerAgent({
         "execution_log_path": "logs/executions.jsonl",

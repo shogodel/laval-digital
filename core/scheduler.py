@@ -89,9 +89,9 @@ class SchedulerManager:
     def _run_task(self, schedule_id: str, tenant_id: str, agent_id: str, task: str, language: str):
         try:
             orch = self._get_orch()
-            result = orch.process_message(
+            result = orch.process_message_with_autonomy(
                 user_message=task,
-                thread_id=f"sched-{schedule_id}-{uuid.uuid4().hex[:8]}",
+                thread_id=f"sched-{agent_id}-{schedule_id}-{uuid.uuid4().hex[:8]}",
                 language=language,
                 tenant_id=tenant_id,
             )

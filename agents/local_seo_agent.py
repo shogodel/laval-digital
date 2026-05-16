@@ -1,7 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from core.base_agent import BaseAgent
 from typing import Any, Dict, List
 import logging
@@ -52,42 +48,3 @@ class LocalSEOAgent(BaseAgent):
             Empty list for MVP. Tools will be added in Phase 2.
         """
         return []
-
-
-if __name__ == "__main__":
-
-    config = {
-        "agent_id": "local_seo_test",
-        "enabled": True,
-        "model": "deepseek-chat",
-        "system_prompt_file": "prompts/local_seo.md",
-        "credentials": {
-            "api_key": os.getenv("DEEPSEEK_API_KEY", "dummy-key-for-testing"),
-            "api_base": "https://api.deepseek.com/v1"
-        }
-    }
-
-    print("Initializing LocalSEOAgent...")
-    agent = LocalSEOAgent("local_seo_test", config)
-
-    print("Building agent graph...")
-    graph = agent.build_graph()
-    print("Graph built successfully!")
-
-    api_key = os.getenv("DEEPSEEK_API_KEY")
-    if api_key:
-        print("\nInvoking graph with test task...")
-        from langgraph.graph import StateGraph
-        from core.base_agent import AgentState
-
-        result = graph.invoke({
-            "task": "Optimize Google Business Profile for a plumber in Laval",
-            "draft_output": None,
-            "approved": None,
-            "feedback": None,
-            "result": None,
-        })
-        print(f"\nResult: {result.get('result', 'No result')}")
-    else:
-        print("\nSkipping graph invocation (no DEEPSEEK_API_KEY found)")
-        print("Set DEEPSEEK_API_KEY environment variable to test with real API")

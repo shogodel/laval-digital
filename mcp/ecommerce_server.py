@@ -430,7 +430,7 @@ Order now and experience the difference."""
             date = o.get("date", "")
             total = o.get("total", 0)
             try: order_date = datetime.fromisoformat(date.replace('Z', '+00:00'))
-            except: order_date = now
+            except Exception: order_date = now
 
             if email not in customers:
                 customers[email] = {"orders": 0, "total_spent": 0, "last_order": order_date}
@@ -571,7 +571,8 @@ Order now and experience the difference."""
                 if 'application/ld+json' in content:
                     score += 15
                     checks.append({"category": "SEO", "check": "Schema markup", "status": "pass", "priority": "high"})
-            except: pass
+            except Exception:
+                pass
 
         return {"success": True, "result": f"Store health audit: {len(checks)} checks across 5 categories",
                 "checks": checks, "categories": ["Products", "Trust", "Conversion", "Marketing", "SEO"]}
@@ -601,4 +602,5 @@ Order now and experience the difference."""
         try:
             if not url.startswith(('http://', 'https://')): url = 'https://' + url
             return requests.get(url, headers={'User-Agent': 'Frankie-Ecom/1.0'}, timeout=10)
-        except: return None
+        except Exception:
+            return None

@@ -239,15 +239,20 @@ class AnalyticsMCPServer(MCPServer):
 
         try:
             cursor = conn.cursor()
-            cursor.execute(f"""SELECT COUNT(*) as executions, SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful, COUNT(DISTINCT DATE(timestamp)) as active_days FROM execution_log WHERE timestamp >= DATE('now', '-{period_a_days} days')""")
+            now = datetime.now(timezone.utc)
+            cutoff_a = (now - timedelta(days=period_a_days)).isoformat()
+            cutoff_b = (now - timedelta(days=period_a_days + period_b_days)).isoformat()
+            cutoff_a_end = (now - timedelta(days=period_a_days)).isoformat()
+
+            cursor.execute("""SELECT COUNT(*) as executions, SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful, COUNT(DISTINCT DATE(timestamp)) as active_days FROM execution_log WHERE timestamp >= ?""", (cutoff_a,))
             current = dict(cursor.fetchone())
 
-            cursor.execute(f"""SELECT COUNT(*) as executions, SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful, COUNT(DISTINCT DATE(timestamp)) as active_days FROM execution_log WHERE timestamp >= DATE('now', '-{period_a_days + period_b_days} days') AND timestamp < DATE('now', '-{period_a_days} days')""")
+            cursor.execute("""SELECT COUNT(*) as executions, SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful, COUNT(DISTINCT DATE(timestamp)) as active_days FROM execution_log WHERE timestamp >= ? AND timestamp < ?""", (cutoff_b, cutoff_a_end))
             previous = dict(cursor.fetchone())
 
-            cursor.execute(f"SELECT COUNT(*) FROM leads WHERE created_at >= DATE('now', '-{period_a_days} days')")
+            cursor.execute("SELECT COUNT(*) FROM leads WHERE created_at >= ?", (cutoff_a,))
             current_leads = cursor.fetchone()[0] or 0
-            cursor.execute(f"SELECT COUNT(*) FROM leads WHERE created_at >= DATE('now', '-{period_a_days + period_b_days} days') AND created_at < DATE('now', '-{period_a_days} days')")
+            cursor.execute("SELECT COUNT(*) FROM leads WHERE created_at >= ? AND created_at < ?", (cutoff_b, cutoff_a_end))
             previous_leads = cursor.fetchone()[0] or 0
 
             conn.close()
@@ -370,26 +375,27 @@ Frankie captured **{leads} new leads** this month. Week-over-week activity is **
 
         try:
             cursor = conn.cursor()
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
 
             if chart_type == "executions_by_day":
-                cursor.execute(f"SELECT DATE(timestamp) as date, COUNT(*) as count FROM execution_log WHERE timestamp >= DATE('now', '-{days} days') GROUP BY DATE(timestamp) ORDER BY date")
+                cursor.execute("SELECT DATE(timestamp) as date, COUNT(*) as count FROM execution_log WHERE timestamp >= ? GROUP BY DATE(timestamp) ORDER BY date", (cutoff,))
                 data = [{"date": row["date"], "count": row["count"]} for row in cursor.fetchall()]
 
             elif chart_type == "success_vs_failure":
-                cursor.execute(f"SELECT SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful, SUM(CASE WHEN success=0 THEN 1 ELSE 0 END) as failed FROM execution_log WHERE timestamp >= DATE('now', '-{days} days')")
+                cursor.execute("SELECT SUM(CASE WHEN success=1 THEN 1 ELSE 0 END) as successful, SUM(CASE WHEN success=0 THEN 1 ELSE 0 END) as failed FROM execution_log WHERE timestamp >= ?", (cutoff,))
                 row = cursor.fetchone()
                 data = {"successful": row["successful"] or 0, "failed": row["failed"] or 0}
 
             elif chart_type == "agents_pie":
-                cursor.execute(f"SELECT agent_name, COUNT(*) as count FROM execution_log WHERE timestamp >= DATE('now', '-{days} days') GROUP BY agent_name ORDER BY count DESC")
+                cursor.execute("SELECT agent_name, COUNT(*) as count FROM execution_log WHERE timestamp >= ? GROUP BY agent_name ORDER BY count DESC", (cutoff,))
                 data = [{"agent": row["agent_name"], "count": row["count"]} for row in cursor.fetchall()]
 
             elif chart_type == "leads_by_source":
-                cursor.execute(f"SELECT COALESCE(service, 'unknown') as source, COUNT(*) as count FROM leads WHERE created_at >= DATE('now', '-{days} days') GROUP BY source ORDER BY count DESC")
+                cursor.execute("SELECT COALESCE(service, 'unknown') as source, COUNT(*) as count FROM leads WHERE created_at >= ? GROUP BY source ORDER BY count DESC", (cutoff,))
                 data = [{"source": row["source"], "count": row["count"]} for row in cursor.fetchall()]
 
             elif chart_type == "leads_by_urgency":
-                cursor.execute(f"SELECT COALESCE(urgency, 'unspecified') as urgency, COUNT(*) as count FROM leads WHERE created_at >= DATE('now', '-{days} days') GROUP BY urgency ORDER BY count DESC")
+                cursor.execute("SELECT COALESCE(urgency, 'unspecified') as urgency, COUNT(*) as count FROM leads WHERE created_at >= ? GROUP BY urgency ORDER BY count DESC", (cutoff,))
                 data = [{"urgency": row["urgency"], "count": row["count"]} for row in cursor.fetchall()]
 
             else:

@@ -4,11 +4,19 @@ After=network.target
 
 [Service]
 Type=simple
-User=root
+User=laval
+Group=laval
 WorkingDirectory=/var/www/laval-digital
 Environment="PATH=/var/www/laval-digital/venv/bin"
-ExecStart=/var/www/laval-digital/venv/bin/gunicorn -w 1 --threads 4 --bind 127.0.0.1:5000 app:app
+EnvironmentFile=/var/www/laval-digital/.env
+ExecStart=/var/www/laval-digital/venv/bin/gunicorn -w 2 --threads 4 --bind 127.0.0.1:5000 app:app
 Restart=always
+RestartSec=5
+LimitNOFILE=65536
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
 
 [Install]
 WantedBy=multi-user.target

@@ -1,6 +1,10 @@
+import json
+import os
 import re
+import threading
 from datetime import datetime, timedelta
 from functools import wraps
+from pathlib import Path
 from typing import Optional, Tuple
 
 from flask import session, request, flash, redirect, url_for
@@ -9,10 +13,29 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 login_manager = LoginManager()
 
-_login_attempts: dict = {}
+# File-based rate limit storage (persists across workers)
+_RATE_LIMIT_FILE = Path("data/login_attempts.json")
+_RATE_LIMIT_LOCK = threading.Lock()
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_WINDOW = timedelta(minutes=15)
 SESSION_TIMEOUT = timedelta(hours=2)
+
+
+def _load_rate_limits() -> dict:
+    try:
+        if _RATE_LIMIT_FILE.exists():
+            return json.loads(_RATE_LIMIT_FILE.read_text())
+    except Exception:
+        pass
+    return {}
+
+
+def _save_rate_limits(data: dict) -> None:
+    try:
+        _RATE_LIMIT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _RATE_LIMIT_FILE.write_text(json.dumps(data))
+    except Exception:
+        pass
 
 # Tenant manager reference — set by init_auth()
 _tm = None
@@ -87,20 +110,26 @@ def init_auth(app, tenant_manager):
 def _check_rate_limit() -> bool:
     ip = request.remote_addr or "unknown"
     now = datetime.now()
-    if ip not in _login_attempts:
-        _login_attempts[ip] = []
-    _login_attempts[ip] = [
-        t for t in _login_attempts[ip] if now - t < LOGIN_WINDOW
-    ]
-    return len(_login_attempts[ip]) < MAX_LOGIN_ATTEMPTS
+    with _RATE_LIMIT_LOCK:
+        data = _load_rate_limits()
+        if ip not in data:
+            data[ip] = []
+        data[ip] = [
+            t for t in data[ip] if (now - datetime.fromisoformat(t)).total_seconds() < LOGIN_WINDOW.total_seconds()
+        ]
+        _save_rate_limits(data)
+        return len(data[ip]) < MAX_LOGIN_ATTEMPTS
 
 
 def _record_attempt(success: bool = True) -> None:
     ip = request.remote_addr or "unknown"
-    if success:
-        _login_attempts.pop(ip, None)
-    else:
-        _login_attempts.setdefault(ip, []).append(datetime.now())
+    with _RATE_LIMIT_LOCK:
+        data = _load_rate_limits()
+        if success:
+            data.pop(ip, None)
+        else:
+            data.setdefault(ip, []).append(datetime.now().isoformat())
+        _save_rate_limits(data)
 
 
 def find_user_by_email(email: str):

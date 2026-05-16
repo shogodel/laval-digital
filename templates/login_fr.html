@@ -92,6 +92,7 @@
         </div>
 
         <form method="POST" action="/fr/admin/login">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="username">Nom d'utilisateur</label>
                 <input type="text" id="username" name="username" placeholder="Entrez votre nom d'utilisateur" required autofocus>

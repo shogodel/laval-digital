@@ -1,7 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from core.base_agent import BaseAgent
 from typing import Any, Dict, List
 import logging
@@ -28,25 +24,3 @@ class OutreachAgent(BaseAgent):
 
     def get_tools(self) -> List[Any]:
         return []
-
-
-if __name__ == "__main__":
-
-    config = {
-        "agent_id": "outreach_test",
-        "enabled": True,
-        "model": "deepseek-chat",
-        "system_prompt_file": "prompts/outreach.md",
-        "credentials": {
-            "api_key": os.getenv("DEEPSEEK_API_KEY", "dummy-key-for-testing"),
-            "api_base": "https://api.deepseek.com/v1"
-        }
-    }
-
-    print("Initializing OutreachAgent...")
-    agent = OutreachAgent("outreach_test", config)
-
-    print("Building agent graph...")
-    graph = agent.build_graph()
-    print("Graph built successfully!")
-    print("\nSet DEEPSEEK_API_KEY to test with a real task.")

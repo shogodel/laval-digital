@@ -77,9 +77,14 @@ class BaseAgent(ABC):
             raise ValueError("Missing credentials.api_key in config")
 
     def _load_system_prompt(self) -> str:
-        path = Path(self._system_prompt_file)
+        path = Path(self._system_prompt_file).resolve()
+        prompts_dir = Path("prompts").resolve()
+        if not str(path).startswith(str(prompts_dir)):
+            raise ValueError(f"System prompt file must be within prompts/ directory: {self._system_prompt_file}")
         if not path.exists():
             raise FileNotFoundError(f"System prompt file not found: {path}")
+        if not path.is_file():
+            raise ValueError(f"System prompt path is not a file: {path}")
         return path.read_text(encoding="utf-8").strip()
 
     @property

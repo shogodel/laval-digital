@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat with {{ agent_name }} — Laval Digital</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -170,6 +171,28 @@
 </div>
 
 <script>
+/* ── CSRF: patch fetch to include X-CSRFToken on all non-GET requests ── */
+(function() {
+    var token = document.querySelector('meta[name="csrf-token"]');
+    if (!token) return;
+    var origFetch = window.fetch;
+    window.fetch = function(url, opts) {
+        opts = opts || {};
+        if (!opts.method || opts.method === 'GET' || opts.method === 'HEAD' || opts.method === 'OPTIONS') {
+            return origFetch.call(this, url, opts);
+        }
+        opts.headers = opts.headers || {};
+        if (opts.headers instanceof Headers) {
+            if (!opts.headers.has('X-CSRFToken')) {
+                opts.headers.append('X-CSRFToken', token.content);
+            }
+        } else {
+            opts.headers['X-CSRFToken'] = opts.headers['X-CSRFToken'] || token.content;
+        }
+        return origFetch.call(this, url, opts);
+    };
+})();
+
 const AGENT_ID = '{{ agent_id }}';
 const AGENT_NAME = '{{ agent_name }}';
 let CURRENT_THREAD = null;
@@ -382,12 +405,6 @@ function executeAgentResponse(content) {
     })
     .catch(err => {
         alert('Network error: ' + err.message);
-    })
-    .finally(() => {
-        btn.disabled = false;
-        btn.textContent = '\u{1F680} Execute';
-    });
-}
     })
     .finally(() => {
         btn.disabled = false;

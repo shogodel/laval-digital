@@ -239,36 +239,3 @@ def export_to_csv(prospects: List[Dict], filename: str) -> str:
 
     logger.info("Exported %d prospects to %s", len(prospects), filepath)
     return str(filepath.resolve())
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-
-    print("\nSearching for plumbers in Laval with no website...\n")
-
-    prospects = find_best_prospects(
-        business_type="plumber",
-        city="Laval",
-        min_rating=3.0,
-        max_rating=4.5,
-        no_website_only=True,
-    )
-
-    print(f"Found {len(prospects)} prospects matching criteria.\n")
-
-    print(f"{'='*60}")
-    print(f"  Top 5 Prospects — Plumbers in Laval")
-    print(f"{'='*60}\n")
-
-    for i, b in enumerate(prospects[:5], 1):
-        print(f"  {i}. {b['name']}")
-        print(f"     Address:      {b['address']}")
-        print(f"     Phone:        {b['phone']}")
-        print(f"     Website:      {b['website'] or 'N/A'}")
-        print(f"     Rating:       {b['rating']} ({b['review_count']} reviews)")
-        print(f"     Place ID:     {b['place_id']}")
-        print()
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    csv_file = export_to_csv(prospects, f"plumbers_laval_{timestamp}.csv")
-    print(f"Exported to: {csv_file}\n")

@@ -189,6 +189,10 @@ class Orchestrator:
     def get_activity_feed(self, limit: int = 50) -> List[Dict[str, Any]]:
         return self._activity_feed[:limit]
 
+    def get_pending_drafts(self) -> Dict[str, Dict[str, Any]]:
+        """Return all pending approval drafts."""
+        return self._pending_drafts
+
     # ------------------------------------------------------------------
     # Welcome / Suggestions
     # ------------------------------------------------------------------

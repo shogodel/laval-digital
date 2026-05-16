@@ -141,8 +141,8 @@ class LLMAdapter:
             },
             {
                 "name": "google",
-                "url": f"https://generativelanguage.googleapis.com/v1/models?key={api_key}",
-                "headers": {},
+                "url": "https://generativelanguage.googleapis.com/v1/models",
+                "headers": {"X-Goog-Api-Key": api_key},
                 "parse": lambda d: [m["name"] for m in d.get("models", [])],
             },
             {
@@ -186,10 +186,10 @@ class LLMAdapter:
                         logger.info(f"Detected provider '{name}' with {len(models)} models")
                         return {"provider": name, "models": sorted(models)}
             except requests.RequestException:
-                logger.debug(f"Provider '{name}' rejected key {api_key[:8]}...")
+                logger.debug("Provider '%s' rejected the provided key", name)
                 continue
 
-        logger.warning(f"No provider accepted key {api_key[:8]}...")
+        logger.warning("No provider accepted the provided API key")
         return {"provider": "unknown", "models": []}
 
     def _get_llm(self) -> BaseChatModel:

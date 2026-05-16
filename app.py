@@ -1,16 +1,43 @@
 import os
+import re
 import sys
 import uuid
 import secrets
 import warnings
 import json
 import logging
+import logging.handlers
 import requests
+import socket
+from urllib.parse import urlparse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_url(url: str, timeout: int = 10) -> requests.Response:
+    """Fetch a URL with SSRF protection: http/https only, no private IPs."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"URL scheme must be http or https, got '{parsed.scheme}'")
+    hostname = parsed.hostname or ""
+    try:
+        ip = socket.gethostbyname(hostname)
+    except socket.gaierror:
+        raise ValueError(f"Could not resolve hostname: {hostname}")
+    # Block private / loopback / link-local IPs
+    parts = [int(x) for x in ip.split(".")]
+    if parts[0] == 127 or parts[0] == 10 or parts[0] == 0:
+        raise ValueError(f"Blocked request to private IP: {ip}")
+    if parts[0] == 169 and parts[1] == 254:
+        raise ValueError(f"Blocked request to link-local IP: {ip}")
+    if parts[0] == 192 and parts[1] == 168:
+        raise ValueError(f"Blocked request to private IP: {ip}")
+    if parts[0] == 172 and 16 <= parts[1] <= 31:
+        raise ValueError(f"Blocked request to private IP: {ip}")
+    return requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
 
 
 def _safe_error(e: Exception, status: int = 500):
@@ -23,14 +50,17 @@ def _safe_error(e: Exception, status: int = 500):
 warnings.filterwarnings("ignore", module="langgraph")
 warnings.filterwarnings("ignore", module="langchain")
 
-from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
+from flask import (Flask, render_template, jsonify, request,
+                   redirect, url_for, session, flash, g)
 from flask_login import login_user, logout_user, login_required, current_user
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # MCP Server imports
-from mcp import init_mcp_servers, get_all_mcp_servers, get_mcp_server, get_all_mcp_tools
+from mcp import init_mcp_servers, get_all_mcp_servers, get_mcp_server, get_all_mcp_tools, AGENT_MCP_ROUTING
 
 if not os.getenv("DEEPSEEK_API_KEY"):
     raise RuntimeError(
@@ -42,6 +72,11 @@ if not os.getenv("FLASK_SECRET_KEY"):
         "FLASK_SECRET_KEY environment variable is required. "
         "Create a .env file with FLASK_SECRET_KEY=your-random-secret"
     )
+if os.getenv("FLASK_SECRET_KEY", "").startswith("laval-digital-secret"):
+    raise RuntimeError(
+        "FLASK_SECRET_KEY contains the default value. "
+        "Generate a secure key: python3 -c \"import secrets; print(secrets.token_hex(32))\""
+    )
 if not os.getenv("ADMIN_USERNAME"):
     raise RuntimeError(
         "ADMIN_USERNAME environment variable is required. "
@@ -52,6 +87,15 @@ if not os.getenv("ADMIN_PASSWORD"):
         "ADMIN_PASSWORD environment variable is required. "
         "Create a .env file with ADMIN_PASSWORD=your-secure-password"
     )
+pw = os.getenv("ADMIN_PASSWORD", "")
+if len(pw) < 12 or not any(c.isdigit() for c in pw) or not any(c in "!@#$%^&*()_+-=[]{}|;':\",./<>?`~" for c in pw):
+    raise RuntimeError(
+        "ADMIN_PASSWORD must be at least 12 characters, include at least one "
+        "digit and one special character."
+    )
+
+# Hash admin password for constant-time comparison
+_admin_password_hash = generate_password_hash(os.getenv("ADMIN_PASSWORD", ""))
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
@@ -99,6 +143,89 @@ from core.auth import (
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 app.permanent_session_lifetime = timedelta(days=30)
+app.session_cookie_httponly = True
+app.session_cookie_samesite = "Lax"
+if os.getenv("DEV_MODE", "").lower() not in ("true", "1"):
+    app.session_cookie_secure = True
+
+# CSRF protection
+csrf = CSRFProtect(app)
+csrf.exempt(_API_PUBLIC)
+
+
+@app.context_processor
+def inject_csrf_token():
+    return dict(csrf_token=generate_csrf())
+
+
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to every response."""
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self' https://api.deepseek.com; "
+        "frame-ancestors 'none'"
+    )
+    # CORS for bookmarklet (used from external sites to inspect pages)
+    origin = request.headers.get("Origin")
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRFToken, Authorization"
+    return response
+
+
+# Public API routes that don't require authentication
+_API_PUBLIC: set = {
+    "/api/affiliate/status",
+    "/api/affiliate/signup",
+}
+
+
+@app.before_request
+def require_api_auth():
+    """Require authentication on all /api/* routes except public ones."""
+    if not request.path.startswith("/api/"):
+        return
+    if request.path in _API_PUBLIC:
+        return
+    if session.get("admin_logged_in"):
+        return
+    if current_user.is_authenticated:
+        return
+    if request.method == "OPTIONS":
+        return
+    return jsonify({"error": "Authentication required"}), 401
+
+
+# Configure logging with rotation (10 MB per file, keep 5 backups)
+# Also send WARNING+ to stderr for Docker/container environments
+_log_handler = logging.handlers.RotatingFileHandler(
+    "logs/app.log", maxBytes=10 * 1024 * 1024, backupCount=5,
+)
+_log_handler.setFormatter(logging.Formatter(
+    "[%(asctime)s] %(levelname)s in %(name)s: %(message)s"
+))
+_log_handler.setLevel(logging.INFO)
+logging.getLogger().addHandler(_log_handler)
+
+_console_handler = logging.StreamHandler()
+_console_handler.setFormatter(logging.Formatter(
+    "[%(asctime)s] %(levelname)s %(name)s: %(message)s"
+))
+_console_handler.setLevel(logging.WARNING)
+logging.getLogger().addHandler(_console_handler)
+
+logging.getLogger().setLevel(logging.INFO)
+
 
 # Initialize Tenant Manager for multi-tenant database isolation
 tenant_manager = TenantManager()
@@ -157,12 +284,19 @@ def update_tenant_agent_activity(
         agent_id: The agent identifier to update.
         **kwargs: Column-value pairs to set on the agents row.
     """
+    _ALLOWED_COLUMNS = {
+        "status", "last_invoked", "task_count", "success_count",
+        "failure_count", "last_draft_preview", "enabled", "model",
+        "autonomy", "confidence_threshold",
+    }
     try:
         conn = tenant_manager.get_connection(tenant_id)
         cursor = conn.cursor()
         for key, value in kwargs.items():
+            if key not in _ALLOWED_COLUMNS:
+                raise ValueError(f"Invalid column name: {key}")
             cursor.execute(
-                f"UPDATE agents SET {key} = ? WHERE agent_id = ?",
+                f"UPDATE agents SET \"{key}\" = ? WHERE agent_id = ?",
                 (value, agent_id),
             )
         conn.commit()
@@ -227,7 +361,20 @@ def check_session_timeout():
                         return redirect(url_for("affiliate_login"))
 
             except Exception:
-                pass
+                logger.warning("Session timeout check failed", exc_info=True)
+        session["last_active"] = datetime.now().isoformat()
+    elif session.get("admin_logged_in"):
+        last_active = session.get("last_active")
+        if last_active:
+            try:
+                last = datetime.fromisoformat(last_active)
+                if datetime.now() - last > timedelta(hours=2):
+                    session.pop("admin_logged_in", None)
+                    session.clear()
+                    flash("Session expired. Please log in again.", "error")
+                    return redirect(url_for("admin_login"))
+            except Exception:
+                logger.warning("Admin session timeout check failed", exc_info=True)
         session["last_active"] = datetime.now().isoformat()
 
 
@@ -270,7 +417,7 @@ AGENT_CONFIGS = {
         "agent_id": "paid_ads",
         "enabled": True,
         "model": "deepseek-chat",
-        "system_prompt_file": "prompts/paid_ads.md",
+        "system_prompt_file": "prompts/paid_ads_v2.md",
         "credentials": {
             "api_key": os.getenv("DEEPSEEK_API_KEY"),
             "api_base": "https://api.deepseek.com/v1",
@@ -463,8 +610,7 @@ def get_orchestrator():
     if orchestrator is not None:
         return orchestrator
 
-    key_preview = llm_adapter._api_key[:10] + "..." if llm_adapter._api_key else "None"
-    logger.info(f"Building orchestrator with API key: {key_preview}")
+    logger.info("Building orchestrator")
 
     orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
     return orchestrator
@@ -486,6 +632,34 @@ def affiliate_signup_fr():
     """Serve the French affiliate program signup page."""
     has_ref = "affiliate_ref" in session
     return render_template("affiliate_fr.html", has_ref=has_ref)
+
+
+@app.route("/health")
+def health():
+    """Health check endpoint for Docker/K8s probes."""
+    status = {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+    # Check DB connectivity
+    try:
+        tenant_manager.get_connection("_health_check")
+    except Exception:
+        tenant_manager.create_tenant_database("_health_check", "direct")
+    try:
+        conn = tenant_manager.get_connection("_health_check")
+        conn.execute("SELECT 1")
+        conn.close()
+        status["database"] = "ok"
+    except Exception as e:
+        status["database"] = f"error: {e}"
+        status["status"] = "degraded"
+    # Check LLM adapter (lightweight model list call)
+    try:
+        models = llm_adapter.get_available_models()
+        status["llm"] = "ok" if models else "no_models"
+    except Exception as e:
+        status["llm"] = f"error: {e}"
+        status["status"] = "degraded"
+    http_code = 200 if status["status"] == "ok" else 503
+    return jsonify(status), http_code
 
 
 @app.route("/")
@@ -573,7 +747,7 @@ def client_login():
             )
             conn.commit()
         except Exception:
-            pass
+            logger.warning("Failed to update login timestamp for client", exc_info=True)
 
         return redirect(url_for("client_dashboard"))
 
@@ -639,7 +813,7 @@ def client_dashboard():
             else:
                 total_owed += p["amount"]
     except Exception:
-        pass
+        logger.warning("Failed to load payment data for client dashboard", exc_info=True)
 
     # Gather site URL from client_details
     site_url = None
@@ -876,13 +1050,18 @@ def api_delete_user(user_id):
 def admin_login():
     """Serve the admin login page and handle authentication."""
     if request.method == "POST":
+        if not _check_rate_limit():
+            return render_template(
+                "login.html", error="Too many attempts. Please try again later.", now=datetime.now()
+            )
         username = request.form.get("username", "")
         password = request.form.get("password", "")
         expected_user = os.getenv("ADMIN_USERNAME")
-        expected_pass = os.getenv("ADMIN_PASSWORD")
-        if username == expected_user and password == expected_pass:
+        if username == expected_user and check_password_hash(_admin_password_hash, password):
+            _record_attempt(True)
             session["admin_logged_in"] = True
             return redirect(url_for("admin_panel_redirect"))
+        _record_attempt(False)
         return render_template(
             "login.html", error="Invalid username or password.", now=datetime.now()
         )
@@ -948,13 +1127,18 @@ def admin_agent_chat_fr(agent_id):
 def admin_login_fr():
     """Serve the French admin login page."""
     if request.method == "POST":
+        if not _check_rate_limit():
+            return render_template(
+                "login_fr.html", error="Trop de tentatives. Veuillez réessayer plus tard.", now=datetime.now()
+            )
         username = request.form.get("username", "")
         password = request.form.get("password", "")
         expected_user = os.getenv("ADMIN_USERNAME")
-        expected_pass = os.getenv("ADMIN_PASSWORD")
-        if username == expected_user and password == expected_pass:
+        if username == expected_user and check_password_hash(_admin_password_hash, password):
+            _record_attempt(True)
             session["admin_logged_in"] = True
             return redirect(url_for("admin_panel_redirect_fr"))
+        _record_attempt(False)
         return render_template(
             "login_fr.html",
             error="Nom d'utilisateur ou mot de passe invalide.",
@@ -1497,7 +1681,20 @@ def test_smtp():
         msg["From"] = data.get("smtp_from_email", "")
         msg["To"] = to_email
 
-        server = smtplib.SMTP(data.get("smtp_host", "smtp.gmail.com"),
+        smtp_host = data.get("smtp_host", "smtp.gmail.com")
+        # SSRF prevention: reject private/reserved SMTP hosts
+        try:
+            smtp_ip = socket.gethostbyname(smtp_host)
+            ip_parts = [int(x) for x in smtp_ip.split(".")]
+            if (ip_parts[0] == 127 or ip_parts[0] == 10 or ip_parts[0] == 0 or
+                ip_parts[0] == 169 and ip_parts[1] == 254 or
+                ip_parts[0] == 192 and ip_parts[1] == 168 or
+                ip_parts[0] == 172 and 16 <= ip_parts[1] <= 31):
+                return jsonify({"error": "SMTP host resolves to a private IP address"}), 400
+        except socket.gaierror:
+            return jsonify({"error": f"Could not resolve SMTP host: {smtp_host}"}), 400
+
+        server = smtplib.SMTP(smtp_host,
                               int(data.get("smtp_port", 587)), timeout=15)
         if data.get("smtp_use_tls", True):
             server.starttls()
@@ -1742,7 +1939,7 @@ def get_approvals():
     """Get pending approvals from the orchestrator's in-memory store."""
     orch = get_orchestrator()
     approvals = []
-    for thread_id, draft_info in orch._pending_drafts.items():
+    for thread_id, draft_info in orch.get_pending_drafts().items():
         approvals.append({
             "thread_id": thread_id,
             "agent": draft_info.get("agent", "unknown"),
@@ -1798,8 +1995,8 @@ def api_orchestrator_status():
     orch = get_orchestrator()
     return jsonify({
         "panicked": orch.is_panicked,
-        "pending_drafts": len(orch._pending_drafts),
-        "activity_count": len(orch._activity_feed),
+        "pending_drafts": len(orch.get_pending_drafts()),
+        "activity_count": len(orch.get_activity_feed(200)),
     })
 
 
@@ -1907,7 +2104,7 @@ def api_inbox():
     items = []
 
     # Pending approvals
-    for tid, info in orch._pending_drafts.items():
+    for tid, info in orch.get_pending_drafts().items():
         items.append({
             "type": "approval",
             "agent": info.get("agent", "?"),
@@ -1963,21 +2160,20 @@ def api_frankie_inspect():
 
     suggestions = []
     try:
-        resp = requests.get(site_url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        resp = _safe_url(site_url)
         html = resp.text.lower()
         title = ""
         meta_desc = ""
-        import re as _re
-        m = _re.search(r"<title>(.*?)</title>", html, _re.IGNORECASE | _re.DOTALL)
+        m = re.search(r"<title>(.*?)</title>", html, re.IGNORECASE | re.DOTALL)
         if m: title = m.group(1).strip()
-        m = _re.search(r'<meta\s+name=["\']description["\']\s+content=["\'](.*?)["\']', html, _re.IGNORECASE | _re.DOTALL)
+        m = re.search(r'<meta\s+name=["\']description["\']\s+content=["\'](.*?)["\']', html, re.IGNORECASE | re.DOTALL)
         if m: meta_desc = m.group(1).strip()
-        has_h1 = bool(_re.search(r"<h1[^>]*>", html))
-        h1_count = len(_re.findall(r"<h1[^>]*>", html))
+        has_h1 = bool(re.search(r"<h1[^>]*>", html))
+        h1_count = len(re.findall(r"<h1[^>]*>", html))
         has_schema = "schema.org" in html or "application/ld+json" in html
         has_og = "og:title" in html
         has_whatsapp = "whatsapp" in html
-        has_phone = bool(_re.search(r"tel:|\(\d{3}\)\s*\d{3}-\d{4}|\d{3}-\d{3}-\d{4}", html))
+        has_phone = bool(re.search(r"tel:|\(\d{3}\)\s*\d{3}-\d{4}|\d{3}-\d{3}-\d{4}", html))
         word_count = len(html.split())
 
         if not title:
@@ -2248,9 +2444,10 @@ def admin_connector():
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
     tenant_id = session.get("active_tenant_id", "your-tenant")
+    base_url = request.url_root.rstrip("/")
     bookmarklet_code = (
         'javascript:(function(){var s=document.createElement("script");'
-        's.src="https://lavaldigital.ca/static/bookmarklet.js";'
+        f's.src="{base_url}/static/bookmarklet.js";'
         "document.body.appendChild(s);})()"
     )
     return render_template(
@@ -2570,7 +2767,8 @@ def respond_approval(thread_id):
     orch = get_orchestrator()
 
     # Delegate to orchestrator which now handles execution internally
-    if thread_id in orch._pending_drafts:
+    drafts = orch.get_pending_drafts()
+    if thread_id in drafts:
         result = orch._handle_approval(thread_id, approved=approved)
         return jsonify({
             "thread_id": thread_id,
@@ -2609,24 +2807,7 @@ def respond_approval(thread_id):
             if approved and agent_name and agent_name in agent_registry:
                 # Try MCP execution first, fall back to Executioner
                 exec_result = None
-                mcp_mapping = {
-                    "local_seo": ("seo", "publish_blog_post"),
-                    "social_media": ("social", "post_to_facebook"),
-                    "lead_conversion": ("email", "send_email"),
-                    "paid_ads": ("ads", "create_google_ads_campaign"),
-                    "growth_hacker": ("analytics", "analyze_trends"),
-                    "reputation": ("gmb", "respond_to_review"),
-                    "email_marketing": ("email", "send_campaign"),
-                    "tiktok": ("social", "post_to_tiktok"),
-                    "outreach": ("email", "send_email"),
-                    "backlinks": ("seo", "find_backlink_opportunities"),
-                    "content_strategist": ("seo", "publish_blog_post"),
-                    "cro": ("website", "audit_seo_health"),
-                    "technical_seo": ("seo", "run_site_audit"),
-                    "video": ("social", "post_to_tiktok"),
-                    "sms_marketing": ("email", "send_email"),
-                    "reporting": ("analytics", "generate_monthly_report"),
-                }
+                mcp_mapping = AGENT_MCP_ROUTING
 
                 mapping = mcp_mapping.get(agent_name)
                 if mapping:

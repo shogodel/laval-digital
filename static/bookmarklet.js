@@ -1,5 +1,7 @@
 (function () {
-  var BASE = 'https://lavaldigital.ca';
+  var scripts = document.getElementsByTagName('script');
+  var src = scripts[scripts.length - 1].src;
+  var BASE = src ? src.replace(/\/static\/bookmarklet\.js.*$/, '') : (window.LD_BASE_URL || 'https://lavaldigital.ca');
   var CONTAINER_ID = 'ld-bookmarklet-container';
   var existing = document.getElementById(CONTAINER_ID);
   if (existing) { existing.remove(); return; }

@@ -1,7 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from core.base_agent import BaseAgent
 from typing import Any, Dict, List
 import logging
@@ -52,45 +48,3 @@ class ReputationManagementAgent(BaseAgent):
             Empty list for MVP. Tools will be added in Phase 2.
         """
         return []
-
-
-if __name__ == "__main__":
-
-    config = {
-        "agent_id": "reputation_test",
-        "enabled": True,
-        "model": "deepseek-chat",
-        "system_prompt_file": "prompts/reputation.md",
-        "credentials": {
-            "api_key": os.getenv("DEEPSEEK_API_KEY", "dummy-key-for-testing"),
-            "api_base": "https://api.deepseek.com/v1"
-        }
-    }
-
-    print("Initializing ReputationManagementAgent...")
-    agent = ReputationManagementAgent("reputation_test", config)
-
-    print("Building agent graph...")
-    graph = agent.build_graph()
-    print("Graph built successfully!")
-
-    api_key = os.getenv("DEEPSEEK_API_KEY")
-    if api_key:
-        print("\nInvoking graph with test task...")
-        from langgraph.graph import StateGraph
-        from core.base_agent import AgentState
-
-        result = graph.invoke(
-            {
-                "task": "Create a review generation campaign for a plumber in Laval with 4.2 stars and 47 reviews",
-                "draft_output": None,
-                "approved": None,
-                "feedback": None,
-                "result": None,
-            },
-            config={"configurable": {"thread_id": "test"}}
-        )
-        print(f"\nResult: {result.get('result', 'No result')}")
-    else:
-        print("\nSkipping graph invocation (no DEEPSEEK_API_KEY found)")
-        print("Set DEEPSEEK_API_KEY environment variable to test with real API")

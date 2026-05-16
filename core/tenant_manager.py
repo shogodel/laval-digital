@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 import uuid
 import logging
@@ -46,7 +47,7 @@ class TenantManager:
         self.direct_path = self.base_path / "direct"
         self.reseller_path = self.base_path / "resellers"
         self._lock = threading.Lock()
-        self._active_connections: Dict[str, sqlite3.Connection] = {}
+        self._thread_local = threading.local()
         self._last_used: Dict[str, str] = {}
         self._create_directories()
 
@@ -80,15 +81,27 @@ class TenantManager:
             Resolved Path to the database file.
 
         Raises:
-            ValueError: If tenant_type is unknown.
+            ValueError: If tenant_type is unknown, or if the resolved
+                path escapes the allowed tenant directory.
         """
         if tenant_type == "direct":
-            return self.direct_path / f"{tenant_id}.db"
+            resolved = (self.direct_path / f"{tenant_id}.db").resolve()
+            allowed = self.direct_path.resolve()
         elif tenant_type == "reseller":
-            return self.reseller_path / tenant_id / "reseller.db"
+            resolved = (self.reseller_path / tenant_id / "reseller.db").resolve()
+            allowed = self.reseller_path.resolve()
         elif tenant_type == "reseller_client":
-            return self.reseller_path / reseller_id / f"{tenant_id}.db"
-        raise ValueError(f"Invalid tenant_type: {tenant_type}")
+            resolved = (self.reseller_path / reseller_id / f"{tenant_id}.db").resolve()
+            allowed = self.reseller_path.resolve()
+        else:
+            raise ValueError(f"Invalid tenant_type: {tenant_type}")
+
+        if not str(resolved).startswith(str(allowed) + "/"):
+            raise ValueError(
+                f"Resolved path {resolved} escapes allowed directory {allowed}"
+            )
+
+        return resolved
 
     # ------------------------------------------------------------------
     # Schema DDL
@@ -292,6 +305,53 @@ class TenantManager:
         }
 
     # ------------------------------------------------------------------
+    # Schema migrations
+    # ------------------------------------------------------------------
+
+    def _migrate_schema(self, conn: sqlite3.Connection) -> None:
+        """Apply pending schema migrations in order."""
+
+        _MIGRATIONS: list[tuple[int, str]] = [
+            # version 2: ensure users table exists (legacy databases)
+            (2, "users"),
+            # version 3: add autonomy/confidence to agents
+            (3, "ALTER TABLE agents ADD COLUMN autonomy TEXT DEFAULT 'manual'"),
+            # version 4: add confidence_threshold to agents
+            (4, "ALTER TABLE agents ADD COLUMN confidence_threshold REAL DEFAULT 0.7"),
+            # version 5: ensure pending_actions table exists
+            (5, "pending_actions"),
+            # version 6: ensure mcp_credentials table exists
+            (6, "mcp_credentials"),
+        ]
+
+        try:
+            version = conn.execute(
+                "SELECT COALESCE(MAX(version), 1) FROM schema_version"
+            ).fetchone()[0]
+        except sqlite3.OperationalError:
+            # schema_version table doesn't exist yet
+            version = 0
+
+        now = datetime.now(timezone.utc).isoformat()
+
+        for mig_version, statement in _MIGRATIONS:
+            if mig_version > version:
+                try:
+                    if statement in self._schema_sql():
+                        conn.execute(self._schema_sql()[statement])
+                    else:
+                        conn.execute(statement)
+                    conn.execute(
+                        "INSERT INTO schema_version (version, applied_at) VALUES (?, ?)",
+                        (mig_version, now),
+                    )
+                    conn.commit()
+                    logger.info("Applied migration v%d: %s", mig_version, statement[:60])
+                except (sqlite3.OperationalError, sqlite3.IntegrityError) as e:
+                    logger.warning("Migration v%d skipped (%s): %s", mig_version, statement[:60], e)
+                    conn.rollback()
+
+    # ------------------------------------------------------------------
     # Seed helpers
     # ------------------------------------------------------------------
 
@@ -391,6 +451,7 @@ class TenantManager:
         """Return a cached database connection for a tenant.
 
         Creates the database on first access if it does not exist.
+        Connections are thread-local to avoid SQLite thread-safety issues.
 
         Args:
             tenant_id: Unique identifier for the tenant.
@@ -402,50 +463,29 @@ class TenantManager:
         """
         cache_key = f"{tenant_type}:{reseller_id or 'none'}:{tenant_id}"
 
-        with self._lock:
-            if cache_key in self._active_connections:
-                self._last_used[cache_key] = datetime.now(timezone.utc).isoformat()
-                return self._active_connections[cache_key]
+        if not hasattr(self._thread_local, "connections"):
+            self._thread_local.connections = {}
 
-            db_path = self._get_db_path(tenant_id, tenant_type, reseller_id)
-
-            if not db_path.exists():
-                self.create_tenant_database(tenant_id, tenant_type, reseller_id)
-
-            conn = sqlite3.connect(str(db_path), check_same_thread=False)
-            conn.row_factory = sqlite3.Row
-            conn.execute("PRAGMA foreign_keys = ON")
-
-            # Migrate: ensure users table exists on existing databases
-            try:
-                conn.execute(self._schema_sql()["users"])
-                conn.commit()
-            except sqlite3.Error as e:
-                logger.warning("Migration failed for users table in %s: %s", db_path, e)
-
-            # Migrate: add autonomy columns to agents table
-            try:
-                conn.execute("ALTER TABLE agents ADD COLUMN autonomy TEXT DEFAULT 'manual'")
-                conn.commit()
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute("ALTER TABLE agents ADD COLUMN confidence_threshold REAL DEFAULT 0.7")
-                conn.commit()
-            except sqlite3.OperationalError:
-                pass
-
-            # Migrate: ensure pending_actions table exists
-            try:
-                conn.execute(self._schema_sql()["pending_actions"])
-                conn.commit()
-            except sqlite3.Error:
-                pass
-
-            self._active_connections[cache_key] = conn
+        if cache_key in self._thread_local.connections:
             self._last_used[cache_key] = datetime.now(timezone.utc).isoformat()
-            logger.debug("Opened connection for tenant %s (%s)", tenant_id, db_path)
-            return conn
+            return self._thread_local.connections[cache_key]
+
+        db_path = self._get_db_path(tenant_id, tenant_type, reseller_id)
+
+        if not db_path.exists():
+            self.create_tenant_database(tenant_id, tenant_type, reseller_id)
+
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+
+        # Apply any pending schema migrations
+        self._migrate_schema(conn)
+
+        self._thread_local.connections[cache_key] = conn
+        self._last_used[cache_key] = datetime.now(timezone.utc).isoformat()
+        logger.debug("Opened connection for tenant %s (%s)", tenant_id, db_path)
+        return conn
 
     def close_connection(self, tenant_id: str,
                          tenant_type: str = "direct",
@@ -459,12 +499,14 @@ class TenantManager:
         """
         cache_key = f"{tenant_type}:{reseller_id or 'none'}:{tenant_id}"
 
-        with self._lock:
-            conn = self._active_connections.pop(cache_key, None)
-            self._last_used.pop(cache_key, None)
-            if conn:
-                conn.close()
-                logger.debug("Closed connection for tenant %s", tenant_id)
+        if not hasattr(self._thread_local, "connections"):
+            return
+
+        conn = self._thread_local.connections.pop(cache_key, None)
+        self._last_used.pop(cache_key, None)
+        if conn:
+            conn.close()
+            logger.debug("Closed connection for tenant %s", tenant_id)
 
     def list_tenants(self, tenant_type: str = "direct",
                      reseller_id: Optional[str] = None) -> List[str]:
@@ -537,35 +579,37 @@ class TenantManager:
         """
         now = datetime.now(timezone.utc)
         closed = 0
-        with self._lock:
-            stale = [
-                key for key, last in self._last_used.items()
-                if (now - datetime.fromisoformat(last)).total_seconds() > max_idle_minutes * 60
-            ]
-            for key in stale:
-                conn = self._active_connections.pop(key, None)
-                self._last_used.pop(key, None)
-                if conn:
-                    try:
-                        conn.close()
-                        closed += 1
-                    except sqlite3.Error as e:
-                        logger.warning("Error closing stale connection %s: %s", key, e)
+        if not hasattr(self._thread_local, "connections"):
+            return 0
+        stale = [
+            key for key, last in self._last_used.items()
+            if (now - datetime.fromisoformat(last)).total_seconds() > max_idle_minutes * 60
+        ]
+        for key in stale:
+            conn = self._thread_local.connections.pop(key, None)
+            self._last_used.pop(key, None)
+            if conn:
+                try:
+                    conn.close()
+                    closed += 1
+                except sqlite3.Error as e:
+                    logger.warning("Error closing stale connection %s: %s", key, e)
         if closed:
             logger.info("Closed %d stale connection(s)", closed)
         return closed
 
     def close_all(self) -> None:
         """Close every active database connection and clear the cache."""
-        with self._lock:
-            for cache_key, conn in self._active_connections.items():
-                try:
-                    conn.close()
-                except sqlite3.Error as e:
-                    logger.warning("Error closing connection %s: %s", cache_key, e)
-            self._active_connections.clear()
-            self._last_used.clear()
-            logger.info("All tenant connections closed")
+        if not hasattr(self._thread_local, "connections"):
+            return
+        for cache_key, conn in self._thread_local.connections.items():
+            try:
+                conn.close()
+            except sqlite3.Error as e:
+                logger.warning("Error closing connection %s: %s", cache_key, e)
+        self._thread_local.connections.clear()
+        self._last_used.clear()
+        logger.info("All tenant connections closed")
 
     def get_agent_autonomy(self, tenant_id: str) -> Dict[str, Dict[str, Any]]:
         """Load autonomy settings for all agents in a tenant.

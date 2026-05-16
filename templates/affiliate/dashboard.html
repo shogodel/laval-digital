@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Affiliate Dashboard — Frankie</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -190,6 +191,28 @@
     </div>
 
     <script>
+    /* ── CSRF: patch fetch to include X-CSRFToken on all non-GET requests ── */
+    (function() {
+        var token = document.querySelector('meta[name="csrf-token"]');
+        if (!token) return;
+        var origFetch = window.fetch;
+        window.fetch = function(url, opts) {
+            opts = opts || {};
+            if (!opts.method || opts.method === 'GET' || opts.method === 'HEAD' || opts.method === 'OPTIONS') {
+                return origFetch.call(this, url, opts);
+            }
+            opts.headers = opts.headers || {};
+            if (opts.headers instanceof Headers) {
+                if (!opts.headers.has('X-CSRFToken')) {
+                    opts.headers.append('X-CSRFToken', token.content);
+                }
+            } else {
+                opts.headers['X-CSRFToken'] = opts.headers['X-CSRFToken'] || token.content;
+            }
+            return origFetch.call(this, url, opts);
+        };
+    })();
+
     function copyRefLink() {
         const input = document.getElementById('ref-link');
         input.select();
