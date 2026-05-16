@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Essayez Frankie Gratuitement 7 Jours — Laval Digital</title>
+    <meta name="description" content="Démarrez votre essai gratuit de 7 jours de Frankie — le centre de commandement marketing IA. 16 agents, 111+ outils, aucune carte de crédit requise.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0f2b45;
+            --navy-light: #1a3a5c;
+            --orange: #1D4ED8;
+            --orange-dark: #1E3A8A;
+            --orange-glow: rgba(29,78,216,0.15);
+            --white: #ffffff;
+            --off-white: #f7f8fa;
+            --light-gray: #eef0f3;
+            --mid-gray: #6b7280;
+            --dark: #111827;
+            --green: #059669;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+            --radius: 12px;
+            --radius-lg: 16px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--dark);
+            background: var(--white);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+        nav {
+            background: var(--navy);
+            padding: 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 72px;
+        }
+        nav .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        nav .logo span { font-size: 1.2rem; font-weight: 800; color: var(--white); letter-spacing: -0.02em; }
+        nav ul { list-style: none; display: flex; align-items: center; gap: 8px; }
+        nav ul li a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        nav ul li a:hover { color: var(--white); background: rgba(255,255,255,0.08); }
+        .lang-toggle {
+            background: rgba(255,255,255,0.1);
+            color: var(--white);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-left: 8px;
+        }
+        .lang-toggle:hover {
+            background: var(--white);
+            color: var(--navy);
+            border-color: var(--white);
+        }
+        .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.8rem; cursor: pointer; padding: 4px 8px; }
+
+        .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 24px; background: var(--off-white); }
+        .card { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 48px; max-width: 500px; width: 100%; }
+        .card h1 { font-size: 28px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+        .card .subtitle { color: var(--mid-gray); font-size: 15px; margin-bottom: 32px; line-height: 1.6; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+        .form-group input {
+            width: 100%; padding: 12px 16px; border: 1.5px solid #d1d5db; border-radius: 10px;
+            font-size: 15px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+        }
+        .form-group input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-glow); }
+        .btn-primary {
+            width: 100%; padding: 14px; background: var(--orange); color: var(--white); border: none; border-radius: 10px;
+            font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s, transform 0.15s;
+        }
+        .btn-primary:hover { background: var(--orange-dark); transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-primary .spinner { display: none; width: 20px; height: 20px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; margin: 0 auto; }
+        .btn-primary.loading .btn-text { display: none; }
+        .btn-primary.loading .spinner { display: block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .benefits { margin-top: 28px; padding-top: 28px; border-top: 1px solid #e5e7eb; }
+        .benefits li { list-style: none; font-size: 14px; color: #4b5563; padding: 6px 0; display: flex; align-items: center; gap: 8px; }
+        .benefits li::before { content: "✓"; color: var(--green); font-weight: 700; font-size: 16px; }
+        .flash { padding: 12px 16px; border-radius: 10px; font-size: 14px; margin-bottom: 20px; display: none; }
+        .flash.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; display: block; }
+        .flash.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; display: block; }
+        footer { text-align: center; padding: 24px; font-size: 13px; color: #9ca3af; background: var(--off-white); }
+        @media (max-width: 540px) { .card { padding: 32px 24px; } }
+    </style>
+</head>
+<body>
+<nav>
+    <div class="container">
+        <a href="/fr/" class="logo"><span>LAVAL DIGITAL</span></a>
+        <ul>
+            <li><a href="/fr/">Accueil</a></li>
+            <li><a href="/fr/demo">Démo</a></li>
+            <li><a href="/login">Connexion</a></li>
+            <li><a href="/free-trial" class="lang-toggle">EN</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="main">
+    <div class="card">
+        <h1>Essayez Frankie</h1>
+        <p class="subtitle">7 jours d'accès complet à tous les 16 agents IA et plus de 111 outils marketing. Aucune carte de crédit requise.</p>
+
+        <div id="flash" class="flash"></div>
+
+        <form id="signup-form">
+            <div class="form-group">
+                <label for="name">Nom Complet</label>
+                <input type="text" id="name" name="name" required autocomplete="name" placeholder="p. ex. Marie Tremblay">
+            </div>
+            <div class="form-group">
+                <label for="email">Adresse Courriel</label>
+                <input type="email" id="email" name="email" required autocomplete="email" placeholder="marie@monentreprise.ca">
+            </div>
+            <div class="form-group">
+                <label for="password">Créer un Mot de Passe</label>
+                <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password" placeholder="Au moins 8 caractères">
+            </div>
+
+            <button type="submit" class="btn-primary" id="submit-btn">
+                <span class="btn-text">Commencer Mon Essai Gratuit</span>
+                <div class="spinner"></div>
+            </button>
+        </form>
+
+        <ul class="benefits">
+            <li>Tous les 16 agents IA — accès complet</li>
+            <li>111+ outils d'exécution (SEO, sociaux, annonces, courriel)</li>
+            <li>Annulez à tout moment avant la facturation</li>
+            <li>597,99 $/mois après l'essai — un prix unique</li>
+        </ul>
+    </div>
+</div>
+
+<footer>&copy; 2026 Laval Digital. Tous droits réservés.</footer>
+
+<script>
+document.getElementById("signup-form").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById("submit-btn");
+    const flash = document.getElementById("flash");
+    flash.className = "flash";
+    flash.style.display = "none";
+    btn.classList.add("loading");
+    btn.disabled = true;
+
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    try {
+        const resp = await fetch("/api/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email, password })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            flash.className = "flash success";
+            flash.textContent = "Compte créé ! Redirection vers votre tableau de bord...";
+            flash.style.display = "block";
+            setTimeout(() => { window.location.href = data.redirect || "/client/dashboard"; }, 1000);
+        } else {
+            flash.className = "flash error";
+            flash.textContent = data.error || "Échec de l'inscription. Veuillez réessayer.";
+            flash.style.display = "block";
+        }
+    } catch (err) {
+        flash.className = "flash error";
+        flash.textContent = "Erreur réseau. Veuillez vérifier votre connexion.";
+        flash.style.display = "block";
+    } finally {
+        btn.classList.remove("loading");
+        btn.disabled = false;
+    }
+});
+</script>
+</body>
+</html>

@@ -694,6 +694,14 @@ def free_trial():
     return render_template("free_trial.html")
 
 
+@app.route("/fr/essai-gratuit")
+def free_trial_fr():
+    """Serve the French 7-day free trial signup page."""
+    if current_user.is_authenticated:
+        return redirect(url_for("client_dashboard"))
+    return render_template("free_trial_fr.html")
+
+
 @app.route("/trial-expired")
 def trial_expired():
     """Serve the trial expired / subscribe page."""
