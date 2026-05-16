@@ -120,7 +120,7 @@ function renderLeadsBarChart(months) {
     const max = Math.max(...months.map(m => m.count), 1);
     container.innerHTML = months.map(m => {
         const pct = (m.count / max * 100) || 0;
-        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;">
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;" title="${m.label}: ${m.count} leads">
             <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:4px;">${m.count}</div>
             <div style="width:100%;max-width:40px;height:${pct}%;background:var(--red);border-radius:4px 4px 0 0;min-height:4px;"></div>
             <div style="font-size:0.65rem;color:var(--gray-400);margin-top:6px;text-align:center;white-space:nowrap;">${m.label}</div>
@@ -138,10 +138,10 @@ function renderAgentBarChart(agents) {
     container.innerHTML = agents.map(a => {
         const pct = (a.total / max * 100) || 0;
         const sr = a.success_rate || 0;
-        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;" title="${a.agent}: ${a.total} tasks (${sr}% success)">
             <div style="width:120px;font-size:0.8rem;color:var(--gray-600);text-align:right;flex-shrink:0;">${a.agent}</div>
             <div style="flex:1;height:22px;background:var(--gray-100);border-radius:4px;overflow:hidden;display:flex;">
-                <div style="height:100%;width:${pct}%;background:var(--red);border-radius:4px;"></div>
+                <div style="height:100%;width:${pct}%;background:var(--red);border-radius:4px;min-width:4px;"></div>
             </div>
             <div style="font-size:0.8rem;color:var(--gray-500);width:80px;flex-shrink:0;">${a.total} (${sr}%)</div>
         </div>`;
@@ -154,7 +154,7 @@ function renderSuccessPie(success, fail) {
     const successPct = (success / total * 100).toFixed(1);
     const failPct = (fail / total * 100).toFixed(1);
     container.innerHTML = `
-        <div style="width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--green) 0deg ${successPct * 3.6}deg, var(--gray-200) ${successPct * 3.6}deg 360deg);flex-shrink:0;"></div>
+        <div style="width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--green) 0deg ${successPct * 3.6}deg, var(--gray-200) ${successPct * 3.6}deg 360deg);flex-shrink:0;" title="${success} successes (${successPct}%), ${fail} failures (${failPct}%)"></div>
         <div>
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--green);flex-shrink:0;"></span> Success: ${success} (${successPct}%)</div>
             <div style="display:flex;align-items:center;gap:8px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--gray-200);flex-shrink:0;"></span> Failed: ${fail} (${failPct}%)</div>
@@ -171,10 +171,10 @@ function renderFailuresByTool(failures) {
     const max = Math.max(...entries.map(([,v]) => v), 1);
     container.innerHTML = entries.map(([tool, count]) => {
         const pct = (count / max * 100) || 0;
-        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;" title="${tool}: ${count} failures">
             <div style="width:130px;font-size:0.8rem;color:var(--gray-600);flex-shrink:0;">${tool}</div>
             <div style="flex:1;height:18px;background:var(--gray-100);border-radius:4px;overflow:hidden;">
-                <div style="height:100%;width:${pct}%;background:#ef4444;border-radius:4px;"></div>
+                <div style="height:100%;width:${pct}%;background:#ef4444;border-radius:4px;min-width:4px;"></div>
             </div>
             <div style="font-size:0.8rem;color:var(--gray-500);width:40px;">${count}</div>
         </div>`;

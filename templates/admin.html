@@ -348,6 +348,8 @@
 
 <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
+<div id="toast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9999;background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.2);max-width:360px;transition:opacity 0.3s;"></div>
+
 <div class="app">
 
     <!-- Sidebar -->
@@ -585,7 +587,7 @@
                         </div>
                         <div id="connect-facebook" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
                             <p style="font-size:0.85rem;margin-bottom:8px;">Click the button below to connect your Facebook Page. You'll be redirected to Facebook to authorize Frankie. It takes about 30 seconds.</p>
-                            <button class="btn btn-green btn-sm" onclick="alert('Facebook connection will open a popup. Make sure popups are allowed for this site.')">🔗 Connect Facebook Page</button>
+                            <button class="btn btn-green btn-sm" onclick="toast('Facebook connection will open a popup. Make sure popups are allowed for this site.');">🔗 Connect Facebook Page</button>
                             <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">Frankie will be able to: create posts, read engagement, and manage your page.</p>
                         </div>
                     </div>
@@ -693,53 +695,24 @@
 
 <div class="tab-content" id="tab-mcp">
     <div class="card">
-        <div class="card-header"><h2>What Frankie Can Do For You</h2><p>All the ways Frankie helps your business — no technical setup required</p></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-            <div class="agent-card enabled" style="padding:16px;">
-                <strong>🔍 SEO & Content</strong>
-                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Write and publish blog posts, optimize your site for Google, build backlinks, track keywords</p>
-                <span class="badge badge-idle">13 tools</span>
-            </div>
-            <div class="agent-card enabled" style="padding:16px;">
-                <strong>📱 Social Media</strong>
-                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Post to Facebook, Instagram, TikTok, LinkedIn, X, Pinterest, YouTube, Threads</p>
-                <span class="badge badge-idle">18 tools</span>
-            </div>
-            <div class="agent-card enabled" style="padding:16px;">
-                <strong>📧 Email</strong>
-                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Send campaigns, create sequences, A/B test, track opens and clicks</p>
-                <span class="badge badge-idle">16 tools</span>
-            </div>
-            <div class="agent-card enabled" style="padding:16px;">
-                <strong>📍 Google Business</strong>
-                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Post updates, respond to reviews, manage Q&A, track rankings</p>
-                <span class="badge badge-idle">16 tools</span>
-            </div>
-            <div class="agent-card enabled" style="padding:16px;">
-                <strong>💰 Advertising</strong>
-                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Google Ads, Meta Ads, TikTok Ads, LinkedIn Ads, retargeting</p>
-                <span class="badge badge-idle">18 tools</span>
-            </div>
-            <div class="agent-card enabled" style="padding:16px;">
-                <strong>📊 Analytics</strong>
-                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Track ROI, generate reports, analyze trends, compare periods</p>
-                <span class="badge badge-idle">10 tools</span>
-            </div>
-            <div class="agent-card enabled" style="padding:16px;">
-                <strong>🌐 Website</strong>
-                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Monitor uptime, check SSL, scan for SEO issues, track competitors</p>
-                <span class="badge badge-idle">12 tools</span>
-            </div>
-            <div class="agent-card enabled" style="padding:16px;">
-                <strong>🛒 E-Commerce</strong>
-                <p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">Manage products, track inventory, analyze customers, optimize pricing</p>
-                <span class="badge badge-idle">8 tools</span>
-            </div>
-        </div>
+        <div class="card-header"><h2>MCP Servers</h2><p>Marketing Command Protocol servers and their tools</p></div>
+        <div id="mcp-server-list" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><p class="empty">Loading...</p></div>
     </div>
 </div>
 
 <script>
+/* ── Toast notification ── */
+function toast(msg, type) {
+    var el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#059669' : '#1f2937';
+    el.style.display = 'block';
+    el.style.opacity = '1';
+    clearTimeout(el._hide);
+    el._hide = setTimeout(function() { el.style.opacity = '0'; setTimeout(function() { el.style.display = 'none'; }, 300); }, 4000);
+}
+
 /* ── CSRF: patch fetch to include X-CSRFToken on all non-GET requests ── */
 (function() {
     var token = document.querySelector('meta[name="csrf-token"]');
@@ -808,34 +781,55 @@ function refreshAll() {
 
 /* ── Dashboard ── */
 function updateDashboard() {
-    fetch('/api/agents').then(r => r.json()).then(data => {
-        const agents = data.agents || [];
-        document.getElementById('stat-agents').textContent = agents.length;
-        document.getElementById('stat-active').textContent = agents.filter(a => a.enabled).length;
+    var ids = ['stat-agents', 'stat-active', 'stat-pending', 'stat-executions'];
+    ids.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && !el.dataset.loaded) el.textContent = '...';
     });
-    fetch('/api/approvals').then(r => r.json()).then(data => {
-        document.getElementById('stat-pending').textContent = (data.approvals || []).length;
-    });
-    fetch('/api/executions').then(r => r.json()).then(data => {
-        document.getElementById('stat-executions').textContent = (data.executions || []).length;
-    });
+    Promise.allSettled([
+        fetch('/api/agents').then(function(r) { return r.json(); }).then(function(data) {
+            var agents = data.agents || [];
+            document.getElementById('stat-agents').textContent = agents.length;
+            document.getElementById('stat-active').textContent = agents.filter(function(a) { return a.enabled; }).length;
+            var el1 = document.getElementById('stat-agents'); if (el1) el1.dataset.loaded = '1';
+            var el2 = document.getElementById('stat-active'); if (el2) el2.dataset.loaded = '1';
+        }),
+        fetch('/api/approvals').then(function(r) { return r.json(); }).then(function(data) {
+            document.getElementById('stat-pending').textContent = (data.approvals || []).length;
+            var el = document.getElementById('stat-pending'); if (el) el.dataset.loaded = '1';
+        }),
+        fetch('/api/executions').then(function(r) { return r.json(); }).then(function(data) {
+            document.getElementById('stat-executions').textContent = (data.executions || []).length;
+            var el = document.getElementById('stat-executions'); if (el) el.dataset.loaded = '1';
+        }),
+    ]);
 }
 
 /* ── Agents ── */
-const AGENT_META = {
-    local_seo: { name: 'Local SEO', desc: 'Google Business Profile optimization, local citations, local keyword content, review management' },
-    social_media: { name: 'Social Media', desc: 'Social media posts, content creation, content calendars, engagement strategies' },
-    lead_conversion: { name: 'Lead Conversion', desc: 'Lead follow-up sequences, CRM integration, conversion optimization, email campaigns' },
-    paid_ads: { name: 'Paid Ads', desc: 'Google & Meta ad campaigns, ad copy creation, keyword strategy, budget allocation, A/B testing, audience targeting' },
-    growth_hacker: { name: 'Growth Hacker', desc: 'Growth audits, viral loops, conversion rate optimization, partnership strategies, data-driven experiments, creative low-cost tactics' },
-    reputation: { name: 'Reputation', desc: 'Online review monitoring, review response generation, review generation campaigns, reputation audits, crisis response' },
-    email_marketing: { name: 'Email Marketing', desc: 'Newsletter campaigns, promotional emails, lead nurture sequences, reactivation campaigns, post-service follow-ups' },
-    tiktok: { name: 'TikTok', desc: 'Short-form video content for TikTok, Instagram Reels, YouTube Shorts, content calendars, video scripts, trend adaptation' },
-    outreach: { name: 'Outreach', desc: 'Prospecting emails, lead finding, campaign sequences, follow-up automation, personalized outreach at scale' },
-    backlinks: { name: 'Backlinks', desc: 'Link building, guest post prospecting, citation building, backlink gap analysis, broken link building, directory submissions' },
-};
+const AGENT_META = {};
 
 let AGENT_PERSONALITIES = {};
+let AGENT_META_LOOKUP = {};
+
+async function loadAgentMeta() {
+    try {
+        const r = await fetch('/api/personalities');
+        const d = await r.json();
+        AGENT_PERSONALITIES = d.personalities || {};
+        Object.keys(AGENT_PERSONALITIES).forEach(function(k) {
+            AGENT_META_LOOKUP[k] = { name: AGENT_PERSONALITIES[k].short || k, desc: '' };
+        });
+    } catch (e) {}
+    try {
+        const m = await fetch('/api/agents');
+        const d = await m.json();
+        (d.agents || []).forEach(function(a) {
+            if (!AGENT_META_LOOKUP[a.agent_id]) {
+                AGENT_META_LOOKUP[a.agent_id] = { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }), desc: '' };
+            }
+        });
+    } catch (e) {}
+}
 
 function loadAgents() {
     return fetch('/api/agents')
@@ -843,7 +837,7 @@ function loadAgents() {
         .then(data => {
             const agents = data.agents || [];
             const html = agents.map(a => {
-                const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '' };
+                const meta = AGENT_META_LOOKUP[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '' };
                 const p = AGENT_PERSONALITIES[a.agent_id] || {};
                 const emoji = p.emoji || '🤖';
                 const color = p.color || '#6b7280';
@@ -951,23 +945,21 @@ function respondApproval(threadId, approved) {
         }
         return r.json();
     })
-    .then(function(data) {
+        .then(function(data) {
         if (data.status === 'completed') {
-            alert('Approval ' + (approved ? 'approved' : 'rejected') + '!');
+            toast('Approval ' + (approved ? 'approved' : 'rejected') + '!', 'success');
             loadApprovals();
             loadAgents();
             loadPendingExecutions();
             updateDashboard();
         } else if (data.error) {
-            alert('Error: ' + data.error);
+            toast('Error: ' + data.error, 'error');
         } else {
-            alert('Unexpected response from server. Check console for details.');
-            console.log('Approval response:', data);
+            toast('Unexpected response from server.', 'error');
         }
     })
     .catch(function(err) {
-        alert('Network error: ' + err.message + '. Check that Flask is running and you are logged in.');
-        console.error('Approval error:', err);
+        toast('Network error: ' + err.message, 'error');
     });
 }
 
@@ -1002,17 +994,17 @@ function confirmPending(executionId) {
     fetch('/api/executioner/confirm/' + executionId, { method: 'POST' })
         .then(r => r.json())
         .then(data => {
-            if (data.success) { loadPendingExecutions(); loadAgents(); }
-            else alert('Failed: ' + (data.error || 'unknown'));
+            if (data.success) { loadPendingExecutions(); loadAgents(); toast('Execution confirmed!', 'success'); }
+            else toast('Failed: ' + (data.error || 'unknown'), 'error');
         })
-        .catch(err => alert('Error: ' + err.message));
+        .catch(err => toast('Error: ' + err.message, 'error'));
 }
 
 function rejectPending(executionId) {
     fetch('/api/executioner/reject/' + executionId, { method: 'POST' })
         .then(r => r.json())
-        .then(() => { loadPendingExecutions(); })
-        .catch(err => alert('Error: ' + err.message));
+        .then(() => { loadPendingExecutions(); toast('Execution rejected.', 'success'); })
+        .catch(err => toast('Error: ' + err.message, 'error'));
 }
 
 /* ── Execution Activity ── */
@@ -1054,7 +1046,7 @@ function populateAgentSelect() {
             select.appendChild(allOption);
 
             (data.agents || []).forEach(a => {
-                const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) };
+                const meta = AGENT_META_LOOKUP[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) };
                 const opt = document.createElement('option');
                 opt.value = a.agent_id;
                 opt.textContent = meta.name;
@@ -1138,7 +1130,7 @@ function saveAgentConfig() {
     const apiBase = document.getElementById('config-api-base').value;
 
     if (!selectedValue) {
-        alert('Please select an agent.');
+        toast('Please select an agent.', 'error');
         return;
     }
 
@@ -1255,22 +1247,14 @@ function deleteUser(userId) {
     fetch('/api/users/' + userId, { method: 'DELETE' })
         .then(r => r.json())
         .then(data => {
-            if (data.error) { alert(data.error); return; }
+            if (data.error) { toast(data.error, 'error'); return; }
+            toast('User deleted.', 'success');
             loadUsers();
         })
-        .catch(err => { alert('Error: ' + err.message); });
+        .catch(err => { toast('Error: ' + err.message, 'error'); });
 }
 
 
-
-/* ── Frankie features ── */
-async function loadPersonalities() {
-    try {
-        const r = await fetch('/api/personalities');
-        const d = await r.json();
-        AGENT_PERSONALITIES = d.personalities || {};
-    } catch (e) {}
-}
 
 function escapeHtml(t) {
     const d = document.createElement('div');
@@ -1330,9 +1314,41 @@ function saveSimpleConnect(platform) {
     });
 }
 
+/* ── MCP Servers ── */
+function loadMCPServers() {
+    fetch('/api/mcp/servers')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var servers = data.servers || {};
+            var keys = Object.keys(servers);
+            var list = document.getElementById('mcp-server-list');
+            if (!keys.length) {
+                list.innerHTML = '<p class="empty">No MCP servers available.</p>';
+                return;
+            }
+            var icons = { seo: '🔍', social: '📱', email: '📧', gmb: '📍', ads: '💰', analytics: '📊', website: '🌐', ecommerce: '🛒' };
+            list.innerHTML = keys.map(function(k) {
+                var s = servers[k];
+                var icon = icons[k] || '🔌';
+                return '<div class="agent-card enabled" style="padding:16px;">'
+                    + '<strong>' + icon + ' ' + (s.description || k) + '</strong>'
+                    + '<p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">' + (s.description || '') + '</p>'
+                    + '<span class="badge badge-idle">' + (s.tools || 0) + ' tools</span>'
+                    + '</div>';
+            }).join('');
+        })
+        .catch(function() {
+            var list = document.getElementById('mcp-server-list');
+            if (list) list.innerHTML = '<p class="empty">Failed to load MCP servers.</p>';
+        });
+}
+
 /* ── Init ── */
 window.onload = function() {
-    loadPersonalities().then(() => loadAgents());
+    loadAgentMeta().then(function() {
+        loadAgents();
+        populateAgentSelect();
+    });
     loadAgents();
     loadApprovals();
     loadPendingExecutions();
@@ -1340,16 +1356,17 @@ window.onload = function() {
     populateAgentSelect();
     updateDashboard();
     loadUsers();
+    loadMCPServers();
     document.getElementById('config-api-key').addEventListener('input', function() {
         document.getElementById('detect-btn').disabled = !this.value.trim();
     });
 
     // PWA Service Worker + Install
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+        navigator.serviceWorker.register('/static/sw.js').catch(function() {});
     }
-    let deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', e => {
+    var deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
         e.preventDefault();
         deferredPrompt = e;
     });
@@ -1363,9 +1380,9 @@ function installApp() {
         const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
         const isSafari = /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
         if (isIOS || isSafari) {
-            alert('On Safari: tap the Share icon (📤) at the bottom of the screen, then scroll down and tap "Add to Home Screen".');
+            toast('On Safari: tap the Share icon at the bottom, then "Add to Home Screen".');
         } else {
-            alert('Open Chrome/Edge menu (⋮ or ⋯) and select "Install" or "Add to Home Screen".\n\nYou can also open the Frankie Dashboard and install from there.');
+            toast('Open the browser menu and select "Install" or "Add to Home Screen".');
         }
     }
 }
