@@ -335,7 +335,7 @@ def check_session_timeout():
                     logout_user()
                     session.clear()
                     flash("Session expired. Please log in again.", "error")
-                    if current_user.role == "client":
+                    if current_user.role in ("client", "user"):
                         return redirect(url_for("client_login"))
                     elif current_user.role == "affiliate":
                         return redirect(url_for("affiliate_login"))
@@ -356,6 +356,18 @@ def check_session_timeout():
             except Exception:
                 logger.warning("Admin session timeout check failed", exc_info=True)
         session["last_active"] = datetime.now().isoformat()
+
+
+@app.before_request
+def check_trial_expiry():
+    """Redirect trial users to /trial-expired if their 7 days are up."""
+    if current_user.is_authenticated and hasattr(current_user, "is_trial_expired") and current_user.is_trial_expired:
+        if request.path.startswith("/api/"):
+            return jsonify({"error": "Trial expired. Subscribe to continue.", "redirect": "/trial-expired"}), 403
+        if request.path not in ("/trial-expired", "/logout", "/static/bookmarklet.js"):
+            from flask import flash as _flash
+            _flash("Your free trial has ended. Subscribe to regain access.", "error")
+            return redirect(url_for("trial_expired"))
 
 
 # ---------------------------------------------------------------------------
@@ -674,6 +686,71 @@ def blog_fr():
     return render_template("blog_fr.html")
 
 
+@app.route("/free-trial")
+def free_trial():
+    """Serve the 7-day free trial signup page."""
+    if current_user.is_authenticated:
+        return redirect(url_for("client_dashboard"))
+    return render_template("free_trial.html")
+
+
+@app.route("/trial-expired")
+def trial_expired():
+    """Serve the trial expired / subscribe page."""
+    return render_template("trial_expired.html")
+
+
+@app.route("/api/signup", methods=["POST"])
+def api_signup():
+    """Create a new trial user account and log them in."""
+    data = request.json
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password", "")
+
+    if not name or not email or not password:
+        return jsonify({"success": False, "error": "Name, email, and password are required."}), 400
+
+    is_valid, err_msg = validate_password(password)
+    if not is_valid:
+        return jsonify({"success": False, "error": err_msg}), 400
+
+    try:
+        now = datetime.now(timezone.utc)
+        trial_ends = (now + timedelta(days=7)).isoformat()
+        uid = database.create_user(
+            email=email,
+            password_hash=generate_password_hash(password),
+            role="user",
+            display_name=name,
+        )
+        conn = database._get_conn()
+        conn.execute(
+            "UPDATE users SET status = 'trial', trial_ends_at = ? WHERE id = ?",
+            (trial_ends, uid),
+        )
+        conn.commit()
+
+        user_row = database.get_user_by_id(uid)
+        temp_user = User(
+            row_id=user_row["id"], email=user_row["email"],
+            password_hash=user_row["password_hash"], role=user_row["role"],
+            display_name=user_row["display_name"],
+            status="trial", trial_ends_at=trial_ends,
+        )
+        login_user(temp_user)
+        session["last_active"] = datetime.now().isoformat()
+
+        logger.info("New trial user created: %s (id=%s)", email, uid)
+        return jsonify({"success": True, "redirect": url_for("client_dashboard")}), 201
+
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except RuntimeError as e:
+        logger.error("Signup failed: %s", e, exc_info=True)
+        return jsonify({"success": False, "error": "Account creation failed. Please try again later."}), 500
+
+
 # ---------------------------------------------------------------------------
 # Client auth routes
 # ---------------------------------------------------------------------------
@@ -681,7 +758,7 @@ def blog_fr():
 @app.route("/client/login", methods=["GET", "POST"])
 def client_login():
     """Serve client login page and authenticate."""
-    if current_user.is_authenticated and current_user.role == "client":
+    if current_user.is_authenticated and current_user.role in ("client", "user"):
         return redirect(url_for("client_dashboard"))
     if request.method == "POST":
         email = request.form.get("email", "").strip()
@@ -692,7 +769,7 @@ def client_login():
             return render_template("client/login.html")
 
         user_row = find_user_by_email(email)
-        if not user_row or user_row["role"] != "client":
+        if not user_row or user_row["role"] not in ("client", "user"):
             _record_attempt(False)
             flash("Invalid email or password.", "error")
             return render_template("client/login.html")
@@ -736,6 +813,20 @@ def client_logout():
     logout_user()
     session.clear()
     flash("You have been logged out.", "success")
+    return redirect(url_for("client_login"))
+
+
+@app.route("/logout")
+def logout():
+    """Generic logout for any authenticated user."""
+    logout_user()
+    session.clear()
+    return redirect(url_for("home"))
+
+
+@app.route("/login")
+def login_redirect():
+    """Redirect to the client login page."""
     return redirect(url_for("client_login"))
 
 

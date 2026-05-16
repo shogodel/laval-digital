@@ -278,6 +278,17 @@ def init_db() -> None:
 
     conn.commit()
 
+    # ── Migration: add trial columns to users (idempotent) ──────────
+    for col in ("status", "trial_ends_at", "stripe_customer_id"):
+        try:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    conn.execute(
+        "UPDATE users SET status = 'active' WHERE status IS NULL"
+    )
+    conn.commit()
+
     # Seed default agent configs for all existing users
     _seed_default_agents(conn)
 

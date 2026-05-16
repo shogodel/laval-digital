@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trial Expired — Laval Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: #f7f8fa; color: #1f2937; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+        :root { --navy: #0f2b45; --orange: #D42B2B; --orange-dark: #A82323; --orange-glow: rgba(212,43,43,0.15); }
+        .card { background: #ffffff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); padding: 48px; max-width: 460px; width: 100%; text-align: center; }
+        .icon { font-size: 48px; margin-bottom: 16px; }
+        .card h1 { font-size: 24px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+        .card p { color: #6b7280; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+        .price { font-size: 36px; font-weight: 900; color: var(--navy); margin-bottom: 4px; }
+        .price span { font-size: 16px; font-weight: 400; color: #6b7280; }
+        .btn-primary { display: inline-block; padding: 14px 32px; background: var(--orange); color: #ffffff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; text-decoration: none; cursor: pointer; transition: background 0.2s, transform 0.15s; }
+        .btn-primary:hover { background: var(--orange-dark); transform: translateY(-1px); }
+        .btn-secondary { display: inline-block; padding: 14px 32px; background: transparent; color: var(--navy); border: 1.5px solid #d1d5db; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; cursor: pointer; transition: border-color 0.2s; margin-top: 12px; }
+        .btn-secondary:hover { border-color: #9ca3af; }
+        .features { margin-top: 28px; padding-top: 28px; border-top: 1px solid #e5e7eb; text-align: left; }
+        .features li { list-style: none; font-size: 14px; color: #4b5563; padding: 5px 0; display: flex; align-items: center; gap: 8px; }
+        .features li::before { content: "✓"; color: #10b981; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">⏰</div>
+        <h1>Your Free Trial Has Ended</h1>
+        <p>Your 7-day trial of Frankie has expired. Subscribe now to regain full access to all 16 AI agents and 111+ marketing tools.</p>
+        <div class="price">$597.99 <span>/month</span></div>
+        <p style="margin-bottom: 28px; font-size: 14px; color: #9ca3af;">One flat fee. Cancel anytime.</p>
+        <a href="#" class="btn-primary" id="subscribe-btn">Subscribe Now</a>
+        <a href="/logout" class="btn-secondary">Log Out</a>
+        <ul class="features">
+            <li>All 16 specialized AI agents</li>
+            <li>111+ execution tools across 8 channels</li>
+            <li>Voice control &amp; PWA dashboard</li>
+            <li>Bilingual (EN/FR)</li>
+        </ul>
+    </div>
+    <script>document.getElementById("subscribe-btn").addEventListener("click", function(e) { e.preventDefault(); alert("Stripe checkout coming soon — for now, contact lavaldigital@gmail.com to subscribe."); });</script>
+</body>
+</html>

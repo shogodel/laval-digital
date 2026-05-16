@@ -42,12 +42,15 @@ def _save_rate_limits(data: dict) -> None:
 
 class User(UserMixin):
     def __init__(self, row_id: int, email: str, password_hash: str,
-                 role: str, display_name: str):
+                 role: str, display_name: str, status: str = "active",
+                 trial_ends_at: Optional[str] = None):
         self.id = row_id
         self.email = email
         self.password_hash = password_hash
         self.role = role
         self.display_name = display_name
+        self.status = status
+        self.trial_ends_at = trial_ends_at
 
     def get_id(self) -> str:
         return str(self.id)
@@ -60,7 +63,20 @@ class User(UserMixin):
 
     @property
     def is_active(self) -> bool:
+        if self.status == "expired":
+            return False
+        if self.status == "trial" and self.trial_ends_at:
+            from datetime import datetime
+            if datetime.now() > datetime.fromisoformat(self.trial_ends_at):
+                return False
         return True
+
+    @property
+    def is_trial_expired(self) -> bool:
+        if self.status != "trial" or not self.trial_ends_at:
+            return False
+        from datetime import datetime
+        return datetime.now() > datetime.fromisoformat(self.trial_ends_at)
 
     @property
     def tenant_id(self) -> str:
@@ -84,6 +100,8 @@ def init_auth(app):
                     password_hash=row["password_hash"],
                     role=row["role"],
                     display_name=row["display_name"],
+                    status=row.get("status", "active"),
+                    trial_ends_at=row.get("trial_ends_at"),
                 )
         except Exception:
             pass
