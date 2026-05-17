@@ -413,12 +413,30 @@
         <!-- TAB: Dashboard                                                    -->
         <!-- ================================================================ -->
         <div class="tab-content active" id="tab-dashboard">
+            <div id="dashboard-alert" style="display:none;padding:12px 18px;border-radius:var(--radius);margin-bottom:16px;font-size:0.85rem;font-weight:600;"></div>
+
             <div class="stats-grid" id="stats-grid">
                 <div class="stat-card"><div class="stat-value" id="stat-agents">0</div><div class="stat-label">Agents</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-active">0</div><div class="stat-label">Active</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-processing">0</div><div class="stat-label">Processing</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending Approvals</div></div>
                 <div class="stat-card"><div class="stat-value" id="stat-executions">0</div><div class="stat-label">Executions</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-success-rate">0%</div><div class="stat-label">Success Rate</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-failed">0</div><div class="stat-label">Failed</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-health">?</div><div class="stat-label">System</div></div>
             </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+                <a href="/admin/dashboard" class="btn btn-red" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">🤖 Open Frankie</a>
+                <button class="btn btn-amber" onclick="switchTab('tasks')" style="display:inline-flex;align-items:center;gap:6px;">📋 Review Approvals</button>
+                <button class="btn btn-gray" onclick="switchTab('analytics')" style="display:inline-flex;align-items:center;gap:6px;">📈 Analytics</button>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2>Agent Health</h2></div>
+                <div id="dashboard-agent-health" style="display:flex;gap:12px;flex-wrap:wrap;"><p class="empty">Loading...</p></div>
+            </div>
+
             <div class="card">
                 <div class="card-header"><h2>Recent Execution Activity</h2></div>
                 <div id="execution-list"><p class="empty">Loading...</p></div>
@@ -736,6 +754,15 @@ function toast(msg, type) {
 })();
 
 /* ── Tab navigation ── */
+function switchTab(tab) {
+    document.querySelectorAll('.sidebar-nav a').forEach(function(a) { a.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    var link = document.querySelector('.sidebar-nav a[data-tab="' + tab + '"]');
+    if (link) link.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('page-title').textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
+}
+
 document.querySelectorAll('.sidebar-nav a[data-tab]').forEach(link => {
     link.addEventListener('click', function(e) {
         e.preventDefault();
@@ -781,7 +808,7 @@ function refreshAll() {
 
 /* ── Dashboard ── */
 function updateDashboard() {
-    var ids = ['stat-agents', 'stat-active', 'stat-pending', 'stat-executions'];
+    var ids = ['stat-agents', 'stat-active', 'stat-processing', 'stat-pending', 'stat-executions', 'stat-success-rate', 'stat-failed', 'stat-health'];
     ids.forEach(function(id) {
         var el = document.getElementById(id);
         if (el && !el.dataset.loaded) el.textContent = '...';
@@ -791,16 +818,50 @@ function updateDashboard() {
             var agents = data.agents || [];
             document.getElementById('stat-agents').textContent = agents.length;
             document.getElementById('stat-active').textContent = agents.filter(function(a) { return a.enabled; }).length;
-            var el1 = document.getElementById('stat-agents'); if (el1) el1.dataset.loaded = '1';
-            var el2 = document.getElementById('stat-active'); if (el2) el2.dataset.loaded = '1';
+            var processing = agents.filter(function(a) { return a.status === 'processing'; }).length;
+            document.getElementById('stat-processing').textContent = processing;
+            ids.forEach(function(id) { var el = document.getElementById(id); if (el) el.dataset.loaded = '1'; });
+            // Agent health summary
+            var healthEl = document.getElementById('dashboard-agent-health');
+            if (healthEl) {
+                var idle = agents.filter(function(a) { return a.enabled && a.status === 'idle'; }).length;
+                var err = agents.filter(function(a) { return a.status === 'error' || a.failure_count > 0; }).length;
+                healthEl.innerHTML = '<span class="badge badge-idle" style="padding:6px 14px;">✅ ' + idle + ' idle</span>'
+                    + '<span class="badge" style="padding:6px 14px;background:#dbeafe;color:#1e40af;">⚙️ ' + processing + ' processing</span>'
+                    + '<span class="badge" style="padding:6px 14px;background:' + (err ? '#fef2f2;color:#991b1b' : '#f0fdf4;color:#166534') + ';">' + (err ? '⚠️ ' + err + ' with errors' : '✅ No errors') + '</span>';
+            }
         }),
         fetch('/api/approvals').then(function(r) { return r.json(); }).then(function(data) {
             document.getElementById('stat-pending').textContent = (data.approvals || []).length;
             var el = document.getElementById('stat-pending'); if (el) el.dataset.loaded = '1';
         }),
         fetch('/api/executions').then(function(r) { return r.json(); }).then(function(data) {
-            document.getElementById('stat-executions').textContent = (data.executions || []).length;
-            var el = document.getElementById('stat-executions'); if (el) el.dataset.loaded = '1';
+            var execs = data.executions || [];
+            document.getElementById('stat-executions').textContent = execs.length;
+            var successes = execs.filter(function(e) { return e.success; }).length;
+            var failures = execs.filter(function(e) { return !e.success; }).length;
+            document.getElementById('stat-success-rate').textContent = execs.length ? Math.round(successes / execs.length * 100) + '%' : '—';
+            document.getElementById('stat-failed').textContent = failures;
+            ids.forEach(function(id) { var el = document.getElementById(id); if (el) el.dataset.loaded = '1'; });
+            // Alert if high failure rate
+            var alertEl = document.getElementById('dashboard-alert');
+            if (alertEl) {
+                var rate = execs.length ? successes / execs.length : 1;
+                if (rate < 0.8 && execs.length > 5) {
+                    alertEl.style.display = 'block';
+                    alertEl.style.background = '#fef2f2';
+                    alertEl.style.color = '#991b1b';
+                    alertEl.style.border = '1px solid #fecaca';
+                    alertEl.textContent = '⚠️ Execution success rate is ' + Math.round(rate * 100) + '% — below the 80% threshold. Check the Analytics tab for details.';
+                } else {
+                    alertEl.style.display = 'none';
+                }
+            }
+        }),
+        fetch('/api/health').then(function(r) { return r.json(); }).then(function(data) {
+            var status = data.status === 'ok' ? '✅ OK' : '⚠️ Degraded';
+            document.getElementById('stat-health').textContent = status;
+            var el = document.getElementById('stat-health'); if (el) el.dataset.loaded = '1';
         }),
     ]);
 }
@@ -1357,6 +1418,7 @@ window.onload = function() {
     updateDashboard();
     loadUsers();
     loadMCPServers();
+    setInterval(updateDashboard, 15000);
     document.getElementById('config-api-key').addEventListener('input', function() {
         document.getElementById('detect-btn').disabled = !this.value.trim();
     });
