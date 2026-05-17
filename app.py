@@ -1247,43 +1247,9 @@ def admin_panel_redirect_fr():
     )
 
 
-@app.route("/admin/logo", methods=["POST"])
-def admin_upload_logo():
-    """Upload a custom logo PNG or SVG to replace the default."""
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
-    if "logo" not in request.files:
-        return redirect(url_for("admin_panel_redirect"))
-    file = request.files["logo"]
-    if file.filename == "":
-        return redirect(url_for("admin_panel_redirect"))
-    if file and (
-        file.filename.lower().endswith(".png")
-        or file.filename.lower().endswith(".svg")
-    ):
-        ext = file.filename.rsplit(".", 1)[1].lower()
-        save_path = os.path.join(app.root_path, "static", f"logo_custom.{ext}")
-        file.save(save_path)
-        other_ext = "svg" if ext == "png" else "png"
-        other_path = os.path.join(
-            app.root_path, "static", f"logo_custom.{other_ext}"
-        )
-        if os.path.exists(other_path):
-            os.remove(other_path)
-        session["logo_ext"] = ext
-        return redirect(
-            url_for("admin_panel_redirect", logo_uploaded="success")
-        )
-    return redirect(url_for("admin_panel_redirect", logo_uploaded="invalid"))
-
-
 @app.context_processor
 def inject_logo():
-    """Inject the current logo filename into all templates."""
-    for ext in ("png", "svg"):
-        path = os.path.join(app.root_path, "static", f"logo_custom.{ext}")
-        if os.path.exists(path):
-            return dict(logo_file=f"logo_custom.{ext}")
+    """Always use the SVG logo from the repo."""
     return dict(logo_file="logo.svg")
 
 
@@ -1465,6 +1431,7 @@ def get_agents():
                 "agent_id": agent_id,
                 "enabled": agent.enabled,
                 "model": agent.model,
+                "api_key": agent.api_key or "",
                 "status": act.get("status", "idle"),
                 "last_invoked": act.get("last_invoked"),
                 "task_count": act.get("task_count", 0),
@@ -1478,6 +1445,7 @@ def get_agents():
                 "agent_id": agent_id,
                 "enabled": agent.enabled,
                 "model": agent.model,
+                "api_key": agent.api_key or "",
                 "status": "idle",
                 "last_invoked": None,
                 "task_count": 0,

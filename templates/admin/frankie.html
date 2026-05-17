@@ -17,34 +17,33 @@
         </div>
         <div id="frankie-connect-bar">
             <button id="frankie-connect-toggle" onclick="frankie.toggleConnect()" style="display:flex;align-items:center;gap:6px;width:100%;padding:8px 14px;background:var(--gray-50);border:none;border-bottom:1px solid var(--gray-200);cursor:pointer;font-size:0.82rem;font-weight:500;color:var(--gray-700);font-family:inherit;transition:background 0.15s;">
-                <span id="frankie-connect-indicator" style="font-size:1rem;">🔌</span>
+                <span id="frankie-connect-indicator" style="font-size:1rem;"></span>
                 <span id="frankie-connect-text" style="flex:1;text-align:left;">Checking...</span>
                 <span id="frankie-connect-arrow" style="font-size:0.7rem;color:var(--gray-400);">▾</span>
             </button>
             <div id="frankie-connect-form" style="display:none;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">
                 <div style="padding:10px 14px;">
-                    <p style="font-size:0.72rem;color:var(--gray-500);margin-bottom:8px;">Connect Frankie to an AI provider so it can draft responses.</p>
                     <div style="margin-bottom:6px;">
-                        <select id="frankie-connect-model" style="width:100%;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
-                            <option value="">-- Select model --</option>
-                            <option value="deepseek-chat">DeepSeek Chat</option>
-                            <option value="gpt-4o">GPT-4o</option>
-                            <option value="gpt-4">GPT-4</option>
-                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                            <option value="claude-3-opus">Claude 3 Opus</option>
-                            <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-                            <option value="claude-3-haiku">Claude 3 Haiku</option>
+                        <label style="font-size:0.7rem;font-weight:600;color:var(--gray-600);display:block;margin-bottom:2px;">Model</label>
+                        <select id="frankie-config-model" style="width:100%;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
+                            <option value="">-- Detect or enter API key --</option>
                         </select>
                     </div>
                     <div style="margin-bottom:6px;">
-                        <input type="password" id="frankie-connect-key" placeholder="API Key (sk-...)" style="width:100%;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
+                        <label style="font-size:0.7rem;font-weight:600;color:var(--gray-600);display:block;margin-bottom:2px;">API Base URL (optional)</label>
+                        <input type="text" id="frankie-config-base" placeholder="https://api.deepseek.com/v1" style="width:100%;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
                     </div>
-                    <div style="margin-bottom:8px;">
-                        <input type="text" id="frankie-connect-base" placeholder="API Base URL (optional)" style="width:100%;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
+                    <div style="margin-bottom:6px;">
+                        <label style="font-size:0.7rem;font-weight:600;color:var(--gray-600);display:block;margin-bottom:2px;">API Key</label>
+                        <div style="display:flex;gap:6px;">
+                            <input type="password" id="frankie-config-key" placeholder="sk-..." oninput="frankie.onKeyInput()" style="flex:1;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
+                            <button id="frankie-detect-btn" onclick="frankie.detectModels()" disabled style="padding:7px 12px;font-size:0.75rem;font-weight:600;background:var(--gray-200);color:var(--gray-700);border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap;">Detect</button>
+                        </div>
+                        <div id="frankie-detect-result" style="font-size:0.7rem;margin-top:2px;"></div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
-                        <button onclick="frankie.saveConnect()" style="padding:7px 14px;font-size:0.78rem;font-weight:600;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">Connect Frankie to AI</button>
-                        <span id="frankie-connect-result" style="font-size:0.75rem;"></span>
+                        <button onclick="frankie.saveConfig()" style="padding:7px 14px;font-size:0.78rem;font-weight:600;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">Connect Frankie to AI</button>
+                        <span id="frankie-config-result" style="font-size:0.75rem;"></span>
                     </div>
                 </div>
             </div>
@@ -224,11 +223,21 @@ window.frankie = {
         var self = this;
         fetch('/api/agents').then(function(r) { return r.json(); }).then(function(data) {
             var agents = data.agents || [];
-            var connected = agents.some(function(a) { return a.model && a.model !== '' && a.model !== 'none'; });
+            var connected = agents.some(function(a) {
+                return a.api_key && a.api_key !== '' && a.model && a.model !== '' && a.model !== 'none';
+            });
             var indicator = document.getElementById('frankie-connect-indicator');
             var text = document.getElementById('frankie-connect-text');
-            if (indicator) indicator.textContent = connected ? '😊' : '😟';
-            if (text) text.textContent = connected ? 'Connected' : 'Not connected';
+            var bar = document.getElementById('frankie-connect-bar');
+            if (connected) {
+                if (indicator) { indicator.textContent = '😊'; indicator.style.fontSize = '1.2rem'; }
+                if (text) { text.textContent = 'Connected'; text.style.color = '#059669'; text.style.fontWeight = '700'; }
+                if (bar) bar.style.background = '#ecfdf5';
+            } else {
+                if (indicator) { indicator.textContent = '😟'; indicator.style.fontSize = '1rem'; }
+                if (text) { text.textContent = 'Not connected'; text.style.color = '#dc2626'; text.style.fontWeight = '500'; }
+                if (bar) bar.style.background = 'var(--gray-50)';
+            }
         }).catch(function() {
             var indicator = document.getElementById('frankie-connect-indicator');
             var text = document.getElementById('frankie-connect-text');
@@ -246,30 +255,77 @@ window.frankie = {
         if (arrow) arrow.textContent = isOpen ? '▾' : '▴';
     },
 
-    saveConnect: function() {
+    onKeyInput: function() {
+        var key = document.getElementById('frankie-config-key');
+        var btn = document.getElementById('frankie-detect-btn');
+        if (btn) btn.disabled = !key.value.trim();
+    },
+
+    detectModels: function() {
+        var apiKey = document.getElementById('frankie-config-key').value.trim();
+        if (!apiKey) return;
+        var btn = document.getElementById('frankie-detect-btn');
+        var resultDiv = document.getElementById('frankie-detect-result');
+        btn.disabled = true; btn.textContent = 'Detecting...';
+        resultDiv.textContent = '';
+        fetch('/api/models/detect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ api_key: apiKey })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var select = document.getElementById('frankie-config-model');
+            if (data.provider === 'unknown' || !data.models.length) {
+                select.innerHTML = '<option value="">-- No models detected --</option>';
+                resultDiv.textContent = 'Could not detect provider. Check your key.';
+                resultDiv.style.color = 'var(--red)'; return;
+            }
+            select.innerHTML = '';
+            data.models.forEach(function(m) {
+                var opt = document.createElement('option'); opt.value = m; opt.textContent = m;
+                select.appendChild(opt);
+            });
+            resultDiv.textContent = 'Provider: ' + data.provider + ' (' + data.models.length + ' models)';
+            resultDiv.style.color = 'var(--green)';
+        })
+        .catch(function(err) {
+            document.getElementById('frankie-config-model').innerHTML = '<option value="">-- Detection failed --</option>';
+            resultDiv.textContent = 'Error: ' + err.message;
+            resultDiv.style.color = 'var(--red)';
+        })
+        .finally(function() { btn.disabled = false; btn.textContent = 'Detect'; });
+    },
+
+    saveConfig: function() {
         var self = this;
-        var key = document.getElementById('frankie-connect-key').value.trim();
-        var model = document.getElementById('frankie-connect-model').value;
-        var base = document.getElementById('frankie-connect-base').value.trim();
-        var result = document.getElementById('frankie-connect-result');
-        if (!key) { result.textContent = 'API Key is required'; result.style.color = 'var(--red)'; return; }
-        result.innerHTML = '<span style="color:var(--blue);">Connecting...</span>';
+        var model = document.getElementById('frankie-config-model').value;
+        var apiKey = document.getElementById('frankie-config-key').value;
+        var apiBase = document.getElementById('frankie-config-base').value;
+        if (!apiKey) { toast('API Key is required.', 'error'); return; }
+        var payload = { api_key: apiKey, api_base: apiBase };
+        if (model && model !== '__keep__') payload.model = model;
+        var resultDiv = document.getElementById('frankie-config-result');
+        resultDiv.innerHTML = '<span style="color:var(--blue);">Connecting...</span>';
         fetch('/api/agents/bulk/config', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({api_key: key, model: model || '', api_base: base})
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success || data.message) {
-                result.innerHTML = '<span style="color:var(--green);">✓ Connected!</span>';
+                resultDiv.innerHTML = '<span style="color:var(--green);font-weight:700;">🎉 Frankie is now connected and ready!</span>';
                 self.checkConnect();
             } else {
-                result.innerHTML = '<span style="color:var(--red);">Error: ' + (data.error || 'Unknown') + '</span>';
+                resultDiv.innerHTML = '<span style="color:var(--red);">Error: ' + (data.error || 'Unknown') + '</span>';
             }
         })
         .catch(function(err) {
-            result.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>';
+            resultDiv.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>';
+        })
+        .finally(function() {
+            setTimeout(function() { resultDiv.textContent = ''; }, 5000);
         });
     },
 

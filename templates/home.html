@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frankie — AI Marketing Command Center for Local Businesses</title>
-    <meta name="description" content="Meet Frankie — your 16-agent AI marketing command center. SEO, social media, ads, email, reviews, content, and more. One flat monthly fee. Cancel anytime.">
-    <meta property="og:title" content="Frankie — AI Marketing Command Center">
-    <meta property="og:description" content="16 AI agents. 111+ execution tools. Voice-controlled. One flat fee. Cancel anytime.">
+    <meta name="description" content="Meet Frankie — your AI marketing assistant. Writes your social media posts, blog articles, and email campaigns. You approve, Frankie publishes. One flat monthly fee. Cancel anytime.">
+    <meta property="og:title" content="Frankie — AI Marketing Assistant">
+    <meta property="og:description" content="AI-powered marketing assistant. Voice-controlled. One flat fee. Cancel anytime.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://lavaldigital.com">
     <meta property="og:image" content="https://lavaldigital.com/static/og-image.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Frankie — AI Marketing Command Center">
-    <meta name="twitter:description" content="16 AI agents. 111+ execution tools. Voice-controlled. One flat fee. Cancel anytime.">
+    <meta name="twitter:description" content="AI-powered marketing assistant. Voice-controlled. One flat fee. Cancel anytime.">
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -20,7 +20,7 @@
         "name": "Frankie",
         "applicationCategory": "MarketingAutomation",
         "operatingSystem": "All",
-        "description": "AI-powered marketing command center with 16 specialized agents and 111+ execution tools across 8 marketing channels. Voice-controlled. PWA-installable.",
+        "description": "AI-powered marketing assistant for local businesses. You talk to it, it creates and publishes your marketing. Voice-controlled. PWA-installable.",
         "offers": {
             "@type": "Offer",
             "price": "597.99",
@@ -81,15 +81,16 @@
             top: 0;
             z-index: 100;
             border-bottom: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
         }
         nav .container {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 72px;
+            height: 80px;
         }
         nav .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        nav .logo img { height: 40px; width: auto; }
+        nav .logo img { height: 56px; width: auto; }
         nav .logo span { font-size: 1.2rem; font-weight: 800; color: var(--white); letter-spacing: -0.02em; }
         nav ul { list-style: none; display: flex; align-items: center; gap: 8px; }
         nav ul li a {
@@ -135,7 +136,7 @@
         .hero {
             background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 50%, #0d2137 100%);
             color: var(--white);
-            padding: 100px 0 80px;
+            padding: 120px 0 100px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -146,6 +147,15 @@
             inset: 0;
             background: radial-gradient(ellipse at 50% 0%, var(--orange-glow) 0%, transparent 60%);
             pointer-events: none;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--orange), transparent);
         }
         .particles {
             position: absolute;
@@ -177,12 +187,13 @@
             50% { transform: translateY(-80px) scale(1.5); }
         }
         .hero h1 {
-            font-size: 3.4rem;
+            font-size: 3.6rem;
             font-weight: 900;
             line-height: 1.1;
-            margin-bottom: 20px;
-            letter-spacing: -0.02em;
+            margin-bottom: 24px;
+            letter-spacing: -0.03em;
             position: relative;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.3);
         }
         .hero h1 span {
             background: linear-gradient(135deg, var(--orange), #ff6b35);
@@ -192,13 +203,18 @@
         }
         .hero p {
             font-size: 1.2rem;
-            line-height: 1.7;
-            margin-bottom: 36px;
-            opacity: 0.85;
-            max-width: 680px;
+            line-height: 1.8;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            max-width: 720px;
             margin-left: auto;
             margin-right: auto;
             position: relative;
+            padding: 20px 32px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(4px);
         }
         .hero-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; }
         .btn {
@@ -286,6 +302,16 @@
             color: var(--navy);
             letter-spacing: -0.02em;
             margin-bottom: 16px;
+            position: relative;
+        }
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            background: var(--orange);
+            border-radius: 2px;
+            margin: 16px auto 0;
         }
         .section-subtitle {
             text-align: center;
@@ -306,16 +332,16 @@
         .feature-card {
             background: var(--white);
             border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(0,0,0,0.04);
-            padding: 32px 28px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(0,0,0,0.06);
+            padding: 36px 32px;
             text-align: left;
             transition: all 0.3s;
             position: relative;
         }
         .feature-card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-6px);
         }
         .feature-card .icon {
             font-size: 2rem;
@@ -363,14 +389,15 @@
         .who-card {
             background: var(--white);
             border-radius: var(--radius);
-            padding: 28px 24px;
+            padding: 32px 28px;
             text-align: center;
-            border: 1px solid rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.06);
+            box-shadow: var(--shadow-sm);
             transition: all 0.3s;
         }
         .who-card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
         }
         .who-card .icon { font-size: 2.2rem; margin-bottom: 10px; display: block; }
         .who-card h4 { font-size: 0.95rem; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
@@ -390,18 +417,19 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 12px 20px;
-            background: var(--off-white);
+            padding: 16px 24px;
+            background: var(--white);
             border-radius: var(--radius);
-            border: 1px solid rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.06);
+            box-shadow: var(--shadow-sm);
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--navy);
             transition: all 0.2s;
         }
         .integration-item:hover {
-            box-shadow: var(--shadow-sm);
-            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
         }
         .integration-item .icon { font-size: 1.4rem; }
 
@@ -439,15 +467,15 @@
         .step-card {
             background: var(--white);
             border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(0,0,0,0.04);
-            padding: 36px 28px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(0,0,0,0.06);
+            padding: 40px 32px;
             text-align: center;
             transition: all 0.3s;
         }
         .step-card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-6px);
         }
         .step-number {
             display: flex;
@@ -491,33 +519,43 @@
             margin: 0 auto;
             background: var(--white);
             border-radius: 24px;
-            box-shadow: 0 8px 40px rgba(212,43,43,0.1), 0 0 0 1px rgba(212,43,43,0.08);
-            padding: 48px 40px 44px;
+            box-shadow: 0 12px 48px rgba(212,43,43,0.12), 0 0 0 1px rgba(212,43,43,0.08);
+            padding: 56px 48px 52px;
             text-align: center;
             position: relative;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         .pricing-card:hover {
-            box-shadow: 0 16px 60px rgba(212,43,43,0.18), 0 0 0 1px rgba(212,43,43,0.12);
-            transform: translateY(-4px);
+            box-shadow: 0 20px 64px rgba(212,43,43,0.2), 0 0 0 1px rgba(212,43,43,0.12);
+            transform: translateY(-6px);
         }
         .pricing-card .badge {
             display: inline-block;
             background: linear-gradient(135deg, #fef2f2, #fee2e2);
             color: #991b1b;
-            padding: 6px 20px;
-            border-radius: 20px;
+            padding: 8px 24px;
+            border-radius: 24px;
             font-size: 0.78rem;
             font-weight: 700;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             border: 1px solid #fecaca;
+            box-shadow: 0 2px 8px rgba(254,202,202,0.4);
         }
         .pricing-card h2 {
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 800;
             color: var(--navy);
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             letter-spacing: -0.02em;
+        }
+        .pricing-card .price {
+            font-size: 3.2rem;
+            font-weight: 900;
+            color: var(--orange);
+            letter-spacing: -0.04em;
+            line-height: 1.2;
+            margin-bottom: 4px;
+            text-shadow: 0 2px 8px rgba(212,43,43,0.15);
         }
         .pricing-card .price {
             font-size: 3.2rem;
@@ -595,7 +633,7 @@
         .voice-section {
             background: linear-gradient(135deg, var(--navy) 0%, #0a1e33 100%);
             color: var(--white);
-            padding: 90px 0;
+            padding: 100px 0;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -607,19 +645,33 @@
             background: radial-gradient(ellipse at 50% 100%, var(--orange-glow) 0%, transparent 50%);
             pointer-events: none;
         }
+        .voice-section::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--orange), transparent);
+        }
         .voice-section .container { position: relative; }
         .voice-section h2 {
-            font-size: 2.4rem;
+            font-size: 2.6rem;
             font-weight: 800;
             letter-spacing: -0.02em;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.3);
         }
         .voice-section p {
             font-size: 1.15rem;
-            line-height: 1.7;
-            opacity: 0.85;
-            max-width: 640px;
+            line-height: 1.8;
+            opacity: 0.9;
+            max-width: 680px;
             margin: 0 auto;
+            padding: 20px 32px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
         }
         .voice-section .note {
             font-size: 0.85rem;
@@ -648,12 +700,13 @@
             background: var(--white);
             border-radius: var(--radius-lg);
             overflow: hidden;
-            box-shadow: var(--shadow-sm);
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(0,0,0,0.06);
             transition: all 0.4s;
         }
         .comparison-card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-6px);
         }
         .comparison-card.old { border-top: 4px solid #ef4444; }
         .comparison-card.new { border-top: 4px solid var(--green); }
@@ -748,12 +801,12 @@
             border-radius: var(--radius);
             margin-bottom: 12px;
             box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(0,0,0,0.04);
+            border: 1px solid rgba(0,0,0,0.06);
             overflow: hidden;
             cursor: pointer;
-            transition: box-shadow 0.2s;
+            transition: box-shadow 0.2s, border-color 0.2s;
         }
-        .faq-item:hover { box-shadow: var(--shadow-md); }
+        .faq-item:hover { box-shadow: var(--shadow-md); border-color: rgba(0,0,0,0.1); }
         .faq-item .faq-question {
             padding: 22px 28px;
             display: flex;
@@ -794,7 +847,8 @@
         footer {
             background: #0a1e33;
             color: var(--white);
-            padding: 48px 0 32px;
+            padding: 64px 0 40px;
+            border-top: 3px solid var(--orange);
         }
         footer .container {
             display: grid;
@@ -990,7 +1044,6 @@
             <li><a href="/blog">Blog</a></li>
             <li><a href="/affiliate">Affiliate</a></li>
             <li><a href="/client/login">Sign In</a></li>
-            <li><a href="tel:5142431580">📞 (514) 243-1580</a></li>
             <li><a href="/free-trial" class="nav-cta">Try Frankie Free</a></li>
             <li><a href="/fr/" class="lang-toggle">FR</a></li>
         </ul>
@@ -1011,32 +1064,11 @@
         <div class="particle"></div>
     </div>
     <div class="container fade-up">
-        <h1>Meet <span>Frankie</span> — Your AI Marketing Command Center</h1>
-        <p>Frankie connects to your existing website and runs your entire digital marketing. 16 specialized AI agents. 111+ execution tools across 8 marketing channels. Voice-controlled. PWA-installable. One flat monthly fee. Cancel anytime.</p>
+        <h1>Meet <span>Frankie</span> — Your AI Marketing Assistant</h1>
+        <p>Frankie is your all-in-one marketing assistant. You talk to it like a person. It writes your social media posts, blog articles, and email campaigns. You review and approve. Frankie publishes. No technical skills needed. No hiring agencies. One flat monthly fee.</p>
         <div class="hero-buttons">
             <a href="/free-trial" class="btn btn-primary">Try Frankie Free (7 Days)</a>
-            <a href="tel:5142431580" class="btn btn-secondary">📞 Call (514) 243-1580</a>
             <a href="/demo" class="btn btn-secondary">See Live Demo</a>
-        </div>
-    </div>
-    <div class="social-proof">
-        <div class="container">
-            <div class="stat">
-                <div class="num">200<span>+</span></div>
-                <div class="lbl">Canadian Businesses</div>
-            </div>
-            <div class="stat">
-                <div class="num">111<span>+</span></div>
-                <div class="lbl">AI Execution Tools</div>
-            </div>
-            <div class="stat">
-                <div class="num">16</div>
-                <div class="lbl">Specialized AI Agents</div>
-            </div>
-            <div class="stat">
-                <div class="num">8</div>
-                <div class="lbl">Marketing Channels</div>
-            </div>
         </div>
     </div>
 </section>
@@ -1044,7 +1076,7 @@
 <section class="section" id="features">
     <div class="container">
         <h2 class="section-title fade-up">What Frankie Does</h2>
-        <p class="section-subtitle fade-up">16 specialized AI agents working as your complete marketing department. One command center. One flat monthly fee.</p>
+        <p class="section-subtitle fade-up">Everything your business needs to grow online. One tool. One flat monthly fee.</p>
         <div class="feature-grid fade-up">
             <div class="feature-card">
                 <div class="icon">🔍</div>
@@ -1193,8 +1225,7 @@
             <p class="price-sub">Cancel anytime. No contracts. No hidden fees. No upsells.</p>
             <p class="urgency-note">⏳ Limited spots available for our onboarding team</p>
             <ul class="features">
-                <li>All 16 AI Marketing Agents</li>
-                <li>8 MCP Servers with 111+ Execution Tools</li>
+                <li>All AI Marketing Tools Included</li>
                 <li>Connect Your Existing Website &amp; Platforms</li>
                 <li>Frankie Voice Interface — Speak Naturally</li>
                 <li>PWA — Install on Any Device (Phone, Tablet, Desktop)</li>
@@ -1213,7 +1244,7 @@
     <div class="container fade-up">
         <span class="voice-icon">🎙️</span>
         <h2>Just Talk to Frankie</h2>
-        <p>Open Frankie on your phone or desktop. Say <em>"Frankie, write a blog post about winter plumbing tips and publish it to my website."</em> Frankie responds, confirms, and executes. Like having a marketing director on speed dial.</p>
+        <p>Open Frankie on your phone or desktop. Say <em>"Frankie, write a blog post about winter plumbing tips and publish it to my website."</em> Frankie responds, confirms, and executes. Like having a marketing assistant who never sleeps.</p>
         <p class="note">Voice interface works on Chrome, Edge, Safari, and mobile browsers.</p>
     </div>
 </section>
@@ -1221,7 +1252,7 @@
 <section class="section comparison-section" id="comparison">
     <div class="container">
         <h2 class="section-title fade-up">Frankie vs Traditional Agency</h2>
-        <p class="section-subtitle fade-up">See why hundreds of Canadian businesses are switching to AI-powered marketing.</p>
+        <p class="section-subtitle fade-up">See why local businesses are switching to AI-powered marketing.</p>
         <div class="comparison-grid fade-up">
             <div class="comparison-card old">
                 <div class="comparison-header">
@@ -1255,7 +1286,7 @@
                         <li><span class="label">Vendors</span> <span class="price green">One platform</span></li>
                         <li><span class="label">Turnaround</span> <span class="price green">Instant</span></li>
                         <li><span class="label">Availability</span> <span class="price green">24/7 AI-powered</span></li>
-                        <li><span class="label">Execution Tools</span> <span class="price green">111+ across 8 channels</span></li>
+                        <li><span class="label">Execution Tools</span> <span class="price green">All channels included</span></li>
                         <li><span class="label">Best For</span> <span class="price green">Growing local businesses</span></li>
                     </ul>
                 </div>
@@ -1318,7 +1349,7 @@
                     <span class="faq-toggle">+</span>
                 </div>
                 <div class="faq-answer">
-                    <p>Full access to all 16 agents, 8 MCP servers, voice interface, and platform connections. No credit card required. You'll see real results before paying.</p>
+                    <p>Full access to all marketing tools, voice interface, and platform connections. No credit card required. You'll see real results before paying.</p>
                 </div>
             </div>
             <div class="faq-item" onclick="toggleFaq(this)">
@@ -1338,12 +1369,10 @@
     <div class="container">
         <div>
             <h4>🤖 Frankie by Laval Digital</h4>
-            <p>AI-powered marketing command center for local businesses. 16 specialized agents. One voice interface. One flat monthly fee. Proudly Canadian. 🍁</p>
+            <p>AI-powered marketing assistant for local businesses. You talk to it, it creates and publishes your marketing. One flat monthly fee. Proudly Canadian. 🍁</p>
         </div>
         <div>
             <h4>Contact</h4>
-            <p>📞 <a href="tel:5142431580">(514) 243-1580</a></p>
-            <p>💬 <a href="sms:5142431580">Text (514) 243-1580</a></p>
             <p>✉️ <a href="mailto:lavaldigital@gmail.com">lavaldigital@gmail.com</a></p>
         </div>
         <div>

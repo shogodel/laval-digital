@@ -440,49 +440,12 @@
         </div>
 
         <!-- ================================================================ -->
-        <!-- TAB: Agents                                                       -->
+        <!-- TAB: Frankie's Workers                                            -->
         <!-- ================================================================ -->
         <div class="tab-content" id="tab-agents">
             <div class="card">
                 <div class="card-header"><h2>Agent Status</h2></div>
                 <div id="agent-list"><p class="empty">Loading agents...</p></div>
-            </div>
-            <div class="card">
-                <div class="card-header"><h2>Agent Configuration</h2></div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Select Agent</label>
-                        <select id="config-agent-select" onchange="loadAgentConfig()">
-                            <option value="">-- Choose an agent --</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="agent-config-form" style="display:none;">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Model</label>
-                            <select id="config-model">
-                                <option value="">-- Detect or enter API key --</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>API Base URL (optional)</label>
-                            <input type="text" id="config-api-base" placeholder="https://api.deepseek.com/v1">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>API Key</label>
-                        <div style="display:flex;gap:8px;">
-                            <input type="password" id="config-api-key" placeholder="sk-..." style="flex:1;">
-                            <button id="detect-btn" class="btn btn-gray btn-sm" onclick="detectModels()" disabled style="white-space:nowrap;">Detect</button>
-                        </div>
-                        <div id="detect-result" style="font-size:0.85rem;margin-top:4px;"></div>
-                    </div>
-                    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
-                        <button class="btn btn-red" onclick="saveAgentConfig()">Save Configuration</button>
-                        <span id="config-save-result"></span>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -542,26 +505,6 @@
         <!-- TAB: Settings                                                     -->
         <!-- ================================================================ -->
         <div class="tab-content" id="tab-settings">
-            <div class="card">
-                <div class="card-header"><h2>Logo</h2><p>Upload your company logo (PNG or SVG)</p></div>
-                {% if logo_uploaded == "success" %}
-                <p style="color:var(--green);font-weight:600;margin-bottom:10px;">✓ Logo uploaded successfully!</p>
-                {% elif logo_uploaded == "invalid" %}
-                <p style="color:var(--red);font-weight:600;margin-bottom:10px;">✗ Invalid file. Please upload a PNG or SVG.</p>
-                {% endif %}
-                <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
-                    <div style="background:var(--gray-100);padding:10px 16px;border-radius:8px;display:flex;align-items:center;gap:10px;">
-                        <span style="font-size:0.85rem;color:var(--gray-500);">Current:</span>
-                        <img src="{{ url_for('static', filename=logo_file) }}" alt="Logo" height="48">
-                    </div>
-                </div>
-                <form method="POST" action="/admin/logo" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="file" name="logo" accept=".png,.svg" required style="width:auto;flex:1;min-width:200px;">
-                    <button type="submit" class="btn btn-red" style="white-space:nowrap;">Upload</button>
-                </form>
-            </div>
-
             <div class="card">
                 <div class="card-header"><h2>Connected Platforms</h2><p>Connect your existing accounts so Frankie can publish directly</p></div>
                 <p style="font-size:0.85rem;color:var(--gray-500);margin-bottom:16px;">Click any platform below to connect it. Frankie will guide you through a simple setup — no technical knowledge required.</p>
@@ -867,26 +810,6 @@ const AGENT_META = {};
 let AGENT_PERSONALITIES = {};
 let AGENT_META_LOOKUP = {};
 
-async function loadAgentMeta() {
-    try {
-        const r = await fetch('/api/personalities');
-        const d = await r.json();
-        AGENT_PERSONALITIES = d.personalities || {};
-        Object.keys(AGENT_PERSONALITIES).forEach(function(k) {
-            AGENT_META_LOOKUP[k] = { name: AGENT_PERSONALITIES[k].short || k, desc: '' };
-        });
-    } catch (e) {}
-    try {
-        const m = await fetch('/api/agents');
-        const d = await m.json();
-        (d.agents || []).forEach(function(a) {
-            if (!AGENT_META_LOOKUP[a.agent_id]) {
-                AGENT_META_LOOKUP[a.agent_id] = { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }), desc: '' };
-            }
-        });
-    } catch (e) {}
-}
-
 function loadAgents() {
     return fetch('/api/agents')
         .then(r => r.json())
@@ -1087,146 +1010,6 @@ function loadExecutions() {
         });
 }
 
-/* ── Agent Config ── */
-function populateAgentSelect() {
-    fetch('/api/agents')
-        .then(r => r.json())
-        .then(data => {
-            const select = document.getElementById('config-agent-select');
-            select.innerHTML = '<option value="">-- Choose an agent --</option>';
-
-            const allOption = document.createElement('option');
-            allOption.value = '__all__';
-            allOption.textContent = '📦 All Agents (apply to all)';
-            allOption.style.fontWeight = 'bold';
-            select.appendChild(allOption);
-
-            (data.agents || []).forEach(a => {
-                const meta = AGENT_META_LOOKUP[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) };
-                const opt = document.createElement('option');
-                opt.value = a.agent_id;
-                opt.textContent = meta.name;
-                select.appendChild(opt);
-            });
-        });
-}
-
-function loadAgentConfig() {
-    const selectedValue = document.getElementById('config-agent-select').value;
-
-    if (selectedValue === '__all__' || selectedValue === 'all') {
-        document.getElementById('agent-config-form').style.display = 'block';
-        document.getElementById('config-model').innerHTML = '<option value="">-- Select model (or leave blank to keep current) --</option>';
-        document.getElementById('config-api-key').value = '';
-        document.getElementById('config-api-base').value = '';
-        document.getElementById('detect-btn').disabled = true;
-        document.getElementById('detect-result').textContent = '';
-        return;
-    }
-
-    if (!selectedValue) {
-        document.getElementById('agent-config-form').style.display = 'none';
-        return;
-    }
-
-    document.getElementById('agent-config-form').style.display = 'block';
-    document.getElementById('config-model').innerHTML = '<option value="">-- Enter API key and click Detect --</option>';
-    document.getElementById('detect-result').textContent = '';
-    fetch('/api/agents/' + selectedValue + '/config')
-        .then(r => r.json())
-        .then(data => {
-            document.getElementById('config-api-key').value = data.api_key || '';
-            document.getElementById('config-api-base').value = data.api_base || '';
-            document.getElementById('detect-btn').disabled = !data.api_key;
-        })
-        .catch(() => {});
-}
-
-function detectModels() {
-    const apiKey = document.getElementById('config-api-key').value.trim();
-    if (!apiKey) return;
-    const btn = document.getElementById('detect-btn');
-    const resultDiv = document.getElementById('detect-result');
-    btn.disabled = true; btn.textContent = 'Detecting...';
-    resultDiv.textContent = '';
-    fetch('/api/models/detect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ api_key: apiKey })
-    })
-    .then(r => r.json())
-    .then(data => {
-        const select = document.getElementById('config-model');
-        if (data.provider === 'unknown' || !data.models.length) {
-            select.innerHTML = '<option value="">-- No models detected --</option>';
-            resultDiv.textContent = 'Could not detect provider. Check your key.';
-            resultDiv.style.color = 'var(--red)'; return;
-        }
-        select.innerHTML = '';
-        data.models.forEach(m => {
-            const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
-            select.appendChild(opt);
-        });
-        resultDiv.textContent = 'Provider: ' + data.provider + ' (' + data.models.length + ' models)';
-        resultDiv.style.color = 'var(--green)';
-    })
-    .catch(err => {
-        document.getElementById('config-model').innerHTML = '<option value="">-- Detection failed --</option>';
-        resultDiv.textContent = 'Error: ' + err.message;
-        resultDiv.style.color = 'var(--red)';
-    })
-    .finally(() => { btn.disabled = false; btn.textContent = 'Detect'; });
-}
-
-function saveAgentConfig() {
-    const agentSelect = document.getElementById('config-agent-select');
-    const selectedValue = agentSelect.value;
-    const model = document.getElementById('config-model').value;
-    const apiKey = document.getElementById('config-api-key').value;
-    const apiBase = document.getElementById('config-api-base').value;
-
-    if (!selectedValue) {
-        toast('Please select an agent.', 'error');
-        return;
-    }
-
-    const payload = { api_key: apiKey, api_base: apiBase };
-    if (model && model !== '__keep__') payload.model = model;
-
-    let endpoint;
-    if (selectedValue === '__all__' || selectedValue === 'all') {
-        endpoint = '/api/agents/bulk/config';
-    } else {
-        endpoint = '/api/agents/' + selectedValue + '/config';
-    }
-
-    const resultDiv = document.getElementById('config-save-result');
-    resultDiv.innerHTML = '<span style="color:var(--blue);">Saving...</span>';
-
-    fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success || data.message) {
-            const count = data.updated || 'all';
-            resultDiv.innerHTML = '<span style="color:var(--green);">✓ ' + count + ' agent(s) updated!</span>';
-            loadAgents();
-        } else {
-            resultDiv.innerHTML = '<span style="color:var(--red);">Error: ' + (data.error || 'Unknown') + '</span>';
-        }
-    })
-    .catch(err => {
-        resultDiv.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>';
-    })
-    .finally(() => {
-        setTimeout(() => { resultDiv.textContent = ''; }, 5000);
-    });
-}
-
-
 /* ── User Management ── */
 function loadUsers() {
     const roleFilter = document.getElementById('user-role-filter')?.value || '';
@@ -1400,22 +1183,14 @@ function loadMCPServers() {
 
 /* ── Init ── */
 window.onload = function() {
-    loadAgentMeta().then(function() {
-        loadAgents();
-        populateAgentSelect();
-    });
     loadAgents();
     loadApprovals();
     loadPendingExecutions();
     loadExecutions();
-    populateAgentSelect();
     updateDashboard();
     loadUsers();
     loadMCPServers();
     setInterval(updateDashboard, 15000);
-    document.getElementById('config-api-key').addEventListener('input', function() {
-        document.getElementById('detect-btn').disabled = !this.value.trim();
-    });
 
     // PWA Service Worker + Install
     if ('serviceWorker' in navigator) {
