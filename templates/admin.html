@@ -360,7 +360,7 @@
         </div>
         <nav class="sidebar-nav">
             <a href="#" class="active" data-tab="dashboard"><span class="icon">📊</span> Dashboard</a>
-            <a href="#" data-tab="agents"><span class="icon">🤖</span> Agents</a>
+            <a href="#" data-tab="agents"><span class="icon">🤖</span> Frankie's Workers</a>
             <a href="#" data-tab="tasks"><span class="icon">📋</span> Tasks &amp; Approvals</a>
             <a href="#" data-tab="settings"><span class="icon">⚙️</span> Settings</a>
             <a href="#" data-tab="users"><span class="icon">👤</span> Users</a>
@@ -369,9 +369,6 @@
             <a href="#" data-tab="mcp"><span class="icon">🔌</span> MCP Servers</a>
         </nav>
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
-            <a href="/admin/dashboard" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:12px 16px;border-radius:10px;font-size:0.9rem;font-weight:700;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
-                🤖 Open Frankie
-            </a>
             <button id="sidebar-install-btn" onclick="installApp()" style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;width:100%;">📲 Install App</button>
             <a href="/admin/logout" style="font-size:0.75rem;color:rgba(255,255,255,0.35);text-decoration:none;text-align:center;padding:4px 0;transition:color 0.15s;">Sign out</a>
         </div>
@@ -427,7 +424,6 @@
             </div>
 
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
-                <a href="/admin/dashboard" class="btn btn-red" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">🤖 Open Frankie</a>
                 <button class="btn btn-amber" onclick="switchTab('tasks')" style="display:inline-flex;align-items:center;gap:6px;">📋 Review Approvals</button>
                 <button class="btn btn-gray" onclick="switchTab('analytics')" style="display:inline-flex;align-items:center;gap:6px;">📈 Analytics</button>
             </div>
@@ -868,7 +864,6 @@ function updateDashboard() {
 
 /* ── Agents ── */
 const AGENT_META = {};
-
 let AGENT_PERSONALITIES = {};
 let AGENT_META_LOOKUP = {};
 
@@ -1230,7 +1225,6 @@ function saveAgentConfig() {
         setTimeout(() => { resultDiv.textContent = ''; }, 5000);
     });
 }
-
 
 
 /* ── User Management ── */
