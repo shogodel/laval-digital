@@ -296,7 +296,7 @@ class Orchestrator:
             logger.error("Suggestions failed: %s", e)
             return {"response": "", "agent": "orchestrator", "status": "suggestions"}
 
-    def _route_and_respond(
+    def process_message(
         self,
         user_message: str,
         thread_id: str,
@@ -305,7 +305,23 @@ class Orchestrator:
         user_id: int = 0,
         source: str = "chat",
     ) -> Dict[str, Any]:
-        """Process a user message, applying the autonomy policy if configured."""
+        """Process a user message from the chat interface.
+
+        This is the single entry point for all message processing.
+        Supports autonomy-level execution, human-in-the-loop approval, and
+        bilingual (EN/FR) responses.
+
+        Args:
+            user_message: The user's chat message
+            thread_id: Unique thread identifier for conversation continuity
+            language: Language override ('en' or 'fr'). Auto-detected if None.
+            autonomy_config: Per-agent autonomy settings (from DB)
+            user_id: Numeric user ID for feedback/findings recording
+            source: 'frankie' or 'chat' — affects system prompt style
+
+        Returns:
+            Dict with keys: response, agent, status, thread_id, pending_approval
+        """
         message_lower = user_message.strip().lower()
 
         if self.is_panicked:
