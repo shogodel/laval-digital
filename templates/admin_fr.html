@@ -328,6 +328,8 @@
 </head>
 <body>
 
+<div id="toast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9999;background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.2);max-width:360px;transition:opacity 0.3s;"></div>
+
 <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
 <div class="app">
@@ -567,14 +569,18 @@
 
         {% include 'admin/analytics.html' %}
         {% include 'admin/reports.html' %}
-    </main>
 
-    <div class="tab-content" id="tab-mcp">
-        <div class="card">
-            <div class="card-header"><h2>Serveurs MCP</h2><p>Serveurs et outils du protocole Marketing Command</p></div>
-            <div id="mcp-server-list" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><p class="empty">Chargement...</p></div>
+        <!-- ================================================================ -->
+        <!-- TAB: Serveurs MCP                                                 -->
+        <!-- ================================================================ -->
+        <div class="tab-content" id="tab-mcp">
+            <div class="card">
+                <div class="card-header"><h2>Serveurs MCP</h2><p>Serveurs et outils du protocole Marketing Command</p></div>
+                <div id="mcp-server-list" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><p class="empty">Chargement...</p></div>
+            </div>
         </div>
-    </div>
+
+    </main>
 
     <!-- Modal Ajouter Utilisateur -->
     <div id="user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
@@ -707,6 +713,16 @@ const AGENT_META = {
     video: { name: 'Production Vidéo', desc: 'Scripts YouTube, vidéos explicatives, scripts publicitaires, SEO vidéo, planification de séries' },
     sms_marketing: { name: 'Marketing SMS', desc: 'Planification de campagnes SMS, conception de séquences, conformité CASL, rédaction concise, stratégie de timing' },
 };
+let AGENT_PERSONALITIES = {};
+
+function loadPersonalities() {
+    return fetch('/api/personalities')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            AGENT_PERSONALITIES = data.personalities || {};
+        })
+        .catch(function() {});
+}
 
 function loadAgents() {
     return fetch('/api/agents')
@@ -723,17 +739,17 @@ function loadAgents() {
                 const label = statusLabels[status] || 'Inactif';
                 const lastInvoked = a.last_invoked ? new Date(a.last_invoked).toLocaleString('fr-CA') : '--';
                 return `
-                <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" data-agent-id="${a.agent_id}">
-                    <div class="agent-name"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${color}20;font-size:0.8rem;margin-right:6px;">${emoji}</span>${meta.name}</div>
-                    <div class="agent-desc">${meta.desc}</div>
+                <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" data-agent-id="${escapeHtml(a.agent_id)}">
+                    <div class="agent-name"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${color}20;font-size:0.8rem;margin-right:6px;">${emoji}</span>${escapeHtml(meta.name)}</div>
+                    <div class="agent-desc">${escapeHtml(meta.desc)}</div>
                     <div class="row"><span class="label">Statut</span><span class="badge badge-${status}">${label}</span></div>
-                    <div class="row"><span class="label">Modèle</span><span class="value">${a.model}</span></div>
+                    <div class="row"><span class="label">Modèle</span><span class="value">${escapeHtml(a.model)}</span></div>
                     <div class="row"><span class="label">Tâches</span><span class="value">${a.task_count} (${a.success_count} ok / ${a.failure_count} éch.)</span></div>
                     <div class="row"><span class="label">Dernière</span><span class="value">${lastInvoked}</span></div>
-                    <div class="draft-preview">${a.last_draft_preview || '—'}</div>
+                    <div class="draft-preview">${escapeHtml(a.last_draft_preview || '—')}</div>
                     <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
-                        <button class="btn btn-gray btn-xs" onclick="window.location.href='/fr/admin/agent/${a.agent_id}/chat'">💬 Discuter</button>
-                        <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-btn" onclick="toggleAgent('${a.agent_id}')">
+                        <button class="btn btn-gray btn-xs" onclick="window.location.href='/fr/admin/agent/${escapeHtml(a.agent_id)}/chat'">💬 Discuter</button>
+                        <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-btn" onclick="toggleAgent('${escapeHtml(a.agent_id)}')">
                             ${a.enabled ? 'Désactiver' : 'Activer'}
                         </button>
                     </div>
@@ -789,10 +805,10 @@ function loadApprovals() {
             }
             list.innerHTML = approvals.map(a => `
                 <div class="approval-card">
-                    <h3>Agent: ${a.agent}</h3>
-                    <p><strong>Tâche:</strong> ${a.task}</p>
+                    <h3>Agent: ${escapeHtml(a.agent)}</h3>
+                    <p><strong>Tâche:</strong> ${escapeHtml(a.task)}</p>
                     <p><strong>Brouillon:</strong></p>
-                    <pre>${a.draft}</pre>
+                    <pre>${escapeHtml(a.draft)}</pre>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
                         <button class="btn btn-green btn-sm" onclick="respondApproval('${a.thread_id}', true)">✓ Approuver</button>
                         <button class="btn btn-gray btn-sm" onclick="showRejectForm('${a.thread_id}')">✗ Rejeter</button>
@@ -807,6 +823,12 @@ function loadApprovals() {
             `).join('');
             updateDashboard();
         });
+}
+
+function escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
 }
 
 function showRejectForm(threadId) {
@@ -854,12 +876,12 @@ function loadPendingExecutions() {
             }
             list.innerHTML = data.pending.map(p => `
                 <div class="approval-card" style="background:var(--blue-bg);border-color:#bfdbfe;">
-                    <p><strong>Agent:</strong> ${p.agent_name} &middot; <strong>Outil:</strong> ${p.tool_name}</p>
+                    <p><strong>Agent:</strong> ${escapeHtml(p.agent_name)} &middot; <strong>Outil:</strong> ${escapeHtml(p.tool_name)}</p>
                     <p><small>${new Date(p.created_at).toLocaleString('fr-CA')}</small></p>
-                    <pre style="font-size:0.8em;">${p.draft_preview}</pre>
+                    <pre style="font-size:0.8em;">${escapeHtml(p.draft_preview)}</pre>
                     <div style="display:flex;gap:8px;">
-                        <button class="btn btn-green btn-sm" onclick="confirmPending('${p.execution_id}')">Confirmer</button>
-                        <button class="btn btn-red btn-sm" onclick="rejectPending('${p.execution_id}')">Rejeter</button>
+                        <button class="btn btn-green btn-sm" onclick="confirmPending('${escapeHtml(p.execution_id)}')">Confirmer</button>
+                        <button class="btn btn-red btn-sm" onclick="rejectPending('${escapeHtml(p.execution_id)}')">Rejeter</button>
                     </div>
                 </div>
             `).join('');
@@ -898,9 +920,9 @@ function loadExecutions() {
             }
             list.innerHTML = data.executions.slice(0, 20).map(e => `
                 <div class="execution-card ${e.success ? 'success' : 'fail'}">
-                    <strong>${e.agent_name}</strong> &middot; ${e.tool_name} &middot; <small>${new Date(e.timestamp).toLocaleString('fr-CA')}</small>
-                    ${e.error ? '&middot; <span style="color:var(--red);">' + e.error + '</span>' : ''}
-                    <details style="margin-top:4px;"><summary style="cursor:pointer;font-size:0.8rem;color:var(--gray-500);">Aperçu du brouillon</summary><pre style="font-size:0.75rem;margin-top:4px;white-space:pre-wrap;">${e.draft_preview}</pre></details>
+                    <strong>${escapeHtml(e.agent_name)}</strong> &middot; ${escapeHtml(e.tool_name)} &middot; <small>${new Date(e.timestamp).toLocaleString('fr-CA')}</small>
+                    ${e.error ? '&middot; <span style="color:var(--red);">' + escapeHtml(e.error) + '</span>' : ''}
+                    <details style="margin-top:4px;"><summary style="cursor:pointer;font-size:0.8rem;color:var(--gray-500);">Aperçu du brouillon</summary><pre style="font-size:0.75rem;margin-top:4px;white-space:pre-wrap;">${escapeHtml(e.draft_preview)}</pre></details>
                 </div>
             `).join('');
             updateDashboard();
@@ -1285,8 +1307,14 @@ function loadMCPServers() {
 }
 
 /* ── Init ── */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+});
+
 window.onload = function() {
-    loadAgents();
+    loadPersonalities().then(function() { loadAgents(); });
     loadApprovals();
     loadPendingExecutions();
     loadExecutions();
@@ -1303,11 +1331,6 @@ window.onload = function() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/static/sw.js').catch(() => {});
     }
-    let deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', e => {
-        e.preventDefault();
-        deferredPrompt = e;
-    });
 };
 
 function installApp() {

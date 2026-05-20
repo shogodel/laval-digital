@@ -190,11 +190,14 @@ class Orchestrator:
         self._push_manager = push_manager
         self._memory = memory
         self._pending_drafts: Dict[str, Dict[str, Any]] = {}
+        self._pending_lock = Lock()
         self._activity_feed: List[Dict[str, Any]] = []
+        self._activity_lock = Lock()
         self._panicked = False
         self._panic_lock = Lock()
         self._last_execution: Optional[Dict[str, Any]] = None
         self._findings_board: Dict[str, List[Dict[str, Any]]] = {}
+        self._findings_lock = Lock()
         logger.info(
             "Orchestrator initialized with %d agents (executioner=%s, push=%s)",
             len(agent_registry),
@@ -226,15 +229,20 @@ class Orchestrator:
     # ------------------------------------------------------------------
 
     def _push_activity(self, entry: Dict[str, Any]) -> None:
-        self._activity_feed.insert(0, entry)
-        self._activity_feed[:] = self._activity_feed[:200]
+        with self._activity_lock:
+            self._activity_feed.insert(0, entry)
+            self._activity_feed[:] = self._activity_feed[:200]
 
     def get_activity_feed(self, limit: int = 50) -> List[Dict[str, Any]]:
-        return self._activity_feed[:limit]
+        with self._activity_lock:
+            return self._activity_feed[:limit]
 
-    def get_pending_drafts(self) -> Dict[str, Dict[str, Any]]:
-        """Return all pending approval drafts."""
-        return self._pending_drafts
+    def get_pending_drafts(self, user_id: Optional[int] = None) -> Dict[str, Dict[str, Any]]:
+        """Return all pending approval drafts, optionally filtered by user_id."""
+        with self._pending_lock:
+            if user_id is None:
+                return dict(self._pending_drafts)
+            return {tid: info for tid, info in self._pending_drafts.items() if info.get("user_id") == user_id}
 
     # ------------------------------------------------------------------
     # Welcome / Suggestions
@@ -262,20 +270,31 @@ class Orchestrator:
             path = last.get("file_path", "")
             if path:
                 import os as _os
-                if _os.path.exists(path):
-                    _os.remove(path)
-                    logger.info("Undo: deleted %s", path)
-                    return {"success": True, "action": "deleted", "file": path}
+                resolved = _os.path.realpath(path)
+                allowed = _os.path.realpath("content")
+                if not resolved.startswith(allowed + "/"):
+                    logger.warning("Undo blocked path traversal attempt: %s", path)
+                    return {"success": False, "action": "blocked_path"}
+                if _os.path.exists(resolved):
+                    _os.remove(resolved)
+                    logger.info("Undo: deleted %s", resolved)
+                    return {"success": True, "action": "deleted", "file": resolved}
         return {"success": False, "action": "no_undo_available"}
 
     def _record_feedback(self, user_id: int, agent_id: str, draft: str, approved: bool) -> None:
         if self._memory and user_id:
             self._memory.record_feedback(user_id, agent_id, "approval", draft, approved)
 
+    def _record_feedback_from_draft(self, draft_info: dict, agent_name: str, approved: bool) -> None:
+        user_id = int(draft_info.get("user_id", 0)) if draft_info.get("user_id") else 0
+        if user_id and draft_info:
+            self._record_feedback(user_id, agent_name, draft_info.get("draft", ""), approved)
+
     def _publish_finding(self, user_id: int, agent_id: str, summary: str) -> None:
         if self._memory and user_id:
             self._memory.publish_finding(user_id, agent_id, "agent_output", summary)
-        self._findings_board.setdefault(agent_id, []).append({"summary": summary, "ts": datetime.now(timezone.utc).isoformat()})
+        with self._findings_lock:
+            self._findings_board.setdefault(agent_id, []).append({"summary": summary, "ts": datetime.now(timezone.utc).isoformat()})
 
     def _send_push(self, event_type: str, agent: str, data: Dict[str, Any]) -> None:
         if self._push_manager and hasattr(self._push_manager, "send_event"):
@@ -367,7 +386,7 @@ class Orchestrator:
             else:
                 base_prompt = ROUTING_PROMPT
             prompt = base_prompt.format(user_request=user_message, language=lang_label)
-            system_role = "You are Frankie, the friendly and capable AI command center assistant. Respond in {lang_label}." if source == "frankie" else f"You are a helpful AI orchestrator for local business marketing. Respond in {lang_label}."
+            system_role = f"You are Frankie, the friendly and capable AI command center assistant. Respond in {lang_label}." if source == "frankie" else f"You are a helpful AI orchestrator for local business marketing. Respond in {lang_label}."
             response = self._llm_adapter.invoke(
                 system_prompt=system_role,
                 user_message=prompt,
@@ -440,8 +459,8 @@ class Orchestrator:
                 # Track last execution for undo
                 self._last_execution = {
                     "agent": agent_name,
-                    "tool": execution_result.get("tool", ""),
-                    "file_path": execution_result.get("result", ""),
+                    "tool": execution_result.get("tool", "") if execution_result else "",
+                    "file_path": execution_result.get("result", "") if execution_result else "",
                     "draft": clean_draft[:200],
                 }
 
@@ -502,17 +521,18 @@ class Orchestrator:
             self._send_push("approval_needed", agent_name, event_data_approval)
 
             # Store draft for human approval (manual mode or low-confidence suggest)
-            self._pending_drafts[thread_id] = {
-                "agent": agent_name,
-                "draft": clean_draft,
-                "raw_draft": response,
-                "task": user_message,
-                "language": language,
-                "confidence": confidence,
-                "autonomy": autonomy_level,
-                "user_id": user_id,
-                "created_at": now_iso,
-            }
+            with self._pending_lock:
+                self._pending_drafts[thread_id] = {
+                    "agent": agent_name,
+                    "draft": clean_draft,
+                    "raw_draft": response,
+                    "task": user_message,
+                    "language": language,
+                    "confidence": confidence,
+                    "autonomy": autonomy_level,
+                    "user_id": user_id,
+                    "created_at": now_iso,
+                }
 
             result: Dict[str, Any] = {
                 "response": clean_draft,
@@ -542,16 +562,16 @@ class Orchestrator:
             }
 
     def _handle_approval(self, thread_id: str, approved: bool, user_id: int = 0) -> Dict[str, Any]:
-        if thread_id not in self._pending_drafts:
-            return {
-                "response": "I don't have any pending content to approve or reject. Send me a new request and I'll generate something for you!",
-                "agent": "orchestrator",
-                "status": "no_pending",
-                "thread_id": thread_id,
-                "pending_approval": False,
-            }
-
-        draft_info = self._pending_drafts.pop(thread_id)
+        with self._pending_lock:
+            if thread_id not in self._pending_drafts:
+                return {
+                    "response": "I don't have any pending content to approve or reject. Send me a new request and I'll generate something for you!",
+                    "agent": "orchestrator",
+                    "status": "no_pending",
+                    "thread_id": thread_id,
+                    "pending_approval": False,
+                }
+            draft_info = self._pending_drafts.pop(thread_id)
         language = draft_info.get("language", "en")
 
         if approved:
@@ -596,8 +616,8 @@ class Orchestrator:
             # Track for undo
             self._last_execution = {
                 "agent": agent_name,
-                "tool": execution_result.get("tool", ""),
-                "file_path": execution_result.get("result", ""),
+                "tool": execution_result.get("tool", "") if execution_result else "",
+                "file_path": execution_result.get("result", "") if execution_result else "",
                 "draft": draft[:200],
             }
 
@@ -641,7 +661,7 @@ class Orchestrator:
         }
         get_event_bus().publish("approval_responded", draft_info["agent"], event_data_reject)
         self._send_push("approval_responded", draft_info["agent"], event_data_reject)
-        self._record_feedback(draft_info.get("tenant_id", ""), draft_info["agent"], draft_info.get("draft", ""), False)
+        self._record_feedback(int(draft_info.get("user_id", 0) or 0), draft_info["agent"], draft_info.get("draft", ""), False)
 
         msg_en = f"❌ Rejected. The content from **{draft_info['agent']}** has been discarded. Send me a new request and I'll try again!"
         msg_fr = f"❌ Rejeté. Le contenu de **{draft_info['agent']}** a été supprimé. Envoyez-moi une nouvelle demande et je réessaierai !"

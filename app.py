@@ -7,6 +7,8 @@ import warnings
 import json
 import logging
 import logging.handlers
+import socket
+import threading
 import requests
 import socket
 from urllib.parse import urlparse
@@ -18,26 +20,33 @@ logger = logging.getLogger(__name__)
 
 
 def _safe_url(url: str, timeout: int = 10) -> requests.Response:
-    """Fetch a URL with SSRF protection: http/https only, no private IPs."""
-    parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https"):
-        raise ValueError(f"URL scheme must be http or https, got '{parsed.scheme}'")
-    hostname = parsed.hostname or ""
+    """Fetch a URL with SSRF protection (blocks private/reserved IPs for IPv4 and IPv6)."""
+    from urllib.parse import urlparse
+    hostname = urlparse(url).hostname or ""
     try:
-        ip = socket.gethostbyname(hostname)
+        # Check ALL resolved IPs (IPv4 and IPv6)
+        addrs = socket.getaddrinfo(hostname, None)
+        for family, _, _, _, sockaddr in addrs:
+            ip = sockaddr[0]
+            # IPv4 (also handles IPv4-mapped IPv6 like ::ffff:127.0.0.1)
+            ipv4 = ip.split(":")[-1] if ":" in ip else ip
+            if "." in ipv4:
+                parts = [int(x) for x in ipv4.split(".")]
+                if parts[0] == 127 or parts[0] == 10 or parts[0] == 0:
+                    raise ValueError(f"Blocked request to private IP: {ip}")
+                if parts[0] == 169 and parts[1] == 254:
+                    raise ValueError(f"Blocked request to link-local IP: {ip}")
+                if parts[0] == 192 and parts[1] == 168:
+                    raise ValueError(f"Blocked request to private IP: {ip}")
+                if parts[0] == 172 and 16 <= parts[1] <= 31:
+                    raise ValueError(f"Blocked request to private IP: {ip}")
+            # IPv6
+            if ":" in ip:
+                if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd") or ip.startswith("fe80"):
+                    raise ValueError(f"Blocked request to private IPv6 IP: {ip}")
     except socket.gaierror:
         raise ValueError(f"Could not resolve hostname: {hostname}")
-    # Block private / loopback / link-local IPs
-    parts = [int(x) for x in ip.split(".")]
-    if parts[0] == 127 or parts[0] == 10 or parts[0] == 0:
-        raise ValueError(f"Blocked request to private IP: {ip}")
-    if parts[0] == 169 and parts[1] == 254:
-        raise ValueError(f"Blocked request to link-local IP: {ip}")
-    if parts[0] == 192 and parts[1] == 168:
-        raise ValueError(f"Blocked request to private IP: {ip}")
-    if parts[0] == 172 and 16 <= parts[1] <= 31:
-        raise ValueError(f"Blocked request to private IP: {ip}")
-    return requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
+    return requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"}, allow_redirects=False)
 
 
 # Suppress warnings before any imports that might trigger them
@@ -127,6 +136,7 @@ from core.events import get_event_bus
 from core.push import PushManager
 from core.memory import AgentMemory
 from core.monitor import monitor as proactive_monitor
+from core.email_bridge import EmailBridge
 from agents.local_seo_agent import LocalSEOAgent
 from agents.social_media_agent import SocialMediaAgent
 from agents.lead_conversion_agent import LeadConversionAgent
@@ -181,7 +191,7 @@ csrf = CSRFProtect(app)
 
 @app.context_processor
 def inject_csrf_token():
-    return dict(csrf_token=generate_csrf)
+    return dict(csrf_token=lambda: generate_csrf())
 
 
 @app.after_request
@@ -359,13 +369,15 @@ def check_session_timeout():
             try:
                 last = datetime.fromisoformat(last_active)
                 if datetime.now() - last > timedelta(hours=2):
+                    user_role = current_user.role if hasattr(current_user, 'role') else None
                     logout_user()
                     session.clear()
                     flash("Session expired. Please log in again.", "error")
-                    if current_user.role in ("client", "user"):
+                    if user_role in ("client", "user"):
                         return redirect(url_for("client_login"))
-                    elif current_user.role == "affiliate":
+                    elif user_role == "affiliate":
                         return redirect(url_for("affiliate_login"))
+                    return redirect(url_for("admin_login"))
 
             except Exception:
                 logger.warning("Session timeout check failed", exc_info=True)
@@ -616,6 +628,7 @@ speech_engine = SpeechEngine()
 
 # Initialize Orchestrator (cached singleton — shared pending_drafts)
 orchestrator = None
+_orchestrator_lock = threading.Lock()
 
 
 def get_orchestrator():
@@ -629,9 +642,11 @@ def get_orchestrator():
     if orchestrator is not None:
         return orchestrator
 
-    logger.info("Building orchestrator")
-
-    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
+    with _orchestrator_lock:
+        if orchestrator is not None:
+            return orchestrator
+        logger.info("Building orchestrator")
+        orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
     return orchestrator
 
 
@@ -727,6 +742,126 @@ def free_trial_fr():
     if current_user.is_authenticated:
         return redirect(url_for("client_dashboard"))
     return render_template("free_trial_fr.html")
+
+
+@app.route("/contact")
+def contact():
+    """Serve the contact us page."""
+    return render_template("contact.html")
+
+
+@app.route("/fr/contact")
+def contact_fr():
+    """Serve the French contact us page."""
+    return render_template("contact_fr.html")
+
+
+@app.route("/api/contact", methods=["POST"])
+def api_contact():
+    """Handle contact form submissions and email to lavaldigital@gmail.com."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    from html import escape
+
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip()
+    phone = (data.get("phone") or "").strip()
+    service = (data.get("service") or "").strip()
+    message = (data.get("message") or "").strip()
+
+    if not name or not email or not phone:
+        return jsonify({"error": "Name, email, and phone are required"}), 400
+
+    service_labels = {
+        "managed": "Managed For You ($897.99/mo)",
+        "website": "Custom Website (From $999)",
+        "both": "Both Services",
+        "other": "Other / General Inquiry",
+    }
+    service_label = service_labels.get(service, service)
+
+    try:
+        settings = executioner.get_settings()
+        smtp_host = settings.get("smtp_host", "smtp.gmail.com")
+        smtp_port = int(settings.get("smtp_port", 587))
+        smtp_user = settings.get("smtp_username", "")
+        smtp_pass = settings.get("smtp_password", "")
+        smtp_from = settings.get("smtp_from_email", smtp_user)
+        use_tls = settings.get("smtp_use_tls", True)
+
+        if not smtp_user or not smtp_pass:
+            logger.warning("Contact form: SMTP credentials not configured, storing as lead")
+            conn = database._get_conn()
+            lead_id = str(uuid.uuid4())
+            now = datetime.now(timezone.utc).isoformat()
+            conn.execute(
+                "INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (lead_id, 0, name, phone, service, "", now),
+            )
+            conn.commit()
+            return jsonify({"status": "ok", "message": "Message received (email not configured)"}), 201
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"Contact Form: {service_label} — {name}"
+        msg["From"] = smtp_from
+        msg["To"] = "lavaldigital@gmail.com"
+        msg["Reply-To"] = email
+
+        text_body = f"""New contact form submission
+
+Name: {name}
+Email: {email}
+Phone: {phone}
+Service: {service_label}
+
+Message:
+{message if message else "(none)"}
+"""
+        html_body = f"""\
+<html>
+<body style="font-family: Arial, sans-serif; color: #1f2937;">
+<h2 style="color: #0f2b45;">New Contact Form Submission</h2>
+<table style="border-collapse: collapse; margin: 16px 0;">
+<tr><td style="padding: 6px 12px; font-weight: bold; background: #f3f4f6;">Name</td><td style="padding: 6px 12px;">{escape(name)}</td></tr>
+<tr><td style="padding: 6px 12px; font-weight: bold; background: #f3f4f6;">Email</td><td style="padding: 6px 12px;"><a href="mailto:{escape(email)}">{escape(email)}</a></td></tr>
+<tr><td style="padding: 6px 12px; font-weight: bold; background: #f3f4f6;">Phone</td><td style="padding: 6px 12px;">{escape(phone)}</td></tr>
+<tr><td style="padding: 6px 12px; font-weight: bold; background: #f3f4f6;">Service</td><td style="padding: 6px 12px;">{escape(service_label)}</td></tr>
+</table>
+<h3 style="color: #0f2b45;">Message</h3>
+<p style="background: #f9fafb; padding: 12px; border-radius: 6px;">{escape(message) if message else "<em>(none)</em>"}</p>
+</body>
+</html>
+"""
+        msg.attach(MIMEText(text_body, "plain", "utf-8"))
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+        server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
+        if use_tls:
+            server.starttls()
+        server.login(smtp_user, smtp_pass)
+        server.send_message(msg)
+        server.quit()
+
+        conn = database._get_conn()
+        lead_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            "INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (lead_id, 0, name, phone, service, "", now),
+        )
+        conn.commit()
+
+        logger.info("Contact form email sent to lavaldigital@gmail.com from %s (%s)", email, name)
+        return jsonify({"status": "ok", "message": "Message sent successfully"}), 201
+
+    except Exception as e:
+        logger.error("Contact form email failed: %s", e)
+        return jsonify({"error": "Failed to send message. Please try again later."}), 500
 
 
 @app.route("/trial-expired")
@@ -906,7 +1041,7 @@ def client_dashboard():
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM payments ORDER BY installment_number")
+        cursor.execute("SELECT * FROM payments WHERE user_id = ? ORDER BY installment_number", (int(tenant_id),))
         for row in cursor.fetchall():
             p = dict(row)
             payments.append(p)
@@ -925,7 +1060,8 @@ def client_dashboard():
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT site_url, managed_service, managed_since FROM client_details LIMIT 1"
+            "SELECT site_url, managed_service, managed_since FROM client_details WHERE user_id = ?",
+            (int(tenant_id),)
         )
         row = cursor.fetchone()
         if row:
@@ -1076,14 +1212,14 @@ def api_list_users():
         if role_filter in ("client", "affiliate"):
             cursor.execute(
                 "SELECT id, email, display_name, role, created_at, last_login "
-                "FROM users WHERE id = ? AND role = ? ORDER BY created_at DESC",
-                (int(tenant_id), role_filter),
+                "FROM users WHERE (id = ? OR tenant_id = ?) AND role = ? ORDER BY created_at DESC",
+                (int(tenant_id), int(tenant_id), role_filter),
             )
         else:
             cursor.execute(
                 "SELECT id, email, display_name, role, created_at, last_login "
-                "FROM users WHERE id = ? ORDER BY created_at DESC",
-                (int(tenant_id),),
+                "FROM users WHERE id = ? OR tenant_id = ? ORDER BY created_at DESC",
+                (int(tenant_id), int(tenant_id)),
             )
         users = [dict(row) for row in cursor.fetchall()]
         return jsonify({"users": users})
@@ -1139,10 +1275,10 @@ def api_delete_user(user_id):
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM users WHERE id = ? AND id != ?", (user_id, int(tenant_id)))
+        cursor.execute("DELETE FROM users WHERE id = ? AND tenant_id = ?", (user_id, int(tenant_id)))
         conn.commit()
         if cursor.rowcount == 0:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": "User not found or cannot be deleted"}), 404
         return jsonify({"success": True, "message": "User deleted"})
     except Exception as e:
         return _safe_error(e, 500)
@@ -1336,7 +1472,6 @@ def affiliate_signup_api():
             "success": True,
             "code": code,
             "referral_link": f"https://lavaldigital.ca/?ref={code}",
-            "password": password,
             "message": "Your login credentials have been created. Please check your email for your password.",
         }), 201
     except Exception as e:
@@ -1433,13 +1568,26 @@ def handle_leads():
             return jsonify({"error": "Name and phone are required"}), 400
         lead_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
+        user_id = 0
+        if not current_user.is_anonymous:
+            user_id = int(current_user.id)
         conn.execute(
             "INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (lead_id, 0, name, phone, data.get("service", ""), data.get("urgency", ""), now),
+            (lead_id, user_id, name, phone, data.get("service", ""), data.get("urgency", ""), now),
         )
         conn.commit()
         return jsonify({"status": "ok", "lead": {"id": lead_id, "name": name, "phone": phone}}), 201
-    rows = conn.execute("SELECT * FROM leads ORDER BY created_at DESC LIMIT 100").fetchall()
+    if current_user.is_anonymous and not session.get("admin_logged_in"):
+        return jsonify({"error": "Authentication required"}), 401
+    if session.get("admin_logged_in"):
+        tenant_id = session.get("active_user_id")
+        if tenant_id:
+            rows = conn.execute("SELECT * FROM leads WHERE user_id = ? ORDER BY created_at DESC LIMIT 100", (int(tenant_id),)).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM leads ORDER BY created_at DESC LIMIT 100").fetchall()
+    else:
+        user_id = int(current_user.id)
+        rows = conn.execute("SELECT * FROM leads WHERE user_id = ? ORDER BY created_at DESC LIMIT 100", (user_id,)).fetchall()
     return jsonify({"leads": [dict(r) for r in rows]})
 
 
@@ -1511,7 +1659,9 @@ def get_agent_stats(agent_id):
 
 @app.route("/api/agents/<agent_id>/toggle", methods=["POST"])
 def toggle_agent(agent_id):
-    """Toggle agent on/off."""
+    """Toggle agent on/off. Admin only (affects global state)."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     if agent_id not in agent_registry:
         return jsonify({"error": "Agent not found"}), 404
 
@@ -1557,7 +1707,9 @@ def get_agent_config(agent_id):
 
 @app.route("/api/agents/<agent_id>/config", methods=["POST"])
 def update_agent_config(agent_id):
-    """Update configuration for a specific agent."""
+    """Update configuration for a specific agent. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     if agent_id not in AGENT_CONFIGS:
         return jsonify({"error": "Agent not found"}), 404
 
@@ -1580,7 +1732,8 @@ def update_agent_config(agent_id):
 
     # Rebuild orchestrator with updated agent
     global orchestrator
-    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
+    with _orchestrator_lock:
+        orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
 
     return jsonify({
         "agent_id": agent_id,
@@ -1591,7 +1744,9 @@ def update_agent_config(agent_id):
 
 @app.route("/api/agents/bulk/config", methods=["POST"])
 def update_all_agents_config():
-    """Apply the same configuration to ALL agents at once."""
+    """Apply the same configuration to ALL agents at once. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -1633,7 +1788,8 @@ def update_all_agents_config():
             temperature=llm_adapter._temperature,
         )
 
-    orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
+    with _orchestrator_lock:
+        orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
 
     return jsonify({
         "success": True,
@@ -1705,7 +1861,8 @@ def bulk_update_agent_config():
     # Rebuild orchestrator if any agent was updated
     if results["updated"]:
         global orchestrator
-        orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
+        with _orchestrator_lock:
+            orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
 
     return jsonify({
         "updated": results["updated"],
@@ -1741,7 +1898,7 @@ def detect_models():
         result = LLMAdapter.detect_models(api_key)
         return jsonify(result)
     except Exception as e:
-        logger.error("Model detection failed: %s", e, exc_info=True)
+        logger.error("Model detection failed: %s", type(e).__name__)
         return jsonify({
             "provider": "unknown", "models": [], "error": "Model detection failed."
         }), 500
@@ -1753,7 +1910,9 @@ def detect_models():
 
 @app.route("/api/executioner/settings", methods=["GET", "PUT"])
 def handle_executioner_settings():
-    """Get or update ExecutionerAgent settings."""
+    """Get or update ExecutionerAgent settings. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     if request.method == "PUT":
         data = request.json
         if data:
@@ -1764,7 +1923,9 @@ def handle_executioner_settings():
 
 @app.route("/api/executioner/test-smtp", methods=["POST"])
 def test_smtp():
-    """Send a test email to verify SMTP configuration."""
+    """Send a test email to verify SMTP configuration. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -1783,15 +1944,22 @@ def test_smtp():
         msg["To"] = to_email
 
         smtp_host = data.get("smtp_host", "smtp.gmail.com")
-        # SSRF prevention: reject private/reserved SMTP hosts
+        # SSRF prevention: reject private/reserved SMTP hosts (IPv4 + IPv6 including mapped)
         try:
-            smtp_ip = socket.gethostbyname(smtp_host)
-            ip_parts = [int(x) for x in smtp_ip.split(".")]
-            if (ip_parts[0] == 127 or ip_parts[0] == 10 or ip_parts[0] == 0 or
-                ip_parts[0] == 169 and ip_parts[1] == 254 or
-                ip_parts[0] == 192 and ip_parts[1] == 168 or
-                ip_parts[0] == 172 and 16 <= ip_parts[1] <= 31):
-                return jsonify({"error": "SMTP host resolves to a private IP address"}), 400
+            addrs = socket.getaddrinfo(smtp_host, None)
+            for _, _, _, _, sockaddr in addrs:
+                smtp_ip = sockaddr[0]
+                ipv4 = smtp_ip.split(":")[-1] if ":" in smtp_ip else smtp_ip
+                if "." in ipv4:
+                    ip_parts = [int(x) for x in ipv4.split(".")]
+                    if (ip_parts[0] == 127 or ip_parts[0] == 10 or ip_parts[0] == 0 or
+                        ip_parts[0] == 169 and ip_parts[1] == 254 or
+                        ip_parts[0] == 192 and ip_parts[1] == 168 or
+                        ip_parts[0] == 172 and 16 <= ip_parts[1] <= 31):
+                        return jsonify({"error": "SMTP host resolves to a private IP address"}), 400
+                if ":" in smtp_ip:
+                    if smtp_ip.startswith("::1") or smtp_ip.startswith("fc") or smtp_ip.startswith("fd") or smtp_ip.startswith("fe80"):
+                        return jsonify({"error": "SMTP host resolves to a private IPv6 address"}), 400
         except socket.gaierror:
             return jsonify({"error": f"Could not resolve SMTP host: {smtp_host}"}), 400
 
@@ -1810,7 +1978,9 @@ def test_smtp():
 
 @app.route("/api/executioner/validate-social-key", methods=["POST"])
 def validate_social_key():
-    """Validate a unified social media API key and return connected accounts."""
+    """Validate a unified social media API key and return connected accounts. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -1831,16 +2001,18 @@ def validate_social_key():
                 "accounts": [{"platform": a.platform, "account_name": a.account_name} for a in accounts]
             })
         else:
-            return jsonify({"success": False, "error": f"Provider '{provider}' is not yet supported."})
+            return jsonify({"error": f"Provider '{provider}' is not yet supported."}), 400
     except ImportError:
-        return jsonify({"success": False, "error": "socialapi package is not installed. Run: pip install socialapi"})
+        return jsonify({"error": "socialapi package is not installed. Run: pip install socialapi"}), 500
     except Exception as e:
         logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
 
 
 @app.route("/api/executioner/social-settings", methods=["POST"])
 def save_social_settings():
-    """Save the unified social media settings to the Executioner."""
+    """Save the unified social media settings to the Executioner. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     executioner.update_settings({
         "social_api_provider": data.get("provider", "socialapi"),
@@ -1851,13 +2023,17 @@ def save_social_settings():
 
 @app.route("/api/executioner/pending", methods=["GET"])
 def get_pending_executions():
-    """Get all executions awaiting confirmation."""
+    """Get all executions awaiting confirmation. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     return jsonify({"pending": executioner.get_pending_executions()})
 
 
 @app.route("/api/executioner/confirm/<execution_id>", methods=["POST"])
 def confirm_execution(execution_id):
-    """Confirm and execute a queued execution."""
+    """Confirm and execute a queued execution. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     try:
         result = executioner.confirm_execution(execution_id)
         return jsonify(result)
@@ -1867,7 +2043,9 @@ def confirm_execution(execution_id):
 
 @app.route("/api/executioner/reject/<execution_id>", methods=["POST"])
 def reject_execution(execution_id):
-    """Reject a queued execution without running it."""
+    """Reject a queued execution without running it. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     try:
         result = executioner.reject_execution(execution_id)
         return jsonify(result)
@@ -1877,7 +2055,9 @@ def reject_execution(execution_id):
 
 @app.route("/api/executioner/execute-chat", methods=["POST"])
 def execute_chat_response():
-    """Execute an agent response directly from the chat interface."""
+    """Execute an agent response directly from the chat interface. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -1897,7 +2077,9 @@ def execute_chat_response():
 
 @app.route("/api/executions", methods=["GET"])
 def get_executions():
-    """Get recent execution history."""
+    """Get recent execution history. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     limit = request.args.get("limit", 50, type=int)
     history = executioner.get_execution_history(limit)
     return jsonify({"executions": history})
@@ -1910,13 +2092,17 @@ def get_executions():
 
 @app.route("/api/speech/settings", methods=["GET"])
 def get_speech_settings():
-    """Get current speech engine settings (public, no secrets)."""
+    """Get current speech engine settings (public, no secrets). Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     return jsonify(speech_engine.get_public_settings())
 
 
 @app.route("/api/speech/settings", methods=["PUT"])
 def update_speech_settings():
-    """Update speech engine settings."""
+    """Update speech engine settings. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -1926,11 +2112,9 @@ def update_speech_settings():
 
 @app.route("/api/speech/stt", methods=["POST"])
 def speech_to_text():
-    """Transcribe uploaded audio to text.
-
-    Expects multipart form with an 'audio' file field.
-    Optional 'language' field (default 'en').
-    """
+    """Transcribe uploaded audio to text. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     if "audio" not in request.files:
         return jsonify({"error": "No audio file provided"}), 400
 
@@ -1947,11 +2131,9 @@ def speech_to_text():
 
 @app.route("/api/speech/tts", methods=["POST"])
 def text_to_speech():
-    """Synthesize speech from text and return audio.
-
-    Expects JSON with 'text' and optional 'language' (default 'en').
-    Returns audio/mpeg bytes.
-    """
+    """Synthesize speech from text and return audio. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data or not data.get("text"):
         return jsonify({"error": "No text provided"}), 400
@@ -1997,7 +2179,9 @@ def get_speech_voices():
 
 @app.route("/api/tasks", methods=["POST"])
 def submit_task():
-    """Submit a task to the chat orchestrator for immediate response."""
+    """Submit a task to the chat orchestrator for immediate response. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     user_request = data.get("request", "").strip()
 
@@ -2044,10 +2228,13 @@ def submit_task():
 
 @app.route("/api/approvals", methods=["GET"])
 def get_approvals():
-    """Get pending approvals from the orchestrator's in-memory store."""
+    """Get pending approvals from the orchestrator's in-memory store. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     orch = get_orchestrator()
+    user_id = get_current_user_id()
     approvals = []
-    for thread_id, draft_info in orch.get_pending_drafts().items():
+    for thread_id, draft_info in orch.get_pending_drafts(user_id).items():
         approvals.append({
             "thread_id": thread_id,
             "agent": draft_info.get("agent", "unknown"),
@@ -2083,7 +2270,9 @@ def api_orchestrator_suggestions():
 
 @app.route("/api/orchestrator/panic", methods=["POST"])
 def api_panic():
-    """Stop all auto-executions immediately."""
+    """Stop all auto-executions immediately. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     orch = get_orchestrator()
     orch.panic()
     return jsonify({"status": "panicked", "message": "All agents stopped."})
@@ -2091,7 +2280,9 @@ def api_panic():
 
 @app.route("/api/orchestrator/resume", methods=["POST"])
 def api_resume():
-    """Resume auto-executions after a panic."""
+    """Resume auto-executions after a panic. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     orch = get_orchestrator()
     orch.clear_panic()
     return jsonify({"status": "active", "message": "Agents resumed."})
@@ -2101,9 +2292,10 @@ def api_resume():
 def api_orchestrator_status():
     """Return orchestrator status (panicked, pending drafts, activity count)."""
     orch = get_orchestrator()
+    user_id = get_current_user_id()
     return jsonify({
         "panicked": orch.is_panicked,
-        "pending_drafts": len(orch.get_pending_drafts()),
+        "pending_drafts": len(orch.get_pending_drafts(user_id)),
         "activity_count": len(orch.get_activity_feed(200)),
     })
 
@@ -2118,11 +2310,13 @@ def api_activity():
 
 @app.route("/api/events/stream")
 def api_events_stream():
-    """Server-Sent Events stream for real-time agent dashboard.
+    """Server-Sent Events stream for real-time agent dashboard. Admin only.
 
     Yields SSE-formatted events as they happen. The client reconnects
     automatically on disconnect (built into EventSource API).
     """
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     event_bus = get_event_bus()
     q = event_bus.subscribe()
 
@@ -2151,7 +2345,9 @@ def api_events_stream():
 
 @app.route("/api/events/history", methods=["GET"])
 def api_events_history():
-    """Return recent event history for dashboard bootstrapping."""
+    """Return recent event history for dashboard bootstrapping. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     limit = request.args.get("limit", 100, type=int)
     event_type = request.args.get("type", "").strip() or None
     agent = request.args.get("agent", "").strip() or None
@@ -2209,10 +2405,12 @@ def api_inbox():
         return jsonify({"error": "Unauthorized"}), 401
     limit = request.args.get("limit", 50, type=int)
     orch = get_orchestrator()
+    user_id = session.get("active_user_id")
+    uid = _safe_tenant_id(user_id) if user_id else None
     items = []
 
     # Pending approvals
-    for tid, info in orch.get_pending_drafts().items():
+    for tid, info in orch.get_pending_drafts(uid).items():
         items.append({
             "type": "approval",
             "agent": info.get("agent", "?"),
@@ -2515,7 +2713,9 @@ def admin_connector():
     """Serve the connector setup page (bookmarklet + email bridge)."""
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
-    tenant_id = session.get("active_user_id", "your-tenant")
+    tenant_id = session.get("active_user_id")
+    if not tenant_id:
+        return render_template("admin/connector.html", error="Select a client first to configure the connector.")
     base_url = request.url_root.rstrip("/")
     bookmarklet_code = (
         'javascript:(function(){var s=document.createElement("script");'
@@ -2534,14 +2734,24 @@ def admin_connector():
 # ---------------------------------------------------------------------------
 
 
+def _safe_tenant_id(tenant_id: str) -> Optional[int]:
+    """Safely convert tenant_id to int, returning None if invalid."""
+    if not tenant_id or not str(tenant_id).strip().isdigit():
+        return None
+    return int(tenant_id)
+
+
 def _get_pending_actions(tenant_id: str, status: str = "pending") -> list:
+    uid = _safe_tenant_id(tenant_id)
+    if uid is None:
+        return []
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT id, agent_name, tool_name, provider, content, subject, status, created_at "
-            "FROM pending_actions WHERE status = ? ORDER BY created_at DESC LIMIT 50",
-            (status,),
+            "FROM pending_actions WHERE status = ? AND user_id = ? ORDER BY created_at DESC LIMIT 50",
+            (status, uid),
         )
         return [dict(row) for row in cursor.fetchall()]
     except Exception as e:
@@ -2553,14 +2763,17 @@ def _add_pending_action(
     tenant_id: str, agent_name: str, tool_name: str,
     content: str, provider: str = "web", subject: str = "",
 ) -> str:
+    uid = _safe_tenant_id(tenant_id)
+    if uid is None:
+        return ""
     action_id = uuid.uuid4().hex[:12]
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO pending_actions (id, agent_name, tool_name, provider, content, subject, status, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)",
-            (action_id, agent_name, tool_name, provider, content, subject, datetime.now(timezone.utc).isoformat()),
+            "INSERT INTO pending_actions (id, user_id, agent_name, tool_name, provider, content, subject, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)",
+            (action_id, uid, agent_name, tool_name, provider, content, subject, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
         return action_id
@@ -2570,12 +2783,15 @@ def _add_pending_action(
 
 
 def _confirm_pending_action(tenant_id: str, action_id: str) -> Dict[str, Any]:
+    uid = _safe_tenant_id(tenant_id)
+    if uid is None:
+        return {"success": False, "error": "Invalid tenant"}
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, agent_name, tool_name, content FROM pending_actions WHERE id = ? AND status = 'pending'",
-            (action_id,),
+            "SELECT id, agent_name, tool_name, content FROM pending_actions WHERE id = ? AND user_id = ? AND status = 'pending'",
+            (action_id, uid),
         )
         row = cursor.fetchone()
         if not row:
@@ -2585,8 +2801,8 @@ def _confirm_pending_action(tenant_id: str, action_id: str) -> Dict[str, Any]:
         try:
             exec_result = executioner.execute(row["agent_name"], row["content"], tool_name=row["tool_name"])
             cursor.execute(
-                "UPDATE pending_actions SET status = 'completed', completed_at = ? WHERE id = ?",
-                (datetime.now(timezone.utc).isoformat(), action_id),
+                "UPDATE pending_actions SET status = 'completed', completed_at = ? WHERE id = ? AND user_id = ?",
+                (datetime.now(timezone.utc).isoformat(), action_id, uid),
             )
             conn.commit()
             return {"success": True, "result": exec_result.get("result", "Done"), "action_id": action_id}
@@ -2609,7 +2825,9 @@ def api_pending_actions():
 
 @app.route("/api/actions/sms-pending", methods=["GET"])
 def api_sms_pending():
-    """Return pending SMS messages from the executioner's JSONL queue."""
+    """Return pending SMS messages from the executioner's JSONL queue. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     sms_file = Path(__file__).parent / "content" / "sms" / "sms.jsonl"
     if not sms_file.exists():
         return jsonify({"messages": []})
@@ -2669,12 +2887,15 @@ def api_skip_action(action_id):
     tenant_id = session.get("active_user_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
     if not tenant_id:
         return jsonify({"error": "No tenant context"}), 400
+    uid = _safe_tenant_id(tenant_id)
+    if uid is None:
+        return jsonify({"error": "Invalid tenant"}), 400
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE pending_actions SET status = 'skipped', completed_at = ? WHERE id = ? AND status = 'pending'",
-            (datetime.now(timezone.utc).isoformat(), action_id),
+            "UPDATE pending_actions SET status = 'skipped', completed_at = ? WHERE id = ? AND user_id = ? AND status = 'pending'",
+            (datetime.now(timezone.utc).isoformat(), action_id, uid),
         )
         conn.commit()
         return jsonify({"success": True, "action_id": action_id})
@@ -2752,9 +2973,8 @@ _email_bridge_instance = None
 def _get_email_bridge():
     global _email_bridge_instance
     if _email_bridge_instance is None:
-        from core.email_bridge import EmailBridge
         _email_bridge_instance = EmailBridge()
-        _email_bridge_instance.set_handler(lambda a, s, b: _email_bridge_handler(a, s, b, ""))
+        _email_bridge_instance.set_handler(lambda a, s, b: logger.warning("Email bridge: no tenant configured, ignoring action '%s'", a))
     return _email_bridge_instance
 
 
@@ -2765,16 +2985,20 @@ def _set_email_bridge(bridge):
 
 # Start email bridge on boot (if configured in env)
 if os.getenv("EMAIL_BRIDGE_USER") and os.getenv("EMAIL_BRIDGE_PASS"):
-    _bridge = EmailBridge(
-        imap_host=os.getenv("EMAIL_BRIDGE_HOST", "imap.gmail.com"),
-        imap_port=int(os.getenv("EMAIL_BRIDGE_PORT", "993")),
-        username=os.getenv("EMAIL_BRIDGE_USER"),
-        password=os.getenv("EMAIL_BRIDGE_PASS"),
-    )
-    _bridge.set_handler(lambda a, s, b: _email_bridge_handler(a, s, b, ""))
-
-    import threading
-    threading.Thread(target=_bridge.start, daemon=True).start()
+    tenant_for_bridge = os.getenv("EMAIL_BRIDGE_TENANT_ID", "")
+    if not tenant_for_bridge:
+        logger.warning("EMAIL_BRIDGE_TENANT_ID not set — email bridge not started (no tenant context)")
+    else:
+        decrypted = _decrypt_credential(os.getenv("EMAIL_BRIDGE_PASS", ""))
+        _bridge = EmailBridge(
+            imap_host=os.getenv("EMAIL_BRIDGE_HOST", "imap.gmail.com"),
+            imap_port=int(os.getenv("EMAIL_BRIDGE_PORT", "993")),
+            username=os.getenv("EMAIL_BRIDGE_USER"),
+            password=decrypted,
+        )
+        _bridge.set_handler(lambda a, s, b: _email_bridge_handler(a, s, b, tenant_for_bridge))
+        import threading
+        threading.Thread(target=_bridge.start, daemon=True).start()
 
 # Start proactive monitor
 proactive_monitor.start(get_orchestrator, lambda: push_manager)
@@ -2853,7 +3077,7 @@ def respond_approval(thread_id):
     orch = get_orchestrator()
 
     # Delegate to orchestrator which now handles execution internally
-    drafts = orch.get_pending_drafts()
+    drafts = orch.get_pending_drafts(tenant_id)
     if thread_id in drafts:
         result = orch._handle_approval(thread_id, approved=approved)
         return jsonify({
@@ -2865,12 +3089,15 @@ def respond_approval(thread_id):
 
     # Fallback: check tenant database if no in-memory draft found
     if tenant_id:
+        uid = _safe_tenant_id(tenant_id)
+        if uid is None:
+            return jsonify({"error": "Invalid tenant"}), 400
         try:
             conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT routed_agent, agent_draft FROM threads WHERE thread_id = ?",
-                (thread_id,),
+                "SELECT routed_agent, agent_draft FROM threads WHERE thread_id = ? AND user_id = ?",
+                (thread_id, uid),
             )
             row = cursor.fetchone()
             if not row:
@@ -2884,9 +3111,9 @@ def respond_approval(thread_id):
                 """
                 UPDATE threads
                 SET approved = ?, status = 'completed', updated_at = ?
-                WHERE thread_id = ?
+                WHERE thread_id = ? AND user_id = ?
                 """,
-                (int(approved), now_iso, thread_id),
+                (int(approved), now_iso, thread_id, uid),
             )
             conn.commit()
 
@@ -3153,10 +3380,10 @@ def get_agent_threads(agent_id):
                       MIN(created_at) as started_at,
                       (SELECT agent_task FROM threads t2 WHERE t2.thread_id = threads.thread_id ORDER BY created_at ASC LIMIT 1) as first_message
                FROM threads
-               WHERE routed_agent = ? AND status = 'chat'
+               WHERE routed_agent = ? AND user_id = ? AND status = 'chat'
                GROUP BY thread_id
                ORDER BY started_at DESC LIMIT 30""",
-            (agent_id,)
+            (agent_id, int(tenant_id))
         )
         threads = []
         for row in cursor.fetchall():
@@ -3189,9 +3416,9 @@ def get_agent_thread_history(agent_id, thread_id):
         cursor.execute(
             """SELECT agent_task, agent_draft, created_at
                FROM threads
-               WHERE thread_id = ? AND routed_agent = ?
+               WHERE thread_id = ? AND user_id = ? AND routed_agent = ?
                ORDER BY created_at ASC""",
-            (thread_id, agent_id)
+            (thread_id, int(tenant_id), agent_id)
         )
         messages = []
         for row in cursor.fetchall():
@@ -3227,13 +3454,14 @@ def api_list_threads():
         if agent_filter:
             cursor.execute(
                 ("SELECT thread_id, agent_task, created_at FROM threads "
-                 "WHERE status = 'chat' AND routed_agent = ? "
+                 "WHERE status = 'chat' AND routed_agent = ? AND user_id = ? "
                  "ORDER BY created_at DESC LIMIT 50"),
-                (agent_filter,),
+                (agent_filter, int(tenant_id)),
             )
         else:
             cursor.execute(
-                "SELECT thread_id, agent_task, created_at FROM threads WHERE status = 'chat' ORDER BY created_at DESC LIMIT 50"
+                "SELECT thread_id, agent_task, created_at FROM threads WHERE status = 'chat' AND user_id = ? ORDER BY created_at DESC LIMIT 50",
+                (int(tenant_id),)
             )
         rows = cursor.fetchall()
         return jsonify({
@@ -3260,8 +3488,8 @@ def api_get_thread_messages(thread_id):
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT agent_task, agent_draft, result FROM threads WHERE thread_id = ? AND status = 'chat' ORDER BY created_at ASC",
-            (thread_id,),
+            "SELECT agent_task, agent_draft, result FROM threads WHERE thread_id = ? AND user_id = ? AND status = 'chat' ORDER BY created_at ASC",
+            (thread_id, int(tenant_id)),
         )
         rows = cursor.fetchall()
         messages = []
@@ -3285,13 +3513,14 @@ def api_client_list_threads():
         if agent_filter:
             cursor.execute(
                 ("SELECT thread_id, agent_task, created_at FROM threads "
-                 "WHERE status = 'chat' AND routed_agent = ? "
+                 "WHERE status = 'chat' AND routed_agent = ? AND user_id = ? "
                  "ORDER BY created_at DESC LIMIT 50"),
-                (agent_filter,),
+                (agent_filter, int(tenant_id)),
             )
         else:
             cursor.execute(
-                "SELECT thread_id, agent_task, created_at FROM threads WHERE status = 'chat' ORDER BY created_at DESC LIMIT 50"
+                "SELECT thread_id, agent_task, created_at FROM threads WHERE status = 'chat' AND user_id = ? ORDER BY created_at DESC LIMIT 50",
+                (int(tenant_id),)
             )
         rows = cursor.fetchall()
         return jsonify({
@@ -3313,8 +3542,8 @@ def api_client_get_thread_messages(thread_id):
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT agent_task, agent_draft FROM threads WHERE thread_id = ? AND status = 'chat' ORDER BY created_at ASC",
-            (thread_id,),
+            "SELECT agent_task, agent_draft FROM threads WHERE thread_id = ? AND user_id = ? AND status = 'chat' ORDER BY created_at ASC",
+            (thread_id, int(tenant_id)),
         )
         rows = cursor.fetchall()
         messages = []
@@ -3666,7 +3895,7 @@ def api_analytics_email_report():
         return jsonify({"error": "user_id and html are required"}), 400
     try:
         engine = AnalyticsEngine(int(user_id))
-        biz_row = engine._fetchone("SELECT business_name, email FROM client_details LIMIT 1")
+        biz_row = engine._fetchone("SELECT business_name, email FROM client_details WHERE user_id = ?", (int(user_id),))
         business_name = biz_row["business_name"] if biz_row else user_id
         client_email = biz_row["email"] if biz_row else None
         if not client_email:
@@ -3751,7 +3980,8 @@ def client_managed_services():
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT managed_service FROM client_details LIMIT 1"
+            "SELECT managed_service FROM client_details WHERE user_id = ?",
+            (int(tenant_id),)
         )
         row = cursor.fetchone()
         if row:
@@ -3771,8 +4001,8 @@ def api_managed_upgrade():
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE client_details SET managed_service = 1, managed_since = ?",
-            (now_iso,),
+            "UPDATE client_details SET managed_service = 1, managed_since = ? WHERE user_id = ?",
+            (now_iso, int(tenant_id)),
         )
         conn.commit()
 
@@ -3805,7 +4035,8 @@ def api_managed_cancel():
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE client_details SET managed_service = 0 WHERE managed_service = 1"
+            "UPDATE client_details SET managed_service = 0 WHERE user_id = ? AND managed_service = 1",
+            (int(tenant_id),)
         )
         conn.commit()
         logger.info("Client %s cancelled Managed Services", tenant_id)
@@ -3844,7 +4075,8 @@ def api_managed_clients():
             conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT managed_service, managed_since, package FROM client_details LIMIT 1"
+                "SELECT managed_service, managed_since, package FROM client_details WHERE user_id = ?",
+                (int(tid),)
             )
             row = cursor.fetchone()
             if not row or not row.get("managed_service"):
@@ -3888,7 +4120,8 @@ def api_managed_clients():
             # Count pending approvals
             try:
                 cursor.execute(
-                    "SELECT COUNT(*) as cnt FROM threads WHERE status = 'pending_approval'"
+                    "SELECT COUNT(*) as cnt FROM threads WHERE user_id = ? AND status = 'pending_approval'",
+                    (int(tid),)
                 )
                 pending_row = cursor.fetchone()
                 pending_count = pending_row["cnt"] if pending_row else 0
@@ -3929,7 +4162,8 @@ def api_managed_pause():
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE client_details SET managed_service = 0 WHERE managed_service = 1"
+            "UPDATE client_details SET managed_service = 0 WHERE user_id = ? AND managed_service = 1",
+            (int(tenant_id),)
         )
         conn.commit()
         logger.info("Admin paused Managed Services for %s", tenant_id)
@@ -3952,8 +4186,8 @@ def api_managed_resume():
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE client_details SET managed_service = 1, managed_since = ?",
-            (now_iso,),
+            "UPDATE client_details SET managed_service = 1, managed_since = ? WHERE user_id = ?",
+            (now_iso, int(tenant_id)),
         )
         conn.commit()
         logger.info("Admin resumed Managed Services for %s", tenant_id)
@@ -3975,7 +4209,8 @@ def api_managed_bulk_approve():
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT thread_id, routed_agent, agent_draft FROM threads WHERE status = 'pending_approval'"
+            "SELECT thread_id, routed_agent, agent_draft FROM threads WHERE user_id = ? AND status = 'pending_approval'",
+            (int(tenant_id),)
         )
         pending = cursor.fetchall()
         approved_count = 0
@@ -3988,8 +4223,8 @@ def api_managed_bulk_approve():
 
             # Approve the thread
             cursor.execute(
-                "UPDATE threads SET approved = 1, status = 'completed', updated_at = ? WHERE thread_id = ?",
-                (now_iso, thread_id),
+                "UPDATE threads SET approved = 1, status = 'completed', updated_at = ? WHERE thread_id = ? AND user_id = ?",
+                (now_iso, thread_id, int(tenant_id)),
             )
 
             # Execute via executioner if agent exists and draft is not empty
@@ -4032,7 +4267,7 @@ def api_managed_mrr():
         try:
             conn = database._get_conn()
             cursor = conn.cursor()
-            cursor.execute("SELECT managed_service FROM client_details LIMIT 1")
+            cursor.execute("SELECT managed_service FROM client_details WHERE user_id = ?", (int(tid),))
             row = cursor.fetchone()
             if row and row.get("managed_service"):
                 active_count += 1
@@ -4052,7 +4287,7 @@ def admin_managed_page():
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
     tenants = {
-        "direct_clients": [str(u["id"]) for u in database.list_users(role='user')],
+        "direct_clients": database.list_users(role='user'),
     }
     active_tenant = session.get("active_user_id")
     return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
@@ -4136,7 +4371,7 @@ def list_mcp_tools(server_name):
 
 @app.route("/api/mcp/call", methods=["POST"])
 def call_mcp_tool():
-    """Call a tool on an MCP server.
+    """Call a tool on an MCP server. Admin only.
 
     Request body:
     {
@@ -4150,6 +4385,8 @@ def call_mcp_tool():
         }
     }
     """
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
@@ -4171,7 +4408,9 @@ def call_mcp_tool():
 
 @app.route("/api/mcp/credentials", methods=["GET"])
 def get_mcp_credentials():
-    """Get stored MCP credentials for the current tenant."""
+    """Get stored MCP credentials for the current tenant. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     tenant_id = get_current_user_id()
     if not tenant_id:
         return jsonify({"credentials": {}, "error": "No tenant selected"}), 400
@@ -4194,7 +4433,9 @@ def get_mcp_credentials():
 
 @app.route("/api/mcp/credentials", methods=["POST"])
 def save_mcp_credentials():
-    """Save MCP credentials for the current tenant."""
+    """Save MCP credentials for the current tenant. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     tenant_id = get_current_user_id()
     if not tenant_id:
         return jsonify({"error": "No tenant selected"}), 400
@@ -4228,7 +4469,9 @@ def save_mcp_credentials():
 
 @app.route("/api/mcp/credentials/<server_name>", methods=["DELETE"])
 def delete_mcp_credentials(server_name):
-    """Delete all credentials for an MCP server."""
+    """Delete all credentials for an MCP server. Admin only."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     tenant_id = get_current_user_id()
     if not tenant_id:
         return jsonify({"error": "No tenant selected"}), 400
@@ -4245,9 +4488,11 @@ def delete_mcp_credentials(server_name):
 
 @app.route("/api/mcp/execute", methods=["POST"])
 def execute_via_mcp():
-    """Execute an approved agent draft via the appropriate MCP server.
+    """Execute an approved agent draft via the appropriate MCP server. Admin only.
     Auto-selects the correct MCP server based on the agent that generated the content.
     """
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400

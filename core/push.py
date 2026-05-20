@@ -72,7 +72,7 @@ class PushManager:
     """
 
     def __init__(self) -> None:
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._subscriptions: List[Dict[str, Any]] = []
         self._vapid = _ensure_vapid_keys()
         self._vapid_claims = {"sub": "mailto:lavaldigital@gmail.com"}

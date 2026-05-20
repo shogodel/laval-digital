@@ -1,7 +1,8 @@
 (function () {
   var scripts = document.getElementsByTagName('script');
   var src = scripts[scripts.length - 1].src;
-  var BASE = src ? src.replace(/\/static\/bookmarklet\.js.*$/, '') : (window.LD_BASE_URL || 'https://lavaldigital.ca');
+  var BASE = src ? src.replace(/\/static\/bookmarklet\.js.*$/, '') : (window.LD_BASE_URL || '');
+  if (!BASE) { console.warn('Laval Digital bookmarklet: no base URL configured. Set window.LD_BASE_URL.'); return; }
   var CONTAINER_ID = 'ld-bookmarklet-container';
   var existing = document.getElementById(CONTAINER_ID);
   if (existing) { existing.remove(); return; }
@@ -36,7 +37,7 @@
     var all = [];
 
     // Fetch standard pending actions
-    fetch(BASE + '/api/actions/pending')
+    fetch(BASE + '/api/actions/pending', { credentials: 'include' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         (data.actions || []).forEach(function (a) {
@@ -44,7 +45,7 @@
           all.push(a);
         });
         // Also fetch pending SMS
-        return fetch(BASE + '/api/actions/sms-pending');
+        return fetch(BASE + '/api/actions/sms-pending', { credentials: 'include' });
       })
       .then(function (r) { return r.json(); })
       .then(function (smsData) {
@@ -119,6 +120,7 @@
                 // Mark as sent
                 fetch(BASE + '/api/actions/sms-sent', {
                   method: 'POST',
+                  credentials: 'include',
                   headers: {'Content-Type': 'application/json'},
                   body: JSON.stringify({timestamp: ts}),
                 });
@@ -147,6 +149,7 @@
       statusEl.textContent = 'Copied';
       fetch(BASE + '/api/actions/sms-sent', {
         method: 'POST',
+        credentials: 'include',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({timestamp: ts}),
       });
@@ -157,7 +160,7 @@
   }
 
   function confirmAction(id, callback) {
-    fetch(BASE + '/api/actions/' + id + '/confirm', { method: 'POST' })
+    fetch(BASE + '/api/actions/' + id + '/confirm', { method: 'POST', credentials: 'include' })
       .then(function (r) { return r.json(); })
       .then(function (d) { callback(d.success !== false, d.result || d.error || 'Done'); })
       .catch(function () { callback(false, 'Network error'); });

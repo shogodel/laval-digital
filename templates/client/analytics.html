@@ -70,8 +70,14 @@
         </div>
     </div>
 </div>
-
 <script>
+
+function escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+}
+
 function loadClientAnalytics() {
     const days = document.getElementById('client-analytics-period').value;
 
@@ -90,10 +96,10 @@ function loadClientAnalytics() {
             if (data.recent_leads && data.recent_leads.length) {
                 leadsBody.innerHTML = data.recent_leads.slice(0, 20).map(l => `
                     <tr>
-                        <td>${l.name || '—'}</td>
-                        <td>${l.service || '—'}</td>
-                        <td><span class="badge badge-${l.urgency === 'emergency' ? 'amber' : 'gray'}">${l.urgency || '—'}</span></td>
-                        <td><span class="badge badge-${l.status === 'converted' ? 'green' : 'gray'}">${l.status || '—'}</span></td>
+                        <td>${escapeHtml(l.name || '—')}</td>
+                        <td>${escapeHtml(l.service || '—')}</td>
+                        <td><span class="badge badge-${l.urgency === 'emergency' ? 'amber' : 'gray'}">${escapeHtml(l.urgency || '—')}</span></td>
+                        <td><span class="badge badge-${l.status === 'converted' ? 'green' : 'gray'}">${escapeHtml(l.status || '—')}</span></td>
                     </tr>
                 `).join('');
             } else {
@@ -104,10 +110,10 @@ function loadClientAnalytics() {
             if (data.recent_executions && data.recent_executions.length) {
                 execBody.innerHTML = data.recent_executions.slice(0, 20).map(e => `
                     <tr>
-                        <td>${e.agent_name || '—'}</td>
-                        <td>${e.tool_name || '—'}</td>
+                        <td>${escapeHtml(e.agent_name || '—')}</td>
+                        <td>${escapeHtml(e.tool_name || '—')}</td>
                         <td><span class="badge badge-${e.success ? 'green' : 'amber'}">${e.success ? 'OK' : 'Fail'}</span></td>
-                        <td style="font-size:0.8rem;color:var(--gray-500);">${e.timestamp ? new Date(e.timestamp).toLocaleString() : '—'}</td>
+                        <td style="font-size:0.8rem;color:var(--gray-500);">${escapeHtml(e.timestamp ? new Date(e.timestamp).toLocaleString() : '—')}</td>
                     </tr>
                 `).join('');
             } else {

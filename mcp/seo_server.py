@@ -221,7 +221,9 @@ class SEOMCPServer(MCPServer):
     def update_meta_tags(self, url: str, title: str, description: str,
                          api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
         """Update meta tags for a given URL. Returns the suggested HTML."""
-        meta_html = f'<title>{title}</title>\n<meta name="description" content="{description}">'
+        safe_title = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+        safe_desc = description.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+        meta_html = f'<title>{safe_title}</title>\n<meta name="description" content="{safe_desc}">'
         return {
             "success": True,
             "result": f"Meta tags generated. Apply this to {url}:\n{meta_html}",

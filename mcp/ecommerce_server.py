@@ -2,13 +2,40 @@
 import logging
 import re
 import json
+import socket
 import requests
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 from pathlib import Path
+from urllib.parse import urlparse
 from .base_server import MCPServer
 
 logger = logging.getLogger(__name__)
+
+
+def _is_safe_url(url: str) -> bool:
+    """Block requests to private/reserved IPs (SSRF protection)."""
+    hostname = urlparse(url).hostname or ""
+    try:
+        addrs = socket.getaddrinfo(hostname, None)
+        for _, _, _, _, sockaddr in addrs:
+            ip = sockaddr[0]
+            if ":" not in ip:
+                parts = [int(x) for x in ip.split(".")]
+                if parts[0] == 127 or parts[0] == 10 or parts[0] == 0:
+                    return False
+                if parts[0] == 169 and parts[1] == 254:
+                    return False
+                if parts[0] == 192 and parts[1] == 168:
+                    return False
+                if parts[0] == 172 and 16 <= parts[1] <= 31:
+                    return False
+            else:
+                if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd") or ip.startswith("fe80"):
+                    return False
+        return True
+    except socket.gaierror:
+        return False
 
 
 class EcommerceMCPServer(MCPServer):
@@ -210,6 +237,8 @@ class EcommerceMCPServer(MCPServer):
                                   "Schema markup — Product schema with price, availability, reviews"]}
 
         if not url.startswith('http'): url = 'https://' + url
+        if not _is_safe_url(url):
+            return {"success": False, "error": "Blocked request to private IP"}
         try:
             resp = requests.get(url, headers={'User-Agent': 'Frankie-Ecom-Scanner/1.0'}, timeout=10)
             content = resp.text
@@ -601,6 +630,9 @@ Order now and experience the difference."""
     def _fetch_page(self, url: str) -> Optional[requests.Response]:
         try:
             if not url.startswith(('http://', 'https://')): url = 'https://' + url
+            if not _is_safe_url(url):
+                logger.warning("Blocked SSRF attempt to private IP: %s", url)
+                return None
             return requests.get(url, headers={'User-Agent': 'Frankie-Ecom/1.0'}, timeout=10)
         except Exception:
             return None

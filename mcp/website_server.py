@@ -14,6 +14,31 @@ from .base_server import MCPServer
 logger = logging.getLogger(__name__)
 
 
+def _is_safe_url(url: str) -> bool:
+    """Block requests to private/reserved IPs (SSRF protection)."""
+    hostname = urlparse(url).hostname or ""
+    try:
+        addrs = socket.getaddrinfo(hostname, None)
+        for _, _, _, _, sockaddr in addrs:
+            ip = sockaddr[0]
+            if ":" not in ip:
+                parts = [int(x) for x in ip.split(".")]
+                if parts[0] == 127 or parts[0] == 10 or parts[0] == 0:
+                    return False
+                if parts[0] == 169 and parts[1] == 254:
+                    return False
+                if parts[0] == 192 and parts[1] == 168:
+                    return False
+                if parts[0] == 172 and 16 <= parts[1] <= 31:
+                    return False
+            else:
+                if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd") or ip.startswith("fe80"):
+                    return False
+        return True
+    except socket.gaierror:
+        return False
+
+
 class WebsiteMCPServer(MCPServer):
     """MCP Server for website technical management — real scanning, monitoring, and optimization."""
 
@@ -66,14 +91,17 @@ class WebsiteMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def _fetch_page(self, url: str, timeout: int = 10) -> Optional[requests.Response]:
-        """Fetch a URL with error handling. Returns Response or None."""
+        """Fetch a URL with error handling and SSRF protection. Returns Response or None."""
         try:
             if not url.startswith(('http://', 'https://')):
                 url = 'https://' + url
+            if not _is_safe_url(url):
+                logger.warning("Blocked SSRF attempt to private IP: %s", url)
+                return None
             headers = {'User-Agent': 'Frankie-Website-Scanner/1.0'}
             return requests.get(url, headers=headers, timeout=timeout, allow_redirects=True)
         except Exception as e:
-            logger.warning(f"Failed to fetch {url}: {e}")
+            logger.warning("Failed to fetch %s: %s", url, e)
             return None
 
     # ------------------------------------------------------------------
@@ -154,6 +182,9 @@ class WebsiteMCPServer(MCPServer):
             if link.startswith('#') or link.startswith('javascript:'):
                 continue
             full_url = urljoin(url, link)
+            if not _is_safe_url(full_url):
+                results.append({"url": full_url, "status": 0, "ok": False, "error": "Blocked (private IP)"})
+                continue
             try:
                 link_resp = requests.head(full_url, timeout=5, allow_redirects=True,
                                           headers={'User-Agent': 'Frankie-Link-Checker/1.0'})
@@ -420,6 +451,8 @@ class WebsiteMCPServer(MCPServer):
             return {"success": False, "error": "No URL provided"}
 
         if not url.startswith('http'): url = 'https://' + url
+        if not _is_safe_url(url):
+            return {"success": False, "error": "Blocked request to private IP"}
 
         chain = []
         current = url

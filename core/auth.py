@@ -60,14 +60,20 @@ class User(UserMixin):
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
+        from core import database
+        database.update_user(self.id, password_hash=self.password_hash)
 
     @property
     def is_active(self) -> bool:
         if self.status == "expired":
             return False
         if self.status == "trial" and self.trial_ends_at:
-            from datetime import datetime
-            if datetime.now() > datetime.fromisoformat(self.trial_ends_at):
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            trial_end = datetime.fromisoformat(self.trial_ends_at)
+            if trial_end.tzinfo is None:
+                trial_end = trial_end.replace(tzinfo=timezone.utc)
+            if now > trial_end:
                 return False
         return True
 
@@ -75,8 +81,12 @@ class User(UserMixin):
     def is_trial_expired(self) -> bool:
         if self.status != "trial" or not self.trial_ends_at:
             return False
-        from datetime import datetime
-        return datetime.now() > datetime.fromisoformat(self.trial_ends_at)
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        trial_end = datetime.fromisoformat(self.trial_ends_at)
+        if trial_end.tzinfo is None:
+            trial_end = trial_end.replace(tzinfo=timezone.utc)
+        return now > trial_end
 
     @property
     def tenant_id(self) -> str:
@@ -143,12 +153,13 @@ def find_user_by_email(email: str) -> Optional[dict]:
 def add_user_to_tenant(email: str, password: str, role: str = "user",
                        display_name: str = "", tenant_id: str = "",
                        tenant_type: str = "direct") -> dict:
-    """Create a new user in the platform database."""
-    return create_user(email, password, role, display_name)
+    """Create a new user in the platform database, associated with a tenant."""
+    tid = int(tenant_id) if tenant_id and tenant_id.isdigit() else None
+    return create_user(email, password, role, display_name, tid)
 
 
 def create_user(email: str, password: str, role: str = "user",
-                display_name: str = "") -> dict:
+                display_name: str = "", tenant_id: Optional[int] = None) -> dict:
     """Validate password, hash it, and create a user in the platform DB."""
     _validate_password(password)
 
@@ -158,7 +169,7 @@ def create_user(email: str, password: str, role: str = "user",
     password_hash = generate_password_hash(password)
 
     try:
-        uid = database.create_user(email.lower().strip(), password_hash, role, display_name)
+        uid = database.create_user(email.lower().strip(), password_hash, role, display_name, tenant_id)
         return {"success": True, "user_id": uid}
     except Exception as e:
         if "UNIQUE" in str(e):

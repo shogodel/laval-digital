@@ -32,7 +32,16 @@ class AnalyticsEngine:
             self._cache.clear()
 
     def _conn(self):
-        return database._get_conn()
+        """Return a fresh connection for each query to avoid thread-safety issues."""
+        try:
+            conn = database._get_conn()
+            # Verify connection is usable
+            conn.execute("SELECT 1")
+            return conn
+        except Exception:
+            # Force a new connection if the current one is broken
+            database._local.conn = None
+            return database._get_conn()
 
     def _fetchall(self, sql: str, params: tuple = ()) -> List[dict]:
         try:

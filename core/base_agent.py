@@ -79,7 +79,7 @@ class BaseAgent(ABC):
     def _load_system_prompt(self) -> str:
         path = Path(self._system_prompt_file).resolve()
         prompts_dir = Path("prompts").resolve()
-        if not str(path).startswith(str(prompts_dir)):
+        if not str(path).startswith(str(prompts_dir) + "/"):
             raise ValueError(f"System prompt file must be within prompts/ directory: {self._system_prompt_file}")
         if not path.exists():
             raise FileNotFoundError(f"System prompt file not found: {path}")

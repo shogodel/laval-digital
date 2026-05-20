@@ -18,4 +18,4 @@ RUN mkdir -p /app/tenants/direct /app/backups /app/logs /app/content /app/data \
 EXPOSE 5000
 USER appuser
 
-CMD ["gunicorn", "-w", "2", "--threads", "4", "--bind", "127.0.0.1:5000", "app:app"]
+CMD ["gunicorn", "-w", "2", "--threads", "4", "--bind", "0.0.0.0:5000", "app:app"]

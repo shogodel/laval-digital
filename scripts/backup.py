@@ -196,8 +196,8 @@ def main():
     if offsite_dest:
         import subprocess
         src = str(daily_dir) + "/"
-        rc = subprocess.call(["rsync", "-a", "--delete", src, offsite_dest],
-                             timeout=120)
+        rc = subprocess.run(["rsync", "-a", "--delete", src, offsite_dest],
+                            timeout=120).returncode
         if rc == 0:
             print(f"Synced to offsite destination: {offsite_dest}")
         else:

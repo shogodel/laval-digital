@@ -304,13 +304,13 @@ class EmailMCPServer(MCPServer):
             if isinstance(msg, MIMEMultipart):
                 subtype = "html" if html else "plain"
                 msg.attach(MIMEText(content, subtype, "utf-8"))
-            msg["Subject"] = subject
-            msg["From"] = smtp_from
-            msg["To"] = to or smtp_from
+            msg["Subject"] = subject.replace("\r", "").replace("\n", "")[:200]
+            msg["From"] = smtp_from.replace("\r", "").replace("\n", "")
+            msg["To"] = (to or smtp_from).replace("\r", "").replace("\n", "")
             if cc:
-                msg["Cc"] = cc
+                msg["Cc"] = cc.replace("\r", "").replace("\n", "")
             if bcc:
-                msg["Bcc"] = bcc
+                msg["Bcc"] = bcc.replace("\r", "").replace("\n", "")
             server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
             if use_tls:
                 server.starttls()

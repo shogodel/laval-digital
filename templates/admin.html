@@ -606,6 +606,55 @@
                 </div>
             </div>
         </div>
+        <div class="card">
+            <div class="card-header"><h2>Execution Settings</h2><p>SMTP credentials and social API key</p></div>
+            <div class="settings-grid">
+                <div>
+                    <h3>SMTP</h3>
+                    <div class="form-group"><label>Host</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
+                    <div class="form-group"><label>Port</label><input type="number" id="smtp-port" placeholder="587"></div>
+                    <div class="form-group"><label>Username</label><input type="text" id="smtp-username" placeholder="user@gmail.com"></div>
+                    <div class="form-group"><label>Password</label><input type="password" id="smtp-password" placeholder="App password"></div>
+                    <div class="form-group"><label>From Email</label><input type="text" id="smtp-from" placeholder="info@yourdomain.com"></div>
+                    <div class="form-group"><label><input type="checkbox" id="smtp-tls" checked> Use TLS</label></div>
+                </div>
+                <div>
+                    <h3>Unified Social Media API</h3>
+                    <p style="font-size:0.85em;color:var(--gray-500);margin-bottom:12px;">
+                        Connect all your social platforms at once using a unified API key (e.g., SocialAPI, Buffer, or Hootsuite).
+                        This single key handles publishing to Facebook, Instagram, TikTok, YouTube, LinkedIn, and more.
+                    </p>
+                    <div class="form-group">
+                        <label>API Provider</label>
+                        <select id="social-api-provider">
+                            <option value="socialapi">SocialAPI (Recommended)</option>
+                            <option value="buffer">Buffer</option>
+                            <option value="hootsuite">Hootsuite</option>
+                            <option value="custom">Custom/Multi-Platform</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Unified API Key</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="password" id="unified-social-api-key" placeholder="Paste your unified API key here">
+                            <button class="btn btn-gray btn-sm" onclick="validateSocialApiKey()">Test Connection</button>
+                        </div>
+                        <div id="social-key-validation-result"></div>
+                    </div>
+                    <div id="connected-accounts-list" style="margin-top:16px;">
+                        <p style="font-size:0.85em;color:var(--gray-500);">Connected accounts will appear here after a successful test.</p>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+                <button class="btn btn-gray" onclick="loadExecutionerSettings()">Reload</button>
+                <button class="btn btn-green" onclick="saveExecutionerSettings()">Save</button>
+                <input type="email" id="smtp-test-email" placeholder="Your email for testing" style="width:auto;flex:1;min-width:160px;">
+                <button class="btn btn-gray btn-sm" onclick="testSmtp(event)">📧 Send Test Email</button>
+                <span id="executioner-settings-result"></span>
+            </div>
+        </div>
+    </div>
 
         <!-- ================================================================ -->
         <!-- TAB: Analytics                                                    -->
@@ -616,6 +665,16 @@
         <!-- TAB: Reports                                                      -->
         <!-- ================================================================ -->
         {% include 'admin/reports.html' %}
+
+        <!-- ================================================================ -->
+        <!-- TAB: MCP Servers                                                  -->
+        <!-- ================================================================ -->
+        <div class="tab-content" id="tab-mcp">
+            <div class="card">
+                <div class="card-header"><h2>MCP Servers</h2><p>Marketing Command Protocol servers and their tools</p></div>
+                <div id="mcp-server-list" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><p class="empty">Loading...</p></div>
+            </div>
+        </div>
 
     </main>
 
@@ -647,13 +706,6 @@
                 <button class="btn btn-red" onclick="addUser()">Create User</button>
             </div>
         </div>
-    </div>
-</div>
-
-<div class="tab-content" id="tab-mcp">
-    <div class="card">
-        <div class="card-header"><h2>MCP Servers</h2><p>Marketing Command Protocol servers and their tools</p></div>
-        <div id="mcp-server-list" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><p class="empty">Loading...</p></div>
     </div>
 </div>
 
@@ -806,9 +858,25 @@ function updateDashboard() {
 }
 
 /* ── Agents ── */
-const AGENT_META = {};
+const AGENT_META = {
+    local_seo: { name: 'Local SEO', desc: 'Google Business Profile optimization, local citations, local keyword content, review management' },
+    social_media: { name: 'Social Media', desc: 'Social media posts, content creation, content calendars, engagement strategies' },
+    lead_conversion: { name: 'Lead Conversion', desc: 'Lead follow-up sequences, CRM integration, conversion optimization, email campaigns' },
+    paid_ads: { name: 'Paid Ads', desc: 'Google & Meta campaigns, ad content creation, keyword strategy, budget allocation, A/B testing, audience targeting' },
+    growth_hacker: { name: 'Growth Hacker', desc: 'Growth audits, viral loops, conversion rate optimization, partnership strategies, data-driven experiments' },
+    reputation: { name: 'Reputation', desc: 'Online review monitoring, review response generation, review solicitation campaigns, reputation audits, crisis management' },
+    email_marketing: { name: 'Email Marketing', desc: 'Newsletter campaigns, promotional emails, nurturing sequences, reactivation campaigns, post-service follow-ups' },
+    tiktok: { name: 'TikTok', desc: 'Short-form video content for TikTok, Instagram Reels, YouTube Shorts, content calendars, video scripts, trend adaptation' },
+    outreach: { name: 'Outreach', desc: 'Outreach emails, prospect research, campaign sequences, follow-up automation, personalized outreach at scale' },
+    backlinks: { name: 'Backlinks', desc: 'Link building, guest post prospecting, citation building, backlink gap analysis, broken link recovery, directory submissions' },
+    content_strategy: { name: 'Content Strategy', desc: 'Editorial calendars, multi-channel repurposing, content briefs, topic clusters, seasonal planning' },
+    technical_seo: { name: 'Technical SEO', desc: 'Schema markup, speed optimization, crawl audits, XML sitemaps, Core Web Vitals, mobile optimization' },
+    reporting: { name: 'Analytics & Reporting', desc: 'Multi-channel performance summaries, trend analysis, ROI calculations, executive briefs, monthly reports' },
+    cro: { name: 'CRO & Landing Pages', desc: 'Conversion rate optimization, A/B test analysis, funnel optimization, CTA strategy' },
+    video: { name: 'Video Production', desc: 'YouTube scripts, explainer videos, ad scripts, video SEO, series planning' },
+    sms_marketing: { name: 'SMS Marketing', desc: 'SMS campaign planning, sequence design, CASL compliance, concise copywriting, timing strategy' },
+};
 let AGENT_PERSONALITIES = {};
-let AGENT_META_LOOKUP = {};
 
 function loadPersonalities() {
     return fetch('/api/personalities')
@@ -825,27 +893,26 @@ function loadAgents() {
         .then(data => {
             const agents = data.agents || [];
             const html = agents.map(a => {
-                const meta = AGENT_META_LOOKUP[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '' };
+                const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '' };
                 const p = AGENT_PERSONALITIES[a.agent_id] || {};
                 const emoji = p.emoji || '🤖';
                 const color = p.color || '#6b7280';
-                const short = p.short || meta.name;
                 const status = a.enabled ? a.status : 'disabled';
                 const statusLabels = { processing:'Processing', pending_approval:'Pending Approval', pending_confirmation:'Pending Confirmation', idle:'Idle', disabled:'Disabled' };
                 const label = statusLabels[status] || 'Idle';
                 const lastInvoked = a.last_invoked ? new Date(a.last_invoked).toLocaleString() : '--';
                 return `
-                <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" data-agent-id="${a.agent_id}">
-                    <div class="agent-name"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${color}20;font-size:0.8rem;margin-right:6px;">${emoji}</span>${meta.name}</div>
-                    <div class="agent-desc">${meta.desc}</div>
+                <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" data-agent-id="${escapeHtml(a.agent_id)}">
+                    <div class="agent-name"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${color}20;font-size:0.8rem;margin-right:6px;">${emoji}</span>${escapeHtml(meta.name)}</div>
+                    <div class="agent-desc">${escapeHtml(meta.desc)}</div>
                     <div class="row"><span class="label">Status</span><span class="badge badge-${status}">${label}</span></div>
-                    <div class="row"><span class="label">Model</span><span class="value">${a.model}</span></div>
+                    <div class="row"><span class="label">Model</span><span class="value">${escapeHtml(a.model)}</span></div>
                     <div class="row"><span class="label">Tasks</span><span class="value">${a.task_count} (${a.success_count} ok / ${a.failure_count} fail)</span></div>
                     <div class="row"><span class="label">Last</span><span class="value">${lastInvoked}</span></div>
-                    <div class="draft-preview">${a.last_draft_preview || '—'}</div>
+                    <div class="draft-preview">${escapeHtml(a.last_draft_preview || '—')}</div>
                     <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
-                        <button class="btn btn-gray btn-xs" onclick="window.location.href='/admin/agent/${a.agent_id}/chat'">💬 Chat</button>
-                        <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-btn" onclick="toggleAgent('${a.agent_id}')">
+                        <button class="btn btn-gray btn-xs" onclick="window.location.href='/admin/agent/${escapeHtml(a.agent_id)}/chat'">💬 Chat</button>
+                        <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-btn" onclick="toggleAgent('${escapeHtml(a.agent_id)}')">
                             ${a.enabled ? 'Disable' : 'Enable'}
                         </button>
                     </div>
@@ -883,10 +950,10 @@ function loadApprovals() {
             }
             list.innerHTML = approvals.map(a => `
                 <div class="approval-card">
-                    <h3>Agent: ${a.agent}</h3>
-                    <p><strong>Task:</strong> ${a.task}</p>
+                    <h3>Agent: ${escapeHtml(a.agent)}</h3>
+                    <p><strong>Task:</strong> ${escapeHtml(a.task)}</p>
                     <p><strong>Draft:</strong></p>
-                    <pre>${a.draft}</pre>
+                    <pre>${escapeHtml(a.draft)}</pre>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
                         <button class="btn btn-green btn-sm" onclick="respondApproval('${a.thread_id}', true)">✓ Approve</button>
                         <button class="btn btn-gray btn-sm" onclick="showRejectForm('${a.thread_id}')">✗ Reject</button>
@@ -963,12 +1030,12 @@ function loadPendingExecutions() {
             }
             list.innerHTML = data.pending.map(p => `
                 <div class="approval-card" style="background:var(--blue-bg);border-color:#bfdbfe;">
-                    <p><strong>Agent:</strong> ${p.agent_name} &middot; <strong>Tool:</strong> ${p.tool_name}</p>
+                    <p><strong>Agent:</strong> ${escapeHtml(p.agent_name)} &middot; <strong>Tool:</strong> ${escapeHtml(p.tool_name)}</p>
                     <p><small>${new Date(p.created_at).toLocaleString()}</small></p>
-                    <pre style="font-size:0.8em;">${p.draft_preview}</pre>
+                    <pre style="font-size:0.8em;">${escapeHtml(p.draft_preview)}</pre>
                     <div style="display:flex;gap:8px;">
-                        <button class="btn btn-green btn-sm" onclick="confirmPending('${p.execution_id}')">Confirm</button>
-                        <button class="btn btn-red btn-sm" onclick="rejectPending('${p.execution_id}')">Reject</button>
+                        <button class="btn btn-green btn-sm" onclick="confirmPending('${escapeHtml(p.execution_id)}')">Confirm</button>
+                        <button class="btn btn-red btn-sm" onclick="rejectPending('${escapeHtml(p.execution_id)}')">Reject</button>
                     </div>
                 </div>
             `).join('');
@@ -1007,9 +1074,9 @@ function loadExecutions() {
             }
             list.innerHTML = data.executions.slice(0, 20).map(e => `
                 <div class="execution-card ${e.success ? 'success' : 'fail'}">
-                    <strong>${e.agent_name}</strong> &middot; ${e.tool_name} &middot; <small>${new Date(e.timestamp).toLocaleString()}</small>
-                    ${e.error ? '&middot; <span style="color:var(--red);">' + e.error + '</span>' : ''}
-                    <details style="margin-top:4px;"><summary style="cursor:pointer;font-size:0.8rem;color:var(--gray-500);">Draft preview</summary><pre style="font-size:0.75rem;margin-top:4px;white-space:pre-wrap;">${e.draft_preview}</pre></details>
+                    <strong>${escapeHtml(e.agent_name)}</strong> &middot; ${escapeHtml(e.tool_name)} &middot; <small>${new Date(e.timestamp).toLocaleString()}</small>
+                    ${e.error ? '&middot; <span style="color:var(--red);">' + escapeHtml(e.error) + '</span>' : ''}
+                    <details style="margin-top:4px;"><summary style="cursor:pointer;font-size:0.8rem;color:var(--gray-500);">Draft preview</summary><pre style="font-size:0.75rem;margin-top:4px;white-space:pre-wrap;">${escapeHtml(e.draft_preview)}</pre></details>
                 </div>
             `).join('');
             updateDashboard();
@@ -1191,6 +1258,12 @@ function loadMCPServers() {
 }
 
 /* ── Init ── */
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+});
+
 window.onload = function() {
     loadPersonalities().then(function() { loadAgents(); });
     loadApprovals();
@@ -1201,15 +1274,10 @@ window.onload = function() {
     loadMCPServers();
     setInterval(updateDashboard, 15000);
 
-    // PWA Service Worker + Install
+    // PWA Service Worker
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/static/sw.js').catch(function() {});
     }
-    var deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', function(e) {
-        e.preventDefault();
-        deferredPrompt = e;
-    });
 };
 
 function installApp() {

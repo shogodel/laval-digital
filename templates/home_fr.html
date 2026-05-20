@@ -613,7 +613,51 @@
         }
         .pricing-card .btn:hover {
             transform: scale(1.02);
-            box-shadow: 0 8px 28px rgba(29,78,216,0.4);
+            box-shadow: 0 8px 28px rgba(212,43,43,0.4);
+        }
+        .pricing-card.premium-card {
+            border-color: #b8860b;
+            background: linear-gradient(135deg, #fffdf5 0%, #fff 100%);
+        }
+        .pricing-card.premium-card:hover {
+            box-shadow: 0 8px 32px rgba(184,134,11,0.2);
+        }
+        .pricing-card.premium-card .badge {
+            background: linear-gradient(135deg, #b8860b, #daa520);
+        }
+        .pricing-card.premium-card .btn {
+            background: linear-gradient(135deg, #b8860b, #daa520);
+        }
+        .pricing-card.premium-card .btn:hover {
+            box-shadow: 0 8px 28px rgba(184,134,11,0.4);
+        }
+        .pricing-card.website-card {
+            border-color: #2c5f7c;
+            background: linear-gradient(135deg, #f5f9fc 0%, #fff 100%);
+        }
+        .pricing-card.website-card:hover {
+            box-shadow: 0 8px 32px rgba(44,95,124,0.2);
+        }
+        .pricing-card.website-card .badge {
+            background: linear-gradient(135deg, #2c5f7c, #3a7ca5);
+        }
+        .pricing-card.website-card .btn {
+            background: linear-gradient(135deg, #2c5f7c, #3a7ca5);
+        }
+        .pricing-card.website-card .btn:hover {
+            box-shadow: 0 8px 28px rgba(44,95,124,0.4);
+        }
+        .pricing-card .price-from {
+            font-size: 0.9rem;
+            color: var(--mid-gray);
+            display: block;
+            margin-top: 4px;
+        }
+        .pricing-cards {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
         }
         .tax-note {
             text-align: center;
@@ -1219,24 +1263,60 @@
 
 <section class="section pricing-section" id="pricing">
     <div class="container">
-        <div class="pricing-card fade-up">
-            <div class="badge">⚜️ Approuvé par les Entreprises Québécoises</div>
-            <h2>Un Plan. Tout Inclus.</h2>
-            <div class="price">597,99 $<span style="font-size:1rem;font-weight:500;-webkit-text-fill-color:var(--mid-gray);color:var(--mid-gray);">/mois</span></div>
-            <p class="price-sub">Annulez quand vous voulez. Sans contrat. Sans frais cachés.</p>
-            <p class="urgency-note">⏳ Places limitées pour notre équipe d'intégration</p>
-            <ul class="features">
-                <li>Tous les Outils Marketing IA Inclus</li>
-                <li>Connectez Tous Vos Comptes (Sociaux, Courriels, Annonces, Site Web)</li>
-                <li>Interface Vocale Frankie (Parlez Naturellement)</li>
-                <li>PWA — Installez sur N'importe Quel Appareil</li>
-                <li>Essai Gratuit de 7 Jours — Aucune Carte de Crédit Requise</li>
-                <li>Tâches et Génération de Contenu Illimitées</li>
-                <li>Rapports de Performance Mensuels</li>
-            </ul>
-            <a href="/fr/essai-gratuit" class="btn btn-primary">Commencer Votre Essai Gratuit</a>
-            <p class="tax-note">+ taxes applicables selon votre province</p>
-            <p class="setup-note">⚡ Configuration en moins de 10 minutes — aucune compétence technique requise</p>
+        <div class="pricing-cards">
+            <div class="pricing-card fade-up">
+                <div class="badge">⚜️ Approuvé par les Entreprises Québécoises</div>
+                <h2>Un Plan. Tout Inclus.</h2>
+                <div class="price">597,99 $<span style="font-size:1rem;font-weight:500;-webkit-text-fill-color:var(--mid-gray);color:var(--mid-gray);">/mois</span></div>
+                <p class="price-sub">Annulez quand vous voulez. Sans contrat. Sans frais cachés.</p>
+                <p class="urgency-note">⏳ Places limitées pour notre équipe d'intégration</p>
+                <ul class="features">
+                    <li>Tous les Outils Marketing IA Inclus</li>
+                    <li>Connectez Tous Vos Comptes (Sociaux, Courriels, Annonces, Site Web)</li>
+                    <li>Interface Vocale Frankie (Parlez Naturellement)</li>
+                    <li>PWA — Installez sur N'importe Quel Appareil</li>
+                    <li>Essai Gratuit de 7 Jours — Aucune Carte de Crédit Requise</li>
+                    <li>Tâches et Génération de Contenu Illimitées</li>
+                    <li>Rapports de Performance Mensuels</li>
+                </ul>
+                <a href="/fr/essai-gratuit" class="btn btn-primary">Commencer Votre Essai Gratuit</a>
+                <p class="tax-note">+ taxes applicables selon votre province</p>
+                <p class="setup-note">⚡ Configuration en moins de 10 minutes — aucune compétence technique requise</p>
+            </div>
+            <div class="pricing-card premium-card fade-up">
+                <div class="badge">⭐ VIP — Géré Pour Vous</div>
+                <h2>On S'occupe de Tout</h2>
+                <div class="price">897,99 $<span style="font-size:1rem;font-weight:500;-webkit-text-fill-color:var(--mid-gray);color:var(--mid-gray);">/mois</span></div>
+                <p class="price-sub">Tout le plan standard, plus la gestion complète par notre équipe.</p>
+                <ul class="features">
+                    <li>Accès Complet à la Plateforme Frankie IA</li>
+                    <li>Notre Clé API Incluse — Aucune Configuration Requise</li>
+                    <li>Gestionnaire de Compte Dédié</li>
+                    <li>Stratégie et Création de Contenu Faites par Nous</li>
+                    <li>Publication et Optimisation Hebdomadaires</li>
+                    <li>Appel de Revue de Performance Mensuel</li>
+                    <li>Support Prioritaire — Passez la File d'Attente</li>
+                </ul>
+                <a href="/fr/contact" class="btn btn-primary">Nous Contacter</a>
+                <p class="tax-note">+ taxes applicables selon votre province</p>
+            </div>
+            <div class="pricing-card website-card fade-up">
+                <div class="badge">🌐 Sites Web Sur Mesure pour PME</div>
+                <h2>Construit Pour Votre Entreprise</h2>
+                <div class="price">999 $<span class="price-from">à partir de</span></div>
+                <p class="price-sub">Un site rapide et professionnel, conçu et construit pour votre entreprise.</p>
+                <ul class="features">
+                    <li>Design Personnalisé — Pas de Gabarits</li>
+                    <li>Optimisé SEO Dès le Premier Jour</li>
+                    <li>Mobile-First, Ultra Rapide</li>
+                    <li>Intégré avec Frankie IA Marketing</li>
+                    <li>Formulaires de Contact, Réservation, et Plus</li>
+                    <li>Support Continu et Mises à Jour</li>
+                    <li>Optionnel: Hébergement et Plans de Maintenance</li>
+                </ul>
+                <a href="/fr/contact" class="btn btn-primary">Demander un Soumission</a>
+                <p class="tax-note">+ taxes applicables selon votre province</p>
+            </div>
         </div>
     </div>
 </section>
@@ -1423,7 +1503,8 @@ if (ref) {
     var banner = document.getElementById('affiliate-banner');
     if (banner) {
         banner.style.display = 'block';
-        document.title = 'Frankie — recommandé par ' + ref;
+        var safeRef = ref.replace(/[<>\"'&`]/g, function(c) { return {'<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','&':'&amp;','`':'&#96;'}[c]; });
+        document.title = 'Frankie — recommandé par ' + safeRef;
     }
 }
 </script>

@@ -191,13 +191,13 @@ class AnalyticsMCPServer(MCPServer):
         conn = self._conn()
         period_a_days = kwargs.get("period_a_days", 30)
         period_b_days = kwargs.get("period_b_days", 30)
-        offset = kwargs.get("offset_days", period_a_days)
+        offset_days = kwargs.get("offset_days", period_a_days)
         try:
             now = datetime.now()
             a_start = (now - timedelta(days=period_a_days)).isoformat()
             a_end = now.isoformat()
             b_start = (now - timedelta(days=period_a_days + period_b_days)).isoformat()
-            b_end = (now - timedelta(days=period_a_days)).isoformat()
+            b_end = (now - timedelta(days=offset_days)).isoformat()
 
             def _stats(start, end):
                 cursor = conn.cursor()

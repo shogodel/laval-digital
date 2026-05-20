@@ -18,3 +18,10 @@ content/technical_seo/
 content/strategy/
 logs/
 *.log
+data/
+tenants/
+agency-agents-ref/
+*.key
+*.pem
+credentials.json
+secrets.json

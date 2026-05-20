@@ -160,7 +160,20 @@ class GMBMCPServer(MCPServer):
         gmb_type = photo_types.get(photo_type, "ADDITIONAL")
         if api_credentials and api_credentials.get("access_token") and photo_url:
             try:
-                import requests
+                import requests, socket
+                from urllib.parse import urlparse
+                # SSRF prevention: block private IPs
+                hostname = urlparse(photo_url).hostname or ""
+                addrs = socket.getaddrinfo(hostname, None)
+                for _, _, _, _, sockaddr in addrs:
+                    cip = sockaddr[0]
+                    if ":" not in cip:
+                        p = [int(x) for x in cip.split(".")]
+                        if p[0] in (127, 10, 0) or (p[0] == 169 and p[1] == 254) or (p[0] == 192 and p[1] == 168) or (p[0] == 172 and 16 <= p[1] <= 31):
+                            return {"success": False, "error": "Photo URL resolves to a private IP"}
+                    else:
+                        if cip.startswith("::1") or cip.startswith("fc") or cip.startswith("fd") or cip.startswith("fe80"):
+                            return {"success": False, "error": "Photo URL resolves to a private IPv6"}
                 url = f"https://mybusiness.googleapis.com/v4/accounts/{api_credentials['account_id']}/locations/{api_credentials.get('location_id', '')}/media"
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
                 resp = requests.post(url, headers=headers, json={"mediaFormat": "PHOTO", "locationAssociation": {"category": gmb_type}, "sourceUrl": photo_url}, timeout=15)

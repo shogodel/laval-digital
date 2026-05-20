@@ -351,15 +351,16 @@ window.frankie = {
             fetch('/api/frankie/inspect').then(function(r) { return r.json(); }).then(function(data) {
                 var extra = '';
                 if (data.site && data.site.business) {
-                    extra = 'I looked at <strong>' + data.site.url + '</strong>. ';
+                    extra = 'I looked at <strong>' + escapeHtml(data.site.url) + '</strong>. ';
                 }
                 if (data.suggestions && data.suggestions.length > 0) {
                     extra += 'I found <strong>' + data.suggestions.length + ' thing' + (data.suggestions.length > 1 ? 's' : '') + '</strong> you can improve:';
                     self.greeting.innerHTML = timeGreeting + '! ' + extra;
                     // Show suggestions as clickable chips that ask Frankie about them
                     var chipsHtml = data.suggestions.map(function(s) {
-                        var safe = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                        return '<button class="suggestion-chip" onclick="frankie.ask(\'Can you help me fix: ' + safe + '\')">' + escapeHtml(s.substring(0, 60)) + '...</button>';
+                        var safe = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                        var attrSafe = encodeURIComponent(s.substring(0, 120));
+                        return '<button class="suggestion-chip" onclick="frankie.ask(\'Can you help me fix: ' + attrSafe + '\')">' + escapeHtml(s.substring(0, 60)) + '...</button>';
                     }).join('');
                     // Also add standard chips
                     chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'How are my agents doing?\')">📊 Agent status</button>';
@@ -368,7 +369,7 @@ window.frankie = {
                     chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'Run an SEO audit\')">🔍 SEO audit</button>';
                     self.suggestions.innerHTML = chipsHtml;
                 } else {
-                    self.greeting.innerHTML = timeGreeting + '! ' + (data.site && data.site.business ? 'I checked <strong>' + data.site.url + '</strong> — looks good! ' : '') + 'How can I help?';
+                    self.greeting.innerHTML = timeGreeting + '! ' + (data.site && data.site.business ? 'I checked <strong>' + escapeHtml(data.site.url) + '</strong> — looks good! ' : '') + 'How can I help?';
                     var chipsHtml = '<button class="suggestion-chip" onclick="frankie.ask(\'How are my agents doing?\')">📊 Agent status</button>';
                     if (pending > 0) chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'Review pending approvals\')">📋 Approve</button>';
                     chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'Write a social media post\')">📱 Create post</button>';

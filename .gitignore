@@ -62,6 +62,10 @@ data/frankie.db
 # Runtime state files
 data/login_attempts.json
 data/push_subscriptions.jsonl
+data/vapid_keys.json
+
+# Backups
+backups/
 
 # Credentials (NEVER commit)
 credentials.json

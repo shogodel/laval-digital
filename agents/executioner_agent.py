@@ -95,8 +95,17 @@ class ExecutionerAgent:
             settings: Dict with any of the keys defined in
                 :attr:`DEFAULT_SETTINGS`.
         """
-        self._settings.update(settings)
-        logger.debug("Settings updated: %s", list(settings))
+        allowed_keys = {
+            "smtp_host", "smtp_port", "smtp_username", "smtp_password",
+            "smtp_from_email", "smtp_use_tls",
+            "social_api_provider", "social_api_key", "social_api_custom_url",
+            "confirm_tools", "max_retries", "retry_delay",
+            "execution_log_path",
+        }
+        for key, value in settings.items():
+            if key in allowed_keys:
+                self._settings[key] = value
+        logger.debug("Settings updated: %s", [k for k in settings if k in allowed_keys])
 
     def get_settings(self) -> Dict[str, Any]:
         """Return a copy of the current settings.
@@ -597,9 +606,12 @@ class ExecutionerAgent:
                     return {"success": False, "result": "", "error": f"SocialAPI error: {error_msg}"}
 
                 elif provider == "buffer":
+                    profile_ids = self._settings.get("buffer_profile_ids", [])
+                    if not profile_ids:
+                        return {"success": False, "result": "", "error": "Buffer profile IDs not configured. Add them in Execution Settings."}
                     resp = req.post(
                         "https://api.bufferapp.com/1/updates/create.json",
-                        data={"access_token": api_key, "text": draft, "profile_ids[]": []},
+                        data={"access_token": api_key, "text": draft, "profile_ids[]": profile_ids},
                         timeout=15,
                     )
                     data = resp.json()
@@ -608,13 +620,16 @@ class ExecutionerAgent:
                     return {"success": False, "result": "", "error": f"Buffer error: {data}"}
 
                 elif provider == "hootsuite":
+                    profile_ids = self._settings.get("hootsuite_profile_ids", [])
+                    if not profile_ids:
+                        return {"success": False, "result": "", "error": "Hootsuite profile IDs not configured. Add them in Execution Settings."}
                     resp = req.post(
                         "https://platform.hootsuite.com/v1/messages",
                         headers={
                             "Authorization": f"Bearer {api_key}",
                             "Content-Type": "application/json",
                         },
-                        json={"text": draft, "socialProfiles": []},
+                        json={"text": draft, "socialProfiles": profile_ids},
                         timeout=15,
                     )
                     data = resp.json()
@@ -626,6 +641,23 @@ class ExecutionerAgent:
                     # Custom/Generic — user provides their own API endpoint via env
                     custom_url = os.getenv("SOCIAL_API_CUSTOM_URL", "")
                     if custom_url:
+                        # SSRF prevention: block private IPs
+                        try:
+                            parsed_url = __import__("urllib.parse", fromlist=["urlparse"]).urlparse(custom_url)
+                            hostname = parsed_url.hostname or ""
+                            _socket = __import__("socket")
+                            addrs = _socket.getaddrinfo(hostname, None)
+                            for _, _, _, _, sockaddr in addrs:
+                                cip = sockaddr[0]
+                                if ":" not in cip:
+                                    p = [int(x) for x in cip.split(".")]
+                                    if p[0] in (127, 10, 0) or (p[0] == 169 and p[1] == 254) or (p[0] == 192 and p[1] == 168) or (p[0] == 172 and 16 <= p[1] <= 31):
+                                        return {"success": False, "result": "", "error": "Custom API resolves to a private IP"}
+                                else:
+                                    if cip.startswith("::1") or cip.startswith("fc") or cip.startswith("fd") or cip.startswith("fe80"):
+                                        return {"success": False, "result": "", "error": "Custom API resolves to a private IPv6"}
+                        except Exception:
+                            return {"success": False, "result": "", "error": "Could not resolve custom API URL"}
                         resp = req.post(
                             custom_url,
                             headers={
@@ -711,11 +743,18 @@ class ExecutionerAgent:
             r"^(?:#\s*)?Subject\s*:\s*(.+)$", draft, re.MULTILINE | re.IGNORECASE
         )
         subject = subject_match.group(1).strip() if subject_match else "(no subject)"
+        # Sanitize subject to prevent header injection
+        subject = subject.replace("\r", "").replace("\n", "")[:200]
 
         to_match = re.search(
             r"^(?:#\s*)?To\s*:\s*(.+)$", draft, re.MULTILINE | re.IGNORECASE
         )
         recipient = to_match.group(1).strip() if to_match else ""
+        # Validate recipient is a single email address
+        recipient = recipient.split(",")[0].strip()  # Take first email if multiple
+        recipient = recipient.replace("\r", "").replace("\n", "")
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", recipient):
+            return {"success": False, "error": "Invalid recipient email address"}
 
         smtp_host = self._settings.get("smtp_host", "")
 
@@ -759,7 +798,7 @@ class ExecutionerAgent:
         try:
             msg = MIMEText(draft, _charset="utf-8")
             msg["Subject"] = subject
-            msg["From"] = smtp_from
+            msg["From"] = smtp_from.replace("\r", "").replace("\n", "")[:200]
             msg["To"] = recipient
 
             server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)

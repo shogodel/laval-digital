@@ -69,6 +69,12 @@
 <script>
 let analyticsData = {};
 
+function escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+}
+
 function loadAnalytics() {
     const days = document.getElementById('analytics-period').value;
 
@@ -91,10 +97,10 @@ function loadAnalytics() {
             if (events.length) {
                 tbody.innerHTML = events.map(e => `
                     <tr>
-                        <td>${formatDate(e.timestamp)}</td>
-                        <td><strong>${e.agent_name || e.agent || '—'}</strong></td>
-                        <td>${e.tool_name || e.action || e.type || '—'}</td>
-                        <td>${e.success !== undefined ? (e.success ? '✅ Success' : '❌ Failed') : (e.result || e.status || '—')}</td>
+                        <td>${escapeHtml(formatDate(e.timestamp))}</td>
+                        <td><strong>${escapeHtml(e.agent_name || e.agent || '—')}</strong></td>
+                        <td>${escapeHtml(e.tool_name || e.action || e.type || '—')}</td>
+                        <td>${escapeHtml(e.success !== undefined ? (e.success ? '✅ Success' : '❌ Failed') : (e.result || e.status || '—'))}</td>
                     </tr>
                 `).join('');
             } else {

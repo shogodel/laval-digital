@@ -66,19 +66,20 @@ class SocialMCPServer(MCPServer):
         if api_credentials and api_credentials.get("page_id") and api_credentials.get("access_token"):
             try:
                 import requests
+                token = api_credentials["access_token"]
                 url = f"https://graph.facebook.com/v19.0/{api_credentials['page_id']}/"
                 if post_type == "story":
                     url += "stories"
-                    data = {"image_url": media_url, "access_token": api_credentials["access_token"]} if media_url else {"message": content, "access_token": api_credentials["access_token"]}
+                    data = {"image_url": media_url} if media_url else {"message": content}
                 elif post_type == "video" and media_url:
                     url += "videos"
-                    data = {"file_url": media_url, "description": content, "access_token": api_credentials["access_token"]}
+                    data = {"file_url": media_url, "description": content}
                 else:
                     url += "feed"
-                    data = {"message": content, "access_token": api_credentials["access_token"]}
+                    data = {"message": content}
                     if media_url:
                         data["link"] = media_url
-                resp = requests.post(url, data=data, timeout=15)
+                resp = requests.post(url, data=data, params={"access_token": token}, timeout=15)
                 result = resp.json()
                 if resp.status_code == 200 and result.get("id"):
                     return {"success": True, "result": f"Posted to Facebook ({post_type}, id={result['id']})", "error": None}
@@ -93,8 +94,9 @@ class SocialMCPServer(MCPServer):
         if api_credentials and api_credentials.get("account_id") and api_credentials.get("access_token"):
             try:
                 import requests
+                token = api_credentials["access_token"]
                 url = f"https://graph.facebook.com/v19.0/{api_credentials['account_id']}/media"
-                data = {"caption": content, "access_token": api_credentials["access_token"]}
+                data = {"caption": content}
                 if media_url:
                     data["image_url"] = media_url if post_type != "reels" else None
                     data["video_url"] = media_url if post_type == "reels" else None
@@ -102,12 +104,11 @@ class SocialMCPServer(MCPServer):
                     data["media_type"] = "REELS"
                 elif post_type == "story":
                     data["media_type"] = "STORIES"
-                resp = requests.post(url, data=data, timeout=15)
+                resp = requests.post(url, data=data, params={"access_token": token}, timeout=15)
                 creation = resp.json()
                 if resp.status_code == 200 and creation.get("id"):
                     pub_url = f"https://graph.facebook.com/v19.0/{api_credentials['account_id']}/media_publish"
-                    pub_data = {"creation_id": creation["id"], "access_token": api_credentials["access_token"]}
-                    pub_resp = requests.post(pub_url, data=pub_data, timeout=15)
+                    pub_resp = requests.post(pub_url, data={"creation_id": creation["id"]}, params={"access_token": token}, timeout=15)
                     if pub_resp.status_code == 200:
                         return {"success": True, "result": f"Posted to Instagram ({post_type})", "error": None}
                 return {"success": False, "result": "", "error": f"Instagram API: {creation}"}
@@ -225,16 +226,18 @@ class SocialMCPServer(MCPServer):
         if api_credentials and api_credentials.get("access_token"):
             try:
                 import requests
-                url = f"https://graph.threads.net/v1.0/{api_credentials.get('threads_user_id', '')}/threads"
-                data = {"media_type": "TEXT", "text": content[:500], "access_token": api_credentials["access_token"]}
+                token = api_credentials["access_token"]
+                user_id = api_credentials.get("threads_user_id", "")
+                url = f"https://graph.threads.net/v1.0/{user_id}/threads"
+                data = {"media_type": "TEXT", "text": content[:500]}
                 if media_url:
                     data["media_type"] = "IMAGE"
                     data["image_url"] = media_url
-                resp = requests.post(url, data=data, timeout=15)
+                resp = requests.post(url, data=data, params={"access_token": token}, timeout=15)
                 result = resp.json()
                 if resp.status_code == 200 and result.get("id"):
-                    publish_url = f"https://graph.threads.net/v1.0/{api_credentials.get('threads_user_id', '')}/threads_publish"
-                    pub_resp = requests.post(publish_url, data={"creation_id": result["id"], "access_token": api_credentials["access_token"]}, timeout=15)
+                    publish_url = f"https://graph.threads.net/v1.0/{user_id}/threads_publish"
+                    pub_resp = requests.post(publish_url, data={"creation_id": result["id"]}, params={"access_token": token}, timeout=15)
                     if pub_resp.status_code == 200:
                         return {"success": True, "result": "Posted to Threads", "error": None}
                 return {"success": False, "result": "", "error": f"Threads API: {result}"}
@@ -248,7 +251,9 @@ class SocialMCPServer(MCPServer):
 
     def crosspost_content(self, content: str, platforms: str = "", api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
         """Post to multiple platforms at once. platforms: comma-separated list (facebook,instagram,tiktok,linkedin,x,pinterest,threads)"""
+        allowed = {"facebook", "instagram", "tiktok", "linkedin", "x", "pinterest", "threads"}
         platform_list = [p.strip() for p in platforms.split(',') if p.strip()] if platforms else ["facebook", "instagram"]
+        platform_list = [p for p in platform_list if p in allowed]
         results = {}
         for p in platform_list:
             method = getattr(self, f"post_to_{p}", None)

@@ -97,7 +97,7 @@
     </div>
 
     <script>
-    const ARTICLES = {{ articles_json|safe }};
+    const ARTICLES = {{ articles_json|safe|replace('</script>','</scr'+'ipt>') }};
 
     function renderArticles(list) {
         const grid = document.getElementById('article-grid');

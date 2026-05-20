@@ -608,6 +608,50 @@
             transform: scale(1.02);
             box-shadow: 0 8px 28px rgba(212,43,43,0.4);
         }
+        .pricing-card.premium-card {
+            border-color: #b8860b;
+            background: linear-gradient(135deg, #fffdf5 0%, #fff 100%);
+        }
+        .pricing-card.premium-card:hover {
+            box-shadow: 0 8px 32px rgba(184,134,11,0.2);
+        }
+        .pricing-card.premium-card .badge {
+            background: linear-gradient(135deg, #b8860b, #daa520);
+        }
+        .pricing-card.premium-card .btn {
+            background: linear-gradient(135deg, #b8860b, #daa520);
+        }
+        .pricing-card.premium-card .btn:hover {
+            box-shadow: 0 8px 28px rgba(184,134,11,0.4);
+        }
+        .pricing-card.website-card {
+            border-color: #2c5f7c;
+            background: linear-gradient(135deg, #f5f9fc 0%, #fff 100%);
+        }
+        .pricing-card.website-card:hover {
+            box-shadow: 0 8px 32px rgba(44,95,124,0.2);
+        }
+        .pricing-card.website-card .badge {
+            background: linear-gradient(135deg, #2c5f7c, #3a7ca5);
+        }
+        .pricing-card.website-card .btn {
+            background: linear-gradient(135deg, #2c5f7c, #3a7ca5);
+        }
+        .pricing-card.website-card .btn:hover {
+            box-shadow: 0 8px 28px rgba(44,95,124,0.4);
+        }
+        .pricing-card .price-from {
+            font-size: 0.9rem;
+            color: var(--mid-gray);
+            display: block;
+            margin-top: 4px;
+        }
+        .pricing-cards {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+        }
         .tax-note {
             text-align: center;
             font-size: 0.85rem;
@@ -1219,24 +1263,60 @@
 
 <section class="section pricing-section" id="pricing">
     <div class="container">
-        <div class="pricing-card fade-up">
-            <div class="badge">🇨🇦 Trusted by Canadian Businesses</div>
-            <h2>One Plan. Everything Included.</h2>
-            <div class="price">$597.99<span style="font-size:1rem;font-weight:500;-webkit-text-fill-color:var(--mid-gray);color:var(--mid-gray);">/month</span></div>
-            <p class="price-sub">Cancel anytime. No contracts. No hidden fees. No upsells.</p>
-            <p class="urgency-note">⏳ Limited spots available for our onboarding team</p>
-            <ul class="features">
-                <li>All AI Marketing Tools Included</li>
-                <li>Connect Your Existing Website &amp; Platforms</li>
-                <li>Frankie Voice Interface — Speak Naturally</li>
-                <li>PWA — Install on Any Device (Phone, Tablet, Desktop)</li>
-                <li>7-Day Free Trial — No Credit Card Required</li>
-                <li>Unlimited Tasks &amp; Content Generation</li>
-                <li>Monthly Performance Reports</li>
-            </ul>
-            <a href="/free-trial" class="btn btn-primary">Start Your Free Trial</a>
-            <p class="tax-note">+ applicable taxes based on your province</p>
-            <p class="setup-note">⚡ Setup in under 10 minutes — no technical skills needed</p>
+        <div class="pricing-cards">
+            <div class="pricing-card fade-up">
+                <div class="badge">🇨🇦 Trusted by Canadian Businesses</div>
+                <h2>One Plan. Everything Included.</h2>
+                <div class="price">$597.99<span style="font-size:1rem;font-weight:500;-webkit-text-fill-color:var(--mid-gray);color:var(--mid-gray);">/month</span></div>
+                <p class="price-sub">Cancel anytime. No contracts. No hidden fees. No upsells.</p>
+                <p class="urgency-note">⏳ Limited spots available for our onboarding team</p>
+                <ul class="features">
+                    <li>All AI Marketing Tools Included</li>
+                    <li>Connect Your Existing Website &amp; Platforms</li>
+                    <li>Frankie Voice Interface — Speak Naturally</li>
+                    <li>PWA — Install on Any Device (Phone, Tablet, Desktop)</li>
+                    <li>7-Day Free Trial — No Credit Card Required</li>
+                    <li>Unlimited Tasks &amp; Content Generation</li>
+                    <li>Monthly Performance Reports</li>
+                </ul>
+                <a href="/free-trial" class="btn btn-primary">Start Your Free Trial</a>
+                <p class="tax-note">+ applicable taxes based on your province</p>
+                <p class="setup-note">⚡ Setup in under 10 minutes — no technical skills needed</p>
+            </div>
+            <div class="pricing-card premium-card fade-up">
+                <div class="badge">⭐ VIP — Managed For You</div>
+                <h2>We Run Frankie For You</h2>
+                <div class="price">$897.99<span style="font-size:1rem;font-weight:500;-webkit-text-fill-color:var(--mid-gray);color:var(--mid-gray);">/month</span></div>
+                <p class="price-sub">Everything in the standard plan, plus full management by our team.</p>
+                <ul class="features">
+                    <li>Full Frankie AI Platform Access</li>
+                    <li>Our API Key Included — No Setup Required</li>
+                    <li>Dedicated Account Manager</li>
+                    <li>Strategy &amp; Content Creation Done By Us</li>
+                    <li>Weekly Publishing &amp; Optimization</li>
+                    <li>Monthly Performance Review Call</li>
+                    <li>Priority Support — Skip the Queue</li>
+                </ul>
+                <a href="/contact" class="btn btn-primary">Contact Us</a>
+                <p class="tax-note">+ applicable taxes based on your province</p>
+            </div>
+            <div class="pricing-card website-card fade-up">
+                <div class="badge">🌐 Custom Websites for SMBs</div>
+                <h2>Built For Your Business</h2>
+                <div class="price">$999<span class="price-from">starting at</span></div>
+                <p class="price-sub">A fast, beautiful website designed and built for your business.</p>
+                <ul class="features">
+                    <li>Custom Design — No Templates</li>
+                    <li>SEO-Optimized from Day One</li>
+                    <li>Mobile-First, Lightning Fast</li>
+                    <li>Integrated with Frankie AI Marketing</li>
+                    <li>Contact Forms, Booking, &amp; More</li>
+                    <li>Ongoing Support &amp; Updates</li>
+                    <li>Optional: Hosting &amp; Maintenance Plans</li>
+                </ul>
+                <a href="/contact" class="btn btn-primary">Get a Quote</a>
+                <p class="tax-note">+ applicable taxes based on your province</p>
+            </div>
         </div>
     </div>
 </section>
@@ -1423,7 +1503,8 @@ if (ref) {
     var banner = document.getElementById('affiliate-banner');
     if (banner) {
         banner.style.display = 'block';
-        document.title = 'Frankie — ' + ref + "'s Recommendation";
+        var safeRef = ref.replace(/[<>\"'&`]/g, function(c) { return {'<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','&':'&amp;','`':'&#96;'}[c]; });
+        document.title = 'Frankie — ' + safeRef + "'s Recommendation";
     }
 }
 </script>

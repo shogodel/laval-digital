@@ -27,11 +27,13 @@ DEFAULT_AGENTS = [
 
 def _get_conn() -> sqlite3.Connection:
     """Return the thread-local database connection, creating it if needed."""
-    if not hasattr(_local, "conn") or _local.conn is None:
+    current_tid = threading.get_ident()
+    if not hasattr(_local, "conn") or _local.conn is None or getattr(_local, "tid", None) != current_tid:
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         _local.conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
         _local.conn.row_factory = sqlite3.Row
         _local.conn.execute("PRAGMA foreign_keys = ON")
+        _local.tid = current_tid
     return _local.conn
 
 
@@ -289,6 +291,13 @@ def init_db() -> None:
     )
     conn.commit()
 
+    # ── Migration: add tenant_id to users for sub-user management ──
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN tenant_id INTEGER REFERENCES users(id)")
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    conn.commit()
+
     # Seed default agent configs for all existing users
     _seed_default_agents(conn)
 
@@ -335,13 +344,13 @@ def get_user_by_id(uid: int) -> Optional[dict]:
 
 
 def create_user(email: str, password_hash: str, role: str,
-                display_name: str = "") -> int:
+                display_name: str = "", tenant_id: Optional[int] = None) -> int:
     conn = _get_conn()
     now = datetime.now(timezone.utc).isoformat()
     cur = conn.execute(
-        """INSERT INTO users (email, password_hash, role, display_name, created_at)
-           VALUES (?, ?, ?, ?, ?)""",
-        (email, password_hash, role, display_name or email.split("@")[0], now),
+        """INSERT INTO users (email, password_hash, role, display_name, created_at, tenant_id)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (email, password_hash, role, display_name or email.split("@")[0], now, tenant_id),
     )
     conn.commit()
     uid = cur.lastrowid
@@ -354,6 +363,9 @@ def update_user(uid: int, **kwargs) -> None:
     allowed = {"email", "password_hash", "role", "display_name", "last_login", "status"}
     for key, val in kwargs.items():
         if key in allowed:
+            # Validate column name is a valid SQL identifier (alphanumeric + underscore only)
+            if not key.replace("_", "").isalnum():
+                raise ValueError(f"Invalid column name: {key}")
             conn.execute(f"UPDATE users SET {key} = ? WHERE id = ?", (val, uid))
     conn.commit()
 

@@ -54,11 +54,12 @@ class AgentMemory:
     def set_preference(self, user_id: int, agent_id: str, key: str, value: str) -> None:
         conn = self._conn()
         now = datetime.now(timezone.utc).isoformat()
+        pref_id = f"{user_id}:{agent_id}:{key}"
         conn.execute(
             """INSERT INTO agent_preferences (id, user_id, agent_id, pref_key, pref_value, updated_at)
                VALUES (?, ?, ?, ?, ?, ?)
                ON CONFLICT(id) DO UPDATE SET pref_value = ?, updated_at = ?""",
-            (uuid.uuid4().hex, user_id, agent_id, key, value, now, value, now),
+            (pref_id, user_id, agent_id, key, value, now, value, now),
         )
         conn.commit()
 
