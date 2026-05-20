@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Connector Setup — Frankie</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -135,9 +136,13 @@ async function setupEmailBridge() {
     status.textContent = 'Connecting...';
 
     try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
         const r = await fetch('/api/actions/bridge/email', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken || '',
+            },
             body: JSON.stringify({ email: email, password: password, imap_host: host, imap_port: 993 }),
         });
         const data = await r.json();

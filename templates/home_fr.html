@@ -75,13 +75,14 @@
         .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
         nav {
-            background: var(--navy);
+            background: linear-gradient(180deg, rgba(10, 25, 47, 0.98) 0%, rgba(10, 25, 47, 0.95) 100%);
             padding: 0;
             position: sticky;
             top: 0;
             z-index: 100;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.05) inset;
+            backdrop-filter: blur(12px);
         }
         nav .container {
             display: flex;
@@ -89,8 +90,10 @@
             align-items: center;
             height: 80px;
         }
-        nav .logo img { height: 56px; width: auto; }
-        nav .logo span { font-size: 1.2rem; font-weight: 800; color: var(--white); letter-spacing: -0.02em; }
+        nav .logo { display: flex; align-items: center; text-decoration: none; padding: 8px 12px; border-radius: 12px; transition: all 0.3s ease; }
+        nav .logo:hover { background: rgba(255,255,255,0.05); }
+        nav .logo img { height: 52px; width: auto; filter: drop-shadow(0 2px 8px rgba(255,255,255,0.15)) brightness(1.05); transition: all 0.3s ease; }
+        nav .logo:hover img { filter: drop-shadow(0 4px 16px rgba(255,255,255,0.25)) brightness(1.1); transform: scale(1.02); }
         nav ul { list-style: none; display: flex; align-items: center; gap: 8px; }
         nav ul li a {
             color: rgba(255,255,255,0.8);
@@ -1034,7 +1037,6 @@
     <div class="container">
         <a href="/fr/" class="logo">
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48">
-            <span>Frankie</span>
         </a>
         <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')" aria-label="Menu">&#9776;</button>
         <ul id="nav-menu">

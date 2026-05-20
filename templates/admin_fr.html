@@ -345,6 +345,7 @@
             <a href="#" data-tab="users"><span class="icon">👤</span> Utilisateurs</a>
             <a href="#" data-tab="analytics"><span class="icon">📈</span> Analytiques</a>
             <a href="#" data-tab="reports"><span class="icon">📄</span> Rapports</a>
+            <a href="#" data-tab="mcp"><span class="icon">🔌</span> Serveurs MCP</a>
         </nav>
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
             <a href="/admin/dashboard" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:12px 16px;border-radius:10px;font-size:0.9rem;font-weight:700;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
@@ -372,7 +373,7 @@
                     {% if tenants.direct_clients %}
                     <optgroup label="Utilisateurs">
                         {% for t in tenants.direct_clients %}
-                        <option value="{{ t }}"{% if active_tenant == t %} selected{% endif %}>{{ t }}</option>
+                        <option value="{{ t.id }}"{% if active_tenant == t.id|string %} selected{% endif %}>{{ t.email }} ({{ t.display_name }})</option>
                         {% endfor %}
                     </optgroup>
                     {% endif %}
@@ -568,6 +569,13 @@
         {% include 'admin/reports.html' %}
     </main>
 
+    <div class="tab-content" id="tab-mcp">
+        <div class="card">
+            <div class="card-header"><h2>Serveurs MCP</h2><p>Serveurs et outils du protocole Marketing Command</p></div>
+            <div id="mcp-server-list" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><p class="empty">Chargement...</p></div>
+        </div>
+    </div>
+
     <!-- Modal Ajouter Utilisateur -->
     <div id="user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
         <div style="background:var(--white);border-radius:var(--radius-lg);padding:32px;max-width:440px;width:90%;box-shadow:var(--shadow-lg);">
@@ -692,6 +700,12 @@ const AGENT_META = {
     tiktok: { name: 'TikTok', desc: 'Contenu vidéo court pour TikTok, Instagram Reels, YouTube Shorts, calendriers de contenu, scripts vidéo, adaptation aux tendances' },
     outreach: { name: 'Prospection', desc: 'Courriels de prospection, recherche de prospects, séquences de campagnes, automatisation de suivi, prospection personnalisée à grande échelle' },
     backlinks: { name: 'Backlinks', desc: 'Création de liens, prospection d\'articles invités, création de citations, analyse des écarts de backlinks, récupération de liens brisés, soumissions d\'annuaires' },
+    content_strategy: { name: 'Stratégie de Contenu', desc: 'Calendriers éditoriaux, réutilisation multi-canal, briefs de contenu, clusters thématiques, planification saisonnière' },
+    technical_seo: { name: 'SEO Technique', desc: 'Balises schema, optimisation de vitesse, audits de crawl, sitemaps XML, Core Web Vitals, optimisation mobile' },
+    reporting: { name: 'Analytiques & Rapports', desc: 'Résumés de performance multi-canaux, analyse de tendances, calculs ROI, briefs exécutifs, rapports mensuels' },
+    cro: { name: 'CRO & Pages d\'Atterrissage', desc: 'Optimisation du taux de conversion, analyse de tests A/B, optimisation d\'entonnoir, stratégie CTA' },
+    video: { name: 'Production Vidéo', desc: 'Scripts YouTube, vidéos explicatives, scripts publicitaires, SEO vidéo, planification de séries' },
+    sms_marketing: { name: 'Marketing SMS', desc: 'Planification de campagnes SMS, conception de séquences, conformité CASL, rédaction concise, stratégie de timing' },
 };
 
 function loadAgents() {
@@ -806,9 +820,26 @@ function respondApproval(threadId, approved) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approved, feedback })
     })
-    .then(r => r.json())
-    .then(() => { loadApprovals(); loadAgents(); })
-    .catch(err => alert('Erreur: ' + err.message));
+    .then(function(r) {
+        if (!r.ok) throw new Error('Server returned ' + r.status);
+        return r.json();
+    })
+    .then(function(data) {
+        if (data.status === 'completed') {
+            toast(approved ? 'Approuvé!' : 'Rejeté!', 'success');
+            loadApprovals();
+            loadAgents();
+            loadPendingExecutions();
+            updateDashboard();
+        } else if (data.error) {
+            toast('Erreur: ' + data.error, 'error');
+        } else {
+            toast('Réponse inattendue du serveur.', 'error');
+        }
+    })
+    .catch(function(err) {
+        toast('Erreur réseau: ' + err.message, 'error');
+    });
 }
 
 /* ── Confirmations en Attente ── */
@@ -1198,17 +1229,63 @@ function deleteUser(userId) {
     fetch('/api/users/' + userId, { method: 'DELETE' })
         .then(r => r.json())
         .then(data => {
-            if (data.error) { alert(data.error); return; }
+            if (data.error) { toast(data.error, 'error'); return; }
+            toast('Utilisateur supprimé.', 'success');
             loadUsers();
         })
-        .catch(err => { alert('Erreur: ' + err.message); });
+        .catch(err => { toast('Erreur: ' + err.message, 'error'); });
 }
 
 
 
+/* ── Toast ── */
+function toast(msg, type) {
+    var el = document.getElementById('toast');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'toast';
+        el.style.cssText = 'display:none;position:fixed;bottom:24px;right:24px;z-index:9999;background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.2);max-width:360px;transition:opacity 0.3s;';
+        document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#059669' : '#1f2937';
+    el.style.display = 'block';
+    el.style.opacity = '1';
+    clearTimeout(el._hide);
+    el._hide = setTimeout(function() { el.style.opacity = '0'; setTimeout(function() { el.style.display = 'none'; }, 300); }, 4000);
+}
+
+/* ── MCP Servers ── */
+function loadMCPServers() {
+    fetch('/api/mcp/servers')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var servers = data.servers || {};
+            var keys = Object.keys(servers);
+            var list = document.getElementById('mcp-server-list');
+            if (!keys.length) {
+                list.innerHTML = '<p class="empty">Aucun serveur MCP disponible.</p>';
+                return;
+            }
+            var icons = { seo: '🔍', social: '📱', email: '📧', gmb: '📍', ads: '💰', analytics: '📊', website: '🌐', ecommerce: '🛒' };
+            list.innerHTML = keys.map(function(k) {
+                var s = servers[k];
+                var icon = icons[k] || '🔌';
+                return '<div class="agent-card enabled" style="padding:16px;">'
+                    + '<strong>' + icon + ' ' + (s.description || k) + '</strong>'
+                    + '<p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">' + (s.description || '') + '</p>'
+                    + '<span class="badge badge-idle">' + (s.tools || 0) + ' outils</span>'
+                    + '</div>';
+            }).join('');
+        })
+        .catch(function() {
+            var list = document.getElementById('mcp-server-list');
+            if (list) list.innerHTML = '<p class="empty">Échec du chargement des serveurs MCP.</p>';
+        });
+}
+
 /* ── Init ── */
 window.onload = function() {
-    loadPersonalities().then(() => loadAgents());
     loadAgents();
     loadApprovals();
     loadPendingExecutions();
@@ -1217,6 +1294,8 @@ window.onload = function() {
     populateAgentSelect();
     updateDashboard();
     loadUsers();
+    loadMCPServers();
+    setInterval(updateDashboard, 15000);
     document.getElementById('config-api-key').addEventListener('input', function() {
         document.getElementById('detect-btn').disabled = !this.value.trim();
     });

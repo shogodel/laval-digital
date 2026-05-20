@@ -40,12 +40,6 @@ def _safe_url(url: str, timeout: int = 10) -> requests.Response:
     return requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
 
 
-def _safe_error(e: Exception, status: int = 500):
-    """Log the real error and return a generic response to the client."""
-    logger.error("Internal error: %s", e, exc_info=True)
-    return jsonify({"error": "An internal error occurred."}), status
-
-
 # Suppress warnings before any imports that might trigger them
 warnings.filterwarnings("ignore", module="langgraph")
 warnings.filterwarnings("ignore", module="langchain")
@@ -56,6 +50,13 @@ from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
+
+
+def _safe_error(e: Exception, status: int = 500):
+    """Log the real error and return a generic response to the client."""
+    logger.error("Internal error: %s", e, exc_info=True)
+    return jsonify({"error": "An internal error occurred."}), status
+
 
 load_dotenv()
 
@@ -88,14 +89,35 @@ if not os.getenv("ADMIN_PASSWORD"):
         "Create a .env file with ADMIN_PASSWORD=your-secure-password"
     )
 pw = os.getenv("ADMIN_PASSWORD", "")
-if len(pw) < 12 or not any(c.isdigit() for c in pw) or not any(c in "!@#$%^&*()_+-=[]{}|;':\",./<>?`~" for c in pw):
+if len(pw) < 8 or not any(c.isdigit() for c in pw) or not any(c in "!@#$%^&*()_+-=[]{}|;':\",./<>?`~" for c in pw):
     raise RuntimeError(
-        "ADMIN_PASSWORD must be at least 12 characters, include at least one "
+        "ADMIN_PASSWORD must be at least 8 characters, include at least one "
         "digit and one special character."
     )
 
 # Hash admin password for constant-time comparison
 _admin_password_hash = generate_password_hash(os.getenv("ADMIN_PASSWORD", ""))
+
+# Credential encryption helpers (Fernet symmetric encryption)
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import base64 as _b64
+
+def _derive_fernet_key() -> Fernet:
+    """Derive a Fernet key from FLASK_SECRET_KEY for credential encryption."""
+    secret = os.getenv("FLASK_SECRET_KEY", "").encode()
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=b"laval-digital-cred", iterations=100_000)
+    key = _b64.urlsafe_b64encode(kdf.derive(secret))
+    return Fernet(key)
+
+_credential_cipher = _derive_fernet_key()
+
+def _encrypt_credential(plaintext: str) -> str:
+    return _credential_cipher.encrypt(plaintext.encode()).decode()
+
+def _decrypt_credential(ciphertext: str) -> str:
+    return _credential_cipher.decrypt(ciphertext.encode()).decode()
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
@@ -266,22 +288,27 @@ def get_tenant_agent_activity(user_id: str) -> dict:
 def update_tenant_agent_activity(
     user_id: str, agent_id: str, **kwargs
 ) -> None:
-    _ALLOWED_COLUMNS = {
-        "status", "last_invoked", "task_count", "success_count",
-        "failure_count", "last_draft_preview", "enabled", "model",
-        "autonomy", "confidence_threshold",
+    _COLUMN_UPDATES = {
+        "status": "UPDATE agent_configs SET status = ? WHERE agent_id = ? AND user_id = ?",
+        "last_invoked": "UPDATE agent_configs SET last_invoked = ? WHERE agent_id = ? AND user_id = ?",
+        "task_count": "UPDATE agent_configs SET task_count = ? WHERE agent_id = ? AND user_id = ?",
+        "success_count": "UPDATE agent_configs SET success_count = ? WHERE agent_id = ? AND user_id = ?",
+        "failure_count": "UPDATE agent_configs SET failure_count = ? WHERE agent_id = ? AND user_id = ?",
+        "last_draft_preview": "UPDATE agent_configs SET last_draft_preview = ? WHERE agent_id = ? AND user_id = ?",
+        "enabled": "UPDATE agent_configs SET enabled = ? WHERE agent_id = ? AND user_id = ?",
+        "model": "UPDATE agent_configs SET model = ? WHERE agent_id = ? AND user_id = ?",
+        "autonomy": "UPDATE agent_configs SET autonomy = ? WHERE agent_id = ? AND user_id = ?",
+        "confidence_threshold": "UPDATE agent_configs SET confidence_threshold = ? WHERE agent_id = ? AND user_id = ?",
     }
     try:
         uid = int(user_id)
         conn = database._get_conn()
         cursor = conn.cursor()
         for key, value in kwargs.items():
-            if key not in _ALLOWED_COLUMNS:
+            sql = _COLUMN_UPDATES.get(key)
+            if sql is None:
                 raise ValueError(f"Invalid column name: {key}")
-            cursor.execute(
-                f"UPDATE agent_configs SET \"{key}\" = ? WHERE agent_id = ? AND user_id = ?",
-                (value, agent_id, uid),
-            )
+            cursor.execute(sql, (value, agent_id, uid))
         conn.commit()
     except Exception as e:
         logger.error(
@@ -1049,13 +1076,14 @@ def api_list_users():
         if role_filter in ("client", "affiliate"):
             cursor.execute(
                 "SELECT id, email, display_name, role, created_at, last_login "
-                "FROM users WHERE role = ? ORDER BY created_at DESC",
-                (role_filter,),
+                "FROM users WHERE id = ? AND role = ? ORDER BY created_at DESC",
+                (int(tenant_id), role_filter),
             )
         else:
             cursor.execute(
                 "SELECT id, email, display_name, role, created_at, last_login "
-                "FROM users ORDER BY created_at DESC"
+                "FROM users WHERE id = ? ORDER BY created_at DESC",
+                (int(tenant_id),),
             )
         users = [dict(row) for row in cursor.fetchall()]
         return jsonify({"users": users})
@@ -1105,10 +1133,13 @@ def api_delete_user(user_id):
     if not tenant_id:
         return jsonify({"error": "No client selected"}), 400
 
+    if str(user_id) == str(tenant_id):
+        return jsonify({"error": "Cannot delete the currently selected client"}), 400
+
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        cursor.execute("DELETE FROM users WHERE id = ? AND id != ?", (user_id, int(tenant_id)))
         conn.commit()
         if cursor.rowcount == 0:
             return jsonify({"error": "User not found"}), 404
@@ -1431,7 +1462,7 @@ def get_agents():
                 "agent_id": agent_id,
                 "enabled": agent.enabled,
                 "model": agent.model,
-                "api_key": agent.api_key or "",
+                "api_key": "",
                 "status": act.get("status", "idle"),
                 "last_invoked": act.get("last_invoked"),
                 "task_count": act.get("task_count", 0),
@@ -1445,7 +1476,7 @@ def get_agents():
                 "agent_id": agent_id,
                 "enabled": agent.enabled,
                 "model": agent.model,
-                "api_key": agent.api_key or "",
+                "api_key": "",
                 "status": "idle",
                 "last_invoked": None,
                 "task_count": 0,
@@ -2659,31 +2690,30 @@ def api_set_email_bridge():
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
-    # Store email bridge settings in the tenant DB
     tenant_id = current_user.tenant_id
     settings = {
         "imap_host": data.get("imap_host", "imap.gmail.com"),
         "imap_port": int(data.get("imap_port", 993)),
         "username": data.get("email", ""),
-        "password": data.get("password", ""),
+        "password": _encrypt_credential(data.get("password", "")),
     }
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT OR REPLACE INTO client_details (id, email, services) "
-            "VALUES (1, COALESCE((SELECT email FROM client_details WHERE id=1), ?), ?)",
-            (settings["username"], json.dumps({"email_bridge": settings})),
+            "INSERT OR REPLACE INTO client_details (user_id, email, services) "
+            "VALUES (?, COALESCE((SELECT email FROM client_details WHERE user_id=?), ?), ?)",
+            (int(tenant_id), int(tenant_id), settings["username"], json.dumps({"email_bridge": settings})),
         )
         conn.commit()
-        # Restart bridge with new settings
+        decrypted_pw = _decrypt_credential(settings["password"])
         bridge = _get_email_bridge()
         bridge.stop()
         bridge2 = EmailBridge(
             imap_host=settings["imap_host"],
             imap_port=settings["imap_port"],
             username=settings["username"],
-            password=settings["password"],
+            password=decrypted_pw,
         )
         bridge2.set_handler(lambda action, subj, body: _email_bridge_handler(action, subj, body, tenant_id))
         bridge2.start()
@@ -4149,11 +4179,14 @@ def get_mcp_credentials():
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
-        cursor.execute("SELECT server_name, platform, credential_key, credential_value FROM mcp_credentials")
+        cursor.execute("SELECT server_name, platform, credential_key, credential_value FROM mcp_credentials WHERE user_id = ?", (int(tenant_id),))
         creds = {}
         for row in cursor.fetchall():
             key = f"{row['server_name']}.{row['platform']}.{row['credential_key']}"
-            creds[key] = row["credential_value"]
+            try:
+                creds[key] = _decrypt_credential(row["credential_value"])
+            except Exception:
+                creds[key] = row["credential_value"]
         return jsonify({"credentials": creds})
     except Exception as e:
         return jsonify({"credentials": {}, "error": str(e)})
@@ -4180,11 +4213,12 @@ def save_mcp_credentials():
         now = datetime.now().isoformat()
 
         for key, value in credentials.items():
+            encrypted = _encrypt_credential(str(value))
             cursor.execute("""
                 INSERT OR REPLACE INTO mcp_credentials
-                (server_name, platform, credential_key, credential_value, created_at, updated_at)
-                VALUES (?, ?, ?, ?, COALESCE((SELECT created_at FROM mcp_credentials WHERE server_name=? AND platform=? AND credential_key=?), ?), ?)
-            """, (server_name, platform, key, value, server_name, platform, key, now, now))
+                (user_id, server_name, platform, credential_key, credential_value, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM mcp_credentials WHERE server_name=? AND platform=? AND credential_key=?), ?), ?)
+            """, (int(tenant_id), server_name, platform, key, encrypted, server_name, platform, key, now, now))
 
         conn.commit()
         return jsonify({"success": True, "message": f"Credentials saved for {server_name}"})
@@ -4202,7 +4236,7 @@ def delete_mcp_credentials(server_name):
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM mcp_credentials WHERE server_name = ?", (server_name,))
+        cursor.execute("DELETE FROM mcp_credentials WHERE user_id = ? AND server_name = ?", (int(tenant_id), server_name))
         conn.commit()
         return jsonify({"success": True, "message": f"Credentials deleted for {server_name}"})
     except Exception as e:

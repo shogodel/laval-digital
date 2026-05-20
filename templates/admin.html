@@ -393,7 +393,7 @@
                     {% if tenants.direct_clients %}
                     <optgroup label="Users">
                         {% for t in tenants.direct_clients %}
-                        <option value="{{ t }}"{% if active_tenant == t %} selected{% endif %}>{{ t }}</option>
+                        <option value="{{ t.id }}"{% if active_tenant == t.id|string %} selected{% endif %}>{{ t.email }} ({{ t.display_name }})</option>
                         {% endfor %}
                     </optgroup>
                     {% endif %}
@@ -810,6 +810,15 @@ const AGENT_META = {};
 let AGENT_PERSONALITIES = {};
 let AGENT_META_LOOKUP = {};
 
+function loadPersonalities() {
+    return fetch('/api/personalities')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            AGENT_PERSONALITIES = data.personalities || {};
+        })
+        .catch(function() {});
+}
+
 function loadAgents() {
     return fetch('/api/agents')
         .then(r => r.json())
@@ -1183,7 +1192,7 @@ function loadMCPServers() {
 
 /* ── Init ── */
 window.onload = function() {
-    loadAgents();
+    loadPersonalities().then(function() { loadAgents(); });
     loadApprovals();
     loadPendingExecutions();
     loadExecutions();
