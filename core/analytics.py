@@ -1,6 +1,6 @@
 import logging
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional, List
 
 from core import database
@@ -16,7 +16,7 @@ class AnalyticsEngine:
         self._lock = threading.Lock()
 
     def _cached(self, key: str, fn, *args, **kwargs):
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         with self._lock:
             if key in self._cache:
                 val, ts = self._cache[key]
@@ -38,9 +38,10 @@ class AnalyticsEngine:
             # Verify connection is usable
             conn.execute("SELECT 1")
             return conn
-        except Exception:
+        except Exception as e:
+            logger.debug("Analytics connection retry: %s", e)
             # Force a new connection if the current one is broken
-            database._local.conn = None
+            database.reset_conn()
             return database._get_conn()
 
     def _fetchall(self, sql: str, params: tuple = ()) -> List[dict]:
@@ -105,7 +106,7 @@ class AnalyticsEngine:
         )
 
     def execution_count_by_day(self, days: int = 30) -> List[dict]:
-        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         return self._fetchall(
             """SELECT DATE(timestamp) AS day, COUNT(*) AS count
                FROM execution_log
@@ -126,7 +127,7 @@ class AnalyticsEngine:
         def _h(s):
             if s is None:
                 return ""
-            return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#x27;")
 
         start = f"{year}-{month:02d}-01"
         if month == 12:

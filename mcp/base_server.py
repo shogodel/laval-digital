@@ -8,6 +8,23 @@ from typing import Dict, Any, Callable, List, Optional
 logger = logging.getLogger(__name__)
 
 
+_SAFE_ERROR_FILTERS = [
+    "token", "bearer", "authorization", "credential", "access_token",
+    "api_key", "private_key", "app_password", "consumer_key",
+    "consumer_secret", "smtp_password", "secret", "apikey", "auth_token",
+    "session_key", "license_key", "password", "key",
+]
+
+
+def _safe_error(e: Exception) -> str:
+    """Return a sanitized error message that won't leak internals."""
+    msg = str(e)
+    msg_lower = msg.lower()
+    if any(f in msg_lower for f in _SAFE_ERROR_FILTERS):
+        return "An internal error occurred."
+    return msg
+
+
 class MCPServer:
     """Base class for MCP (Marketing Command Protocol) servers.
 
@@ -59,7 +76,7 @@ class MCPServer:
             return self.tools[tool_name](**kwargs)
         except Exception as e:
             logger.error(f"[{self.name}] Tool '{tool_name}' failed: {e}")
-            return {"success": False, "result": "", "error": str(e)}
+            return {"success": False, "result": "", "error": _safe_error(e)}
 
     def list_tools(self) -> List[Dict[str, str]]:
         """Return all registered tools with descriptions."""

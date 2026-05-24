@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ business_name }} - Professional {{ service }} in {{ city }}</title>
     
-    <style>
+    <style nonce="{{ csp_nonce }}">
         :root {
-            --primary: {{ primary_color|default('#1a3a5c') }};
-            --accent: {{ accent_color|default('#D42B2B') }};
+            --primary: {{ primary_color|default('#1a3a5c')|e }};
+            --accent: {{ accent_color|default('#D42B2B')|e }};
         }
 
         * {
@@ -390,11 +390,11 @@
             <p><strong>{{ business_name }}</strong></p>
             <p>Call: {{ phone }}</p>
             <p>Serving {{ city }} and surrounding areas</p>
-            <p>Powered by <a href="/admin">Laval Digital</a></p>
+            <p>Powered by <a href="{{ url_for('admin.panel') }}">Laval Digital</a></p>
         </div>
     </footer>
     
-    <script>
+    <script nonce="{{ csp_nonce }}">
         document.getElementById('leadForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -402,7 +402,7 @@
             
             fetch('/api/leads', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
                 body: JSON.stringify(Object.fromEntries(formData))
             }).then(() => {
                 showThankYou();

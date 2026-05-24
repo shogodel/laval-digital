@@ -128,7 +128,8 @@ class AffiliateManager:
                 (affiliate_code, limit),
             ).fetchall()
             return [dict(r) for r in rows]
-        except Exception:
+        except Exception as e:
+            logger.debug("Exception in %s: %s", __name__, e)
             return []
 
     def get_all_commissions(self, limit: int = 100) -> List[Dict[str, Any]]:
@@ -141,7 +142,8 @@ class AffiliateManager:
                 "ORDER BY c.created_at DESC LIMIT ?", (limit,)
             ).fetchall()
             return [dict(r) for r in rows]
-        except Exception:
+        except Exception as e:
+            logger.debug("Exception in %s: %s", __name__, e)
             return []
 
     # ── Payouts ────────────────────────────────────────────────────────
@@ -204,7 +206,8 @@ class AffiliateManager:
                     "ORDER BY p.created_at DESC LIMIT ?", (limit,)
                 ).fetchall()
             return [dict(r) for r in rows]
-        except Exception:
+        except Exception as e:
+            logger.debug("Exception in %s: %s", __name__, e)
             return []
 
     # ── Lead tracking ──────────────────────────────────────────────────
@@ -213,11 +216,13 @@ class AffiliateManager:
                    landing_page: str) -> None:
         try:
             conn = self._conn()
+            safe_ip = ip[:30].replace("<", "").replace(">", "").replace("&", "")
+            safe_page = landing_page[:100].replace("<", "").replace(">", "").replace("&", "")
             conn.execute(
                 """INSERT INTO affiliate_leads
                    (ref_code, lead_email, lead_name, status, created_at)
                    VALUES (?, ?, ?, 'lead', ?)""",
-                (ref_code, f"lead@{ip}", f"Lead from {landing_page}",
+                (ref_code, f"lead@{safe_ip}", f"Lead from {safe_page}",
                  datetime.now(timezone.utc).isoformat()),
             )
             conn.commit()
@@ -233,7 +238,8 @@ class AffiliateManager:
                 (affiliate_code, limit),
             ).fetchall()
             return [dict(r) for r in rows]
-        except Exception:
+        except Exception as e:
+            logger.debug("Exception in %s: %s", __name__, e)
             return []
 
     def get_all_affiliates(self) -> List[Dict[str, Any]]:
@@ -244,5 +250,6 @@ class AffiliateManager:
                 "status, created_at, last_login FROM affiliates ORDER BY created_at DESC"
             ).fetchall()
             return [dict(r) for r in rows]
-        except Exception:
+        except Exception as e:
+            logger.debug("Exception in %s: %s", __name__, e)
             return []

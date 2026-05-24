@@ -7,6 +7,7 @@ Runs every 5 minutes.  Starts automatically when the app boots.
 import logging
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
@@ -54,11 +55,17 @@ class _Monitor:
         # 1. Pending approvals alert
         pending = len(orch.get_pending_drafts())
         if pending > 0 and self._can_alert("pending", now):
-            push.send(
-                title=f"📋 {pending} approval{'s' if pending > 1 else ''} pending",
-                body=f"You have {pending} draft{'s' if pending > 1 else ''} waiting for review.",
-                url="/admin",
-            )
+            try:
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(
+                        push.send,
+                        title=f"\U0001F4CB {pending} approval{'s' if pending > 1 else ''} pending",
+                        body=f"You have {pending} draft{'s' if pending > 1 else ''} waiting for review.",
+                        url="/admin",
+                    )
+                    future.result(timeout=10)
+            except (FuturesTimeout, Exception):
+                logger.warning("Push notification timed out or failed")
             self._last_alert["pending"] = now
 
         # 2. Stale activity check
@@ -70,22 +77,28 @@ class _Monitor:
                     last_dt = datetime.fromisoformat(last_activity)
                     hours_idle = (datetime.now(timezone.utc) - last_dt).total_seconds() / 3600
                     if hours_idle > 4 and self._can_alert("idle", now):
-                        push.send(
-                            title="⏰ No activity in 4+ hours",
-                            body="Your agents have been quiet. Check in to review pending items.",
-                            url="/admin/dashboard",
-                        )
+                        try:
+                            push.send(
+                                title="\u23F0 No activity in 4+ hours",
+                                body="Your agents have been quiet. Check in to review pending items.",
+                                url="/admin/dashboard",
+                            )
+                        except Exception:
+                            logger.warning("Push notification failed")
                         self._last_alert["idle"] = now
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Exception in %s: %s", __name__, e)
 
         # 3. Panic check
         if orch.is_panicked and self._can_alert("panic", now):
-            push.send(
-                title="⚠️ Agents are stopped",
-                body="All agents are currently panicked. Click to resume.",
-                url="/admin/dashboard",
-            )
+            try:
+                push.send(
+                    title="\u26A0\ufe0f Agents are stopped",
+                    body="All agents are currently panicked. Click to resume.",
+                    url="/admin/dashboard",
+                )
+            except Exception:
+                logger.warning("Push notification failed")
             self._last_alert["panic"] = now
 
     def _can_alert(self, key: str, now: float) -> bool:

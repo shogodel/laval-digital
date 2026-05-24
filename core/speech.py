@@ -128,6 +128,11 @@ class SpeechEngine:
             or LANG_TO_ELEVENLABS_VOICE.get(language, "21m00Tcm4TlvDq8ikWAM")
         )
 
+        # Validate voice_id to prevent path traversal/SSRF
+        import re
+        if not re.match(r'^[a-zA-Z0-9]{1,50}$', voice_id):
+            raise ValueError("Invalid ElevenLabs voice_id format")
+
         try:
             resp = requests.post(
                 ELEVENLABS_TTS_URL.format(voice_id=voice_id),

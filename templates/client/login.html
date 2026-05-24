@@ -6,8 +6,8 @@
     <title>Client Login — Laval Digital</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
@@ -55,7 +55,7 @@
         {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('client_login') }}">
+        <form method="POST" action="{{ url_for('client.client_login') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="email">Email</label>
@@ -69,7 +69,7 @@
         </form>
 
         <div class="login-footer">
-            <p>Need help? Contact <a href="mailto:lavaldigital@gmail.com" style="color:var(--red);text-decoration:none;">lavaldigital@gmail.com</a></p>
+            <p>Need help? Contact <a href="mailto:{{ CONTACT_EMAIL }}" style="color:var(--red);text-decoration:none;">{{ CONTACT_EMAIL }}</a></p>
         </div>
     </div>
 </body>

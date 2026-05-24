@@ -9,34 +9,10 @@ from urllib.parse import urlparse, urljoin
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import Dict, Any, List, Optional
-from .base_server import MCPServer
+from .base_server import MCPServer, _safe_error
+from ._safe_url import _is_safe_url
 
 logger = logging.getLogger(__name__)
-
-
-def _is_safe_url(url: str) -> bool:
-    """Block requests to private/reserved IPs (SSRF protection)."""
-    hostname = urlparse(url).hostname or ""
-    try:
-        addrs = socket.getaddrinfo(hostname, None)
-        for _, _, _, _, sockaddr in addrs:
-            ip = sockaddr[0]
-            if ":" not in ip:
-                parts = [int(x) for x in ip.split(".")]
-                if parts[0] == 127 or parts[0] == 10 or parts[0] == 0:
-                    return False
-                if parts[0] == 169 and parts[1] == 254:
-                    return False
-                if parts[0] == 192 and parts[1] == 168:
-                    return False
-                if parts[0] == 172 and 16 <= parts[1] <= 31:
-                    return False
-            else:
-                if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd") or ip.startswith("fe80"):
-                    return False
-        return True
-    except socket.gaierror:
-        return False
 
 
 class WebsiteMCPServer(MCPServer):
@@ -99,7 +75,8 @@ class WebsiteMCPServer(MCPServer):
                 logger.warning("Blocked SSRF attempt to private IP: %s", url)
                 return None
             headers = {'User-Agent': 'Frankie-Website-Scanner/1.0'}
-            return requests.get(url, headers=headers, timeout=timeout, allow_redirects=True)
+            # SSRF protection: no redirect following to prevent DNS rebinding
+            return requests.get(url, headers=headers, timeout=timeout, allow_redirects=False)
         except Exception as e:
             logger.warning("Failed to fetch %s: %s", url, e)
             return None
@@ -186,7 +163,8 @@ class WebsiteMCPServer(MCPServer):
                 results.append({"url": full_url, "status": 0, "ok": False, "error": "Blocked (private IP)"})
                 continue
             try:
-                link_resp = requests.head(full_url, timeout=5, allow_redirects=True,
+                # SSRF protection: no redirect following to prevent DNS rebinding
+                link_resp = requests.head(full_url, timeout=5, allow_redirects=False,
                                           headers={'User-Agent': 'Frankie-Link-Checker/1.0'})
                 results.append({"url": full_url, "status": link_resp.status_code,
                                 "ok": link_resp.status_code < 400})
@@ -281,6 +259,8 @@ class WebsiteMCPServer(MCPServer):
             return {"success": False, "error": "No domain provided"}
 
         domain = domain.split('/')[0]
+        if not _is_safe_url(f"https://{domain}/"):
+            return {"success": False, "result": "", "error": "Blocked domain"}
         try:
             ctx = ssl.create_default_context()
             with socket.create_connection((domain, 443), timeout=10) as sock:
@@ -297,7 +277,7 @@ class WebsiteMCPServer(MCPServer):
                             "valid": days_left > 0,
                             "warning": "Renew soon!" if days_left < 30 else None}
         except Exception as e:
-            return {"success": False, "error": f"SSL check failed: {str(e)}"}
+            return {"success": False, "error": f"SSL check failed: {_safe_error(e)}"}
 
     # ------------------------------------------------------------------
     # Security Headers
@@ -458,15 +438,19 @@ class WebsiteMCPServer(MCPServer):
         current = url
         for _ in range(10):
             try:
+                # SSRF protection: no redirect following to prevent DNS rebinding
                 resp = requests.get(current, allow_redirects=False, timeout=10,
                                    headers={'User-Agent': 'Frankie-Redirect-Tracer/1.0'})
                 chain.append({"url": current, "status": resp.status_code})
                 if resp.status_code in (301, 302, 307, 308):
                     current = urljoin(current, resp.headers.get('Location', ''))
+                    if not _is_safe_url(current):
+                        chain.append({"url": current, "status": 0, "error": "Redirect to private IP blocked"})
+                        break
                 else:
                     break
             except Exception as e:
-                chain.append({"url": current, "status": 0, "error": str(e)})
+                chain.append({"url": current, "status": 0, "error": _safe_error(e)})
                 break
 
         return {"success": True, "result": f"Traced {len(chain)} redirect(s)", "chain": chain,
@@ -497,7 +481,7 @@ class WebsiteMCPServer(MCPServer):
         except ImportError:
             return {"success": False, "error": "Install python-whois: pip install python-whois"}
         except Exception as e:
-            return {"success": False, "error": f"WHOIS lookup failed: {str(e)}"}
+            return {"success": False, "error": f"WHOIS lookup failed: {_safe_error(e)}"}
 
     # ------------------------------------------------------------------
     # Competitor Comparison

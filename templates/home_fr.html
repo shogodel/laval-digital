@@ -38,8 +38,8 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         :root {
             --navy: #0f2b45;
             --navy-light: #1a3a5c;
@@ -1079,18 +1079,18 @@
 
 <nav>
     <div class="container">
-        <a href="/fr/" class="logo">
+        <a href="{{ url_for('home_fr') }}" class="logo">
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48">
         </a>
-        <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+        <button class="hamburger" id="nav-hamburger" aria-label="Menu">&#9776;</button>
         <ul id="nav-menu">
-            <li><a href="/fr/">Accueil</a></li>
-            <li><a href="/fr/demo">Démo</a></li>
-            <li><a href="/fr/blogue">Blogue</a></li>
-            <li><a href="/fr/affiliate">Affiliation</a></li>
-            <li><a href="/client/login">Connexion</a></li>
-            <li><a href="/fr/essai-gratuit" class="nav-cta">Essayer Frankie</a></li>
-            <li><a href="/" class="lang-toggle">EN</a></li>
+            <li><a href="{{ url_for('home_fr') }}">Accueil</a></li>
+            <li><a href="{{ url_for('demo_fr') }}">Démo</a></li>
+            <li><a href="{{ url_for('blog_fr') }}">Blogue</a></li>
+            <li><a href="{{ url_for('affiliate.affiliate_signup_fr') }}">Affiliation</a></li>
+            <li><a href="{{ url_for('client.client_login') }}">Connexion</a></li>
+            <li><a href="{{ url_for('free_trial_fr') }}" class="nav-cta">Essayer Frankie</a></li>
+            <li><a href="{{ url_for('home') }}" class="lang-toggle">EN</a></li>
         </ul>
     </div>
 </nav>
@@ -1112,8 +1112,8 @@
         <h1>Rencontrez <span>Frankie</span> — Votre Assistant Marketing IA</h1>
         <p>Frankie est votre assistant marketing tout-en-un. Vous lui parlez comme à une personne. Il rédige vos publications, articles de blog et campagnes courriel. Vous révisez et approuvez. Frankie publie. Aucune compétence technique requise. Pas besoin d'agence. Un prix fixe par mois.</p>
         <div class="hero-buttons">
-            <a href="/fr/essai-gratuit" class="btn btn-primary">Essayez Frankie (7 jours gratuits)</a>
-            <a href="/fr/demo" class="btn btn-secondary">Voir la Démo</a>
+            <a href="{{ url_for('free_trial_fr') }}" class="btn btn-primary">Essayez Frankie (7 jours gratuits)</a>
+            <a href="{{ url_for('demo_fr') }}" class="btn btn-secondary">Voir la Démo</a>
         </div>
     </div>
 </section>
@@ -1279,7 +1279,7 @@
                     <li>Tâches et Génération de Contenu Illimitées</li>
                     <li>Rapports de Performance Mensuels</li>
                 </ul>
-                <a href="/fr/essai-gratuit" class="btn btn-primary">Commencer Votre Essai Gratuit</a>
+                <a href="{{ url_for('free_trial_fr') }}" class="btn btn-primary">Commencer Votre Essai Gratuit</a>
                 <p class="tax-note">+ taxes applicables selon votre province</p>
                 <p class="setup-note">⚡ Configuration en moins de 10 minutes — aucune compétence technique requise</p>
             </div>
@@ -1297,7 +1297,7 @@
                     <li>Appel de Revue de Performance Mensuel</li>
                     <li>Support Prioritaire — Passez la File d'Attente</li>
                 </ul>
-                <a href="/fr/contact" class="btn btn-primary">Nous Contacter</a>
+                <a href="{{ url_for('contact_fr') }}" class="btn btn-primary">Nous Contacter</a>
                 <p class="tax-note">+ taxes applicables selon votre province</p>
             </div>
             <div class="pricing-card website-card fade-up">
@@ -1314,7 +1314,7 @@
                     <li>Support Continu et Mises à Jour</li>
                     <li>Optionnel: Hébergement et Plans de Maintenance</li>
                 </ul>
-                <a href="/fr/contact" class="btn btn-primary">Demander un Soumission</a>
+                <a href="{{ url_for('contact_fr') }}" class="btn btn-primary">Demander un Soumission</a>
                 <p class="tax-note">+ taxes applicables selon votre province</p>
             </div>
         </div>
@@ -1388,7 +1388,7 @@
     <div class="container">
         <h2 class="section-title fade-up">Foire Aux Questions</h2>
         <div class="faq-list fade-up">
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>Ai-je besoin de compétences techniques pour utiliser Frankie?</h4>
                     <span class="faq-toggle">+</span>
@@ -1397,7 +1397,7 @@
                     <p>Non. Si vous savez parler, vous pouvez utiliser Frankie. L'interface vocale vous permet de parler naturellement, et Frankie s'occupe du reste.</p>
                 </div>
             </div>
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>Frankie peut-il publier sur mes comptes de médias sociaux existants?</h4>
                     <span class="faq-toggle">+</span>
@@ -1406,7 +1406,7 @@
                     <p>Oui. Frankie se connecte à vos Facebook, Instagram, TikTok, LinkedIn, et plus via des serveurs MCP. Vous autorisez une fois, Frankie gère le reste.</p>
                 </div>
             </div>
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>Et si je n'aime pas quelque chose que Frankie crée?</h4>
                     <span class="faq-toggle">+</span>
@@ -1415,7 +1415,7 @@
                     <p>Vous avez un contrôle d'approbation complet. Frankie rédige tout, vous approuvez ou rejetez. Avec le temps, Frankie apprend vos préférences.</p>
                 </div>
             </div>
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>Y a-t-il un contrat à long terme?</h4>
                     <span class="faq-toggle">+</span>
@@ -1424,7 +1424,7 @@
                     <p>Non. 597,99 $/mois, annulez quand vous voulez. Sans pénalités, sans poser de questions.</p>
                 </div>
             </div>
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>Qu'est-ce qui est inclus dans l'essai gratuit de 7 jours?</h4>
                     <span class="faq-toggle">+</span>
@@ -1433,7 +1433,7 @@
                     <p>Accès complet à tous les outils marketing, l'interface vocale et les connexions de comptes. Aucune carte de crédit requise. Vous verrez des résultats concrets avant de payer.</p>
                 </div>
             </div>
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>Frankie peut-il gérer mon profil Google Business?</h4>
                     <span class="faq-toggle">+</span>
@@ -1454,13 +1454,13 @@
         </div>
         <div>
             <h4>Contact</h4>
-            <p>✉️ <a href="mailto:lavaldigital@gmail.com">lavaldigital@gmail.com</a></p>
+            <p>✉️ <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a></p>
         </div>
         <div>
             <h4>Liens</h4>
-            <p><a href="/fr/demo">Démo en Direct</a></p>
-            <p><a href="/fr/blogue">Blogue</a></p>
-            <p><a href="/fr/affiliate">Programme d'Affiliation (20% Commission)</a></p>
+            <p><a href="{{ url_for('demo_fr') }}">Démo en Direct</a></p>
+            <p><a href="{{ url_for('blog_fr') }}">Blogue</a></p>
+            <p><a href="{{ url_for('affiliate.affiliate_signup_fr') }}">Programme d'Affiliation (20% Commission)</a></p>
         </div>
     </div>
     <div class="footer-bottom container">
@@ -1471,10 +1471,10 @@
 <div id="cookie-notice" role="dialog" aria-label="Avis sur les témoins">
     <span class="cookie-icon">🍪</span>
     <span class="cookie-text">Nous ne collectons que des <strong>témoins essentiels</strong>.</span>
-    <button class="cookie-btn" onclick="dismissCookie()">Compris</button>
+    <button class="cookie-btn" id="cookie-dismiss-btn">Compris</button>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 function dismissCookie() {
     document.getElementById('cookie-notice').classList.remove('show');
     localStorage.setItem('cookie-notice-dismissed', '1');
@@ -1507,6 +1507,13 @@ if (ref) {
         document.title = 'Frankie — recommandé par ' + safeRef;
     }
 }
+document.getElementById('nav-hamburger').addEventListener('click', function() {
+    document.getElementById('nav-menu').classList.toggle('open');
+});
+document.getElementById('cookie-dismiss-btn').addEventListener('click', dismissCookie);
+document.querySelectorAll('.faq-item').forEach(function(item) {
+    item.addEventListener('click', function() { toggleFaq(this); });
+});
 </script>
 
 </body>

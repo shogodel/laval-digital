@@ -2,13 +2,13 @@
     <div class="topbar">
         <div><h1>Your Marketing Performance</h1></div>
         <div class="topbar-right">
-            <select id="analytics-period" onchange="loadAnalytics()" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
+            <select id="analytics-period" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
                 <option value="7">Last 7 days</option>
                 <option value="30" selected>This month</option>
                 <option value="90">Last 90 days</option>
                 <option value="365">This year</option>
             </select>
-            <button class="btn btn-gray btn-sm" onclick="exportAnalyticsCSV()">Download CSV</button>
+            <button class="btn btn-gray btn-sm" id="btn-export-csv">Download CSV</button>
         </div>
     </div>
 
@@ -66,7 +66,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 let analyticsData = {};
 
 function escapeHtml(t) {
@@ -126,10 +126,10 @@ function renderLeadsBarChart(months) {
     const max = Math.max(...months.map(m => m.count), 1);
     container.innerHTML = months.map(m => {
         const pct = (m.count / max * 100) || 0;
-        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;" title="${m.label}: ${m.count} leads">
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;" title="${escapeHtml(m.label)}: ${m.count} leads">
             <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:4px;">${m.count}</div>
             <div style="width:100%;max-width:40px;height:${pct}%;background:var(--red);border-radius:4px 4px 0 0;min-height:4px;"></div>
-            <div style="font-size:0.65rem;color:var(--gray-400);margin-top:6px;text-align:center;white-space:nowrap;">${m.label}</div>
+            <div style="font-size:0.65rem;color:var(--gray-400);margin-top:6px;text-align:center;white-space:nowrap;">${escapeHtml(m.label)}</div>
         </div>`;
     }).join('');
 }
@@ -144,8 +144,8 @@ function renderAgentBarChart(agents) {
     container.innerHTML = agents.map(a => {
         const pct = (a.total / max * 100) || 0;
         const sr = a.success_rate || 0;
-        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;" title="${a.agent}: ${a.total} tasks (${sr}% success)">
-            <div style="width:120px;font-size:0.8rem;color:var(--gray-600);text-align:right;flex-shrink:0;">${a.agent}</div>
+        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;" title="${escapeHtml(a.agent)}: ${a.total} tasks (${sr}% success)">
+            <div style="width:120px;font-size:0.8rem;color:var(--gray-600);text-align:right;flex-shrink:0;">${escapeHtml(a.agent)}</div>
             <div style="flex:1;height:22px;background:var(--gray-100);border-radius:4px;overflow:hidden;display:flex;">
                 <div style="height:100%;width:${pct}%;background:var(--red);border-radius:4px;min-width:4px;"></div>
             </div>
@@ -177,8 +177,8 @@ function renderFailuresByTool(failures) {
     const max = Math.max(...entries.map(([,v]) => v), 1);
     container.innerHTML = entries.map(([tool, count]) => {
         const pct = (count / max * 100) || 0;
-        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;" title="${tool}: ${count} failures">
-            <div style="width:130px;font-size:0.8rem;color:var(--gray-600);flex-shrink:0;">${tool}</div>
+        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;" title="${escapeHtml(tool)}: ${count} failures">
+            <div style="width:130px;font-size:0.8rem;color:var(--gray-600);flex-shrink:0;">${escapeHtml(tool)}</div>
             <div style="flex:1;height:18px;background:var(--gray-100);border-radius:4px;overflow:hidden;">
                 <div style="height:100%;width:${pct}%;background:#ef4444;border-radius:4px;min-width:4px;"></div>
             </div>
@@ -194,13 +194,21 @@ function exportAnalyticsCSV() {
         const result = e.success !== undefined ? (e.success ? 'Success' : 'Failed') : (e.result || '');
         rows.push([e.timestamp || '', e.agent_name || e.agent || '', e.tool_name || e.action || '', result]);
     });
-    const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+    function escapeCSV(v) {
+        const s = String(v);
+        if (/^[=+\-@]/.test(s)) return "'" + s;
+        return '"' + s.replace(/"/g, '""') + '"';
+    }
+    const csv = rows.map(r => r.map(escapeCSV).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'frankie_analytics_export.csv';
     a.click();
 }
+
+document.getElementById('analytics-period').addEventListener('change', loadAnalytics);
+document.getElementById('btn-export-csv').addEventListener('click', exportAnalyticsCSV);
 
 document.addEventListener('DOMContentLoaded', function() {
     loadAnalytics();

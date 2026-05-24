@@ -42,10 +42,4 @@ class GrowthHackerAgent(BaseAgent):
         logger.info("Growth Hacker task completed")
         return result
 
-    def get_tools(self) -> List[Any]:
-        """Return tools available to this agent.
 
-        Returns:
-            Empty list for MVP. Tools will be added in Phase 2.
-        """
-        return []

@@ -54,7 +54,8 @@ class EventBus:
             for q in self._subscribers:
                 try:
                     q.put_nowait(event)
-                except Exception:
+                except Exception as e:
+                    logger.debug("Event subscriber queue failed: %s", e)
                     dead.append(q)
             for q in dead:
                 try:
@@ -131,7 +132,8 @@ def _parse_ts(ts: str) -> datetime:
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt
-    except Exception:
+    except Exception as e:
+        logger.debug("Timestamp parse failed for '%s': %s", ts[:50], e)
         return datetime.now(timezone.utc)
 
 

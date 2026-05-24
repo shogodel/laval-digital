@@ -5,17 +5,17 @@ Frankie is a standalone AI marketing command center that connects to your existi
 ## Architecture
 
 - **Multi-Agent System**: 16 specialized agents (Local SEO, Social Media, Lead Conversion, Paid Ads, Growth Hacker, Reputation, Email Marketing, TikTok, Outreach, Backlinks, Content Strategy, Technical SEO, CRO, Video, SMS Marketing, Analytics & Reports)
-- **Frankie Orchestrator**: LangGraph-based workflow routing with human-in-the-loop approval via interrupts
+- **Frankie Orchestrator**: Agent workflow routing with LLM-based agent selection, draft generation, approval, and execution
 - **MCP Server Layer**: 8 MCP servers (111 tools) for real platform execution — SEO, Social, Email, GMB, Ads, Analytics, Website, E-Commerce
 - **MCP-First Execution**: Every execution path (chat, approvals, direct invoke, executioner) tries MCP servers first, falls back to file-based tools
-- **Multi-Tenant**: Database-per-tenant isolation at `/tenants/direct/<id>.db` with per-tenant MCP credential storage
+- **Single Database**: Shared SQLite at `data/frankie.db` with `user_id` column for data scoping (no per-tenant databases)
 - **Bilingual**: All public pages served in English and French (`/fr/` routes)
 - **Admin Panel**: Tabbed sidebar layout (Dashboard, Agents, Tasks & Approvals, Settings, Users, Analytics, Reports, MCP Servers) with tenant selector, inline agent toggle, agent config, MCP credential management, and execution management
 - **Affiliate Referrals**: Lightweight 20% commission tracking with session-based referral cookies
 
 ## Tech Stack
 
-- **Backend**: Python 3.12+, Flask, gunicorn (`-w 1 --threads 4`)
+- **Backend**: Python 3.12+, Flask, gunicorn (`-w 2 --threads 4`)
 - **AI Framework**: LangChain + LangGraph
 - **LLM Providers**: DeepSeek, OpenAI, Anthropic (via LiteLLM)
 - **MCP Protocol**: Custom MCP server implementation with tool registry, credential management, and auto-routing
@@ -98,17 +98,17 @@ laval-digital/
    ```
 
 2. **Configure environment** (create `.env`):
-   ```
-   DEEPSEEK_API_KEY=sk-your-deepseek-key
-   FLASK_SECRET_KEY=your-random-secret
-   ADMIN_USERNAME=laval
-   ADMIN_PASSWORD=digital2026!
-   GOOGLE_MAPS_API_KEY=your-maps-key
-   ```
+    ```
+    DEEPSEEK_API_KEY=<your-deepseek-key>
+    FLASK_SECRET_KEY=<your-random-secret>
+    ADMIN_USERNAME=<your-admin-username>
+    ADMIN_PASSWORD=<generate-a-strong-password>
+    GOOGLE_MAPS_API_KEY=<your-maps-key>
+    ```
 
 3. **Run the server**:
    ```bash
-   gunicorn -w 1 --threads 4 --daemon app:app
+   gunicorn -w 2 --threads 4 --daemon app:app
    ```
    Access at `http://127.0.0.1:5000`. Admin panel at `/admin`.
 

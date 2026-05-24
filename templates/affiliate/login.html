@@ -6,8 +6,8 @@
     <title>Affiliate Login — Frankie</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
@@ -56,7 +56,7 @@
         {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('affiliate_login') }}">
+        <form method="POST" action="{{ url_for('affiliate.affiliate_login') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="email">Email</label>
@@ -70,7 +70,7 @@
         </form>
 
         <div class="login-footer">
-            <p>Not an affiliate yet? <a href="{{ url_for('affiliate_signup') }}">Earn 20% on every Frankie referral.</a></p>
+            <p>Not an affiliate yet? <a href="{{ url_for('affiliate.affiliate_signup') }}">Earn 20% on every Frankie referral.</a></p>
         </div>
     </div>
 </body>

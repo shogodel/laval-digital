@@ -7,8 +7,8 @@
     <title>Chat with {{ agent_name }} — Laval Digital</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
@@ -122,8 +122,8 @@
 
     <div class="nav">
         <div class="nav-left">
-            <button class="sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')" title="Conversations">&#9776;</button>
-            <a href="/client/dashboard">&larr; Dashboard</a>
+            <button class="sidebar-toggle" id="sidebar-toggle" title="Conversations">&#9776;</button>
+            <a href="{{ url_for('client.client_dashboard') }}">&larr; Dashboard</a>
         </div>
         <div class="nav-center">
             <h2>{{ agent_name }} <span id="client-autonomy-badge" style="font-size:0.65rem;background:rgba(255,255,255,0.12);padding:1px 6px;border-radius:8px;color:rgba(255,255,255,0.6);vertical-align:middle;"></span></h2>
@@ -138,7 +138,7 @@
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <span>Conversations</span>
-            <button class="new-btn" onclick="startNewChat()">+ New</button>
+            <button class="new-btn" id="btn-new-chat">+ New</button>
         </div>
         <div id="thread-list"></div>
         <div id="client-activity-section" style="display:none;border-top:1px solid var(--gray-200);">
@@ -146,12 +146,12 @@
             <div id="client-activity-list"></div>
         </div>
         <div class="sidebar-footer">
-            <a href="/client/dashboard">&larr; Back to Dashboard</a>
+            <a href="{{ url_for('client.client_dashboard') }}">&larr; Back to Dashboard</a>
         </div>
     </div>
 
     <div class="chat-main">
-        <div class="chat-messages" id="chat-messages">
+        <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
             <div class="empty-chat" id="empty-chat">
                 <div class="icon">&#128172;</div>
                 <p>Chat with <strong>{{ agent_name }}</strong></p>
@@ -161,16 +161,16 @@
 
         <div class="input-area">
             <div class="input-wrap">
-                <textarea id="msg-input" rows="1" placeholder="Type your message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.ctrlKey){event.preventDefault();sendMessage()}"></textarea>
-                <button class="send-btn" id="send-btn" onclick="sendMessage()">&#10148;</button>
+                <textarea id="msg-input" rows="1" placeholder="Type your message..."></textarea>
+                <button class="send-btn" id="send-btn">&#10148;</button>
             </div>
-            <button class="mic-btn" id="mic-btn" onclick="toggleMic()" title="Voice input">&#127908;</button>
+            <button class="mic-btn" id="mic-btn" title="Voice input">&#127908;</button>
             <div class="char-count" id="char-count"></div>
         </div>
     </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 /* ── CSRF: patch fetch to include X-CSRFToken on all non-GET requests ── */
 (function() {
     var token = document.querySelector('meta[name="csrf-token"]');
@@ -193,8 +193,8 @@
     };
 })();
 
-const AGENT_ID = '{{ agent_id }}';
-const AGENT_NAME = '{{ agent_name }}';
+const AGENT_ID = {{ agent_id | tojson }};
+const AGENT_NAME = {{ agent_name | tojson }};
 let CURRENT_THREAD = null;
 let LOADING = false;
 
@@ -232,7 +232,7 @@ async function loadThreads() {
         const data = await r.json();
         const list = document.getElementById('thread-list');
         list.innerHTML = (data.threads || []).map(t =>
-            `<div class="thread-item ${t.thread_id === CURRENT_THREAD ? 'active' : ''}" onclick="switchThread('${t.thread_id}')">
+            `<div class="thread-item ${t.thread_id === CURRENT_THREAD ? 'active' : ''}" data-thread-id="${t.thread_id}">
                 <div class="preview">${escapeHtml((t.first_message || 'Chat').substring(0, 60))}</div>
                 <div class="date">${t.started_at ? new Date(t.started_at).toLocaleDateString() : ''}</div>
             </div>`
@@ -243,7 +243,7 @@ async function loadThreads() {
 async function switchThread(threadId) {
     CURRENT_THREAD = threadId;
     document.querySelectorAll('.thread-item').forEach(el => el.classList.remove('active'));
-    const el = document.querySelector(`[onclick*="switchThread('${threadId}')"]`);
+    const el = document.querySelector(`.thread-item[data-thread-id="${threadId}"]`);
     if (el) el.classList.add('active');
     document.getElementById('sidebar').classList.remove('open');
     await loadMessages(threadId);
@@ -265,7 +265,7 @@ async function loadMessages(threadId) {
         msgs.forEach(m => appendMessage(m.role, m.content, m.timestamp, false));
         container.scrollTop = container.scrollHeight;
     } catch (e) {
-        container.innerHTML = '<div class="error-msg"><p>Couldn\'t load messages.</p><button class="retry-btn" onclick="switchThread(\'' + threadId + '\')">Try Again</button></div>';
+        container.innerHTML = '<div class="error-msg"><p>Couldn\'t load messages.</p><button class="retry-btn" data-thread-id="' + escapeHtml(threadId) + '">Try Again</button></div>';
     }
 }
 
@@ -287,12 +287,12 @@ function appendMessage(role, content, timestamp, scroll, meta) {
         const execBtn = document.createElement('button');
         execBtn.className = 'msg-execute-btn';
         execBtn.textContent = '\u{1F680} Execute';
-        execBtn.onclick = function(e) { executeAgentResponse(content); };
+        execBtn.addEventListener('click', function(e) { executeAgentResponse(content); });
         div.appendChild(execBtn);
         const speakBtn = document.createElement('button');
         speakBtn.className = 'msg-speak-btn';
         speakBtn.textContent = '\u{1F50A} Speak';
-        speakBtn.onclick = function(e) { speakText(content); };
+        speakBtn.addEventListener('click', function(e) { speakText(content); });
         div.appendChild(speakBtn);
     }
 
@@ -301,7 +301,7 @@ function appendMessage(role, content, timestamp, scroll, meta) {
         ci.className = 'confidence-indicator';
         const pct = Math.round((meta.confidence || 0) * 100);
         const cls = pct >= 80 ? 'high' : pct >= 50 ? 'medium' : 'low';
-        ci.innerHTML = `<span style="text-transform:capitalize;">${meta.autonomy}</span> \u00B7 ${pct}% confident
+        ci.innerHTML = `<span style="text-transform:capitalize;">${escapeHtml(meta.autonomy)}</span> \u00B7 ${pct}% confident
             <span class="bar"><span class="fill ${cls}" style="width:${pct}%"></span></span>`;
         div.appendChild(ci);
     }
@@ -541,6 +541,25 @@ document.getElementById('msg-input').addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 100) + 'px';
     updateCharCount();
+});
+
+/* ── Event Listeners ── */
+document.getElementById('sidebar-toggle').addEventListener('click', function() {
+    document.getElementById('sidebar').classList.toggle('open');
+});
+document.getElementById('btn-new-chat').addEventListener('click', startNewChat);
+document.getElementById('msg-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) { e.preventDefault(); sendMessage(); }
+});
+document.getElementById('send-btn').addEventListener('click', sendMessage);
+document.getElementById('mic-btn').addEventListener('click', toggleMic);
+document.getElementById('thread-list').addEventListener('click', function(e) {
+    const item = e.target.closest('.thread-item');
+    if (item) switchThread(item.dataset.threadId);
+});
+document.getElementById('chat-messages').addEventListener('click', function(e) {
+    const btn = e.target.closest('.retry-btn');
+    if (btn) switchThread(btn.dataset.threadId);
 });
 
 loadThreads();

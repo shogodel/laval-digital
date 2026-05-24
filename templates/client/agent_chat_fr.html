@@ -7,8 +7,8 @@
     <title>Discuter avec {{ agent_name }} — Laval Digital</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
@@ -91,8 +91,8 @@
 
 <div class="nav">
     <div class="nav-left">
-        <button class="sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')" title="Conversations">&#9776;</button>
-        <a href="/client/dashboard">&larr; Tableau de bord</a>
+        <button class="sidebar-toggle" id="sidebar-toggle" title="Conversations">&#9776;</button>
+        <a href="{{ url_for('client.client_dashboard') }}">&larr; Tableau de bord</a>
     </div>
     <div class="nav-center">
         <h2>{{ agent_name }}</h2>
@@ -107,16 +107,16 @@
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <span>Conversations</span>
-            <button class="new-btn" onclick="startNewChat()">+ Nouvelle</button>
+            <button class="new-btn" id="btn-new-chat">+ Nouvelle</button>
         </div>
         <div id="thread-list"></div>
         <div class="sidebar-footer">
-            <a href="/client/dashboard">&larr; Retour au tableau de bord</a>
+            <a href="{{ url_for('client.client_dashboard') }}">&larr; Retour au tableau de bord</a>
         </div>
     </div>
 
     <div class="chat-main">
-        <div class="chat-messages" id="chat-messages">
+        <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
             <div class="empty-chat" id="empty-chat">
                 <div class="icon">&#128172;</div>
                 <p>Discuter avec <strong>{{ agent_name }}</strong></p>
@@ -126,15 +126,15 @@
 
         <div class="input-area">
             <div class="input-wrap">
-                <textarea id="msg-input" rows="1" placeholder="Écrivez votre message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.ctrlKey){event.preventDefault();sendMessage()}"></textarea>
-                <button class="send-btn" id="send-btn" onclick="sendMessage()">&#10148;</button>
+                <textarea id="msg-input" rows="1" placeholder="Écrivez votre message..."></textarea>
+                <button class="send-btn" id="send-btn">&#10148;</button>
             </div>
             <div class="char-count" id="char-count"></div>
         </div>
     </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 /* ── CSRF: patch fetch to include X-CSRFToken on all non-GET requests ── */
 (function() {
     var token = document.querySelector('meta[name="csrf-token"]');
@@ -157,8 +157,8 @@
     };
 })();
 
-const AGENT_ID = '{{ agent_id }}';
-const AGENT_NAME = '{{ agent_name }}';
+const AGENT_ID = {{ agent_id | tojson }};
+const AGENT_NAME = {{ agent_name | tojson }};
 let CURRENT_THREAD = null;
 let LOADING = false;
 
@@ -194,7 +194,7 @@ async function loadThreads() {
         const data = await r.json();
         const list = document.getElementById('thread-list');
         list.innerHTML = (data.threads || []).map(t =>
-            `<div class="thread-item ${t.thread_id === CURRENT_THREAD ? 'active' : ''}" onclick="switchThread('${t.thread_id}')">
+            `<div class="thread-item ${t.thread_id === CURRENT_THREAD ? 'active' : ''}" data-thread-id="${t.thread_id}">
                 <div class="preview">${escapeHtml((t.first_message || 'Chat').substring(0, 60))}</div>
                 <div class="date">${t.started_at ? new Date(t.started_at).toLocaleDateString('fr-CA') : ''}</div>
             </div>`
@@ -205,7 +205,7 @@ async function loadThreads() {
 async function switchThread(threadId) {
     CURRENT_THREAD = threadId;
     document.querySelectorAll('.thread-item').forEach(el => el.classList.remove('active'));
-    const el = document.querySelector(`[onclick*="switchThread('${threadId}')"]`);
+    const el = document.querySelector(`.thread-item[data-thread-id="${threadId}"]`);
     if (el) el.classList.add('active');
     document.getElementById('sidebar').classList.remove('open');
     await loadMessages(threadId);
@@ -227,7 +227,7 @@ async function loadMessages(threadId) {
         msgs.forEach(m => appendMessage(m.role, m.content, m.timestamp, false));
         container.scrollTop = container.scrollHeight;
     } catch (e) {
-        container.innerHTML = '<div class="error-msg"><p>Impossible de charger les messages.</p><button class="retry-btn" onclick="switchThread(\'' + threadId + '\')">Réessayer</button></div>';
+        container.innerHTML = '<div class="error-msg"><p>Impossible de charger les messages.</p><button class="retry-btn" data-thread-id="' + escapeHtml(threadId) + '">Réessayer</button></div>';
     }
 }
 
@@ -323,6 +323,24 @@ document.getElementById('msg-input').addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 100) + 'px';
     updateCharCount();
+});
+
+/* ── Event Listeners ── */
+document.getElementById('sidebar-toggle').addEventListener('click', function() {
+    document.getElementById('sidebar').classList.toggle('open');
+});
+document.getElementById('btn-new-chat').addEventListener('click', startNewChat);
+document.getElementById('msg-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) { e.preventDefault(); sendMessage(); }
+});
+document.getElementById('send-btn').addEventListener('click', sendMessage);
+document.getElementById('thread-list').addEventListener('click', function(e) {
+    const item = e.target.closest('.thread-item');
+    if (item) switchThread(item.dataset.threadId);
+});
+document.getElementById('chat-messages').addEventListener('click', function(e) {
+    const btn = e.target.closest('.retry-btn');
+    if (btn) switchThread(btn.dataset.threadId);
 });
 
 loadThreads();

@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#D42B2B">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="manifest" href="/static/manifest.json">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <title>Frankie Control Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45;
@@ -346,7 +346,7 @@
 </head>
 <body>
 
-<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+<div class="overlay" id="overlay"></div>
 
 <div id="toast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9999;background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.2);max-width:360px;transition:opacity 0.3s;"></div>
 
@@ -369,8 +369,8 @@
             <a href="#" data-tab="mcp"><span class="icon">🔌</span> MCP Servers</a>
         </nav>
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
-            <button id="sidebar-install-btn" onclick="installApp()" style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;width:100%;">📲 Install App</button>
-            <a href="/admin/logout" style="font-size:0.75rem;color:rgba(255,255,255,0.35);text-decoration:none;text-align:center;padding:4px 0;transition:color 0.15s;">Sign out</a>
+            <button id="sidebar-install-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;width:100%;">📲 Install App</button>
+            <a href="{{ url_for('admin.logout') }}" style="font-size:0.75rem;color:rgba(255,255,255,0.35);text-decoration:none;text-align:center;padding:4px 0;transition:color 0.15s;">Sign out</a>
         </div>
     </aside>
 
@@ -380,7 +380,7 @@
         <!-- Top bar -->
         <div class="topbar">
             <div style="display:flex;align-items:center;gap:12px;">
-                <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+                <button class="hamburger" id="hamburger-btn" aria-label="Menu">☰</button>
                 <h1 id="page-title">Dashboard</h1>
             </div>
             <div class="topbar-right">
@@ -388,7 +388,7 @@
                     <span class="dot {% if active_tenant %}active{% else %}inactive{% endif %}"></span>
                     <span id="active-tenant-label">{% if active_tenant %}{{ active_tenant }}{% else %}No user selected{% endif %}</span>
                 </div>
-                <select id="tenant-select" onchange="switchTenant(this.value)" style="width:auto;min-width:140px;padding:6px 10px;font-size:0.85rem;">
+                <select id="tenant-select" style="width:auto;min-width:140px;padding:6px 10px;font-size:0.85rem;">
                     <option value="">Select a user…</option>
                     {% if tenants.direct_clients %}
                     <optgroup label="Users">
@@ -399,8 +399,8 @@
                     {% endif %}
 
                 </select>
-                <a href="/fr/admin" class="btn btn-gray btn-sm">FR</a>
-                <a href="/admin/logout" class="btn btn-red btn-sm">Logout</a>
+                <a href="{{ url_for('admin_fr.panel_redirect_fr') }}" class="btn btn-gray btn-sm">FR</a>
+                <a href="{{ url_for('admin.logout') }}" class="btn btn-red btn-sm">Logout</a>
             </div>
         </div>
 
@@ -424,8 +424,8 @@
             </div>
 
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
-                <button class="btn btn-amber" onclick="switchTab('tasks')" style="display:inline-flex;align-items:center;gap:6px;">📋 Review Approvals</button>
-                <button class="btn btn-gray" onclick="switchTab('analytics')" style="display:inline-flex;align-items:center;gap:6px;">📈 Analytics</button>
+                <button id="switch-tasks-btn" class="btn btn-amber" style="display:inline-flex;align-items:center;gap:6px;">📋 Review Approvals</button>
+                <button id="switch-analytics-btn" class="btn btn-gray" style="display:inline-flex;align-items:center;gap:6px;">📈 Analytics</button>
             </div>
 
             <div class="card">
@@ -457,13 +457,13 @@
                 <div style="text-align:center;padding:8px;">
                     <div style="font-size:2rem;margin-bottom:4px;">🤖</div>
                     <p style="font-size:0.9rem;color:#065f46;">Frankie handles all tasks now. Click the Frankie bubble in the bottom-right corner to chat.</p>
-                    <button onclick="if(window.frankie)frankie.toggle()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;">💬 Talk to Frankie</button>
+                    <button id="talk-to-frankie-btn" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;">💬 Talk to Frankie</button>
                 </div>
             </div>
             <div class="card">
                 <div class="card-header">
                     <h2>Pending Approvals</h2>
-                    <button class="btn btn-amber btn-sm" onclick="loadApprovals()">Refresh</button>
+                    <button id="refresh-approvals-btn" class="btn btn-amber btn-sm">Refresh</button>
                 </div>
                 <div id="approvals-list"><p class="empty">Loading approvals...</p></div>
             </div>
@@ -471,7 +471,7 @@
                 <div class="card-header">
                     <h2>Pending Confirmations</h2>
                     <p>Approve final execution after review</p>
-                    <button class="btn btn-amber btn-sm" onclick="loadPendingExecutions()">Refresh</button>
+                    <button id="refresh-pending-btn" class="btn btn-amber btn-sm">Refresh</button>
                 </div>
                 <div id="pending-executions-list"><p class="empty">Loading...</p></div>
             </div>
@@ -484,20 +484,17 @@
             <div class="card">
                 <div class="card-header">
                     <h2>User Management</h2>
-                    <p>Manage users for the selected client</p>
+                    <p>Manage all users in the system</p>
                 </div>
-                {% if active_tenant %}
                 <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-                    <select id="user-role-filter" onchange="loadUsers()" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
+                    <select id="user-role-filter" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
                         <option value="">All Roles</option>
                         <option value="user">User</option>
+                        <option value="affiliate">Affiliate</option>
                     </select>
-                    <button class="btn btn-green btn-sm" onclick="showAddUser()">+ Add User</button>
+                    <button id="show-add-user-btn" class="btn btn-green btn-sm">+ Add User</button>
                 </div>
                 <div id="users-list"><p class="empty">Loading users...</p></div>
-                {% else %}
-                <p class="empty">Select a client first to manage users.</p>
-                {% endif %}
             </div>
         </div>
 
@@ -515,7 +512,7 @@
                                 <strong>🌐 Your Website</strong>
                                 <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">WordPress, Webflow, Shopify, Wix, Squarespace, or any site</p>
                             </div>
-                            <button class="btn btn-gray btn-sm" onclick="showSimpleConnect('website')">Connect</button>
+                            <button class="btn btn-gray btn-sm" id="connect-website-btn">Connect</button>
                         </div>
                         <div id="connect-website" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
                             <p style="font-size:0.85rem;margin-bottom:8px;">What kind of website do you have?</p>
@@ -529,7 +526,7 @@
                             </select>
                             <input type="text" id="website-url" placeholder="https://yoursite.com" style="margin-bottom:8px;">
                             <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:8px;">Frankie will analyze your site and optimize it. No password needed for basic features.</p>
-                            <button class="btn btn-green btn-sm" onclick="saveSimpleConnect('website')">Save & Connect</button>
+                            <button class="btn btn-green btn-sm" id="save-website-btn">Save & Connect</button>
                             <span id="connect-website-result"></span>
                         </div>
                     </div>
@@ -540,11 +537,11 @@
                                 <strong>📱 Facebook & Instagram</strong>
                                 <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Post directly to your Facebook Page and Instagram account</p>
                             </div>
-                            <button class="btn btn-gray btn-sm" onclick="showSimpleConnect('facebook')">Connect</button>
+                            <button class="btn btn-gray btn-sm" id="connect-facebook-btn">Connect</button>
                         </div>
                         <div id="connect-facebook" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
                             <p style="font-size:0.85rem;margin-bottom:8px;">Click the button below to connect your Facebook Page. You'll be redirected to Facebook to authorize Frankie. It takes about 30 seconds.</p>
-                            <button class="btn btn-green btn-sm" onclick="toast('Facebook connection will open a popup. Make sure popups are allowed for this site.');">🔗 Connect Facebook Page</button>
+                            <button class="btn btn-green btn-sm" id="connect-fb-page-btn">🔗 Connect Facebook Page</button>
                             <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">Frankie will be able to: create posts, read engagement, and manage your page.</p>
                         </div>
                     </div>
@@ -555,7 +552,7 @@
                                 <strong>📧 Your Email</strong>
                                 <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Send newsletters and campaigns through your email account</p>
                             </div>
-                            <button class="btn btn-gray btn-sm" onclick="showSimpleConnect('email')">Connect</button>
+                            <button class="btn btn-gray btn-sm" id="connect-email-toggle-btn">Connect</button>
                         </div>
                         <div id="connect-email" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
                             <p style="font-size:0.85rem;margin-bottom:8px;">Enter your email credentials. For Gmail, you'll need an App Password (we'll show you how).</p>
@@ -566,7 +563,7 @@
                                 <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--blue);">Create an App Password here</a> — it takes 30 seconds. 
                                 Select "Mail" and "Other", name it "Frankie", and paste the 16-character code above.
                             </p>
-                            <button class="btn btn-green btn-sm" onclick="saveSimpleConnect('email')">Save & Connect</button>
+                            <button class="btn btn-green btn-sm" id="save-email-btn">Save & Connect</button>
                             <span id="connect-email-result"></span>
                         </div>
                     </div>
@@ -577,14 +574,14 @@
                                 <strong>📍 Google Business Profile</strong>
                                 <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Post updates and respond to reviews on your Google listing</p>
                             </div>
-                            <button class="btn btn-gray btn-sm" onclick="showSimpleConnect('google')">Connect</button>
+                            <button class="btn btn-gray btn-sm" id="connect-google-toggle-btn">Connect</button>
                         </div>
                         <div id="connect-google" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
                             <p style="font-size:0.85rem;margin-bottom:8px;">To connect Google Business Profile, we need you to add Frankie as a manager.</p>
                             <ol style="font-size:0.82rem;color:var(--gray-600);padding-left:20px;line-height:1.8;">
                                 <li>Go to <a href="https://business.google.com" target="_blank" style="color:var(--blue);">business.google.com</a></li>
                                 <li>Click "Users" in the left menu</li>
-                                <li>Click "Add" and enter: <strong>lavaldigital@gmail.com</strong></li>
+                                <li>Click "Add" and enter: <strong>{{ CONTACT_EMAIL }}</strong></li>
                                 <li>Select "Manager" role and click "Invite"</li>
                             </ol>
                             <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">Once you've sent the invite, Frankie can start managing your profile within 24 hours.</p>
@@ -597,7 +594,7 @@
                                 <strong>📢 TikTok</strong>
                                 <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Create and schedule TikTok content</p>
                             </div>
-                            <button class="btn btn-gray btn-sm" onclick="showSimpleConnect('tiktok')">Connect</button>
+                            <button class="btn btn-gray btn-sm" id="connect-tiktok-toggle-btn">Connect</button>
                         </div>
                         <div id="connect-tiktok" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
                             <p style="font-size:0.85rem;margin-bottom:8px;">TikTok connection coming soon. For now, Frankie will draft your content and you can post it manually.</p>
@@ -611,12 +608,12 @@
             <div class="settings-grid">
                 <div>
                     <h3>SMTP</h3>
-                    <div class="form-group"><label>Host</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
-                    <div class="form-group"><label>Port</label><input type="number" id="smtp-port" placeholder="587"></div>
-                    <div class="form-group"><label>Username</label><input type="text" id="smtp-username" placeholder="user@gmail.com"></div>
-                    <div class="form-group"><label>Password</label><input type="password" id="smtp-password" placeholder="App password"></div>
-                    <div class="form-group"><label>From Email</label><input type="text" id="smtp-from" placeholder="info@yourdomain.com"></div>
-                    <div class="form-group"><label><input type="checkbox" id="smtp-tls" checked> Use TLS</label></div>
+                    <div class="form-group"><label for="smtp-host">Host</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
+                    <div class="form-group"><label for="smtp-port">Port</label><input type="number" id="smtp-port" placeholder="587"></div>
+                    <div class="form-group"><label for="smtp-username">Username</label><input type="text" id="smtp-username" placeholder="user@gmail.com"></div>
+                    <div class="form-group"><label for="smtp-password">Password</label><input type="password" id="smtp-password" placeholder="App password"></div>
+                    <div class="form-group"><label for="smtp-from">From Email</label><input type="text" id="smtp-from" placeholder="info@yourdomain.com"></div>
+                    <div class="form-group"><label for="smtp-tls"><input type="checkbox" id="smtp-tls" checked> Use TLS</label></div>
                 </div>
                 <div>
                     <h3>Unified Social Media API</h3>
@@ -637,7 +634,7 @@
                         <label>Unified API Key</label>
                         <div style="display:flex; gap:8px;">
                             <input type="password" id="unified-social-api-key" placeholder="Paste your unified API key here">
-                            <button class="btn btn-gray btn-sm" onclick="validateSocialApiKey()">Test Connection</button>
+                            <button class="btn btn-gray btn-sm" id="test-social-key-btn">Test Connection</button>
                         </div>
                         <div id="social-key-validation-result"></div>
                     </div>
@@ -647,10 +644,10 @@
                 </div>
             </div>
             <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
-                <button class="btn btn-gray" onclick="loadExecutionerSettings()">Reload</button>
-                <button class="btn btn-green" onclick="saveExecutionerSettings()">Save</button>
+                <button class="btn btn-gray" id="reload-settings-btn">Reload</button>
+                <button class="btn btn-green" id="save-settings-btn">Save</button>
                 <input type="email" id="smtp-test-email" placeholder="Your email for testing" style="width:auto;flex:1;min-width:160px;">
-                <button class="btn btn-gray btn-sm" onclick="testSmtp(event)">📧 Send Test Email</button>
+                <button class="btn btn-gray btn-sm" id="test-smtp-btn">📧 Send Test Email</button>
                 <span id="executioner-settings-result"></span>
             </div>
         </div>
@@ -683,33 +680,33 @@
         <div style="background:var(--white);border-radius:var(--radius-lg);padding:32px;max-width:440px;width:90%;box-shadow:var(--shadow-lg);">
             <h2 style="font-size:1.15rem;font-weight:700;margin-bottom:16px;color:var(--gray-900);">Add User</h2>
             <div class="form-group">
-                <label>Email</label>
+                <label for="new-user-email">Email</label>
                 <input type="email" id="new-user-email" placeholder="user@example.com">
             </div>
             <div class="form-group">
-                <label>Display Name</label>
+                <label for="new-user-name">Display Name</label>
                 <input type="text" id="new-user-name" placeholder="John Doe">
             </div>
             <div class="form-group">
-                <label>Password</label>
+                <label for="new-user-password">Password</label>
                 <input type="password" id="new-user-password" placeholder="Min 8 chars, 1 number, 1 special">
             </div>
             <div class="form-group">
-                <label>Role</label>
+                <label for="new-user-role">Role</label>
                 <select id="new-user-role">
                     <option value="user">User</option>
                 </select>
             </div>
             <div id="add-user-error" style="color:var(--red);font-size:0.85rem;margin-bottom:8px;"></div>
             <div style="display:flex;gap:8px;justify-content:flex-end;">
-                <button class="btn btn-gray" onclick="closeAddUser()">Cancel</button>
-                <button class="btn btn-red" onclick="addUser()">Create User</button>
+                <button class="btn btn-gray" id="cancel-add-user-btn">Cancel</button>
+                <button class="btn btn-red" id="create-user-btn">Create User</button>
             </div>
         </div>
     </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 /* ── Toast notification ── */
 function toast(msg, type) {
     var el = document.getElementById('toast');
@@ -901,8 +898,9 @@ function loadAgents() {
                 const statusLabels = { processing:'Processing', pending_approval:'Pending Approval', pending_confirmation:'Pending Confirmation', idle:'Idle', disabled:'Disabled' };
                 const label = statusLabels[status] || 'Idle';
                 const lastInvoked = a.last_invoked ? new Date(a.last_invoked).toLocaleString() : '--';
+                const aid = escapeHtml(a.agent_id);
                 return `
-                <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" data-agent-id="${escapeHtml(a.agent_id)}">
+                <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" data-agent-id="${aid}">
                     <div class="agent-name"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${color}20;font-size:0.8rem;margin-right:6px;">${emoji}</span>${escapeHtml(meta.name)}</div>
                     <div class="agent-desc">${escapeHtml(meta.desc)}</div>
                     <div class="row"><span class="label">Status</span><span class="badge badge-${status}">${label}</span></div>
@@ -911,8 +909,8 @@ function loadAgents() {
                     <div class="row"><span class="label">Last</span><span class="value">${lastInvoked}</span></div>
                     <div class="draft-preview">${escapeHtml(a.last_draft_preview || '—')}</div>
                     <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
-                        <button class="btn btn-gray btn-xs" onclick="window.location.href='/admin/agent/${escapeHtml(a.agent_id)}/chat'">💬 Chat</button>
-                        <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-btn" onclick="toggleAgent('${escapeHtml(a.agent_id)}')">
+                        <button class="btn btn-gray btn-xs chat-agent-btn" data-agent-id="${aid}">💬 Chat</button>
+                        <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-agent-btn" data-agent-id="${aid}">
                             ${a.enabled ? 'Disable' : 'Enable'}
                         </button>
                     </div>
@@ -927,7 +925,7 @@ let togglePromise = Promise.resolve();
 
 function toggleAgent(agentId) {
     togglePromise = togglePromise.then(() => {
-        const btn = document.querySelector(`[data-agent-id="${agentId}"] .toggle-btn`);
+        const btn = document.querySelector(`[data-agent-id="${agentId}"] .toggle-agent-btn`);
         if (btn) btn.disabled = true;
         return fetch(`/api/agents/${agentId}/toggle`, { method: 'POST' })
             .then(r => r.json())
@@ -940,7 +938,6 @@ function loadApprovals() {
     fetch('/api/approvals')
         .then(r => r.json())
         .then(data => {
-            console.log('Approvals received:', data.approvals ? data.approvals.length : 0, 'items');
             const approvals = data.approvals || [];
             const list = document.getElementById('approvals-list');
             if (!approvals.length) {
@@ -948,30 +945,31 @@ function loadApprovals() {
                 updateDashboard();
                 return;
             }
-            list.innerHTML = approvals.map(a => `
-                <div class="approval-card">
-                    <h3>Agent: ${escapeHtml(a.agent)}</h3>
-                    <p><strong>Task:</strong> ${escapeHtml(a.task)}</p>
-                    <p><strong>Draft:</strong></p>
-                    <pre>${escapeHtml(a.draft)}</pre>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-                        <button class="btn btn-green btn-sm" onclick="respondApproval('${a.thread_id}', true)">✓ Approve</button>
-                        <button class="btn btn-gray btn-sm" onclick="showRejectForm('${a.thread_id}')">✗ Reject</button>
-                    </div>
-                    <div id="reject-form-${a.thread_id}" style="display:none;margin-top:8px;">
-                        <div style="display:flex;gap:8px;">
-                            <input type="text" id="feedback-${a.thread_id}" placeholder="Feedback (optional)" style="flex:1;">
-                            <button class="btn btn-red btn-sm" onclick="respondApproval('${a.thread_id}', false)">Confirm</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            list.innerHTML = approvals.map(a => {
+                var tid = escapeHtml(a.thread_id);
+                return '<div class="approval-card" data-thread-id="' + tid + '">'
+                    + '<h3>Agent: ' + escapeHtml(a.agent) + '</h3>'
+                    + '<p><strong>Task:</strong> ' + escapeHtml(a.task) + '</p>'
+                    + '<p><strong>Draft:</strong></p>'
+                    + '<pre>' + escapeHtml(a.draft) + '</pre>'
+                    + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">'
+                    + '<button class="btn btn-green btn-sm approve-btn" data-thread-id="' + tid + '" data-approved="true">✓ Approve</button>'
+                    + '<button class="btn btn-gray btn-sm reject-show-btn" data-thread-id="' + tid + '">✗ Reject</button>'
+                    + '</div>'
+                    + '<div class="reject-form" data-thread-id="' + tid + '" style="display:none;margin-top:8px;">'
+                    + '<div style="display:flex;gap:8px;">'
+                    + '<input type="text" class="reject-feedback" placeholder="Feedback (optional)" style="flex:1;">'
+                    + '<button class="btn btn-red btn-sm reject-confirm-btn" data-thread-id="' + tid + '">Confirm</button>'
+                    + '</div>'
+                    + '</div>'
+                    + '</div>';
+            }).join('');
             updateDashboard();
         });
 }
 
 function showRejectForm(threadId) {
-    var form = document.getElementById('reject-form-' + threadId);
+    var form = document.querySelector('.reject-form[data-thread-id="' + threadId + '"]');
     if (form) {
         form.style.display = 'block';
     }
@@ -979,7 +977,7 @@ function showRejectForm(threadId) {
 
 function respondApproval(threadId, approved) {
     var feedback = '';
-    var feedbackEl = document.getElementById('feedback-' + threadId);
+    var feedbackEl = document.querySelector('.reject-feedback[data-thread-id="' + threadId + '"]');
     if (feedbackEl) {
         feedback = feedbackEl.value || '';
     }
@@ -1028,17 +1026,18 @@ function loadPendingExecutions() {
                 list.innerHTML = '<p class="empty">No pending confirmations</p>';
                 return;
             }
-            list.innerHTML = data.pending.map(p => `
-                <div class="approval-card" style="background:var(--blue-bg);border-color:#bfdbfe;">
-                    <p><strong>Agent:</strong> ${escapeHtml(p.agent_name)} &middot; <strong>Tool:</strong> ${escapeHtml(p.tool_name)}</p>
-                    <p><small>${new Date(p.created_at).toLocaleString()}</small></p>
-                    <pre style="font-size:0.8em;">${escapeHtml(p.draft_preview)}</pre>
-                    <div style="display:flex;gap:8px;">
-                        <button class="btn btn-green btn-sm" onclick="confirmPending('${escapeHtml(p.execution_id)}')">Confirm</button>
-                        <button class="btn btn-red btn-sm" onclick="rejectPending('${escapeHtml(p.execution_id)}')">Reject</button>
-                    </div>
-                </div>
-            `).join('');
+            list.innerHTML = data.pending.map(p => {
+                var eid = escapeHtml(p.execution_id);
+                return '<div class="approval-card" style="background:var(--blue-bg);border-color:#bfdbfe;">'
+                    + '<p><strong>Agent:</strong> ' + escapeHtml(p.agent_name) + ' &middot; <strong>Tool:</strong> ' + escapeHtml(p.tool_name) + '</p>'
+                    + '<p><small>' + new Date(p.created_at).toLocaleString() + '</small></p>'
+                    + '<pre style="font-size:0.8em;">' + escapeHtml(p.draft_preview) + '</pre>'
+                    + '<div style="display:flex;gap:8px;">'
+                    + '<button class="btn btn-green btn-sm confirm-exec-btn" data-exec-id="' + eid + '">Confirm</button>'
+                    + '<button class="btn btn-red btn-sm reject-exec-btn" data-exec-id="' + eid + '">Reject</button>'
+                    + '</div>'
+                    + '</div>';
+            }).join('');
         })
         .catch(() => {
             document.getElementById('pending-executions-list').innerHTML = '<p class="empty">Failed to load</p>';
@@ -1095,7 +1094,7 @@ function loadUsers() {
     fetch('/api/users?role=' + encodeURIComponent(roleFilter))
         .then(r => r.json())
         .then(data => {
-            if (data.error) { list.innerHTML = '<p class="empty">' + data.error + '</p>'; return; }
+            if (data.error) { list.innerHTML = '<p class="empty">' + escapeHtml(data.error) + '</p>'; return; }
             const users = data.users || [];
             if (!users.length) {
                 list.innerHTML = '<p class="empty">No users found for this tenant.</p>'; return;
@@ -1107,12 +1106,12 @@ function loadUsers() {
                     <tbody>
                         ${users.map(u => `
                         <tr>
-                            <td>${u.email}</td>
-                            <td>${u.display_name || '—'}</td>
-                            <td><span class="badge badge-${u.role === 'client' ? 'blue' : 'amber'}">${u.role}</span></td>
-                            <td>${u.created_at ? u.created_at.slice(0,10) : '—'}</td>
-                            <td>${u.last_login ? u.last_login.slice(0,10) : '—'}</td>
-                            <td><button class="btn btn-gray btn-xs" onclick="deleteUser(${u.id})">Delete</button></td>
+                            <td>${escapeHtml(u.email)}</td>
+                            <td>${escapeHtml(u.display_name || '—')}</td>
+                            <td><span class="badge badge-${escapeHtml(u.role === 'client' ? 'blue' : 'amber')}">${escapeHtml(u.role)}</span></td>
+                            <td>${escapeHtml(u.created_at ? u.created_at.slice(0,10) : '—')}</td>
+                            <td>${escapeHtml(u.last_login ? u.last_login.slice(0,10) : '—')}</td>
+                            <td><button class="btn btn-gray btn-xs delete-user-btn" data-user-id="${u.id}">Delete</button></td>
                         </tr>`).join('')}
                     </tbody>
                 </table>
@@ -1294,6 +1293,59 @@ function installApp() {
         }
     }
 }
+
+/* ── Event listeners (CSP nonce‑safe) ── */
+document.getElementById('overlay').addEventListener('click', toggleSidebar);
+document.getElementById('sidebar-install-btn').addEventListener('click', installApp);
+document.getElementById('hamburger-btn').addEventListener('click', toggleSidebar);
+document.getElementById('tenant-select').addEventListener('change', function() { switchTenant(this.value); });
+document.getElementById('switch-tasks-btn').addEventListener('click', function() { switchTab('tasks'); });
+document.getElementById('switch-analytics-btn').addEventListener('click', function() { switchTab('analytics'); });
+document.getElementById('talk-to-frankie-btn').addEventListener('click', function() { if (window.frankie) frankie.toggle(); });
+document.getElementById('refresh-approvals-btn').addEventListener('click', loadApprovals);
+document.getElementById('refresh-pending-btn').addEventListener('click', loadPendingExecutions);
+document.getElementById('user-role-filter').addEventListener('change', loadUsers);
+document.getElementById('show-add-user-btn').addEventListener('click', showAddUser);
+document.getElementById('cancel-add-user-btn').addEventListener('click', closeAddUser);
+document.getElementById('create-user-btn').addEventListener('click', addUser);
+document.getElementById('connect-website-btn').addEventListener('click', function() { showSimpleConnect('website'); });
+document.getElementById('save-website-btn').addEventListener('click', function() { saveSimpleConnect('website'); });
+document.getElementById('connect-facebook-btn').addEventListener('click', function() { showSimpleConnect('facebook'); });
+document.getElementById('connect-fb-page-btn').addEventListener('click', function() { toast('Facebook connection will open a popup. Make sure popups are allowed for this site.'); });
+document.getElementById('connect-email-toggle-btn').addEventListener('click', function() { showSimpleConnect('email'); });
+document.getElementById('save-email-btn').addEventListener('click', function() { saveSimpleConnect('email'); });
+document.getElementById('connect-google-toggle-btn').addEventListener('click', function() { showSimpleConnect('google'); });
+document.getElementById('connect-tiktok-toggle-btn').addEventListener('click', function() { showSimpleConnect('tiktok'); });
+document.getElementById('test-social-key-btn').addEventListener('click', validateSocialApiKey);
+document.getElementById('reload-settings-btn').addEventListener('click', loadExecutionerSettings);
+document.getElementById('save-settings-btn').addEventListener('click', saveExecutionerSettings);
+document.getElementById('test-smtp-btn').addEventListener('click', function(e) { testSmtp(e); });
+
+/* ── Event delegation for dynamically generated buttons ── */
+document.getElementById('agent-list').addEventListener('click', function(e) {
+    var chatBtn = e.target.closest('.chat-agent-btn');
+    if (chatBtn) { window.location.href = '/admin/agent/' + chatBtn.dataset.agentId + '/chat'; return; }
+    var toggleBtn = e.target.closest('.toggle-agent-btn');
+    if (toggleBtn) { toggleAgent(toggleBtn.dataset.agentId); }
+});
+document.getElementById('approvals-list').addEventListener('click', function(e) {
+    var approveBtn = e.target.closest('.approve-btn');
+    if (approveBtn) { respondApproval(approveBtn.dataset.threadId, approveBtn.dataset.approved === 'true'); return; }
+    var showBtn = e.target.closest('.reject-show-btn');
+    if (showBtn) { showRejectForm(showBtn.dataset.threadId); return; }
+    var confirmBtn = e.target.closest('.reject-confirm-btn');
+    if (confirmBtn) { respondApproval(confirmBtn.dataset.threadId, false); }
+});
+document.getElementById('pending-executions-list').addEventListener('click', function(e) {
+    var confirmBtn = e.target.closest('.confirm-exec-btn');
+    if (confirmBtn) { confirmPending(confirmBtn.dataset.execId); return; }
+    var rejectBtn = e.target.closest('.reject-exec-btn');
+    if (rejectBtn) { rejectPending(rejectBtn.dataset.execId); }
+});
+document.getElementById('users-list').addEventListener('click', function(e) {
+    var deleteBtn = e.target.closest('.delete-user-btn');
+    if (deleteBtn) { deleteUser(parseInt(deleteBtn.dataset.userId)); }
+});
 </script>
 {% include 'admin/frankie.html' %}
 </body>

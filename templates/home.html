@@ -9,7 +9,7 @@
     <meta property="og:description" content="AI-powered marketing assistant. Voice-controlled. One flat fee. Cancel anytime.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://lavaldigital.com">
-    <meta property="og:image" content="https://lavaldigital.com/static/og-image.png">
+    <meta property="og:image" content="{{ url_for('static', filename='og-image.png', _external=True) }}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Frankie — AI Marketing Command Center">
     <meta name="twitter:description" content="AI-powered marketing assistant. Voice-controlled. One flat fee. Cancel anytime.">
@@ -38,8 +38,8 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         :root {
             --navy: #0f2b45;
             --navy-light: #1a3a5c;
@@ -1079,18 +1079,18 @@
 
 <nav>
     <div class="container">
-        <a href="/" class="logo">
+        <a href="{{ url_for('home') }}" class="logo">
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48">
         </a>
-        <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+        <button class="hamburger" id="nav-hamburger" aria-label="Menu">&#9776;</button>
         <ul id="nav-menu">
-            <li><a href="/">Home</a></li>
-            <li><a href="/demo">Demo</a></li>
-            <li><a href="/blog">Blog</a></li>
-            <li><a href="/affiliate">Affiliate</a></li>
-            <li><a href="/client/login">Sign In</a></li>
-            <li><a href="/free-trial" class="nav-cta">Try Frankie Free</a></li>
-            <li><a href="/fr/" class="lang-toggle">FR</a></li>
+            <li><a href="{{ url_for('home') }}">Home</a></li>
+            <li><a href="{{ url_for('demo') }}">Demo</a></li>
+            <li><a href="{{ url_for('blog') }}">Blog</a></li>
+            <li><a href="{{ url_for('affiliate.affiliate_signup') }}">Affiliate</a></li>
+            <li><a href="{{ url_for('client.client_login') }}">Sign In</a></li>
+            <li><a href="{{ url_for('free_trial') }}" class="nav-cta">Try Frankie Free</a></li>
+            <li><a href="{{ url_for('home_fr') }}" class="lang-toggle">FR</a></li>
         </ul>
     </div>
 </nav>
@@ -1112,8 +1112,8 @@
         <h1>Meet <span>Frankie</span> — Your AI Marketing Assistant</h1>
         <p>Frankie is your all-in-one marketing assistant. You talk to it like a person. It writes your social media posts, blog articles, and email campaigns. You review and approve. Frankie publishes. No technical skills needed. No hiring agencies. One flat monthly fee.</p>
         <div class="hero-buttons">
-            <a href="/free-trial" class="btn btn-primary">Try Frankie Free (7 Days)</a>
-            <a href="/demo" class="btn btn-secondary">See Live Demo</a>
+            <a href="{{ url_for('free_trial') }}" class="btn btn-primary">Try Frankie Free (7 Days)</a>
+            <a href="{{ url_for('demo') }}" class="btn btn-secondary">See Live Demo</a>
         </div>
     </div>
 </section>
@@ -1279,7 +1279,7 @@
                     <li>Unlimited Tasks &amp; Content Generation</li>
                     <li>Monthly Performance Reports</li>
                 </ul>
-                <a href="/free-trial" class="btn btn-primary">Start Your Free Trial</a>
+                <a href="{{ url_for('free_trial') }}" class="btn btn-primary">Start Your Free Trial</a>
                 <p class="tax-note">+ applicable taxes based on your province</p>
                 <p class="setup-note">⚡ Setup in under 10 minutes — no technical skills needed</p>
             </div>
@@ -1297,7 +1297,7 @@
                     <li>Monthly Performance Review Call</li>
                     <li>Priority Support — Skip the Queue</li>
                 </ul>
-                <a href="/contact" class="btn btn-primary">Contact Us</a>
+                <a href="{{ url_for('contact') }}" class="btn btn-primary">Contact Us</a>
                 <p class="tax-note">+ applicable taxes based on your province</p>
             </div>
             <div class="pricing-card website-card fade-up">
@@ -1314,7 +1314,7 @@
                     <li>Ongoing Support &amp; Updates</li>
                     <li>Optional: Hosting &amp; Maintenance Plans</li>
                 </ul>
-                <a href="/contact" class="btn btn-primary">Get a Quote</a>
+                <a href="{{ url_for('contact') }}" class="btn btn-primary">Get a Quote</a>
                 <p class="tax-note">+ applicable taxes based on your province</p>
             </div>
         </div>
@@ -1388,7 +1388,7 @@
     <div class="container">
         <h2 class="section-title fade-up">Frequently Asked Questions</h2>
         <div class="faq-list fade-up">
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>Do I need a new website to use Frankie?</h4>
                     <span class="faq-toggle">+</span>
@@ -1397,7 +1397,7 @@
                     <p>No. Frankie connects to your existing website — WordPress, Webflow, Shopify, or anything else. No migration needed.</p>
                 </div>
             </div>
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>Can Frankie actually post to my social media?</h4>
                     <span class="faq-toggle">+</span>
@@ -1406,7 +1406,7 @@
                     <p>Yes. Connect your Facebook, Instagram, TikTok, LinkedIn, and more. Frankie posts directly or schedules for later.</p>
                 </div>
             </div>
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>What if I don't like something Frankie creates?</h4>
                     <span class="faq-toggle">+</span>
@@ -1415,7 +1415,7 @@
                     <p>You have full approval control. Frankie drafts everything, you approve or reject. Over time, Frankie learns your preferences.</p>
                 </div>
             </div>
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>Is there a long-term contract?</h4>
                     <span class="faq-toggle">+</span>
@@ -1424,7 +1424,7 @@
                     <p>No. $597.99/month, cancel anytime. No penalties, no questions asked.</p>
                 </div>
             </div>
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>What's included in the 7-day free trial?</h4>
                     <span class="faq-toggle">+</span>
@@ -1433,7 +1433,7 @@
                     <p>Full access to all marketing tools, voice interface, and platform connections. No credit card required. You'll see real results before paying.</p>
                 </div>
             </div>
-            <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-item">
                 <div class="faq-question">
                     <h4>Can Frankie handle my Google Business Profile?</h4>
                     <span class="faq-toggle">+</span>
@@ -1454,13 +1454,13 @@
         </div>
         <div>
             <h4>Contact</h4>
-            <p>✉️ <a href="mailto:lavaldigital@gmail.com">lavaldigital@gmail.com</a></p>
+            <p>✉️ <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a></p>
         </div>
         <div>
             <h4>Links</h4>
-            <p><a href="/demo">Live Demo</a></p>
-            <p><a href="/blog">Blog</a></p>
-            <p><a href="/affiliate">Affiliate Program (20% Commission)</a></p>
+            <p><a href="{{ url_for('demo') }}">Live Demo</a></p>
+            <p><a href="{{ url_for('blog') }}">Blog</a></p>
+            <p><a href="{{ url_for('affiliate.affiliate_signup') }}">Affiliate Program (20% Commission)</a></p>
         </div>
     </div>
     <div class="footer-bottom container">
@@ -1471,10 +1471,10 @@
 <div id="cookie-notice" role="dialog" aria-label="Cookie notice">
     <span class="cookie-icon">🍪</span>
     <span class="cookie-text">We only collect <strong>essential cookies</strong>.</span>
-    <button class="cookie-btn" onclick="dismissCookie()">Got it</button>
+    <button class="cookie-btn" id="cookie-dismiss-btn">Got it</button>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 function dismissCookie() {
     document.getElementById('cookie-notice').classList.remove('show');
     localStorage.setItem('cookie-notice-dismissed', '1');
@@ -1507,6 +1507,15 @@ if (ref) {
         document.title = 'Frankie — ' + safeRef + "'s Recommendation";
     }
 }
+
+/* ── Event listeners (CSP nonce‑safe) ── */
+document.getElementById('nav-hamburger').addEventListener('click', function() {
+    document.getElementById('nav-menu').classList.toggle('open');
+});
+document.querySelectorAll('.faq-item').forEach(function(item) {
+    item.addEventListener('click', function() { toggleFaq(this); });
+});
+document.getElementById('cookie-dismiss-btn').addEventListener('click', dismissCookie);
 </script>
 
 </body>

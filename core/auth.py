@@ -1,13 +1,10 @@
-import json
 import os
 import re
-import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
-from pathlib import Path
 from typing import Optional, Tuple
 
-from flask import session, request, flash, redirect, url_for
+from flask import session, request, flash, redirect, url_for, jsonify
 from flask_login import LoginManager, UserMixin, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -15,35 +12,26 @@ from core import database
 
 login_manager = LoginManager()
 
-# File-based rate limit storage (persists across workers)
-_RATE_LIMIT_FILE = Path("data/login_attempts.json")
-_RATE_LIMIT_LOCK = threading.Lock()
+import logging
+
+logger = logging.getLogger(__name__)
+
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_WINDOW = timedelta(minutes=15)
 SESSION_TIMEOUT = timedelta(hours=2)
 
 
-def _load_rate_limits() -> dict:
-    try:
-        if _RATE_LIMIT_FILE.exists():
-            return json.loads(_RATE_LIMIT_FILE.read_text())
-    except Exception:
-        pass
-    return {}
-
-
-def _save_rate_limits(data: dict) -> None:
-    try:
-        _RATE_LIMIT_FILE.parent.mkdir(parents=True, exist_ok=True)
-        _RATE_LIMIT_FILE.write_text(json.dumps(data))
-    except Exception:
-        pass
+def _get_client_ip() -> str:
+    xff = request.headers.get("X-Forwarded-For", "")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.remote_addr or "unknown"
 
 
 class User(UserMixin):
     def __init__(self, row_id: int, email: str, password_hash: str,
                  role: str, display_name: str, status: str = "active",
-                 trial_ends_at: Optional[str] = None):
+                 trial_ends_at: Optional[str] = None, tenant_id: Optional[int] = None):
         self.id = row_id
         self.email = email
         self.password_hash = password_hash
@@ -51,6 +39,7 @@ class User(UserMixin):
         self.display_name = display_name
         self.status = status
         self.trial_ends_at = trial_ends_at
+        self._tenant_id = tenant_id
 
     def get_id(self) -> str:
         return str(self.id)
@@ -70,10 +59,13 @@ class User(UserMixin):
         if self.status == "trial" and self.trial_ends_at:
             from datetime import datetime, timezone
             now = datetime.now(timezone.utc)
-            trial_end = datetime.fromisoformat(self.trial_ends_at)
-            if trial_end.tzinfo is None:
-                trial_end = trial_end.replace(tzinfo=timezone.utc)
-            if now > trial_end:
+            try:
+                trial_end = datetime.fromisoformat(self.trial_ends_at)
+                if trial_end.tzinfo is None:
+                    trial_end = trial_end.replace(tzinfo=timezone.utc)
+                if now > trial_end:
+                    return False
+            except (ValueError, TypeError):
                 return False
         return True
 
@@ -83,13 +75,19 @@ class User(UserMixin):
             return False
         from datetime import datetime, timezone
         now = datetime.now(timezone.utc)
-        trial_end = datetime.fromisoformat(self.trial_ends_at)
-        if trial_end.tzinfo is None:
-            trial_end = trial_end.replace(tzinfo=timezone.utc)
-        return now > trial_end
+        try:
+            trial_end = datetime.fromisoformat(self.trial_ends_at)
+            if trial_end.tzinfo is None:
+                trial_end = trial_end.replace(tzinfo=timezone.utc)
+            return now > trial_end
+        except (ValueError, TypeError):
+            return True
 
     @property
-    def tenant_id(self) -> str:
+    def tenant_id(self) -> Optional[str]:
+        """Return the parent tenant ID from the DB column, or own ID if no parent."""
+        if self._tenant_id:
+            return str(self._tenant_id)
         return str(self.id)
 
 
@@ -112,37 +110,36 @@ def init_auth(app):
                     display_name=row["display_name"],
                     status=row.get("status", "active"),
                     trial_ends_at=row.get("trial_ends_at"),
+                    tenant_id=row.get("tenant_id"),
                 )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Exception in %s: %s", __name__, e)
         return None
 
     return login_manager
 
 
-def _check_rate_limit() -> bool:
-    ip = request.remote_addr or "unknown"
-    now = datetime.now()
-    with _RATE_LIMIT_LOCK:
-        data = _load_rate_limits()
-        if ip not in data:
-            data[ip] = []
-        data[ip] = [
-            t for t in data[ip] if (now - datetime.fromisoformat(t)).total_seconds() < LOGIN_WINDOW.total_seconds()
-        ]
-        _save_rate_limits(data)
-        return len(data[ip]) < MAX_LOGIN_ATTEMPTS
+# Rate limiting stored in SQLite — works across gunicorn workers
+
+def _check_rate_limit(prefix: str = "admin") -> bool:
+    ip = f"{prefix}:{_get_client_ip()}"
+    conn = database._get_conn()
+    cutoff = (datetime.now(timezone.utc) - LOGIN_WINDOW).isoformat()
+    row = conn.execute(
+        "SELECT COUNT(*) as cnt FROM login_attempts WHERE ip = ? AND success = 0 AND attempted_at > ?",
+        [ip, cutoff]
+    ).fetchone()
+    return row["cnt"] < MAX_LOGIN_ATTEMPTS
 
 
-def _record_attempt(success: bool = True) -> None:
-    ip = request.remote_addr or "unknown"
-    with _RATE_LIMIT_LOCK:
-        data = _load_rate_limits()
-        if success:
-            data.pop(ip, None)
-        else:
-            data.setdefault(ip, []).append(datetime.now().isoformat())
-        _save_rate_limits(data)
+def _record_attempt(success: bool = True, prefix: str = "admin") -> None:
+    ip = f"{prefix}:{_get_client_ip()}"
+    conn = database._get_conn()
+    conn.execute(
+        "INSERT INTO login_attempts (ip, success, attempted_at) VALUES (?, ?, ?)",
+        [ip, 1 if success else 0, datetime.now(timezone.utc).isoformat()]
+    )
+    conn.commit()
 
 
 def find_user_by_email(email: str) -> Optional[dict]:
@@ -174,7 +171,8 @@ def create_user(email: str, password: str, role: str = "user",
     except Exception as e:
         if "UNIQUE" in str(e):
             raise ValueError("A user with this email already exists.")
-        raise RuntimeError(f"Failed to create user: {e}")
+        logger.error("Failed to create user: %s", e, exc_info=True)
+        raise RuntimeError("Failed to create user.")
 
 
 def _validate_password(password: str) -> None:
@@ -205,12 +203,26 @@ def login_required(f):
     def decorated(*args, **kwargs):
         if not current_user.is_authenticated:
             flash("Please log in to continue.")
-            return redirect(url_for("client_login"))
+            return redirect(url_for("client.client_login"))
         return f(*args, **kwargs)
     return decorated
 
 
 client_required = login_required
+
+
+def admin_required():
+    """Check if admin is logged in, return 401 JSON if not."""
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+    return None
+
+
+def admin_page_required():
+    """Check if admin is logged in, redirect to login if not."""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin.login"))
+    return None
 
 
 def create_user_and_tenant(email: str, password: str, display_name: str = "") -> dict:

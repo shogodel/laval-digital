@@ -21,8 +21,9 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 logger = logging.getLogger(__name__)
 
-SUBSCRIPTIONS_FILE = Path("data/push_subscriptions.jsonl")
-VAPID_KEYS_FILE = Path("data/vapid_keys.json")
+_base_dir = Path(__file__).parent.parent
+SUBSCRIPTIONS_FILE = _base_dir / "data" / "push_subscriptions.jsonl"
+VAPID_KEYS_FILE = _base_dir / "data" / "vapid_keys.json"
 
 try:
     from pywebpush import webpush, WebPushException
@@ -42,8 +43,8 @@ def _ensure_vapid_keys() -> Dict[str, str]:
     if VAPID_KEYS_FILE.exists():
         try:
             return json.loads(VAPID_KEYS_FILE.read_text())
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Exception in %s: %s", __name__, e)
 
     key = ec.generate_private_key(ec.SECP256R1())
     keys = {
@@ -75,7 +76,8 @@ class PushManager:
         self._lock = threading.RLock()
         self._subscriptions: List[Dict[str, Any]] = []
         self._vapid = _ensure_vapid_keys()
-        self._vapid_claims = {"sub": "mailto:lavaldigital@gmail.com"}
+        vapid_sub = os.getenv("VAPID_SUBSCRIPTION", "mailto:admin@lavaldigital.ca")
+        self._vapid_claims = {"sub": vapid_sub}
         self._load_subscriptions()
 
     @property

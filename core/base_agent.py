@@ -2,20 +2,9 @@ import threading
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TypedDict
-
-from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import END, START, StateGraph
-from langgraph.types import interrupt
+from typing import Any, Dict, List, Optional
 
 from core.llm_adapter import LLMAdapter
-
-try:
-    from langchain_litellm import ChatLiteLLM
-except ImportError:
-    ChatLiteLLM = None
 
 FRENCH_KEYWORDS = [
     'bonjour', 'salut', 'bjr', 'allo',
@@ -31,22 +20,14 @@ FRENCH_KEYWORDS = [
 ]
 
 
-class AgentState(TypedDict):
-    task: str
-    draft_output: Optional[str]
-    approved: Optional[bool]
-    feedback: Optional[str]
-    result: Optional[str]
-    language: Optional[str]
-    confidence: Optional[float]
-
-
 class BaseAgent(ABC):
     _available_models: Optional[List[str]] = None
+    _models_lock = threading.Lock()
 
     def __init__(self, agent_id: str, config: Dict[str, Any]):
-        if BaseAgent._available_models is None:
-            BaseAgent._available_models = LLMAdapter.get_available_models()
+        with BaseAgent._models_lock:
+            if BaseAgent._available_models is None:
+                BaseAgent._available_models = LLMAdapter.get_available_models()
 
         self._agent_id = agent_id
         self._config = config
@@ -59,7 +40,6 @@ class BaseAgent(ABC):
         self._system_prompt_file = config["system_prompt_file"]
         self._credentials = config.get("credentials", {})
         self._system_prompt = self._load_system_prompt()
-        self._graph = None
 
     def _validate_config(self) -> None:
         required_fields = ["agent_id", "model", "system_prompt_file"]
@@ -77,7 +57,10 @@ class BaseAgent(ABC):
             raise ValueError("Missing credentials.api_key in config")
 
     def _load_system_prompt(self) -> str:
-        path = Path(self._system_prompt_file).resolve()
+        raw_path = Path(self._system_prompt_file)
+        if raw_path.is_symlink():
+            raise ValueError(f"System prompt path must not be a symlink: {self._system_prompt_file}")
+        path = raw_path.resolve()
         prompts_dir = Path("prompts").resolve()
         if not str(path).startswith(str(prompts_dir) + "/"):
             raise ValueError(f"System prompt file must be within prompts/ directory: {self._system_prompt_file}")
@@ -109,45 +92,19 @@ class BaseAgent(ABC):
     def system_prompt(self) -> str:
         return self._system_prompt
 
-    def _get_llm(self) -> BaseChatModel:
-        """Return a configured chat model instance.
-
-        DeepSeek models use ChatOpenAI pointed at the DeepSeek API — this is the
-        only reliable authentication method for DeepSeek.
-        All other models use ChatLiteLLM.
-        """
-        # DeepSeek: use ChatOpenAI (OpenAI-compatible endpoint)
-        if self._model.startswith("deepseek"):
-            from langchain_openai import ChatOpenAI
-
-            return ChatOpenAI(
-                model=self._model,
-                api_key=self._credentials["api_key"],
-                base_url=self._credentials.get("api_base", "https://api.deepseek.com/v1"),
-                temperature=0.7,
-            )
-
-        # All other models: use ChatLiteLLM
-        if ChatLiteLLM is None:
-            raise ImportError(
-                "litellm is required for multi-LLM support. "
-                "Install with: pip install litellm"
-            )
-
-        llm_kwargs = {
-            "model": self._model,
-            "api_key": self._credentials["api_key"],
-            "temperature": 0.7,
-        }
-        if "api_base" in self._credentials and self._credentials["api_base"]:
-            llm_kwargs["api_base"] = self._credentials["api_base"]
-
-        return ChatLiteLLM(**llm_kwargs)
+    def _get_llm_adapter(self) -> LLMAdapter:
+        """Return an LLMAdapter configured with this agent's credentials."""
+        return LLMAdapter(
+            model=self._model,
+            api_key=self._credentials["api_key"],
+            api_base=self._credentials.get("api_base"),
+            temperature=0.7,
+        )
 
     @staticmethod
     def _detect_language(task: str) -> str:
         text_lower = task.lower()
-        french_count = sum(1 for kw in FRENCH_KEYWORDS if kw in text_lower)
+        french_count = sum(1 for kw in FRENCH_KEYWORDS if re.search(r'\b' + re.escape(kw) + r'\b', text_lower))
         return "fr" if french_count >= 3 else "en"
 
     @staticmethod
@@ -179,9 +136,9 @@ class BaseAgent(ABC):
         )]
         return "\n".join(cleaned).strip()
 
-    def _draft_node(self, state: AgentState) -> AgentState:
-        llm = self._get_llm()
-        language_instruction = self._get_language_instruction(state["task"])
+    def _invoke_llm(self, task: str) -> Dict[str, Any]:
+        adapter = self._get_llm_adapter()
+        language_instruction = self._get_language_instruction(task)
         confidence_instruction = (
             "When you finish your response, end with two lines:\n"
             "CONFIDENCE: <0-100>\n"
@@ -194,69 +151,23 @@ class BaseAgent(ABC):
             f"{language_instruction}\n\n"
             f"{confidence_instruction}"
         )
-        messages = [
-            SystemMessage(content=system_content),
-            HumanMessage(content=state["task"]),
-        ]
 
-        response = llm.invoke(messages)
-        raw = response.content
-        state["draft_output"] = self._strip_confidence_metadata(raw)
-        state["confidence"] = self._parse_confidence(raw)
-        state["language"] = self._detect_language(state["task"])
-        return state
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+        def _invoke():
+            return adapter.invoke(system_content, task)
 
-    def _approval_node(self, state: AgentState) -> AgentState:
-        draft = state.get("draft_output", "")
-
-        human_input = interrupt({
-            "type": "approval_request",
-            "agent_id": self._agent_id,
-            "draft": draft,
-            "message": f"Agent '{self._agent_id}' requests approval for draft output.",
-        })
-
-        state["approved"] = human_input.get("approved", False)
-        state["feedback"] = human_input.get("feedback", "")
-        return state
-
-    def _execute_node(self, state: AgentState) -> AgentState:
-        if state.get("approved"):
-            try:
-                result = self.execute(state["draft_output"])
-                state["result"] = result
-            except Exception as e:
-                state["result"] = f"Execution error: {str(e)}"
-        else:
-            feedback = state.get("feedback", "No feedback provided")
-            state["result"] = f"Task cancelled by human. Feedback: {feedback}"
-
-        return state
-
-    def build_graph(self):
-        if self._graph is not None:
-            return self._graph
-
-        builder = StateGraph(AgentState)
-
-        builder.add_node("draft", self._draft_node)
-        builder.add_node("approval", self._approval_node)
-        builder.add_node("execute", self._execute_node)
-
-        builder.add_edge(START, "draft")
-        builder.add_edge("draft", "approval")
-        builder.add_edge("approval", "execute")
-        builder.add_edge("execute", END)
-
-        checkpointer = MemorySaver()
-        self._graph = builder.compile(checkpointer=checkpointer)
-
-        return self._graph
+        try:
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_invoke)
+                raw = future.result(timeout=120)
+        except FuturesTimeout:
+            raise RuntimeError("LLM invocation timed out after 120 seconds")
+        return {
+            "draft_output": self._strip_confidence_metadata(raw),
+            "language": self._detect_language(task),
+            "confidence": self._parse_confidence(raw),
+        }
 
     @abstractmethod
     def execute(self, draft_output: str) -> str:
-        pass
-
-    @abstractmethod
-    def get_tools(self) -> List[Any]:
         pass

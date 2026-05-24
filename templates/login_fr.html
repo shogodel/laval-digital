@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laval Digital - Connexion Admin</title>
-    <style>
+    <style nonce="{{ csp_nonce }}">
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -91,7 +91,7 @@
             {{ error or 'Nom d\'utilisateur ou mot de passe invalide.' }}
         </div>
 
-        <form method="POST" action="/fr/admin/login">
+        <form method="POST" action="{{ url_for('admin_fr.login_fr') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="username">Nom d'utilisateur</label>
@@ -106,7 +106,7 @@
         <div class="footer-text">Laval Digital &copy; {{ now.year }}</div>
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
         const params = new URLSearchParams(window.location.search);
         if (params.get('error')) {
             document.getElementById('error-msg').textContent = decodeURIComponent(params.get('error'));

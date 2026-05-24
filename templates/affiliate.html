@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Affiliate Program — Laval Digital</title>
     <meta name="description" content="Join the Laval Digital affiliate program. Earn up to $3,300 per referral. Your friends save $500. 20% commission. Proudly Canadian.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         :root {
             --navy: #0f2b45;
             --navy-light: #1a3a5c;
@@ -296,15 +297,15 @@
 
 <nav>
     <div class="container">
-        <a href="/" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48"></a>
-        <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+        <a href="{{ url_for('home') }}" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="48"></a>
+        <button class="hamburger" id="nav-hamburger" aria-label="Menu">&#9776;</button>
         <ul id="nav-menu">
-            <li><a href="/">Home</a></li>
-            <li><a href="/demo">Live Demo</a></li>
-            <li><a href="/blog">Blog</a></li>
-            <li><a href="tel:5142431580">📞 (514) 243-1580</a></li>
-            <li><a href="/demo" class="nav-cta">Get Started</a></li>
-            <li><a href="/fr/affiliate" class="lang-toggle">FR</a></li>
+            <li><a href="{{ url_for('home') }}">Home</a></li>
+            <li><a href="{{ url_for('demo') }}">Live Demo</a></li>
+            <li><a href="{{ url_for('blog') }}">Blog</a></li>
+            <li><a href="tel:{{ CONTACT_PHONE_CLEAN }}">📞 {{ CONTACT_PHONE }}</a></li>
+            <li><a href="{{ url_for('demo') }}" class="nav-cta">Get Started</a></li>
+            <li><a href="{{ url_for('affiliate.affiliate_signup_fr') }}" class="lang-toggle">FR</a></li>
         </ul>
     </div>
 </nav>
@@ -388,7 +389,7 @@
                     <label for="phone">Phone Number <span style="color:var(--mid-gray); font-weight:400;">(optional)</span></label>
                     <input type="tel" id="phone" placeholder="e.g. (514) 555-0100">
                 </div>
-                <button class="btn btn-primary" onclick="handleSignup()">Get My Referral Link</button>
+                <button class="btn btn-primary" id="btn-signup">Get My Referral Link</button>
             </div>
             <div class="success-message" id="success-message">
                 <div class="check">🎉</div>
@@ -433,15 +434,15 @@
         </div>
         <div>
             <h4>Contact</h4>
-            <p>📞 <a href="tel:5142431580">(514) 243-1580</a></p>
-            <p>💬 <a href="sms:5142431580">Text (514) 243-1580</a></p>
-            <p>✉️ <a href="mailto:lavaldigital@gmail.com">lavaldigital@gmail.com</a></p>
+            <p>📞 <a href="tel:{{ CONTACT_PHONE_CLEAN }}">{{ CONTACT_PHONE }}</a></p>
+            <p>💬 <a href="sms:{{ CONTACT_PHONE_CLEAN }}">Text {{ CONTACT_PHONE }}</a></p>
+            <p>✉️ <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a></p>
         </div>
         <div>
             <h4>Links</h4>
-            <p><a href="/demo">Live Demo</a></p>
-            <p><a href="/blog">Blog</a></p>
-            <p><a href="/affiliate">Affiliate Program</a></p>
+            <p><a href="{{ url_for('demo') }}">Live Demo</a></p>
+            <p><a href="{{ url_for('blog') }}">Blog</a></p>
+            <p><a href="{{ url_for('affiliate.affiliate_signup') }}">Affiliate Program</a></p>
 
         </div>
     </div>
@@ -453,10 +454,10 @@
 <div id="cookie-notice" role="dialog" aria-label="Cookie notice">
     <span class="cookie-icon">🍪</span>
     <span class="cookie-text">We only collect <strong>essential cookies</strong>.</span>
-    <button class="cookie-btn" onclick="dismissCookie()">Got it</button>
+    <button class="cookie-btn" id="cookie-dismiss-btn">Got it</button>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 function handleSignup() {
     const name = document.getElementById('full-name').value.trim();
     const email = document.getElementById('email').value.trim();
@@ -464,7 +465,7 @@ function handleSignup() {
     if (!name || !email) { alert('Please enter your name and email address.'); return; }
     fetch('/api/affiliate/signup', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content},
         body: JSON.stringify({name, email, phone}),
     })
     .then(r => r.json())
@@ -485,9 +486,14 @@ function dismissCookie() {
         setTimeout(function() { document.getElementById('cookie-notice').classList.add('show'); }, 800);
     }
 })();
+document.getElementById('nav-hamburger').addEventListener('click', function() {
+    document.getElementById('nav-menu').classList.toggle('open');
+});
+document.getElementById('btn-signup').addEventListener('click', handleSignup);
+document.getElementById('cookie-dismiss-btn').addEventListener('click', dismissCookie);
 </script>
 
-<style>
+<style nonce="{{ csp_nonce }}">
 #cookie-notice {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
     z-index: 9999; background: rgba(15, 43, 69, 0.92); backdrop-filter: blur(12px);

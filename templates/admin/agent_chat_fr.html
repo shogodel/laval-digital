@@ -6,8 +6,8 @@
     <title>Frankie — Centre de Commande Marketing IA</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
@@ -148,8 +148,8 @@
 
 <div class="topbar">
     <div class="topbar-left">
-        <button class="sidebar-toggle" onclick="togglePanel('left')" title="Fils">&#9776;</button>
-        <a href="/fr/frankie">&larr; Tableau de Bord</a>
+        <button class="sidebar-toggle" id="toggle-left-btn" title="Fils">&#9776;</button>
+        <a href="{{ url_for('admin_fr.panel_redirect_fr') }}">&larr; Tableau de Bord</a>
     </div>
     <div class="topbar-center">
         <span class="status-dot {{ 'online' if agent.enabled else 'offline' }}"></span>
@@ -157,7 +157,7 @@
         <span class="autonomy-badge" id="autonomy-badge"></span>
     </div>
     <div class="topbar-right">
-        <button class="sidebar-toggle" onclick="togglePanel('right')" title="Infos">&#9432;</button>
+        <button class="sidebar-toggle" id="toggle-right-btn" title="Infos">&#9432;</button>
     </div>
 </div>
 
@@ -166,7 +166,7 @@
         <div class="frankie-brand">🤖 Frankie</div>
         <div class="section-header">
             Fils
-            <button onclick="startNewThread()">+ Nouveau</button>
+            <button id="new-thread-btn">+ Nouveau</button>
         </div>
         <div id="thread-list"></div>
         <div class="tools-section" id="activity-section" style="display:none;">
@@ -183,23 +183,23 @@
         <div class="chat-header">
             <div class="agent-label">Frankie <span>&mdash; Centre de Commande Marketing IA</span></div>
         </div>
-        <div class="chat-messages" id="chat-messages">
+        <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
             <div class="empty-chat" id="empty-chat">
                 <div class="big-icon">🤖</div>
                 <h3>Je suis Frankie — votre centre de commande marketing IA.</h3>
                 <p>Je peux rédiger du contenu, gérer votre SEO, lancer des annonces, publier sur les réseaux sociaux, gérer des campagnes courriel, et plus encore. Dites-moi simplement ce dont vous avez besoin.</p>
                 <div class="example-chips">
-                    <button class="example-chip" onclick="useChip('Rédige un article de blog pour mon entreprise sur les questions courantes des clients')">📝 Rédiger un article de blog</button>
-                    <button class="example-chip" onclick="useChip('Crée les publications réseaux sociaux de cette semaine pour mon entreprise')">📱 Créer publications sociales</button>
-                    <button class="example-chip" onclick="useChip('Montre-moi ma performance marketing et mes analyses')">📊 Voir ma performance marketing</button>
+                    <button class="example-chip" data-query="Rédige un article de blog pour mon entreprise sur les questions courantes des clients">📝 Rédiger un article de blog</button>
+                    <button class="example-chip" data-query="Crée les publications réseaux sociaux de cette semaine pour mon entreprise">📱 Créer publications sociales</button>
+                    <button class="example-chip" data-query="Montre-moi ma performance marketing et mes analyses">📊 Voir ma performance marketing</button>
                 </div>
             </div>
         </div>
         <div class="chat-input-area">
             <div class="chat-input-row">
-                <textarea id="msg-input" rows="1" placeholder="Parlez à Frankie... (ou écrivez)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
-                <button id="mic-btn" class="mic-btn" onclick="toggleMic()" title="Entrée vocale">&#127908;</button>
-                <button id="send-btn" onclick="sendMessage()">Envoyer</button>
+                <textarea id="msg-input" rows="1" placeholder="Parlez à Frankie... (ou écrivez)"></textarea>
+                <button id="mic-btn" class="mic-btn" title="Entrée vocale">&#127908;</button>
+                <button id="send-btn">Envoyer</button>
             </div>
             <div class="chat-input-hint">Essayez : « Frankie, rédige un article de blog sur les conseils de plomberie d'hiver »</div>
         </div>
@@ -215,19 +215,19 @@
         <div class="autonomy-controls">
             <h3 style="font-size:0.85rem;margin-bottom:6px;">&#9889; Autonomie</h3>
             <label for="autonomy-select">Mode</label>
-            <select id="autonomy-select" onchange="updateAutonomy()">
+            <select id="autonomy-select">
                 <option value="manual">Manuel — demander avant chaque action</option>
                 <option value="suggest">Suggérer — exécuter si confiant, sinon demander</option>
                 <option value="auto">Auto — tout exécuter, me notifier</option>
                 <option value="silent">Silencieux — exécuter, journaliser seulement</option>
             </select>
             <label for="confidence-slider">Seuil de confiance : <span class="threshold-value" id="threshold-display">70%</span></label>
-            <input type="range" id="confidence-slider" min="0" max="100" value="70" oninput="updateThreshold(this.value); updateAutonomy();">
+            <input type="range" id="confidence-slider" min="0" max="100" value="70">
         </div>
         <div class="info-card">
             <h3 style="font-size:0.85rem;margin-bottom:6px;">&#127908; Voix</h3>
             <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer;">
-                <input type="checkbox" id="speech-toggle" onchange="toggleSpeech()" checked>
+                <input type="checkbox" id="speech-toggle" checked>
                 Activer la voix
             </label>
             <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer;margin-top:6px;">
@@ -236,21 +236,21 @@
             </label>
         </div>
         <div class="quick-actions">
-            <button class="qa-btn" onclick="copyLastResponse()">&#128203; Copier la réponse</button>
-            <button class="qa-btn" onclick="startNewThread()">&#128260; Nouveau fil</button>
-            <button class="qa-btn primary" onclick="window.location.href='/fr/frankie'">&#8592; Tableau de Bord</button>
+            <button class="qa-btn" id="qa-copy">&#128203; Copier la réponse</button>
+            <button class="qa-btn" id="qa-new-thread">&#128260; Nouveau fil</button>
+            <button class="qa-btn primary" id="qa-dashboard">&#8592; Tableau de Bord</button>
         </div>
     </div>
 </div>
 
 <div id="voice-toast" class="voice-toast">
     <span>👋 Salut ! Je suis Frankie. Vous pouvez écrire ou me parler. Activez la voix pour l'expérience Jarvis complète.</span>
-    <button class="close-toast" onclick="document.getElementById('voice-toast').style.display='none'">&times;</button>
+    <button class="close-toast" id="close-toast-btn">&times;</button>
 </div>
 
-<script>
-const AGENT_ID = '{{ agent.agent_id }}';
-const AGENT_NAME = '{{ agent_name }}';
+<script nonce="{{ csp_nonce }}">
+const AGENT_ID = {{ agent.agent_id | tojson }};
+const AGENT_NAME = {{ agent_name | tojson }};
 let CURRENT_THREAD = null;
 let SHOW_THINKING = false;
 let LOADING = false;
@@ -293,7 +293,7 @@ function loadTools() {
         list = Object.values(tools);
     }
     document.getElementById('tool-list').innerHTML = list.map(t =>
-        `<button class="tool-btn" onclick="useTool('${t}')">${escapeHtml(t)}</button>`
+        `<button class="tool-btn" data-tool="${escapeHtml(t)}">${escapeHtml(t)}</button>`
     ).join('');
 }
 
@@ -312,7 +312,7 @@ async function loadThreads() {
         const data = await r.json();
         const list = document.getElementById('thread-list');
         list.innerHTML = (data.threads || []).map(t =>
-            `<div class="thread-item ${t.thread_id === CURRENT_THREAD ? 'active' : ''}" onclick="switchThread('${t.thread_id}')">
+            `<div class="thread-item ${t.thread_id === CURRENT_THREAD ? 'active' : ''}" data-thread-id="${t.thread_id}">
                 ${escapeHtml((t.first_message || 'Chat').substring(0, 50))}
                 <div class="thread-date">${t.started_at ? new Date(t.started_at).toLocaleDateString('fr-CA') : ''}</div>
             </div>`
@@ -323,7 +323,7 @@ async function loadThreads() {
 async function switchThread(threadId) {
     CURRENT_THREAD = threadId;
     document.querySelectorAll('.thread-item').forEach(el => el.classList.remove('active'));
-    const el = document.querySelector(`[onclick*="switchThread('${threadId}')"]`);
+    const el = document.querySelector(`.thread-item[data-thread-id="${threadId}"]`);
     if (el) el.classList.add('active');
     await loadMessages(threadId);
     loadThreads();
@@ -510,8 +510,8 @@ async function loadActivity() {
         }
         section.style.display = 'block';
         list.innerHTML = d.activities.map(a => {
-            const actionLabel = a.action === 'auto_executed' ? 'Auto' : a.action;
-            const actionClass = a.action;
+            const actionLabel = a.action === 'auto_executed' ? 'Auto' : escapeHtml(a.action);
+            const actionClass = escapeHtml(a.action);
             const time = a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : '';
             const icon = a.success === true ? '\u2705' : a.success === false ? '\u274C' : '\u23F3';
             return `<div class="activity-item">
@@ -729,6 +729,38 @@ setTimeout(() => {
         document.getElementById('voice-toast').style.display = 'flex';
     }
 }, 500);
+
+document.getElementById('toggle-left-btn').addEventListener('click', function() { togglePanel('left'); });
+document.getElementById('toggle-right-btn').addEventListener('click', function() { togglePanel('right'); });
+document.getElementById('new-thread-btn').addEventListener('click', startNewThread);
+document.getElementById('msg-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+document.getElementById('mic-btn').addEventListener('click', toggleMic);
+document.getElementById('send-btn').addEventListener('click', sendMessage);
+document.getElementById('autonomy-select').addEventListener('change', updateAutonomy);
+document.getElementById('confidence-slider').addEventListener('input', function() {
+    updateThreshold(this.value); updateAutonomy();
+});
+document.getElementById('speech-toggle').addEventListener('change', toggleSpeech);
+document.getElementById('qa-copy').addEventListener('click', copyLastResponse);
+document.getElementById('qa-new-thread').addEventListener('click', startNewThread);
+document.getElementById('qa-dashboard').addEventListener('click', function() { window.location.href = '{{ url_for('admin_fr.panel_redirect_fr') }}'; });
+document.getElementById('close-toast-btn').addEventListener('click', function() {
+    document.getElementById('voice-toast').style.display = 'none';
+});
+document.getElementById('thread-list').addEventListener('click', function(e) {
+    var item = e.target.closest('.thread-item');
+    if (item) switchThread(item.dataset.threadId);
+});
+document.getElementById('tool-list').addEventListener('click', function(e) {
+    var btn = e.target.closest('.tool-btn');
+    if (btn) useTool(btn.dataset.tool);
+});
+document.getElementById('chat-messages').addEventListener('click', function(e) {
+    var chip = e.target.closest('.example-chip');
+    if (chip) useChip(chip.getAttribute('data-query') || chip.textContent);
+});
 </script>
 </body>
 </html>

@@ -73,7 +73,7 @@ class LLMAdapter:
         self._api_key = api_key
         self._api_base = api_base
         self._temperature = temperature
-        logger.info(f"Initialized LLMAdapter for model: {model}")
+        logger.info("Initialized LLMAdapter for model: %s", model)
 
     @property
     def model(self) -> str:
@@ -98,10 +98,10 @@ class LLMAdapter:
 
         if model_list and isinstance(model_list, list):
             cls._available_models_cache = sorted(model_list)
-            logger.info(f"Discovered {len(cls._available_models_cache)} models via litellm")
+            logger.info("Discovered %d models via litellm", len(cls._available_models_cache))
         else:
             cls._available_models_cache = _FALLBACK_MODELS
-            logger.warning(f"litellm model_list unavailable, using {len(_FALLBACK_MODELS)} fallback models")
+            logger.warning("litellm model_list unavailable, using %d fallback models", len(_FALLBACK_MODELS))
 
         return cls._available_models_cache
 
@@ -183,9 +183,9 @@ class LLMAdapter:
                 if resp.status_code == 200:
                     models = p["parse"](resp.json())
                     if models:
-                        logger.info(f"Detected provider '{name}' with {len(models)} models")
+                        logger.info("Detected provider '%s' with %d models", name, len(models))
                         return {"provider": name, "models": sorted(models)}
-            except requests.RequestException:
+            except (requests.RequestException, ValueError):
                 logger.debug("Provider '%s' rejected the provided key", name)
                 continue
 
@@ -202,11 +202,34 @@ class LLMAdapter:
         # DeepSeek: use ChatOpenAI (OpenAI-compatible endpoint)
         if self._model.startswith("deepseek"):
             from langchain_openai import ChatOpenAI
+            from urllib.parse import urlparse
+
+            api_base = self._api_base or "https://api.deepseek.com/v1"
+            parsed = urlparse(api_base)
+            if parsed.hostname:
+                import socket
+                try:
+                    addrs = socket.getaddrinfo(parsed.hostname, None)
+                    for _, _, _, _, sockaddr in addrs:
+                        ip = sockaddr[0]
+                        ipv4 = ip.split(":")[-1] if ":" in ip else ip
+                        if "." in ipv4:
+                            parts = [int(x) for x in ipv4.split(".")]
+                            if parts[0] in (127, 10, 0) or (parts[0] == 169 and parts[1] == 254) or (parts[0] == 192 and parts[1] == 168) or (parts[0] == 172 and 16 <= parts[1] <= 31) or (parts[0] == 100 and 64 <= parts[1] <= 127):
+                                raise ValueError("api_base resolves to a private IP")
+                        elif ":" in ip:
+                            if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd") or ip.startswith("fe80") or ip.startswith("ff") or ip.startswith("2001:db8"):
+                                raise ValueError("api_base resolves to a private/reserved IPv6")
+                            import ipaddress
+                            if ipaddress.IPv6Address(ip).is_link_local:
+                                raise ValueError("api_base resolves to a link-local IPv6")
+                except (socket.gaierror, ValueError) as e:
+                    raise ValueError(f"Invalid api_base: {e}")
 
             return ChatOpenAI(
                 model=self._model,
                 api_key=self._api_key,
-                base_url=self._api_base or "https://api.deepseek.com/v1",
+                base_url=api_base,
                 temperature=self._temperature,
             )
 
@@ -242,7 +265,7 @@ class LLMAdapter:
         Raises:
             LLMAdapterError: If LLM invocation fails for any reason.
         """
-        logger.debug(f"Invoking LLM {self._model} with task: {user_message[:50]}...")
+        logger.debug("Invoking LLM %s with task: %s...", self._model, user_message[:50])
 
         try:
             llm = self._get_llm()
@@ -251,7 +274,7 @@ class LLMAdapter:
                 HumanMessage(content=user_message),
             ]
             response = llm.invoke(messages)
-            logger.debug(f"LLM response received: {response.content[:100]}...")
+            logger.debug("LLM response received: %s...", response.content[:100])
             return response.content
         except Exception as e:
             error_msg = f"LLM invocation failed: {str(e)}"
@@ -271,7 +294,7 @@ class LLMAdapter:
         Raises:
             LLMAdapterError: If LLM streaming fails for any reason.
         """
-        logger.debug(f"Streaming LLM {self._model} with task: {user_message[:50]}...")
+        logger.debug("Streaming LLM %s with task: %s...", self._model, user_message[:50])
 
         try:
             llm = self._get_llm()

@@ -1,5 +1,5 @@
 <div id="frankie-container">
-    <button id="frankie-bubble" onclick="frankie.toggle()" aria-label="Open Frankie AI assistant" title="Frankie AI Assistant">
+    <button id="frankie-bubble" aria-label="Open Frankie AI assistant" title="Frankie AI Assistant">
         <span id="frankie-bubble-icon" aria-hidden="true">🤖</span>
         <span id="frankie-status-dot"></span>
     </button>
@@ -13,10 +13,10 @@
                     <div style="font-size:0.7rem;color:rgba(255,255,255,0.6);" id="frankie-status">Online</div>
                 </div>
             </div>
-                <button onclick="frankie.toggle()" aria-label="Close Frankie panel" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:1.4rem;cursor:pointer;">&times;</button>
+                <button id="frankie-close-btn" aria-label="Close Frankie panel" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:1.4rem;cursor:pointer;">&times;</button>
         </div>
         <div id="frankie-connect-bar">
-            <button id="frankie-connect-toggle" onclick="frankie.toggleConnect()" style="display:flex;align-items:center;gap:6px;width:100%;padding:8px 14px;background:var(--gray-50);border:none;border-bottom:1px solid var(--gray-200);cursor:pointer;font-size:0.82rem;font-weight:500;color:var(--gray-700);font-family:inherit;transition:background 0.15s;">
+            <button id="frankie-connect-toggle" style="display:flex;align-items:center;gap:6px;width:100%;padding:8px 14px;background:var(--gray-50);border:none;border-bottom:1px solid var(--gray-200);cursor:pointer;font-size:0.82rem;font-weight:500;color:var(--gray-700);font-family:inherit;transition:background 0.15s;">
                 <span id="frankie-connect-indicator" style="font-size:1rem;"></span>
                 <span id="frankie-connect-text" style="flex:1;text-align:left;">Checking...</span>
                 <span id="frankie-connect-arrow" style="font-size:0.7rem;color:var(--gray-400);">▾</span>
@@ -36,13 +36,13 @@
                     <div style="margin-bottom:6px;">
                         <label style="font-size:0.7rem;font-weight:600;color:var(--gray-600);display:block;margin-bottom:2px;">API Key</label>
                         <div style="display:flex;gap:6px;">
-                            <input type="password" id="frankie-config-key" placeholder="sk-..." oninput="frankie.onKeyInput()" style="flex:1;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
-                            <button id="frankie-detect-btn" onclick="frankie.detectModels()" disabled style="padding:7px 12px;font-size:0.75rem;font-weight:600;background:var(--gray-200);color:var(--gray-700);border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap;">Detect</button>
+                            <input type="password" id="frankie-config-key" placeholder="sk-..." style="flex:1;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
+                            <button id="frankie-detect-btn" disabled style="padding:7px 12px;font-size:0.75rem;font-weight:600;background:var(--gray-200);color:var(--gray-700);border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap;">Detect</button>
                         </div>
                         <div id="frankie-detect-result" style="font-size:0.7rem;margin-top:2px;"></div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
-                        <button onclick="frankie.saveConfig()" style="padding:7px 14px;font-size:0.78rem;font-weight:600;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">Connect Frankie to AI</button>
+                        <button id="frankie-save-config-btn" style="padding:7px 14px;font-size:0.78rem;font-weight:600;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">Connect Frankie to AI</button>
                         <span id="frankie-config-result" style="font-size:0.75rem;"></span>
                     </div>
                 </div>
@@ -59,15 +59,15 @@
                 </div>
             </div>
             <div id="frankie-input-area">
-                <input type="text" id="frankie-input" placeholder="Ask Frankie anything..." onkeydown="if(event.key==='Enter') frankie.ask()" aria-label="Type your question to Frankie">
-                <button onclick="frankie.toggleVoice()" id="frankie-voice-btn" title="Toggle voice input" aria-label="Toggle voice input" style="background:none;border:1px solid var(--gray-300);border-radius:10px;padding:9px 10px;font-size:1rem;cursor:pointer;flex-shrink:0;transition:0.15s;">🎤</button>
-                <button onclick="frankie.ask()" id="frankie-send-btn" aria-label="Send message to Frankie">Send</button>
+                <input type="text" id="frankie-input" placeholder="Ask Frankie anything..." aria-label="Type your question to Frankie">
+                <button id="frankie-voice-btn" title="Toggle voice input" aria-label="Toggle voice input" style="background:none;border:1px solid var(--gray-300);border-radius:10px;padding:9px 10px;font-size:1rem;cursor:pointer;flex-shrink:0;transition:0.15s;">🎤</button>
+                <button id="frankie-send-btn" aria-label="Send message to Frankie">Send</button>
             </div>
         </div>
     </div>
 </div>
 
-<style>
+<style nonce="{{ csp_nonce }}">
 #frankie-container { font-family: 'Inter', sans-serif; }
 #frankie-bubble {
     position: fixed; bottom: 24px; right: 24px; z-index: 99999;
@@ -184,7 +184,7 @@
 }
 </style>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 window.frankie = {
     panel: null, bubble: null, messages: null, input: null,
     greeting: null, suggestions: null, status: null,
@@ -315,14 +315,22 @@ window.frankie = {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success || data.message) {
-                resultDiv.innerHTML = '<span style="color:var(--green);font-weight:700;">🎉 Frankie is now connected and ready!</span>';
+                resultDiv.innerHTML = '<span style="color:var(--green);font-weight:700;">Frankie is now connected and ready!</span>';
                 self.checkConnect();
             } else {
-                resultDiv.innerHTML = '<span style="color:var(--red);">Error: ' + (data.error || 'Unknown') + '</span>';
+                var span = document.createElement('span');
+                span.style.color = 'var(--red)';
+                span.textContent = 'Error: ' + (data.error || 'Unknown');
+                resultDiv.innerHTML = '';
+                resultDiv.appendChild(span);
             }
         })
         .catch(function(err) {
-            resultDiv.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>';
+            var span = document.createElement('span');
+            span.style.color = 'var(--red)';
+            span.textContent = 'Error: ' + err.message;
+            resultDiv.innerHTML = '';
+            resultDiv.appendChild(span);
         })
         .finally(function() {
             setTimeout(function() { resultDiv.textContent = ''; }, 5000);
@@ -357,36 +365,47 @@ window.frankie = {
                     extra += 'I found <strong>' + data.suggestions.length + ' thing' + (data.suggestions.length > 1 ? 's' : '') + '</strong> you can improve:';
                     self.greeting.innerHTML = timeGreeting + '! ' + extra;
                     // Show suggestions as clickable chips that ask Frankie about them
-                    var chipsHtml = data.suggestions.map(function(s) {
-                        var safe = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-                        var attrSafe = encodeURIComponent(s.substring(0, 120));
-                        return '<button class="suggestion-chip" onclick="frankie.ask(\'Can you help me fix: ' + attrSafe + '\')">' + escapeHtml(s.substring(0, 60)) + '...</button>';
-                    }).join('');
+                    self.suggestions.innerHTML = '';
+                    data.suggestions.forEach(function(s) {
+                        var btn = document.createElement('button');
+                        btn.className = 'suggestion-chip';
+                        btn.textContent = escapeHtml(s.substring(0, 60)) + '...';
+                        btn.addEventListener('click', function() { frankie.ask('Can you help me fix: ' + encodeURIComponent(s.substring(0, 120))); });
+                        self.suggestions.appendChild(btn);
+                    });
                     // Also add standard chips
-                    chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'How are my agents doing?\')">📊 Agent status</button>';
-                    if (pending > 0) chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'Review pending approvals\')">📋 Approve</button>';
-                    chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'Write a social media post\')">📱 Create post</button>';
-                    chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'Run an SEO audit\')">🔍 SEO audit</button>';
-                    self.suggestions.innerHTML = chipsHtml;
+                    frankie.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
+                    if (pending > 0) frankie.addChip(self.suggestions, '📋 Approve', 'Review pending approvals');
+                    frankie.addChip(self.suggestions, '📱 Create post', 'Write a social media post');
+                    frankie.addChip(self.suggestions, '🔍 SEO audit', 'Run an SEO audit');
                 } else {
                     self.greeting.innerHTML = timeGreeting + '! ' + (data.site && data.site.business ? 'I checked <strong>' + escapeHtml(data.site.url) + '</strong> — looks good! ' : '') + 'How can I help?';
-                    var chipsHtml = '<button class="suggestion-chip" onclick="frankie.ask(\'How are my agents doing?\')">📊 Agent status</button>';
-                    if (pending > 0) chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'Review pending approvals\')">📋 Approve</button>';
-                    chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'Write a social media post\')">📱 Create post</button>';
-                    chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'Run an SEO audit\')">🔍 SEO audit</button>';
-                    self.suggestions.innerHTML = chipsHtml;
+                    self.suggestions.innerHTML = '';
+                    frankie.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
+                    if (pending > 0) frankie.addChip(self.suggestions, '📋 Approve', 'Review pending approvals');
+                    frankie.addChip(self.suggestions, '📱 Create post', 'Write a social media post');
+                    frankie.addChip(self.suggestions, '🔍 SEO audit', 'Run an SEO audit');
                 }
             }).catch(function() {
                 self.greeting.innerHTML = timeGreeting + '! How can I help?';
-                var chipsHtml = '<button class="suggestion-chip" onclick="frankie.ask(\'How are my agents doing?\')">📊 Agent status</button>';
-                if (pending > 0) chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'Review pending approvals\')">📋 Approve</button>';
-                chipsHtml += '<button class="suggestion-chip" onclick="frankie.ask(\'Run an SEO audit\')">🔍 SEO audit</button>';
-                self.suggestions.innerHTML = chipsHtml;
+                self.suggestions.innerHTML = '';
+                frankie.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
+                if (pending > 0) frankie.addChip(self.suggestions, '📋 Approve', 'Review pending approvals');
+                frankie.addChip(self.suggestions, '🔍 SEO audit', 'Run an SEO audit');
             });
         }).catch(function() {
             self.greeting.textContent = 'Hi! I\'m Frankie. I\'m here to help.';
-            self.suggestions.innerHTML = '<button class="suggestion-chip" onclick="frankie.ask(\'How are my agents doing?\')">📊 Agent status</button>';
+            self.suggestions.innerHTML = '';
+            frankie.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
         });
+    },
+
+    addChip: function(container, label, query) {
+        var btn = document.createElement('button');
+        btn.className = 'suggestion-chip';
+        btn.textContent = label;
+        btn.addEventListener('click', function() { frankie.ask(query); });
+        container.appendChild(btn);
     },
 
     toggle: function() {
@@ -420,14 +439,35 @@ window.frankie = {
         }).then(function(r) { return r.json(); }).then(function(d) {
             self.hideTyping();
             var msg = d.response || 'No response.';
-            // If there's a pending approval, add an approve button
+            // If there's a pending approval, add an approve button using dataset (safe)
             if (d.pending_approval && d.thread_id) {
-                msg += '<div style="margin-top:10px;">'
-                    + '<button class="suggestion-chip" onclick="frankie.approve(\'' + d.thread_id + '\', this)" style="background:#059669;color:#fff;border-color:#059669;">✅ Approve</button>'
-                    + '<button class="suggestion-chip" onclick="frankie.reject(\'' + d.thread_id + '\', this)" style="background:#dc2626;color:#fff;border-color:#dc2626;">❌ Reject</button>'
-                    + '</div>';
+                var container = document.createElement('div');
+                container.style.marginTop = '10px';
+
+                var approveBtn = document.createElement('button');
+                approveBtn.className = 'suggestion-chip';
+                approveBtn.style.background = '#059669';
+                approveBtn.style.color = '#fff';
+                approveBtn.style.borderColor = '#059669';
+                approveBtn.textContent = '\u2705 Approve';
+                approveBtn.dataset.threadId = d.thread_id;
+                approveBtn.addEventListener('click', function() { self.approve(this.dataset.threadId, this); });
+
+                var rejectBtn = document.createElement('button');
+                rejectBtn.className = 'suggestion-chip';
+                rejectBtn.style.background = '#dc2626';
+                rejectBtn.style.color = '#fff';
+                rejectBtn.style.borderColor = '#dc2626';
+                rejectBtn.textContent = '\u274C Reject';
+                rejectBtn.dataset.threadId = d.thread_id;
+                rejectBtn.addEventListener('click', function() { self.reject(this.dataset.threadId, this); });
+
+                container.appendChild(approveBtn);
+                container.appendChild(rejectBtn);
+                self.addMessageWithNode(msg, 'bot', container);
+            } else {
+                self.addMessage(msg, 'bot');
             }
-            self.addMessage(msg, 'bot');
             if (msg.length < 500) self.speak(msg);
         }).catch(function() {
             self.hideTyping();
@@ -465,8 +505,30 @@ window.frankie = {
     addMessage: function(text, role) {
         var div = document.createElement('div');
         div.className = 'frankie-msg frankie-' + role;
-        div.innerHTML = '<div class="frankie-avatar">' + (role === 'user' ? '👤' : '🤖') + '</div>'
-            + '<div class="frankie-bubble">' + text + '</div>';
+        var avatar = document.createElement('div');
+        avatar.className = 'frankie-avatar';
+        avatar.textContent = role === 'user' ? '\uD83D\uDC64' : '\uD83E\uDD16';
+        var bubble = document.createElement('div');
+        bubble.className = 'frankie-bubble';
+        bubble.textContent = text;
+        div.appendChild(avatar);
+        div.appendChild(bubble);
+        this.messages.appendChild(div);
+        this.messages.scrollTop = this.messages.scrollHeight;
+    },
+
+    addMessageWithNode: function(text, role, extraNode) {
+        var div = document.createElement('div');
+        div.className = 'frankie-msg frankie-' + role;
+        var avatar = document.createElement('div');
+        avatar.className = 'frankie-avatar';
+        avatar.textContent = role === 'user' ? '\uD83D\uDC64' : '\uD83E\uDD16';
+        var bubble = document.createElement('div');
+        bubble.className = 'frankie-bubble';
+        bubble.textContent = text;
+        div.appendChild(avatar);
+        div.appendChild(bubble);
+        if (extraNode) div.appendChild(extraNode);
         this.messages.appendChild(div);
         this.messages.scrollTop = this.messages.scrollHeight;
     },
@@ -487,6 +549,17 @@ window.frankie = {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (window.frankie) frankie.init();
+    if (!window.frankie) return;
+    frankie.init();
+
+    document.getElementById('frankie-bubble').addEventListener('click', function() { frankie.toggle(); });
+    document.getElementById('frankie-close-btn').addEventListener('click', function() { frankie.toggle(); });
+    document.getElementById('frankie-connect-toggle').addEventListener('click', function() { frankie.toggleConnect(); });
+    document.getElementById('frankie-config-key').addEventListener('input', function() { frankie.onKeyInput(); });
+    document.getElementById('frankie-detect-btn').addEventListener('click', function() { frankie.detectModels(); });
+    document.getElementById('frankie-save-config-btn').addEventListener('click', function() { frankie.saveConfig(); });
+    document.getElementById('frankie-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') frankie.ask(); });
+    document.getElementById('frankie-voice-btn').addEventListener('click', function() { frankie.toggleVoice(); });
+    document.getElementById('frankie-send-btn').addEventListener('click', function() { frankie.ask(); });
 });
 </script>

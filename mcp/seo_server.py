@@ -8,8 +8,10 @@ import json
 import re
 from pathlib import Path
 from datetime import datetime
+import requests
 from typing import Dict, Any
 from .base_server import MCPServer
+from ._safe_url import _is_safe_url
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +82,10 @@ class SEOMCPServer(MCPServer):
     def _publish_wordpress(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
         """Publish to WordPress REST API."""
         try:
-            import requests
-            url = creds.get("site_url", "").rstrip('/') + "/wp-json/wp/v2/posts"
+            site_url = creds.get("site_url", "")
+            if site_url and not _is_safe_url(site_url.rstrip('/') + "/"):
+                return {"success": False, "result": "", "error": "Blocked site URL"}
+            url = site_url.rstrip('/') + "/wp-json/wp/v2/posts"
             resp = requests.post(
                 url,
                 auth=(creds.get("username", ""), creds.get("app_password", "")),
@@ -99,32 +103,14 @@ class SEOMCPServer(MCPServer):
         except Exception as e:
             return {"success": False, "result": "", "error": f"WordPress publish failed: {e}"}
 
-    def _publish_webflow(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
-        """Publish to Webflow CMS API."""
-        try:
-            import requests
-            collection_id = creds.get("collection_id", "")
-            api_key = creds.get("api_key", "")
-
-            resp = requests.post(
-                f"https://api.webflow.com/v2/collections/{collection_id}/items",
-                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={"fieldData": {"name": title, "post-body": content}},
-                timeout=15
-            )
-            if resp.status_code in (200, 201):
-                return {"success": True, "result": "Published to Webflow CMS", "error": None}
-            return {"success": False, "result": "", "error": f"Webflow API error: {resp.text}"}
-        except Exception as e:
-            return {"success": False, "result": "", "error": f"Webflow publish failed: {e}"}
-
     def _publish_netlify(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
         """Trigger Netlify deploy via build hook."""
         try:
-            import requests
             hook_url = creds.get("build_hook_url", "")
             if not hook_url:
                 return {"success": False, "result": "", "error": "No Netlify build hook URL configured"}
+            if not _is_safe_url(hook_url):
+                return {"success": False, "result": "", "error": "Blocked site URL"}
             resp = requests.post(hook_url, timeout=15)
             if resp.status_code == 200:
                 return {"success": True, "result": "Netlify deploy triggered", "error": None}
@@ -135,8 +121,10 @@ class SEOMCPServer(MCPServer):
     def _publish_shopify(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
         """Publish to Shopify blog via Admin API."""
         try:
-            import requests
-            url = f"https://{creds.get('store_url', '')}/admin/api/2024-01/blogs/{creds.get('blog_id', '')}/articles.json"
+            store_url = creds.get('store_url', '')
+            if store_url and not _is_safe_url(f"https://{store_url}/"):
+                return {"success": False, "result": "", "error": "Blocked site URL"}
+            url = f"https://{store_url}/admin/api/2024-01/blogs/{creds.get('blog_id', '')}/articles.json"
             headers = {"X-Shopify-Access-Token": creds.get("api_key", ""), "Content-Type": "application/json"}
             payload = {"article": {"title": title, "body_html": content, "published": True}}
             resp = requests.post(url, headers=headers, json=payload, timeout=15)
@@ -149,7 +137,6 @@ class SEOMCPServer(MCPServer):
     def _publish_wix(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
         """Publish to Wix blog via API."""
         try:
-            import requests
             url = "https://www.wixapis.com/blog/v3/posts"
             headers = {"Authorization": creds.get("api_key", ""), "Content-Type": "application/json"}
             payload = {"post": {"title": title, "content": content, "status": "PUBLISHED"}}
@@ -163,7 +150,6 @@ class SEOMCPServer(MCPServer):
     def _publish_squarespace(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
         """Publish to Squarespace via API."""
         try:
-            import requests
             headers = {"Authorization": f"Bearer {creds.get('api_key', '')}", "Content-Type": "application/json"}
             resp = requests.get("https://api.squarespace.com/1.0/pages", headers=headers, timeout=15)
             return {"success": True, "result": "Squarespace connection verified. Full publishing coming soon.", "error": None}
@@ -173,8 +159,10 @@ class SEOMCPServer(MCPServer):
     def _publish_ghost(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
         """Publish to Ghost CMS via Admin API."""
         try:
-            import requests
-            url = f"{creds.get('site_url', '')}/ghost/api/v3/admin/posts/"
+            site_url = creds.get('site_url', '')
+            if site_url and not _is_safe_url(site_url.rstrip('/') + "/"):
+                return {"success": False, "result": "", "error": "Blocked site URL"}
+            url = f"{site_url}/ghost/api/v3/admin/posts/"
             headers = {"Authorization": f"Ghost {creds.get('admin_api_key', '')}", "Content-Type": "application/json"}
             payload = {"posts": [{"title": title, "html": content, "status": "published"}]}
             resp = requests.post(url, headers=headers, json=payload, timeout=15)
@@ -187,7 +175,6 @@ class SEOMCPServer(MCPServer):
     def _publish_contentful(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
         """Publish to Contentful via Management API."""
         try:
-            import requests
             space_id = creds.get("space_id", "")
             url = f"https://api.contentful.com/spaces/{space_id}/entries"
             headers = {
@@ -330,7 +317,6 @@ class SEOMCPServer(MCPServer):
         """Submit a URL or sitemap to Google Search Console."""
         if api_credentials and api_credentials.get("access_token"):
             try:
-                import requests
                 site = api_credentials.get("site_url", "").rstrip('/')
                 if sitemap:
                     endpoint = f"https://www.googleapis.com/webmasters/v3/sites/{site}/sitemaps/{url}"

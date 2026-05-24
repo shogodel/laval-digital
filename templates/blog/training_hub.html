@@ -7,8 +7,8 @@
     <meta name="description" content="Master your AI marketing suite with step-by-step guides, tutorials, and training articles.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         :root {
             --navy: #0f2b45; --red: #D42B2B; --red-dark: #A82323; --green: #059669;
             --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-300: #d1d5db;
@@ -61,13 +61,13 @@
 </head>
 <body>
     <nav class="top-nav">
-        <a href="/" class="brand"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital"> <span>Laval Digital</span></a>
-        <button class="hamburger" onclick="document.getElementById('nav-menu').classList.toggle('open')">☰</button>
+        <a href="{{ url_for('home') }}" class="brand"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital"> <span>Laval Digital</span></a>
+        <button class="hamburger" id="hamburger-btn">☰</button>
         <ul id="nav-menu">
-            <li><a href="/">Home</a></li>
-            <li><a href="/demo">Live Demo</a></li>
-            <li><a href="/blog">Blog</a></li>
-            <li><a href="/training" class="active">Training</a></li>
+            <li><a href="{{ url_for('home') }}">Home</a></li>
+            <li><a href="{{ url_for('demo') }}">Live Demo</a></li>
+            <li><a href="{{ url_for('blog') }}">Blog</a></li>
+            <li><a href="{{ url_for('training.training_hub') }}" class="active">Training</a></li>
         </ul>
     </nav>
 
@@ -75,20 +75,20 @@
         <h1>Master Your AI Marketing Suite</h1>
         <p>Step-by-step guides to get the most from your AI agents, dashboard, and tools. Learn at your own pace.</p>
         <div class="search-box">
-            <input type="text" id="search-input" placeholder="Search training articles..." oninput="filterArticles()">
-            <button onclick="filterArticles()">Search</button>
+            <input type="text" id="search-input" placeholder="Search training articles...">
+            <button id="search-btn">Search</button>
         </div>
     </section>
 
     <div class="container">
         <div class="filters" id="category-filters">
-            <button class="filter-btn active" data-cat="all" onclick="setFilter('all')">All</button>
-            <button class="filter-btn" data-cat="getting-started" onclick="setFilter('getting-started')">Getting Started</button>
-            <button class="filter-btn" data-cat="api-setup" onclick="setFilter('api-setup')">API Setup</button>
-            <button class="filter-btn" data-cat="seo" onclick="setFilter('seo')">SEO</button>
-            <button class="filter-btn" data-cat="social-media" onclick="setFilter('social-media')">Social Media</button>
-            <button class="filter-btn" data-cat="analytics" onclick="setFilter('analytics')">Analytics</button>
-            <button class="filter-btn" data-cat="troubleshooting" onclick="setFilter('troubleshooting')">Troubleshooting</button>
+            <button class="filter-btn active" data-cat="all">All</button>
+            <button class="filter-btn" data-cat="getting-started">Getting Started</button>
+            <button class="filter-btn" data-cat="api-setup">API Setup</button>
+            <button class="filter-btn" data-cat="seo">SEO</button>
+            <button class="filter-btn" data-cat="social-media">Social Media</button>
+            <button class="filter-btn" data-cat="analytics">Analytics</button>
+            <button class="filter-btn" data-cat="troubleshooting">Troubleshooting</button>
         </div>
 
         <h2 class="section-title" id="section-title">All Articles</h2>
@@ -96,8 +96,8 @@
         <div class="article-grid" id="article-grid"></div>
     </div>
 
-    <script>
-    const ARTICLES = {{ articles_json|safe|replace('</script>','</scr'+'ipt>') }};
+    <script nonce="{{ csp_nonce }}">
+    const ARTICLES = {{ articles | tojson }};
 
     function renderArticles(list) {
         const grid = document.getElementById('article-grid');
@@ -106,13 +106,13 @@
             return;
         }
         grid.innerHTML = list.map(a => `
-            <a class="article-card" href="/training/${a.slug}">
-                <div class="icon">${a.icon || '📖'}</div>
-                <h3>${a.title}</h3>
-                <p>${a.description}</p>
+            <a class="article-card" href="/training/${escapeHtml(a.slug)}">
+                <div class="icon">${escapeHtml(a.icon || '📖')}</div>
+                <h3>${escapeHtml(a.title)}</h3>
+                <p>${escapeHtml(a.description)}</p>
                 <div class="meta">
-                    <span>${a.read_time} min read</span>
-                    <span class="cat-tag">${a.category_label || a.category}</span>
+                    <span>${escapeHtml(a.read_time)} min read</span>
+                    <span class="cat-tag">${escapeHtml(a.category_label || a.category)}</span>
                 </div>
             </a>
         `).join('');
@@ -135,6 +135,16 @@
         document.querySelector(`.filter-btn[data-cat="${cat}"]`).classList.add('active');
         filterArticles();
     }
+
+    document.getElementById('hamburger-btn').addEventListener('click', function() {
+        document.getElementById('nav-menu').classList.toggle('open');
+    });
+    document.getElementById('search-btn').addEventListener('click', filterArticles);
+    document.getElementById('search-input').addEventListener('input', filterArticles);
+    document.getElementById('category-filters').addEventListener('click', function(e) {
+        const btn = e.target.closest('.filter-btn');
+        if (btn) setFilter(btn.dataset.cat);
+    });
 
     renderArticles(ARTICLES);
     </script>

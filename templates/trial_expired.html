@@ -6,8 +6,8 @@
     <title>Trial Expired — Laval Digital</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', -apple-system, sans-serif; background: #f7f8fa; color: #1f2937; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
         :root { --navy: #0f2b45; --orange: #D42B2B; --orange-dark: #A82323; --orange-glow: rgba(212,43,43,0.15); }
@@ -34,7 +34,7 @@
         <div class="price">$597.99 <span>/month</span></div>
         <p style="margin-bottom: 28px; font-size: 14px; color: #9ca3af;">One flat fee. Cancel anytime.</p>
         <a href="#" class="btn-primary" id="subscribe-btn">Subscribe Now</a>
-        <a href="/logout" class="btn-secondary">Log Out</a>
+        <a href="{{ url_for('logout') }}" class="btn-secondary">Log Out</a>
         <ul class="features">
             <li>All 16 specialized AI agents</li>
             <li>111+ execution tools across 8 channels</li>
@@ -42,6 +42,6 @@
             <li>Bilingual (EN/FR)</li>
         </ul>
     </div>
-    <script>document.getElementById("subscribe-btn").addEventListener("click", function(e) { e.preventDefault(); alert("Stripe checkout coming soon — for now, contact lavaldigital@gmail.com to subscribe."); });</script>
+    <script nonce="{{ csp_nonce }}">document.getElementById("subscribe-btn").addEventListener("click", function(e) { e.preventDefault(); alert("Stripe checkout coming soon — for now, contact {{ CONTACT_EMAIL }} to subscribe."); });</script>
 </body>
 </html>

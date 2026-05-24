@@ -17,5 +17,4 @@ class ReportingAgent(BaseAgent):
     def execute(self, draft_output: str) -> str:
         return f"Report ready for review: {draft_output[:80]}..."
 
-    def get_tools(self) -> List[Any]:
-        return []
+

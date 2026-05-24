@@ -2,40 +2,14 @@
 import logging
 import re
 import json
-import socket
 import requests
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 from pathlib import Path
-from urllib.parse import urlparse
-from .base_server import MCPServer
+from .base_server import MCPServer, _safe_error
+from ._safe_url import _is_safe_url
 
 logger = logging.getLogger(__name__)
-
-
-def _is_safe_url(url: str) -> bool:
-    """Block requests to private/reserved IPs (SSRF protection)."""
-    hostname = urlparse(url).hostname or ""
-    try:
-        addrs = socket.getaddrinfo(hostname, None)
-        for _, _, _, _, sockaddr in addrs:
-            ip = sockaddr[0]
-            if ":" not in ip:
-                parts = [int(x) for x in ip.split(".")]
-                if parts[0] == 127 or parts[0] == 10 or parts[0] == 0:
-                    return False
-                if parts[0] == 169 and parts[1] == 254:
-                    return False
-                if parts[0] == 192 and parts[1] == 168:
-                    return False
-                if parts[0] == 172 and 16 <= parts[1] <= 31:
-                    return False
-            else:
-                if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd") or ip.startswith("fe80"):
-                    return False
-        return True
-    except socket.gaierror:
-        return False
 
 
 class EcommerceMCPServer(MCPServer):
@@ -133,6 +107,8 @@ class EcommerceMCPServer(MCPServer):
         if platform == "shopify" and api_credentials:
             try:
                 store_url = api_credentials.get("store_url", "")
+                if store_url and not _is_safe_url(f"https://{store_url}/"):
+                    return {"success": False, "result": "", "error": "Blocked store URL"}
                 api_key = api_credentials.get("api_key", "")
                 if store_url and api_key:
                     url = f"https://{store_url}/admin/api/2024-01/products.json"
@@ -145,14 +121,18 @@ class EcommerceMCPServer(MCPServer):
                         product["platform_id"] = resp.json().get("product", {}).get("id")
                         product["platform_status"] = "Created on Shopify"
             except Exception as e:
-                product["platform_error"] = str(e)
+                product["platform_error"] = _safe_error(e)
 
         elif platform == "woocommerce" and api_credentials:
             try:
                 site_url = api_credentials.get("site_url", "")
+                if site_url and not _is_safe_url(site_url):
+                    return {"success": False, "result": "", "error": "Blocked store URL"}
                 consumer_key = api_credentials.get("consumer_key", "")
                 consumer_secret = api_credentials.get("consumer_secret", "")
                 if site_url and consumer_key:
+                    if not site_url.startswith("https://"):
+                        raise ValueError("WooCommerce API requires HTTPS")
                     url = f"{site_url.rstrip('/')}/wp-json/wc/v3/products"
                     auth = (consumer_key, consumer_secret)
                     payload = {"name": product_name, "regular_price": str(price), "description": kwargs.get("description", ""),
@@ -162,7 +142,7 @@ class EcommerceMCPServer(MCPServer):
                         product["platform_id"] = resp.json().get("id")
                         product["platform_status"] = "Created on WooCommerce"
             except Exception as e:
-                product["platform_error"] = str(e)
+                product["platform_error"] = _safe_error(e)
 
         return {"success": True, "result": f"Product '{product_name}' {action}ed (score: {score}/100)", "product": product}
 
@@ -240,7 +220,8 @@ class EcommerceMCPServer(MCPServer):
         if not _is_safe_url(url):
             return {"success": False, "error": "Blocked request to private IP"}
         try:
-            resp = requests.get(url, headers={'User-Agent': 'Frankie-Ecom-Scanner/1.0'}, timeout=10)
+            # SSRF protection: no redirect following to prevent DNS rebinding
+            resp = requests.get(url, headers={'User-Agent': 'Frankie-Ecom-Scanner/1.0'}, timeout=10, allow_redirects=False)
             content = resp.text
 
             score = 0
@@ -312,7 +293,7 @@ class EcommerceMCPServer(MCPServer):
                     "score": score, "checks": checks, "pass_count": sum(1 for c in checks if c["status"] == "pass"),
                     "fail_count": sum(1 for c in checks if c["status"] == "fail")}
         except Exception as e:
-            return {"success": False, "error": f"Failed to audit {url}: {str(e)}"}
+            return {"success": False, "error": f"Failed to audit {url}: {_safe_error(e)}"}
 
     # ------------------------------------------------------------------
     # Abandoned Carts
@@ -593,7 +574,8 @@ Order now and experience the difference."""
 
         if url:
             try:
-                resp = self._fetch_page(url) if hasattr(self, '_fetch_page') else requests.get(url, timeout=10, headers={'User-Agent': 'Frankie/1.0'})
+                # SSRF protection: no redirect following to prevent DNS rebinding
+                resp = self._fetch_page(url) if hasattr(self, '_fetch_page') else requests.get(url, timeout=10, headers={'User-Agent': 'Frankie/1.0'}, allow_redirects=False)
                 content = resp.text
                 if 'shopify' in content.lower(): checks.append({"category": "Platform", "check": "Platform detected", "detail": "Shopify", "priority": "info"})
                 if 'woocommerce' in content.lower(): checks.append({"category": "Platform", "check": "Platform detected", "detail": "WooCommerce", "priority": "info"})
@@ -633,6 +615,7 @@ Order now and experience the difference."""
             if not _is_safe_url(url):
                 logger.warning("Blocked SSRF attempt to private IP: %s", url)
                 return None
-            return requests.get(url, headers={'User-Agent': 'Frankie-Ecom/1.0'}, timeout=10)
+            # SSRF protection: no redirect following to prevent DNS rebinding
+            return requests.get(url, headers={'User-Agent': 'Frankie-Ecom/1.0'}, timeout=10, allow_redirects=False)
         except Exception:
             return None

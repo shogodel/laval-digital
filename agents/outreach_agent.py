@@ -22,5 +22,4 @@ class OutreachAgent(BaseAgent):
         logger.info("Outreach task completed")
         return result
 
-    def get_tools(self) -> List[Any]:
-        return []
+

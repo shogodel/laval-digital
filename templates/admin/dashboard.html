@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Frankie Command Center</title>
-    <link rel="manifest" href="/static/manifest.json">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#D42B2B">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
@@ -104,17 +105,17 @@
 <body>
 <div class="topbar">
     <div class="topbar-left">
-        <a href="/">&larr; Home</a>
-        <a href="/frankie/analytics">Analytics</a>
+        <a href="{{ url_for('home') }}">&larr; Home</a>
+        <a href="{{ url_for('admin.analytics') }}">Analytics</a>
     </div>
     <div class="topbar-center">
         <h1>&#9889; Frankie Command Center <span>live</span></h1>
     </div>
         <div class="topbar-right">
-            <button id="panic-btn" class="panic-btn" onclick="togglePanic()">&#9888; Stop All</button>
-            <button id="install-btn" class="install-btn" onclick="installApp()" style="display:none;">&#11013; Install App</button>
+            <button id="panic-btn" class="panic-btn">&#9888; Stop All</button>
+            <button id="install-btn" class="install-btn" style="display:none;">&#11013; Install App</button>
             <label style="font-size:0.7rem;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:4px;cursor:pointer;">
-                <input type="checkbox" id="push-subscribe" onchange="togglePush()" checked style="accent-color:var(--red);"> Push
+                <input type="checkbox" id="push-subscribe" checked style="accent-color:var(--red);"> Push
             </label>
             <span id="connection-status" style="font-size:0.7rem;color:rgba(255,255,255,0.4);padding:3px 8px;border-radius:10px;background:rgba(255,255,255,0.08);">connecting...</span>
         </div>
@@ -155,24 +156,24 @@
                 <span class="badge" id="feed-count">0</span>
             </div>
             <div class="filter-group">
-                <button class="active" data-filter="all" onclick="setFilter('all', this)">All</button>
-                <button data-filter="approval" onclick="setFilter('approval', this)">Pending</button>
-                <button data-filter="activity" onclick="setFilter('activity', this)">Done</button>
+                <button id="filter-all" class="active" data-filter="all">All</button>
+                <button id="filter-approval" data-filter="approval">Pending</button>
+                <button id="filter-activity" data-filter="activity">Done</button>
             </div>
         </div>
         <div class="feed-list" id="feed-list">
             <div class="feed-empty">Loading...</div>
         </div>
         <div class="ask-bar">
-            <input type="text" id="ask-input" placeholder="Talk to Frankie..." onkeydown="if(event.key==='Enter') askFrankie()">
-            <button onclick="askFrankie()">Ask</button>
+            <input type="text" id="ask-input" placeholder="Talk to Frankie...">
+            <button id="ask-btn">Ask</button>
             <div class="ask-response" id="ask-response"></div>
         </div>
     </div>
-    <button class="undo-btn" id="undo-btn" onclick="undoLast()">↩ Undo Last</button>
+    <button class="undo-btn" id="undo-btn">↩ Undo Last</button>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 let EVENT_FILTER = 'all';
 let EVENT_COUNT = 0;
 
@@ -260,7 +261,7 @@ function addFeedItem(event) {
 
     div.innerHTML = '<div class="fi-top">' +
         '<span class="fi-agent">' + escapeHtml(agent) + '</span>' +
-        '<span class="fi-type ' + type + '">' + type.replace('agent_', '').replace('_', ' ') + '</span>' +
+        '<span class="fi-type ' + escapeHtml(type) + '">' + escapeHtml(type.replace('agent_', '').replace('_', ' ')) + '</span>' +
         (confidence ? '<span class="fi-conf">' + Math.round(confidence * 100) + '%</span>' : '') +
         '<span class="fi-time">' + time + '</span>' +
         '</div>' +
@@ -334,14 +335,15 @@ async function loadInbox() {
         }
         list.innerHTML = items.map(item => {
             const p = PERSONALITIES[item.agent] || {};
-            const emoji = p.emoji || '🤖';
-            const color = p.color || '#6b7280';
+            const emoji = p.emoji || '\uD83E\uDD16';
+            const rawColor = p.color || '#6b7280';
+            const color = /^#[0-9a-fA-F]{3,8}$/.test(rawColor) ? rawColor : '#6b7280';
             const time = item.created_at ? new Date(item.created_at).toLocaleTimeString() : '';
-            const icon = item.icon || (item.type === 'approval' ? '🤔' : '✅');
-            return '<div class="feed-item" data-type="' + item.type + '">'
+            const icon = item.icon || (item.type === 'approval' ? '\uD83E\uDD14' : '\u2705');
+            return '<div class="feed-item" data-type="' + escapeHtml(item.type) + '">'
                 + '<div class="fi-top">'
-                + '<span class="fi-personality" style="background:' + color + '20;color:' + color + ';">' + emoji + '</span>'
-                + '<span class="fi-agent">' + (p.short || item.agent) + '</span>'
+                + '<span class="fi-personality" style="background:' + color + '20;color:' + color + ';">' + escapeHtml(emoji) + '</span>'
+                + '<span class="fi-agent">' + escapeHtml(p.short || item.agent) + '</span>'
                 + '<span class="fi-time">' + time + '</span>'
                 + '</div>'
                 + '<div class="fi-draft">' + escapeHtml(item.summary || '') + '</div>'
@@ -546,6 +548,17 @@ function urlBase64ToUint8Array(base64) {
     const raw = atob(b64);
     return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
+
+/* ── Event listeners (CSP nonce‑safe) ── */
+document.getElementById('panic-btn').addEventListener('click', togglePanic);
+document.getElementById('install-btn').addEventListener('click', installApp);
+document.getElementById('push-subscribe').addEventListener('change', togglePush);
+document.getElementById('filter-all').addEventListener('click', function() { setFilter('all', this); });
+document.getElementById('filter-approval').addEventListener('click', function() { setFilter('approval', this); });
+document.getElementById('filter-activity').addEventListener('click', function() { setFilter('activity', this); });
+document.getElementById('ask-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') askFrankie(); });
+document.getElementById('ask-btn').addEventListener('click', askFrankie);
+document.getElementById('undo-btn').addEventListener('click', undoLast);
 </script>
 
 {% include 'admin/frankie.html' %}

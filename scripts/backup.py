@@ -18,7 +18,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
 BACKUP_ROOT = BASE_DIR / "backups"
-TENANTS_DIR = BASE_DIR / "tenants"
+DATA_DIR = BASE_DIR / "data"
 DAYS_TO_KEEP = 7
 WEEKS_TO_KEEP = 4
 
@@ -152,14 +152,14 @@ def main():
 
     daily_dir.mkdir(parents=True, exist_ok=True)
 
-    if not TENANTS_DIR.exists():
-        print("No tenants directory found.")
+    if not DATA_DIR.exists():
+        print("No data directory found.")
         return
 
     count = 0
     errors = 0
-    for db_file in sorted(TENANTS_DIR.rglob("*.db")):
-        rel = db_file.relative_to(TENANTS_DIR)
+    for db_file in sorted(DATA_DIR.rglob("*.db")):
+        rel = db_file.relative_to(DATA_DIR)
         dst = daily_dir / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         if backup_sqlite(db_file, dst):
@@ -194,14 +194,22 @@ def main():
     # Offsite sync via rsync (BACKUP_OFFSITE_DEST)
     offsite_dest = os.environ.get("BACKUP_OFFSITE_DEST", "")
     if offsite_dest:
-        import subprocess
-        src = str(daily_dir) + "/"
-        rc = subprocess.run(["rsync", "-a", "--delete", src, offsite_dest],
-                            timeout=120).returncode
-        if rc == 0:
-            print(f"Synced to offsite destination: {offsite_dest}")
+        if not offsite_dest.strip() or len(offsite_dest.strip()) < 3:
+            print("WARNING: BACKUP_OFFSITE_DEST is empty or too short, skipping offsite sync")
+        elif not (":" in offsite_dest or offsite_dest.startswith("/")):
+            print(f"WARNING: BACKUP_OFFSITE_DEST '{offsite_dest}' does not look like a valid rsync target, skipping")
         else:
-            print(f"Offsite sync failed (rsync exit code {rc})")
+            import subprocess
+            src = str(daily_dir) + "/"
+            try:
+                rc = subprocess.run(["rsync", "-a", "--delete", src, offsite_dest],
+                                    timeout=120).returncode
+                if rc == 0:
+                    print(f"Synced to offsite destination: {offsite_dest}")
+                else:
+                    print(f"Offsite sync failed (rsync exit code {rc})")
+            except subprocess.TimeoutExpired:
+                print("Offsite rsync timed out after 120s")
 
 
 if __name__ == "__main__":

@@ -11,7 +11,24 @@ from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from mcp import AGENT_MCP_ROUTING
+
 logger = logging.getLogger(__name__)
+
+MCP_TOOL_TO_LOCAL: Dict[str, str] = {
+    "publish_blog_post": "publish_blog_post",
+    "post_to_facebook": "post_to_social",
+    "post_to_tiktok": "post_to_social",
+    "post_to_youtube": "post_to_social",
+    "send_email": "send_email",
+    "send_campaign": "send_email",
+    "respond_to_review": "update_gmb",
+    "analyze_trends": "save_report",
+    "find_backlink_opportunities": "publish_blog_post",
+    "run_site_audit": "save_technical_seo_report",
+    "track_conversions": "save_cro_analysis",
+    "generate_monthly_report": "save_report",
+}
 
 
 class ExecutionerError(Exception):
@@ -61,9 +78,9 @@ class ExecutionerAgent:
                 - retry_delay (int): Seconds between retries. Defaults to 5.
         """
         config = config or {}
-        self._execution_log_path = Path(
-            config.get("execution_log_path", "logs/executions.jsonl")
-        )
+        log_path = config.get("execution_log_path", "logs/executions.jsonl")
+        self._execution_log_path = Path(log_path).resolve()
+        self._execution_log_path.parent.mkdir(parents=True, exist_ok=True)
         self._max_retries = config.get("max_retries", 3)
         self._retry_delay = config.get("retry_delay", 5)
         self.tool_registry: Dict[str, Callable] = {}
@@ -71,8 +88,8 @@ class ExecutionerAgent:
         self._pending: Dict[str, Dict[str, Any]] = {}
         self._io_lock = threading.Lock()
         self._pending_lock = threading.Lock()
-
-        self._execution_log_path.parent.mkdir(parents=True, exist_ok=True)
+        self._tool_registry_lock = threading.Lock()
+        self._settings_lock = threading.Lock()
 
         self._register_default_tools()
         logger.info(
@@ -102,9 +119,10 @@ class ExecutionerAgent:
             "confirm_tools", "max_retries", "retry_delay",
             "execution_log_path",
         }
-        for key, value in settings.items():
-            if key in allowed_keys:
-                self._settings[key] = value
+        with self._settings_lock:
+            for key, value in settings.items():
+                if key in allowed_keys:
+                    self._settings[key] = value
         logger.debug("Settings updated: %s", [k for k in settings if k in allowed_keys])
 
     def get_settings(self) -> Dict[str, Any]:
@@ -114,17 +132,21 @@ class ExecutionerAgent:
             Dict of all current settings including secrets.
             Intended for internal use only.
         """
-        return dict(self._settings)
+        with self._settings_lock:
+            return dict(self._settings)
 
     def get_public_settings(self) -> Dict[str, Any]:
         """Return settings safe for external API responses (secrets removed).
 
         Returns:
-            Dict with ``smtp_password`` replaced by a masked placeholder.
+            Dict with ``smtp_password`` and ``social_api_key`` replaced by masked placeholders.
         """
-        public = dict(self._settings)
+        with self._settings_lock:
+            public = dict(self._settings)
         if public.get("smtp_password"):
             public["smtp_password"] = "********"
+        if public.get("social_api_key"):
+            public["social_api_key"] = "********"
         return public
 
     # ------------------------------------------------------------------
@@ -141,7 +163,8 @@ class ExecutionerAgent:
                 (the approved draft) and returns a dict:
                 ``{"success": bool, "result": str, "error": Optional[str]}``.
         """
-        self.tool_registry[tool_name] = tool_func
+        with self._tool_registry_lock:
+            self.tool_registry[tool_name] = tool_func
         logger.debug("Registered tool: %s", tool_name)
 
     def _register_default_tools(self) -> None:
@@ -202,7 +225,7 @@ class ExecutionerAgent:
         """
         # Try MCP execution first
         try:
-            from mcp import get_mcp_server, AGENT_MCP_ROUTING
+            from mcp import get_mcp_server
             mapping = AGENT_MCP_ROUTING.get(agent_name)
             if mapping:
                 server_name, mcp_tool = mapping
@@ -232,7 +255,9 @@ class ExecutionerAgent:
                 f"(available: {list(self.tool_registry)})"
             )
 
-        confirm_tools: List[str] = self._settings.get("confirm_tools", [])
+        confirm_tools = self._settings.get("confirm_tools", [])
+        if not isinstance(confirm_tools, list):
+            confirm_tools = []
         needs_confirmation = resolved_tool in confirm_tools and not force
 
         execution_id = uuid.uuid4().hex
@@ -285,7 +310,8 @@ class ExecutionerAgent:
         Returns:
             Result dict with execution_id.
         """
-        tool_func = self.tool_registry[tool_name]
+        with self._tool_registry_lock:
+            tool_func = self.tool_registry[tool_name]
         last_error: Optional[str] = None
 
         for attempt in range(1, self._max_retries + 1):
@@ -454,27 +480,10 @@ class ExecutionerAgent:
         Raises:
             ExecutionerError: If ``agent_name`` has no mapped tool.
         """
-        from mcp import AGENT_MCP_ROUTING
-
-        mcp_tool_to_local = {
-            "publish_blog_post": "publish_blog_post",
-            "post_to_facebook": "post_to_social",
-            "post_to_tiktok": "post_to_social",
-            "post_to_youtube": "post_to_social",
-            "send_email": "send_email",
-            "send_campaign": "send_email",
-            "respond_to_review": "update_gmb",
-            "create_google_ads_campaign": "post_to_social",
-            "analyze_trends": "save_report",
-            "find_backlink_opportunities": "publish_blog_post",
-            "run_site_audit": "save_technical_seo_report",
-            "track_conversions": "save_cro_analysis",
-            "generate_monthly_report": "save_report",
-        }
         mapping_entry = AGENT_MCP_ROUTING.get(agent_name)
         if mapping_entry:
             _, mcp_tool = mapping_entry
-            local_tool = mcp_tool_to_local.get(mcp_tool)
+            local_tool = MCP_TOOL_TO_LOCAL.get(mcp_tool)
             if local_tool and local_tool in self.tool_registry:
                 return local_tool
         raise ExecutionerError(
@@ -494,8 +503,12 @@ class ExecutionerAgent:
         alternatives = {
             "local_seo": ["update_gmb"],
         }
-        primary = self._select_tool(agent_name)
         extra = alternatives.get(agent_name, [])
+        with self._tool_registry_lock:
+            try:
+                primary = self._select_tool(agent_name)
+            except ExecutionerError:
+                return extra or []
         return [primary] + extra
 
     # ------------------------------------------------------------------
@@ -602,8 +615,7 @@ class ExecutionerAgent:
                     if resp.status_code == 200 and data.get("success"):
                         logger.info("Social post published via SocialAPI")
                         return {"success": True, "result": "Posted via SocialAPI", "error": None}
-                    error_msg = data.get("error", resp.text)
-                    return {"success": False, "result": "", "error": f"SocialAPI error: {error_msg}"}
+                    return {"success": False, "result": "", "error": "SocialAPI returned an error."}
 
                 elif provider == "buffer":
                     profile_ids = self._settings.get("buffer_profile_ids", [])
@@ -611,13 +623,14 @@ class ExecutionerAgent:
                         return {"success": False, "result": "", "error": "Buffer profile IDs not configured. Add them in Execution Settings."}
                     resp = req.post(
                         "https://api.bufferapp.com/1/updates/create.json",
-                        data={"access_token": api_key, "text": draft, "profile_ids[]": profile_ids},
+                        headers={"Authorization": f"Bearer {api_key}"},
+                        data={"text": draft, "profile_ids[]": profile_ids},
                         timeout=15,
                     )
                     data = resp.json()
                     if resp.status_code == 200 and data.get("success"):
                         return {"success": True, "result": "Posted via Buffer", "error": None}
-                    return {"success": False, "result": "", "error": f"Buffer error: {data}"}
+                    return {"success": False, "result": "", "error": "Buffer returned an error."}
 
                 elif provider == "hootsuite":
                     profile_ids = self._settings.get("hootsuite_profile_ids", [])
@@ -635,28 +648,34 @@ class ExecutionerAgent:
                     data = resp.json()
                     if resp.status_code in (200, 201) and data.get("id"):
                         return {"success": True, "result": "Posted via Hootsuite", "error": None}
-                    return {"success": False, "result": "", "error": f"Hootsuite error: {data}"}
+                    return {"success": False, "result": "", "error": "Hootsuite returned an error."}
 
                 else:
-                    # Custom/Generic — user provides their own API endpoint via env
-                    custom_url = os.getenv("SOCIAL_API_CUSTOM_URL", "")
+                    # Custom/Generic — user provides their own API endpoint via settings
+                    custom_url = self._settings.get("social_api_custom_url", "")
                     if custom_url:
                         # SSRF prevention: block private IPs
                         try:
-                            parsed_url = __import__("urllib.parse", fromlist=["urlparse"]).urlparse(custom_url)
+                            from urllib.parse import urlparse as _urlparse
+                            import socket as _socket
+                            import ipaddress as _ipaddress
+                            parsed_url = _urlparse(custom_url)
                             hostname = parsed_url.hostname or ""
-                            _socket = __import__("socket")
                             addrs = _socket.getaddrinfo(hostname, None)
                             for _, _, _, _, sockaddr in addrs:
                                 cip = sockaddr[0]
                                 if ":" not in cip:
                                     p = [int(x) for x in cip.split(".")]
-                                    if p[0] in (127, 10, 0) or (p[0] == 169 and p[1] == 254) or (p[0] == 192 and p[1] == 168) or (p[0] == 172 and 16 <= p[1] <= 31):
+                                    if p[0] in (127, 10, 0) or (p[0] == 169 and p[1] == 254) or (p[0] == 192 and p[1] == 168) or (p[0] == 172 and 16 <= p[1] <= 31) or (p[0] == 100 and 64 <= p[1] <= 127):
                                         return {"success": False, "result": "", "error": "Custom API resolves to a private IP"}
                                 else:
-                                    if cip.startswith("::1") or cip.startswith("fc") or cip.startswith("fd") or cip.startswith("fe80"):
-                                        return {"success": False, "result": "", "error": "Custom API resolves to a private IPv6"}
-                        except Exception:
+                                    addr = _ipaddress.IPv6Address(cip)
+                                    if addr.is_loopback or addr.is_link_local or addr.is_multicast or cip.startswith("fc") or cip.startswith("fd") or addr in _ipaddress.IPv6Network("2001:db8::/32"):
+                                        return {"success": False, "result": "", "error": "Custom API resolves to a private/reserved IPv6"}
+                        except (_socket.gaierror, ValueError, _ipaddress.AddressValueError):
+                            return {"success": False, "result": "", "error": "Could not resolve custom API URL"}
+                        except Exception as exc:
+                            logger.warning("Unexpected error resolving custom API URL: %s", exc)
                             return {"success": False, "result": "", "error": "Could not resolve custom API URL"}
                         resp = req.post(
                             custom_url,
@@ -699,29 +718,9 @@ class ExecutionerAgent:
             logger.error("Social post queue failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to queue social post."}
 
-    def _post_to_social_unified(self, draft: str) -> Dict[str, Any]:
-        """Post to multiple social platforms using the configured unified API."""
-        provider = self._settings.get("social_api_provider", "")
-        api_key = self._settings.get("social_api_key", "")
-
-        if not api_key:
-            return {"success": False, "result": "", "error": "No unified social API key configured."}
-
-        try:
-            if provider == "socialapi":
-                from socialapi import SocialAPI
-                client = SocialAPI(api_key=api_key)
-
-                accounts = client.accounts.list()
-                platforms = [{"platform": a.platform, "account_id": a.id} for a in accounts]
-
-                post = client.publishing.create(text=draft, platforms=platforms)
-                return {"success": True, "result": f"Published to {len(platforms)} platforms.", "error": None}
-            else:
-                return {"success": False, "result": "", "error": f"Provider '{provider}' is not yet supported."}
-        except Exception as e:
-            logger.error("Unified social post failed: %s", e, exc_info=True)
-            return {"success": False, "result": "", "error": "Social post failed."}
+    def _post_to_social_unified(self, *args, **kwargs):
+        logger.warning("_post_to_social_unified is deprecated and always fails")
+        return {"success": False, "result": "", "error": "Unified posting not implemented"}
 
     def _send_email(self, draft: str) -> Dict[str, Any]:
         """Send an email via SMTP or queue to file.
@@ -743,33 +742,35 @@ class ExecutionerAgent:
             r"^(?:#\s*)?Subject\s*:\s*(.+)$", draft, re.MULTILINE | re.IGNORECASE
         )
         subject = subject_match.group(1).strip() if subject_match else "(no subject)"
-        # Sanitize subject to prevent header injection
-        subject = subject.replace("\r", "").replace("\n", "")[:200]
+        # Sanitize subject to prevent header injection (strip all control chars and unicode newlines)
+        subject = re.sub(r'[\r\n\x00-\x1f\u2028\u2029]', '', subject)[:200]
 
         to_match = re.search(
             r"^(?:#\s*)?To\s*:\s*(.+)$", draft, re.MULTILINE | re.IGNORECASE
         )
-        recipient = to_match.group(1).strip() if to_match else ""
-        # Validate recipient is a single email address
-        recipient = recipient.split(",")[0].strip()  # Take first email if multiple
-        recipient = recipient.replace("\r", "").replace("\n", "")
-        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", recipient):
-            return {"success": False, "error": "Invalid recipient email address"}
+        recipient_str = to_match.group(1).strip() if to_match else ""
+        recipient_str = re.sub(r'[\r\n\x00-\x1f\u2028\u2029]', '', recipient_str)
+        recipients = [r.strip() for r in recipient_str.split(",") if r.strip()]
+        if not recipients:
+            return {"success": False, "result": "", "error": "No recipient email address found"}
+        for r in recipients:
+            if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", r):
+                return {"success": False, "result": "", "error": f"Invalid recipient email address: {r}"}
 
         smtp_host = self._settings.get("smtp_host", "")
 
         if smtp_host:
-            return self._send_email_smtp(draft, subject, recipient)
+            return self._send_email_smtp(draft, subject, recipients)
 
-        return self._queue_email(draft, subject, recipient)
+        return self._queue_email(draft, subject, recipients)
 
-    def _send_email_smtp(self, draft: str, subject: str, recipient: str) -> Dict[str, Any]:
+    def _send_email_smtp(self, draft: str, subject: str, recipients: List[str]) -> Dict[str, Any]:
         """Send email via SMTP using configured credentials.
 
         Args:
             draft: Full email body.
             subject: Extracted subject line.
-            recipient: Recipient email address from draft ``To:`` header.
+            recipients: List of recipient email addresses from draft ``To:`` header.
 
         Returns:
             Result dict.
@@ -788,7 +789,7 @@ class ExecutionerAgent:
                 "error": "SMTP username not configured",
             }
 
-        if not recipient:
+        if not recipients:
             return {
                 "success": False,
                 "result": "",
@@ -796,36 +797,44 @@ class ExecutionerAgent:
             }
 
         try:
-            msg = MIMEText(draft, _charset="utf-8")
+            # Strip Subject:/To: header lines from draft body to avoid duplication
+            body_lines = draft.split("\n")
+            while body_lines and body_lines[0].strip().lower().startswith(("subject:", "to:")):
+                body_lines.pop(0)
+            clean_draft = "\n".join(body_lines).strip()
+
+            recipient_str = ", ".join(recipients)
+            msg = MIMEText(clean_draft, _charset="utf-8")
             msg["Subject"] = subject
             msg["From"] = smtp_from.replace("\r", "").replace("\n", "")[:200]
-            msg["To"] = recipient
+            msg["To"] = recipient_str
 
-            server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
-            if use_tls:
-                server.starttls()
-            if smtp_user:
-                server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-            server.quit()
+            import ssl
+            ssl_context = ssl.create_default_context()
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+                if use_tls:
+                    server.starttls(context=ssl_context)
+                if smtp_user:
+                    server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
 
-            logger.info("Email sent via SMTP (to=%s, subject=%s)", recipient, subject)
+            logger.info("Email sent via SMTP (to=%s, subject=%s)", recipient_str, subject)
             return {
                 "success": True,
-                "result": f"Email sent to {recipient}: {subject}",
+                "result": f"Email sent to {recipient_str}: {subject}",
                 "error": None,
             }
         except Exception as exc:
             logger.error("SMTP send failed: %s", exc)
             return {"success": False, "result": "", "error": f"SMTP send failed: {exc}"}
 
-    def _queue_email(self, draft: str, subject: str, recipient: str) -> Dict[str, Any]:
+    def _queue_email(self, draft: str, subject: str, recipients: List[str]) -> Dict[str, Any]:
         """Queue an email to the sent-mail JSONL log.
 
         Args:
             draft: Full email body.
             subject: Extracted subject line.
-            recipient: Recipient email address from draft ``To:`` header.
+            recipients: List of recipient email addresses from draft ``To:`` header.
 
         Returns:
             Result dict.
@@ -835,10 +844,11 @@ class ExecutionerAgent:
             email_dir.mkdir(parents=True, exist_ok=True)
             email_file = email_dir / "sent.jsonl"
 
+            recipient_str = ", ".join(recipients)
             record = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "subject": subject,
-                "to": recipient,
+                "to": recipient_str,
                 "body": draft,
                 "status": "queued",
             }
@@ -889,85 +899,59 @@ class ExecutionerAgent:
             ts = datetime.now().strftime("%Y%m%d%H%M%S")
             fp = cal_dir / f"calendar-{slug}-{ts}.jsonl"
             record = {"id": uuid.uuid4().hex[:12], "type": "content_calendar", "content": draft, "created_at": datetime.now(timezone.utc).isoformat()}
-            with open(fp, "a", encoding="utf-8") as f:
-                f.write(json.dumps(record) + "\n")
+            with self._io_lock:
+                with open(fp, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(record) + "\n")
             logger.info("Calendar saved: %s", fp)
             return {"success": True, "result": str(fp), "error": None}
         except OSError as exc:
             logger.error("Calendar save failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to save content calendar."}
 
-    def _save_technical_seo_report(self, draft: str) -> Dict[str, Any]:
+    def _save_file(self, base_dir: str, prefix: str, extension: str, draft: str,
+                   error_label: str) -> Dict[str, Any]:
+        """Shared helper to save draft content to a file.
+
+        Args:
+            base_dir: Subdirectory under content/ (e.g., "technical_seo").
+            prefix: Filename prefix (e.g., "audit").
+            extension: File extension without dot (e.g., "md").
+            draft: Content to write.
+            error_label: Human-readable label for error messages.
+
+        Returns:
+            Result dict with success, result path, and error.
+        """
         try:
-            ts_dir = Path("content/technical_seo")
-            ts_dir.mkdir(parents=True, exist_ok=True)
+            target_dir = Path("content") / base_dir
+            target_dir.mkdir(parents=True, exist_ok=True)
             slug = self._slugify(draft.strip().split("\n")[0][:60])
             ts = datetime.now().strftime("%Y%m%d%H%M%S")
-            fp = ts_dir / f"audit-{slug}-{ts}.md"
+            fp = target_dir / f"{prefix}-{slug}-{ts}.{extension}"
             fp.write_text(draft.strip(), encoding="utf-8")
-            logger.info("Tech SEO report saved: %s", fp)
+            logger.info("%s saved: %s", error_label, fp)
             return {"success": True, "result": str(fp), "error": None}
         except OSError as exc:
-            logger.error("Tech SEO save failed: %s", exc)
-            return {"success": False, "result": "", "error": "Failed to save technical SEO report."}
+            logger.error("%s save failed: %s", error_label, exc)
+            return {"success": False, "result": "", "error": f"Failed to save {error_label.lower()}."}
+
+    def _save_technical_seo_report(self, draft: str) -> Dict[str, Any]:
+        return self._save_file("technical_seo", "audit", "md", draft, "Tech SEO report")
 
     def _generate_schema_json(self, draft: str) -> Dict[str, Any]:
-        try:
-            schema_dir = Path("content/technical_seo")
-            schema_dir.mkdir(parents=True, exist_ok=True)
-            slug = self._slugify(draft.strip().split("\n")[0][:60])
-            ts = datetime.now().strftime("%Y%m%d%H%M%S")
-            fp = schema_dir / f"schema-{slug}-{ts}.json"
-            fp.write_text(draft.strip(), encoding="utf-8")
-            logger.info("Schema saved: %s", fp)
-            return {"success": True, "result": str(fp), "error": None}
-        except OSError as exc:
-            logger.error("Schema save failed: %s", exc)
-            return {"success": False, "result": "", "error": "Failed to save schema markup."}
+        return self._save_file("technical_seo", "schema", "json", draft, "Schema markup")
 
     def _save_report(self, draft: str) -> Dict[str, Any]:
-        try:
-            rep_dir = Path("content/reports")
-            rep_dir.mkdir(parents=True, exist_ok=True)
-            slug = self._slugify(draft.strip().split("\n")[0][:60])
-            ts = datetime.now().strftime("%Y%m%d%H%M%S")
-            fp = rep_dir / f"report-{slug}-{ts}.html"
-            fp.write_text(draft.strip(), encoding="utf-8")
-            logger.info("Report saved: %s", fp)
-            return {"success": True, "result": str(fp), "error": None}
-        except OSError as exc:
-            logger.error("Report save failed: %s", exc)
-            return {"success": False, "result": "", "error": "Failed to save report."}
+        return self._save_file("reports", "report", "html", draft, "Report")
 
     def _save_cro_analysis(self, draft: str) -> Dict[str, Any]:
-        try:
-            cd = Path("content/cro"); cd.mkdir(parents=True, exist_ok=True)
-            slug = self._slugify(draft.strip().split("\n")[0][:60]); ts = datetime.now().strftime("%Y%m%d%H%M%S")
-            fp = cd / f"cro-{slug}-{ts}.md"; fp.write_text(draft.strip(), encoding="utf-8")
-            return {"success": True, "result": str(fp), "error": None}
-        except OSError as exc:
-            logger.error("CRO save failed: %s", exc)
-            return {"success": False, "result": "", "error": "Failed to save CRO analysis."}
+        return self._save_file("cro", "cro", "md", draft, "CRO analysis")
 
     def _save_video_script(self, draft: str) -> Dict[str, Any]:
-        try:
-            vd = Path("content/video"); vd.mkdir(parents=True, exist_ok=True)
-            slug = self._slugify(draft.strip().split("\n")[0][:60]); ts = datetime.now().strftime("%Y%m%d%H%M%S")
-            fp = vd / f"video-{slug}-{ts}.md"; fp.write_text(draft.strip(), encoding="utf-8")
-            return {"success": True, "result": str(fp), "error": None}
-        except OSError as exc:
-            logger.error("Video save failed: %s", exc)
-            return {"success": False, "result": "", "error": "Failed to save video script."}
+        return self._save_file("video", "video", "md", draft, "Video script")
 
     def _save_sms_campaign(self, draft: str) -> Dict[str, Any]:
-        try:
-            sd = Path("content/sms_campaigns"); sd.mkdir(parents=True, exist_ok=True)
-            slug = self._slugify(draft.strip().split("\n")[0][:60]); ts = datetime.now().strftime("%Y%m%d%H%M%S")
-            fp = sd / f"sms-{slug}-{ts}.md"; fp.write_text(draft.strip(), encoding="utf-8")
-            return {"success": True, "result": str(fp), "error": None}
-        except OSError as exc:
-            logger.error("SMS campaign save failed: %s", exc)
-            return {"success": False, "result": "", "error": "Failed to save SMS campaign."}
+        return self._save_file("sms_campaigns", "sms", "md", draft, "SMS campaign")
 
     # ------------------------------------------------------------------
     # Execution log
@@ -1005,7 +989,6 @@ class ExecutionerAgent:
             "error": error,
         }
         with self._io_lock:
-            self._execution_log_path.parent.mkdir(parents=True, exist_ok=True)
             with open(self._execution_log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(record) + "\n")
 
@@ -1022,17 +1005,20 @@ class ExecutionerAgent:
         if not self._execution_log_path.exists():
             return []
 
+        from collections import deque
         records: List[Dict[str, Any]] = []
+        tail = deque(maxlen=limit * 2)
         with self._io_lock:
             with open(self._execution_log_path, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line:
                         try:
-                            records.append(json.loads(line))
+                            tail.append(json.loads(line))
                         except json.JSONDecodeError:
                             logger.warning("Skipping malformed log line")
 
+        records = list(tail)
         records.reverse()
         return records[:limit]
 

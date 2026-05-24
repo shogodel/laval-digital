@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Nous Contacter — Laval Digital</title>
     <meta name="description" content="Contactez Laval Digital pour nos services de gestion Frankie IA ou la création de sites web sur mesure.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', -apple-system, sans-serif; background: var(--off-white, #f7f8fa); color: #1f2937; min-height: 100vh; display: flex; flex-direction: column; }
         :root { --navy: #0f2b45; --navy-light: #1a3a5c; --orange: #D42B2B; --orange-dark: #A82323; --orange-glow: rgba(212,43,43,0.15); --white: #ffffff; }
@@ -45,11 +46,11 @@
 <body>
 <header>
     <div class="container">
-        <a href="/fr/" class="logo">LAVAL <span>DIGITAL</span></a>
+        <a href="{{ url_for('home_fr') }}" class="logo">LAVAL <span>DIGITAL</span></a>
         <nav>
-            <a href="/fr/">Accueil</a>
-            <a href="/fr/demo">Démo</a>
-            <a href="/fr/essai-gratuit">Essai Gratuit</a>
+            <a href="{{ url_for('home_fr') }}">Accueil</a>
+            <a href="{{ url_for('demo_fr') }}">Démo</a>
+            <a href="{{ url_for('free_trial_fr') }}">Essai Gratuit</a>
         </nav>
     </div>
 </header>
@@ -103,7 +104,7 @@
 
 <footer>&copy; 2026 Laval Digital. Tous droits réservés.</footer>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 document.getElementById('contact-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     const btn = document.getElementById('submit-btn');
@@ -126,7 +127,7 @@ document.getElementById('contact-form').addEventListener('submit', async functio
     try {
         const res = await fetch('/api/contact', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content },
             body: JSON.stringify({
                 name: name,
                 phone: phone,

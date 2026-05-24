@@ -7,8 +7,8 @@
     <title>Connector Setup — Frankie</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #f3f4f6; color: #1f2937; padding: 40px 20px; }
         .wrapper { max-width: 720px; margin: 0 auto; }
@@ -95,7 +95,7 @@
             <input type="password" id="bridge-pass" placeholder="16-character app password">
             <label for="bridge-host">IMAP server <span style="font-weight:400;color:#9ca3af;">(leave as default for Gmail)</span></label>
             <input type="text" id="bridge-host" value="imap.gmail.com">
-            <button onclick="setupEmailBridge()">Connect</button>
+            <button id="bridge-connect-btn">Connect</button>
             <div id="bridge-status"></div>
         </div>
 
@@ -116,10 +116,10 @@
         <div class="gen-code">{{ bookmarklet_code }}</div>
     </div>
 
-    <a href="/admin" class="back-link">&larr; Back to Dashboard</a>
+    <a href="{{ url_for('admin.panel') }}" class="back-link">&larr; Back to Dashboard</a>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 async function setupEmailBridge() {
     const email = document.getElementById('bridge-email').value.trim();
     const password = document.getElementById('bridge-pass').value.trim();
@@ -158,6 +158,7 @@ async function setupEmailBridge() {
         status.textContent = 'Network error. Please try again.';
     }
 }
+document.getElementById('bridge-connect-btn').addEventListener('click', setupEmailBridge);
 </script>
 </body>
 </html>

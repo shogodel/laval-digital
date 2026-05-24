@@ -5,12 +5,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#D42B2B">
-    <link rel="manifest" href="/static/manifest.json">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <title>Frankie Control Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45;
@@ -330,7 +330,7 @@
 
 <div id="toast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9999;background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.2);max-width:360px;transition:opacity 0.3s;"></div>
 
-<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+<div class="overlay" id="overlay"></div>
 
 <div class="app">
 
@@ -350,11 +350,11 @@
             <a href="#" data-tab="mcp"><span class="icon">🔌</span> Serveurs MCP</a>
         </nav>
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
-            <a href="/admin/dashboard" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:12px 16px;border-radius:10px;font-size:0.9rem;font-weight:700;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
+            <a href="{{ url_for('admin.dashboard') }}" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:12px 16px;border-radius:10px;font-size:0.9rem;font-weight:700;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
                 🤖 Ouvrir Frankie
             </a>
-            <button id="sidebar-install-btn" onclick="installApp()" style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;width:100%;">📲 Installer l'App</button>
-            <a href="/fr/admin/logout" style="font-size:0.75rem;color:rgba(255,255,255,0.35);text-decoration:none;text-align:center;padding:4px 0;transition:color 0.15s;">Déconnexion</a>
+            <button id="sidebar-install-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;width:100%;">📲 Installer l'App</button>
+            <a href="{{ url_for('admin_fr.logout_fr') }}" style="font-size:0.75rem;color:rgba(255,255,255,0.35);text-decoration:none;text-align:center;padding:4px 0;transition:color 0.15s;">Déconnexion</a>
         </div>
     </aside>
 
@@ -362,7 +362,7 @@
 
         <div class="topbar">
             <div style="display:flex;align-items:center;gap:12px;">
-                <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+                <button class="hamburger" id="hamburger-btn" aria-label="Menu">☰</button>
                 <h1 id="page-title">Tableau de Bord</h1>
             </div>
             <div class="topbar-right">
@@ -370,7 +370,7 @@
                     <span class="dot {% if active_tenant %}active{% else %}inactive{% endif %}"></span>
                     <span id="active-tenant-label">{% if active_tenant %}{{ active_tenant }}{% else %}Aucun utilisateur{% endif %}</span>
                 </div>
-                <select id="tenant-select" onchange="switchTenant(this.value)" style="width:auto;min-width:140px;padding:6px 10px;font-size:0.85rem;">
+                <select id="tenant-select" style="width:auto;min-width:140px;padding:6px 10px;font-size:0.85rem;">
                     <option value="">Sélectionner un utilisateur…</option>
                     {% if tenants.direct_clients %}
                     <optgroup label="Utilisateurs">
@@ -381,8 +381,8 @@
                     {% endif %}
 
                 </select>
-                <a href="/admin" class="btn btn-gray btn-sm">EN</a>
-                <a href="/fr/admin/logout" class="btn btn-red btn-sm">Déconnexion</a>
+                <a href="{{ url_for('admin.panel') }}" class="btn btn-gray btn-sm">EN</a>
+                <a href="{{ url_for('admin_fr.logout_fr') }}" class="btn btn-red btn-sm">Déconnexion</a>
             </div>
         </div>
 
@@ -413,7 +413,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Sélectionner un agent</label>
-                        <select id="config-agent-select" onchange="loadAgentConfig()">
+                        <select id="config-agent-select">
                             <option value="">-- Choisir un agent --</option>
                         </select>
                     </div>
@@ -435,12 +435,12 @@
                         <label>Clé API</label>
                         <div style="display:flex;gap:8px;">
                             <input type="password" id="config-api-key" placeholder="sk-..." style="flex:1;">
-                            <button id="detect-btn" class="btn btn-gray btn-sm" onclick="detectModels()" disabled style="white-space:nowrap;">Détecter</button>
+                            <button id="detect-btn" class="btn btn-gray btn-sm" disabled style="white-space:nowrap;">Détecter</button>
                         </div>
                         <div id="detect-result" style="font-size:0.85rem;margin-top:4px;"></div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
-                        <button class="btn btn-red" onclick="saveAgentConfig()">Sauvegarder</button>
+                        <button class="btn btn-red" id="save-config-btn">Sauvegarder</button>
                         <span id="config-save-result"></span>
                     </div>
                 </div>
@@ -453,14 +453,14 @@
                 <div class="card-header"><h2>Soumettre une Tâche</h2><p>Envoyer une requête à l'orchestrateur IA</p></div>
                 <textarea id="task-input" rows="3" placeholder="ex. Je veux plus de prospects de plomberie à Laval cette semaine" style="margin-bottom:10px;"></textarea>
                 <div style="display:flex;gap:8px;align-items:center;">
-                    <button class="btn btn-red" onclick="submitTask()">Soumettre</button>
+                    <button class="btn btn-red" id="submit-task-btn">Soumettre</button>
                     <span id="task-result"></span>
                 </div>
             </div>
             <div class="card">
                 <div class="card-header">
                     <h2>Approbations en Attente</h2>
-                    <button class="btn btn-amber btn-sm" onclick="loadApprovals()">Actualiser</button>
+                    <button class="btn btn-amber btn-sm" id="refresh-approvals-btn">Actualiser</button>
                 </div>
                 <div id="approvals-list"><p class="empty">Chargement des approbations...</p></div>
             </div>
@@ -468,7 +468,7 @@
                 <div class="card-header">
                     <h2>Confirmations en Attente</h2>
                     <p>Approuver l'exécution finale après révision</p>
-                    <button class="btn btn-amber btn-sm" onclick="loadPendingExecutions()">Actualiser</button>
+                    <button class="btn btn-amber btn-sm" id="refresh-pending-btn">Actualiser</button>
                 </div>
                 <div id="pending-executions-list"><p class="empty">Chargement...</p></div>
             </div>
@@ -489,7 +489,7 @@
                         <img src="{{ url_for('static', filename=logo_file) }}" alt="Logo" height="48">
                     </div>
                 </div>
-                <form method="POST" action="/admin/logo" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <form method="POST" action="{{ url_for('admin.logo') }}" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="file" name="logo" accept=".png,.svg" required style="width:auto;flex:1;min-width:200px;">
                     <button type="submit" class="btn btn-red" style="white-space:nowrap;">Télécharger</button>
@@ -500,12 +500,12 @@
                 <div class="settings-grid">
                     <div>
                         <h3>SMTP</h3>
-                        <div class="form-group"><label>Hôte</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
-                        <div class="form-group"><label>Port</label><input type="number" id="smtp-port" placeholder="587"></div>
-                        <div class="form-group"><label>Utilisateur</label><input type="text" id="smtp-username" placeholder="user@gmail.com"></div>
-                        <div class="form-group"><label>Mot de passe</label><input type="password" id="smtp-password" placeholder="Mot de passe d'application"></div>
-                        <div class="form-group"><label>Courriel d'envoi</label><input type="text" id="smtp-from" placeholder="info@plomberielaval.com"></div>
-                        <div class="form-group"><label><input type="checkbox" id="smtp-tls" checked> Utiliser TLS</label></div>
+                        <div class="form-group"><label for="smtp-host">Hôte</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
+                        <div class="form-group"><label for="smtp-port">Port</label><input type="number" id="smtp-port" placeholder="587"></div>
+                        <div class="form-group"><label for="smtp-username">Utilisateur</label><input type="text" id="smtp-username" placeholder="user@gmail.com"></div>
+                        <div class="form-group"><label for="smtp-password">Mot de passe</label><input type="password" id="smtp-password" placeholder="Mot de passe d'application"></div>
+                        <div class="form-group"><label for="smtp-from">Courriel d'envoi</label><input type="text" id="smtp-from" placeholder="info@plomberielaval.com"></div>
+                        <div class="form-group"><label for="smtp-tls"><input type="checkbox" id="smtp-tls" checked> Utiliser TLS</label></div>
                     </div>
                     <div>
                         <h3>API Médias Sociaux Unifiée</h3>
@@ -526,7 +526,7 @@
                             <label>Clé API Unifiée</label>
                             <div style="display:flex; gap:8px;">
                                 <input type="password" id="unified-social-api-key" placeholder="Collez votre clé API unifiée ici">
-                                <button class="btn btn-gray btn-sm" onclick="validateSocialApiKey()">Tester la Connexion</button>
+                                <button class="btn btn-gray btn-sm" id="validate-social-btn">Tester la Connexion</button>
                             </div>
                             <div id="social-key-validation-result"></div>
                         </div>
@@ -536,10 +536,10 @@
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
-                    <button class="btn btn-gray" onclick="loadExecutionerSettings()">Recharger</button>
-                    <button class="btn btn-green" onclick="saveExecutionerSettings()">Sauvegarder</button>
+                    <button class="btn btn-gray" id="reload-settings-btn">Recharger</button>
+                    <button class="btn btn-green" id="save-settings-btn">Sauvegarder</button>
                     <input type="email" id="smtp-test-email" placeholder="Votre courriel pour le test" style="width:auto;flex:1;min-width:160px;">
-                    <button class="btn btn-gray btn-sm" onclick="testSmtp(event)">📧 Envoyer un Courriel Test</button>
+                    <button class="btn btn-gray btn-sm" id="test-email-btn">📧 Envoyer un Courriel Test</button>
                     <span id="executioner-settings-result"></span>
                 </div>
             </div>
@@ -554,11 +554,11 @@
                 </div>
                 {% if active_tenant %}
                 <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-                    <select id="user-role-filter" onchange="loadUsers()" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
+                    <select id="user-role-filter" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
                         <option value="">Tous les rôles</option>
                         <option value="user">Utilisateur</option>
                     </select>
-                    <button class="btn btn-green btn-sm" onclick="showAddUser()">+ Ajouter</button>
+                    <button class="btn btn-green btn-sm" id="show-add-user-btn">+ Ajouter</button>
                 </div>
                 <div id="users-list"><p class="empty">Chargement des utilisateurs...</p></div>
                 {% else %}
@@ -606,14 +606,14 @@
             </div>
             <div id="add-user-error" style="color:var(--red);font-size:0.85rem;margin-bottom:8px;"></div>
             <div style="display:flex;gap:8px;justify-content:flex-end;">
-                <button class="btn btn-gray" onclick="closeAddUser()">Annuler</button>
-                <button class="btn btn-red" onclick="addUser()">Créer</button>
+                <button class="btn btn-gray" id="close-add-user-btn">Annuler</button>
+                <button class="btn btn-red" id="add-user-btn">Créer</button>
             </div>
         </div>
     </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 /* ── CSRF: patch fetch to include X-CSRFToken on all non-GET requests ── */
 (function() {
     var token = document.querySelector('meta[name="csrf-token"]');
@@ -748,8 +748,8 @@ function loadAgents() {
                     <div class="row"><span class="label">Dernière</span><span class="value">${lastInvoked}</span></div>
                     <div class="draft-preview">${escapeHtml(a.last_draft_preview || '—')}</div>
                     <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
-                        <button class="btn btn-gray btn-xs" onclick="window.location.href='/fr/admin/agent/${escapeHtml(a.agent_id)}/chat'">💬 Discuter</button>
-                        <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-btn" onclick="toggleAgent('${escapeHtml(a.agent_id)}')">
+                        <button class="btn btn-gray btn-xs chat-btn">💬 Discuter</button>
+                        <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-btn">
                             ${a.enabled ? 'Désactiver' : 'Activer'}
                         </button>
                     </div>
@@ -789,7 +789,13 @@ function submitTask() {
         el.innerHTML = `<span style="color:var(--green);">✓ ${status}</span>`;
         setTimeout(loadApprovals, 2000);
     })
-    .catch(err => { el.innerHTML = '<span style="color:var(--red);">Erreur: ' + err.message + '</span>'; });
+    .catch(err => {
+        var span = document.createElement('span');
+        span.style.color = 'var(--red)';
+        span.textContent = 'Erreur: ' + err.message;
+        el.innerHTML = '';
+        el.appendChild(span);
+    });
 }
 
 function loadApprovals() {
@@ -804,19 +810,19 @@ function loadApprovals() {
                 return;
             }
             list.innerHTML = approvals.map(a => `
-                <div class="approval-card">
+                <div class="approval-card" data-thread-id="${escapeHtml(a.thread_id)}">
                     <h3>Agent: ${escapeHtml(a.agent)}</h3>
                     <p><strong>Tâche:</strong> ${escapeHtml(a.task)}</p>
                     <p><strong>Brouillon:</strong></p>
                     <pre>${escapeHtml(a.draft)}</pre>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-                        <button class="btn btn-green btn-sm" onclick="respondApproval('${a.thread_id}', true)">✓ Approuver</button>
-                        <button class="btn btn-gray btn-sm" onclick="showRejectForm('${a.thread_id}')">✗ Rejeter</button>
+                        <button class="btn btn-green btn-sm approve-btn">✓ Approuver</button>
+                        <button class="btn btn-gray btn-sm show-reject-btn">✗ Rejeter</button>
                     </div>
-                    <div id="reject-form-${a.thread_id}" style="display:none;margin-top:8px;">
+                    <div class="reject-form" style="display:none;margin-top:8px;">
                         <div style="display:flex;gap:8px;">
-                            <input type="text" id="feedback-${a.thread_id}" placeholder="Commentaires (optionnel)" style="flex:1;">
-                            <button class="btn btn-red btn-sm" onclick="respondApproval('${a.thread_id}', false)">Confirmer</button>
+                            <input type="text" class="reject-feedback" placeholder="Commentaires (optionnel)" style="flex:1;">
+                            <button class="btn btn-red btn-sm confirm-reject-btn">Confirmer</button>
                         </div>
                     </div>
                 </div>
@@ -836,7 +842,8 @@ function showRejectForm(threadId) {
 }
 
 function respondApproval(threadId, approved) {
-    const feedback = document.getElementById('feedback-' + threadId)?.value || '';
+    const card = document.querySelector(`.approval-card[data-thread-id="${threadId}"]`);
+    const feedback = card ? (card.querySelector('.reject-feedback')?.value || '') : '';
     fetch('/api/approvals/' + threadId + '/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -875,13 +882,13 @@ function loadPendingExecutions() {
                 return;
             }
             list.innerHTML = data.pending.map(p => `
-                <div class="approval-card" style="background:var(--blue-bg);border-color:#bfdbfe;">
+                <div class="approval-card" style="background:var(--blue-bg);border-color:#bfdbfe;" data-execution-id="${escapeHtml(p.execution_id)}">
                     <p><strong>Agent:</strong> ${escapeHtml(p.agent_name)} &middot; <strong>Outil:</strong> ${escapeHtml(p.tool_name)}</p>
                     <p><small>${new Date(p.created_at).toLocaleString('fr-CA')}</small></p>
                     <pre style="font-size:0.8em;">${escapeHtml(p.draft_preview)}</pre>
                     <div style="display:flex;gap:8px;">
-                        <button class="btn btn-green btn-sm" onclick="confirmPending('${escapeHtml(p.execution_id)}')">Confirmer</button>
-                        <button class="btn btn-red btn-sm" onclick="rejectPending('${escapeHtml(p.execution_id)}')">Rejeter</button>
+                        <button class="btn btn-green btn-sm confirm-exec-btn">Confirmer</button>
+                        <button class="btn btn-red btn-sm reject-exec-btn">Rejeter</button>
                     </div>
                 </div>
             `).join('');
@@ -1036,7 +1043,7 @@ function saveAgentConfig() {
     if (agentId === 'all') {
         const agentIds = Object.keys(AGENT_META);
         resultEl.innerHTML = '<span style="color:var(--blue);">Sauvegarde vers tous les agents...</span>';
-        fetch('/api/agents/config/bulk', {
+        fetch('/api/agents/bulk/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ agent_ids: agentIds, model, api_key: apiKey, api_base: apiBase })
@@ -1106,7 +1113,11 @@ function saveExecutionerSettings() {
         setTimeout(() => { document.getElementById('executioner-settings-result').textContent = ''; }, 3000);
     })
     .catch(err => {
-        document.getElementById('executioner-settings-result').innerHTML = '<span style="color:var(--red);">Erreur: ' + err.message + '</span>';
+        var span = document.createElement('span');
+        span.style.color = 'var(--red)';
+        span.textContent = 'Erreur: ' + err.message;
+        document.getElementById('executioner-settings-result').innerHTML = '';
+        document.getElementById('executioner-settings-result').appendChild(span);
     });
 }
 
@@ -1171,7 +1182,11 @@ function validateSocialApiKey() {
             ).join('');
             document.getElementById('connected-accounts-list').innerHTML = accountsHtml;
         } else {
-            resultDiv.innerHTML = '<span style="color:var(--red);">❌ Connexion échouée: ' + data.error + '</span>';
+            var span = document.createElement('span');
+            span.style.color = 'var(--red)';
+            span.textContent = 'Connexion échouée: ' + data.error;
+            resultDiv.innerHTML = '';
+            resultDiv.appendChild(span);
         }
     });
 }
@@ -1185,7 +1200,7 @@ function loadUsers() {
     fetch('/api/users?role=' + encodeURIComponent(roleFilter))
         .then(r => r.json())
         .then(data => {
-            if (data.error) { list.innerHTML = '<p class="empty">' + data.error + '</p>'; return; }
+            if (data.error) { list.innerHTML = '<p class="empty">' + escapeHtml(data.error) + '</p>'; return; }
             const users = data.users || [];
             if (!users.length) {
                 list.innerHTML = '<p class="empty">Aucun utilisateur trouvé pour ce client.</p>'; return;
@@ -1197,12 +1212,12 @@ function loadUsers() {
                     <tbody>
                         ${users.map(u => `
                         <tr>
-                            <td>${u.email}</td>
-                            <td>${u.display_name || '—'}</td>
-                            <td><span class="badge badge-${u.role === 'client' ? 'blue' : 'amber'}">${u.role === 'client' ? 'Client' : 'Affilié'}</span></td>
-                            <td>${u.created_at ? u.created_at.slice(0,10) : '—'}</td>
-                            <td>${u.last_login ? u.last_login.slice(0,10) : '—'}</td>
-                            <td><button class="btn btn-gray btn-xs" onclick="deleteUser(${u.id})">Supprimer</button></td>
+                            <td>${escapeHtml(u.email)}</td>
+                            <td>${escapeHtml(u.display_name || '—')}</td>
+                            <td><span class="badge badge-${u.role === 'client' ? 'blue' : 'amber'}">${escapeHtml(u.role === 'client' ? 'Client' : 'Affilié')}</span></td>
+                            <td>${escapeHtml(u.created_at ? u.created_at.slice(0,10) : '—')}</td>
+                            <td>${escapeHtml(u.last_login ? u.last_login.slice(0,10) : '—')}</td>
+                            <td><button class="btn btn-gray btn-xs delete-user-btn" data-user-id="${u.id}">Supprimer</button></td>
                         </tr>`).join('')}
                     </tbody>
                 </table>
@@ -1328,9 +1343,75 @@ window.onload = function() {
         document.getElementById('detect-btn').disabled = !this.value.trim();
     });
 
+    /* Event delegation for agent card buttons */
+    document.getElementById('agent-list').addEventListener('click', function(e) {
+        var card = e.target.closest('.agent-card');
+        if (!card) return;
+        var agentId = card.dataset.agentId;
+        if (e.target.closest('.chat-btn')) {
+            window.location.href = '{{ url_for('admin_fr.agent_chat_fr', agent_id='') }}' + encodeURIComponent(agentId);
+        } else if (e.target.closest('.toggle-btn')) {
+            toggleAgent(agentId);
+        }
+    });
+
+    /* Event delegation for approval buttons */
+    document.getElementById('approvals-list').addEventListener('click', function(e) {
+        var card = e.target.closest('.approval-card');
+        if (!card) return;
+        var threadId = card.dataset.threadId;
+        if (e.target.closest('.approve-btn')) {
+            respondApproval(threadId, true);
+        } else if (e.target.closest('.show-reject-btn')) {
+            var form = card.querySelector('.reject-form');
+            if (form) form.style.display = 'block';
+        } else if (e.target.closest('.confirm-reject-btn')) {
+            respondApproval(threadId, false);
+        }
+    });
+
+    /* Event delegation for pending execution buttons */
+    document.getElementById('pending-executions-list').addEventListener('click', function(e) {
+        var card = e.target.closest('.approval-card');
+        if (!card) return;
+        var executionId = card.dataset.executionId;
+        if (e.target.closest('.confirm-exec-btn')) {
+            confirmPending(executionId);
+        } else if (e.target.closest('.reject-exec-btn')) {
+            rejectPending(executionId);
+        }
+    });
+
+    /* Event delegation for user delete buttons */
+    document.getElementById('users-list').addEventListener('click', function(e) {
+        var btn = e.target.closest('.delete-user-btn');
+        if (btn) deleteUser(btn.dataset.userId);
+    });
+
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/static/sw.js').catch(() => {});
     }
+
+    document.getElementById('overlay').addEventListener('click', toggleSidebar);
+    document.getElementById('hamburger-btn').addEventListener('click', toggleSidebar);
+    document.getElementById('sidebar-install-btn').addEventListener('click', installApp);
+    document.getElementById('tenant-select').addEventListener('change', function() {
+        switchTenant(this.value);
+    });
+    document.getElementById('config-agent-select').addEventListener('change', loadAgentConfig);
+    document.getElementById('detect-btn').addEventListener('click', detectModels);
+    document.getElementById('save-config-btn').addEventListener('click', saveAgentConfig);
+    document.getElementById('submit-task-btn').addEventListener('click', submitTask);
+    document.getElementById('refresh-approvals-btn').addEventListener('click', loadApprovals);
+    document.getElementById('refresh-pending-btn').addEventListener('click', loadPendingExecutions);
+    document.getElementById('validate-social-btn').addEventListener('click', validateSocialApiKey);
+    document.getElementById('reload-settings-btn').addEventListener('click', loadExecutionerSettings);
+    document.getElementById('save-settings-btn').addEventListener('click', saveExecutionerSettings);
+    document.getElementById('test-email-btn').addEventListener('click', function(e) { testSmtp(e); });
+    document.getElementById('user-role-filter').addEventListener('change', loadUsers);
+    document.getElementById('show-add-user-btn').addEventListener('click', showAddUser);
+    document.getElementById('close-add-user-btn').addEventListener('click', closeAddUser);
+    document.getElementById('add-user-btn').addEventListener('click', addUser);
 };
 
 function installApp() {

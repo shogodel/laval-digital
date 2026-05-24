@@ -30,11 +30,23 @@ def _get_conn() -> sqlite3.Connection:
     current_tid = threading.get_ident()
     if not hasattr(_local, "conn") or _local.conn is None or getattr(_local, "tid", None) != current_tid:
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-        _local.conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+        _local.conn = sqlite3.connect(str(DB_PATH), timeout=30)
         _local.conn.row_factory = sqlite3.Row
         _local.conn.execute("PRAGMA foreign_keys = ON")
+        _local.conn.execute("PRAGMA journal_mode = WAL")
+        _local.conn.execute("PRAGMA busy_timeout = 30000")
         _local.tid = current_tid
     return _local.conn
+
+
+def reset_conn() -> None:
+    """Reset the thread-local connection (call on error to force reconnect)."""
+    if hasattr(_local, "conn"):
+        try:
+            _local.conn.close()
+        except Exception as e:
+            logger.debug("Exception in %s: %s", __name__, e)
+        _local.conn = None
 
 
 def init_db() -> None:
@@ -201,7 +213,7 @@ def init_db() -> None:
 
         CREATE TABLE IF NOT EXISTS leads (
             id TEXT PRIMARY KEY,
-            user_id INTEGER NOT NULL REFERENCES users(id),
+            user_id INTEGER REFERENCES users(id),
             name TEXT,
             phone TEXT,
             service TEXT,
@@ -281,6 +293,7 @@ def init_db() -> None:
     conn.commit()
 
     # ── Migration: add trial columns to users (idempotent) ──────────
+    # The column comes from a hardcoded tuple — no user input
     for col in ("status", "trial_ends_at", "stripe_customer_id"):
         try:
             conn.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT")
@@ -296,6 +309,92 @@ def init_db() -> None:
         conn.execute("ALTER TABLE users ADD COLUMN tenant_id INTEGER REFERENCES users(id)")
     except sqlite3.OperationalError:
         pass  # column already exists
+    conn.commit()
+
+    # ── Migration: make leads.user_id nullable (was NOT NULL, broke anonymous leads) ──
+    try:
+        conn.execute("ALTER TABLE leads RENAME TO leads_old")
+        conn.execute("""
+            CREATE TABLE leads (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                name TEXT,
+                phone TEXT,
+                service TEXT,
+                urgency TEXT,
+                created_at TEXT,
+                status TEXT DEFAULT 'new'
+            )
+        """)
+        conn.execute("""
+            INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at, status)
+            SELECT id, user_id, name, phone, service, urgency, created_at, status FROM leads_old
+        """)
+        conn.execute("DROP TABLE leads_old")
+        conn.commit()
+    except sqlite3.OperationalError:
+        conn.rollback()  # leads table may not exist yet or migration already applied
+
+    # ── Migration: add login_attempts table for cross-worker rate limiting ──
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS login_attempts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip TEXT NOT NULL,
+            success INTEGER NOT NULL,
+            attempted_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time
+            ON login_attempts(ip, attempted_at);
+    """)
+    conn.commit()
+
+    # ── Migration: add managed service columns to client_details ──
+    # The column comes from a hardcoded tuple — no user input
+    for col_def in (
+        ("managed_service", "INTEGER DEFAULT 0"),
+        ("managed_since", "TEXT"),
+        ("site_url", "TEXT"),
+    ):
+        try:
+            conn.execute(f"ALTER TABLE client_details ADD COLUMN {col_def[0]} {col_def[1]}")
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    conn.commit()
+
+    # ── Migration: remove dead tables (payments, deployments) ──
+    # The table names come from a hardcoded tuple — no user input
+    for table in ("deployments", "payments"):
+        try:
+            conn.execute(f"DROP TABLE IF EXISTS {table}")
+        except sqlite3.OperationalError:
+            pass
+    conn.commit()
+
+    # ── Migration: add indexes on frequently queried columns ──
+    indexes = [
+        "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
+        "CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)",
+        "CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id)",
+        "CREATE INDEX IF NOT EXISTS idx_agent_configs_user ON agent_configs(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_threads_user ON threads(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_client_details_user ON client_details(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_leads_user ON leads(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(created_at)",
+        "CREATE INDEX IF NOT EXISTS idx_execution_log_user ON execution_log(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_execution_log_ts ON execution_log(timestamp)",
+        "CREATE INDEX IF NOT EXISTS idx_pending_actions_user ON pending_actions(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_pending_actions_status ON pending_actions(status)",
+        "CREATE INDEX IF NOT EXISTS idx_mcp_credentials_user ON mcp_credentials(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_affiliate_leads_user ON affiliate_leads(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_agent_schedules_user ON agent_schedules(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_agent_feedback_user ON agent_feedback(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_agent_findings_user ON agent_findings(user_id)",
+    ]
+    for idx_sql in indexes:
+        try:
+            conn.execute(idx_sql)
+        except sqlite3.OperationalError:
+            pass  # index already exists
     conn.commit()
 
     # Seed default agent configs for all existing users
@@ -316,8 +415,8 @@ def _seed_default_agents(conn: sqlite3.Connection) -> None:
                        VALUES (?, ?, 1, 'deepseek-chat', 'idle', ?)""",
                     (uid, agent_id, now),
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Failed to seed agent %s for user %d: %s", agent_id, uid, e)
     conn.commit()
 
 
@@ -360,25 +459,36 @@ def create_user(email: str, password_hash: str, role: str,
 
 def update_user(uid: int, **kwargs) -> None:
     conn = _get_conn()
-    allowed = {"email", "password_hash", "role", "display_name", "last_login", "status"}
+    _ALLOWED_USER_COLUMNS = {"email", "display_name", "role", "password_hash", "status", "trial_ends_at", "stripe_customer_id", "last_login", "tenant_id"}
     for key, val in kwargs.items():
-        if key in allowed:
-            # Validate column name is a valid SQL identifier (alphanumeric + underscore only)
-            if not key.replace("_", "").isalnum():
-                raise ValueError(f"Invalid column name: {key}")
-            conn.execute(f"UPDATE users SET {key} = ? WHERE id = ?", (val, uid))
+        if key not in _ALLOWED_USER_COLUMNS:
+            raise ValueError(f"Unknown column: {key}")
+        conn.execute(f"UPDATE users SET {key} = ? WHERE id = ?", (val, uid))
     conn.commit()
 
 
 def delete_user(uid: int) -> None:
     conn = _get_conn()
-    conn.execute("DELETE FROM agent_configs WHERE user_id = ?", (uid,))
-    conn.execute("DELETE FROM threads WHERE user_id = ?", (uid,))
-    conn.execute("DELETE FROM client_details WHERE user_id = ?", (uid,))
-    conn.execute("DELETE FROM payments WHERE user_id = ?", (uid,))
-    conn.execute("DELETE FROM leads WHERE user_id = ?", (uid,))
-    conn.execute("DELETE FROM execution_log WHERE user_id = ?", (uid,))
-    conn.execute("DELETE FROM pending_actions WHERE user_id = ?", (uid,))
-    conn.execute("DELETE FROM mcp_credentials WHERE user_id = ?", (uid,))
-    conn.execute("DELETE FROM users WHERE id = ?", (uid,))
-    conn.commit()
+    try:
+        conn.execute("BEGIN")
+        conn.execute("DELETE FROM agent_configs WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM threads WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM client_details WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM leads WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM execution_log WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM pending_actions WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM mcp_credentials WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM agent_feedback WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM agent_preferences WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM agent_findings WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM agent_schedules WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM affiliate_leads WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM affiliates WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM commissions WHERE affiliate_code IN (SELECT code FROM affiliates WHERE user_id = ?)", (uid,))
+        conn.execute("DELETE FROM payouts WHERE affiliate_code IN (SELECT code FROM affiliates WHERE user_id = ?)", (uid,))
+        conn.execute("UPDATE users SET tenant_id = NULL WHERE tenant_id = ?", (uid,))
+        conn.execute("DELETE FROM users WHERE id = ?", (uid,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise

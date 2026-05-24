@@ -1,6 +1,5 @@
 """Ads MCP Server for Frankie — Multi-platform ad campaign management."""
 import logging
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional

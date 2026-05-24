@@ -54,7 +54,7 @@ class AgentMemory:
     def set_preference(self, user_id: int, agent_id: str, key: str, value: str) -> None:
         conn = self._conn()
         now = datetime.now(timezone.utc).isoformat()
-        pref_id = f"{user_id}:{agent_id}:{key}"
+        pref_id = f"{user_id}|{agent_id}|{key}"
         conn.execute(
             """INSERT INTO agent_preferences (id, user_id, agent_id, pref_key, pref_value, updated_at)
                VALUES (?, ?, ?, ?, ?, ?)

@@ -6,8 +6,8 @@
     <title>Frankie Demo — AI Marketing Command Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
@@ -130,16 +130,16 @@
 <body>
 
     <nav class="nav">
-        <a href="/" class="nav-brand">
+        <a href="{{ url_for('home') }}" class="nav-brand">
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
             <span>Laval Digital</span>
         </a>
-        <button class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">☰</button>
+        <button class="hamburger" id="hamburger-btn">☰</button>
         <div class="nav-links" id="nav-links">
-            <a href="/">Home</a>
-            <a href="/demo">Demo</a>
-            <a href="/signup" class="cta">Try Frankie Free</a>
-            <a href="/fr/demo" class="lang-toggle">FR</a>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('demo') }}">Demo</a>
+            <a href="{{ url_for('free_trial') }}" class="cta">Try Frankie Free</a>
+            <a href="{{ url_for('demo_fr') }}" class="lang-toggle">FR</a>
         </div>
     </nav>
 
@@ -147,7 +147,7 @@
         <h1>See <span>Frankie</span> in Action — Your AI Marketing Command Center</h1>
         <p>Frankie connects to your existing website, social accounts, email, and ad platforms. 16 specialized AI agents work 24/7 to grow your business. Here's exactly what that looks like.</p>
         <div class="btn-group">
-            <a href="/signup" class="btn btn-red">Start Your Free Trial</a>
+            <a href="{{ url_for('free_trial') }}" class="btn btn-red">Start Your Free Trial</a>
             <a href="#what-you-get" class="btn btn-outline">Scroll to Explore</a>
         </div>
     </section>
@@ -394,14 +394,14 @@
     <div class="bg-alt" style="text-align:center;padding:64px 24px;">
         <h2 style="font-size:2rem;font-weight:800;letter-spacing:-0.015em;margin-bottom:12px;">Ready to Meet Frankie?</h2>
         <p style="font-size:1.05rem;color:var(--gray-500);max-width:500px;margin:0 auto 24px;">Your 7-day free trial includes full access to all 16 agents and the Frankie command center. No credit card required.</p>
-        <a href="/signup" class="btn btn-red" style="font-size:1.05rem;padding:14px 36px;">Start Your Free Trial →</a>
+        <a href="{{ url_for('free_trial') }}" class="btn btn-red" style="font-size:1.05rem;padding:14px 36px;">Start Your Free Trial →</a>
     </div>
 
     <div class="footer">
         <p>🍁 © 2026 <strong>Laval Digital</strong> — Proudly Canadian. AI Marketing Automation for Local Businesses from coast to coast.</p>
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
     document.querySelector('.hamburger')?.addEventListener('click', function() {
         document.getElementById('nav-links').classList.toggle('open');
     });

@@ -1,16 +1,46 @@
 """Email MCP Server for Frankie — Enterprise-grade email marketing."""
 import logging
 import smtplib
+import ssl
 import re
+import socket
 import json
+import ipaddress
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from .base_server import MCPServer
+from .base_server import MCPServer, _safe_error
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_smtp_host(host: str) -> bool:
+    """Reject SMTP hosts that resolve to private/reserved IPs (SSRF protection)."""
+    if not host:
+        return False
+    try:
+        addrs = socket.getaddrinfo(host, None)
+        for family, _, _, _, sockaddr in addrs:
+            ip = sockaddr[0]
+            if ":" in ip:
+                if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd"):
+                    return False
+                if ipaddress.IPv6Address(ip).is_private or ipaddress.IPv6Address(ip).is_link_local:
+                    return False
+            else:
+                ipv4 = ip.split(":")[-1] if ":" in ip else ip
+                if "." in ipv4:
+                    try:
+                        addr = ipaddress.IPv4Address(ipv4)
+                        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+                            return False
+                    except ValueError:
+                        pass
+        return True
+    except (socket.gaierror, OSError):
+        return False
 
 
 class EmailMCPServer(MCPServer):
@@ -283,7 +313,7 @@ class EmailMCPServer(MCPServer):
             return self._send_smtp("Frankie email test — your configuration works!", "Frankie Test Email",
                                    api_credentials.get("from_email", ""), api_credentials)
         except Exception as e:
-            return {"success": False, "result": "", "error": str(e)}
+            return {"success": False, "result": "", "error": _safe_error(e)}
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -292,15 +322,19 @@ class EmailMCPServer(MCPServer):
     def _send_smtp(self, content: str, subject: str, to: str, creds: Dict, html: bool = False,
                    cc: str = "", bcc: str = "", attachments: str = "") -> Dict[str, Any]:
         smtp_host = creds.get("smtp_host", "")
+        if not _validate_smtp_host(smtp_host):
+            return {"success": False, "result": "", "error": "SMTP host rejected: resolves to private/reserved IP"}
         smtp_port = int(creds.get("smtp_port", 587))
         smtp_user = creds.get("smtp_username", "")
         smtp_pass = creds.get("smtp_password", "")
         smtp_from = creds.get("from_email", smtp_user)
+        if smtp_from and "@" not in smtp_from:
+            return {"success": False, "result": "", "error": "Invalid from_email format"}
         use_tls = creds.get("smtp_use_tls", True)
         if not smtp_user:
             return {"success": False, "result": "", "error": "SMTP username not configured"}
         try:
-            msg = MIMEMultipart() if (html or cc or bcc) else MIMEText(content, _charset="utf-8")
+            msg = MIMEMultipart('alternative') if (html or cc or bcc) else MIMEText(content, _charset="utf-8")
             if isinstance(msg, MIMEMultipart):
                 subtype = "html" if html else "plain"
                 msg.attach(MIMEText(content, subtype, "utf-8"))
@@ -313,13 +347,14 @@ class EmailMCPServer(MCPServer):
                 msg["Bcc"] = bcc.replace("\r", "").replace("\n", "")
             server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
             if use_tls:
-                server.starttls()
+                server.starttls(context=ssl.create_default_context())
             server.login(smtp_user, smtp_pass)
             server.send_message(msg)
             server.quit()
             return {"success": True, "result": f"Email sent: {subject}", "error": None}
         except Exception as e:
-            return {"success": False, "result": "", "error": f"SMTP failed: {e}"}
+            logger.error("SMTP send failed: %s", e)
+            return {"success": False, "result": "", "error": "SMTP failed"}
 
     def _queue_email(self, content: str, subject: str, to: str, email_type: str = "single") -> Dict[str, Any]:
         try:
@@ -337,4 +372,4 @@ class EmailMCPServer(MCPServer):
                 f.write(json.dumps(record) + "\n")
             return {"success": True, "result": f"Email queued: {subject}", "error": None}
         except Exception as e:
-            return {"success": False, "result": "", "error": str(e)}
+            return {"success": False, "result": "", "error": _safe_error(e)}

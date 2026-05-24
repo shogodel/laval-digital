@@ -149,14 +149,14 @@ class EmailBridge:
                         payload = part.get_payload(decode=True)
                         if payload:
                             return payload.decode("utf-8", errors="replace")
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("Exception in %s: %s", __name__, e)
         try:
             payload = msg.get_payload(decode=True)
             if payload:
                 return payload.decode("utf-8", errors="replace")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Exception in %s: %s", __name__, e)
         return ""
 
 

@@ -6,8 +6,8 @@
     <title>Managed Services — Laval Digital</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45; --red: #D42B2B; --red-dark: #A82323;
@@ -114,7 +114,7 @@
                 <p style="color:var(--gray-600);font-size:0.95rem;margin-bottom:16px;">Send your first month's payment to activate managed services. We'll send you an invoice every month thereafter.</p>
                 <div class="payment-info">
                     <p style="font-weight:600;margin-bottom:8px;">eTransfer to:</p>
-                    <code>lavaldigital@gmail.com</code>
+                    <code>{{ CONTACT_EMAIL }}</code>
                     <p style="font-size:0.85rem;color:var(--gray-500);margin-top:8px;">Amount: <strong>$499.00 CAD</strong></p>
                 </div>
             </div>
@@ -122,10 +122,10 @@
             <div class="cta-box card">
                 {% if managed %}
                 <p style="font-size:0.95rem;color:var(--green);font-weight:600;margin-bottom:12px;">You are already on the Managed Services plan.</p>
-                <button class="btn btn-gray" onclick="cancelManaged()">Cancel Managed Services</button>
+                <button class="btn btn-gray" id="btn-cancel-managed">Cancel Managed Services</button>
                 <div id="cancel-result" class="error-msg"></div>
                 {% else %}
-                <button class="btn btn-red" id="start-managed-btn" onclick="startManaged()">Start Managed Services — $499/mo</button>
+                <button class="btn btn-red" id="start-managed-btn">Start Managed Services — $499/mo</button>
                 <p style="margin-top:10px;">After clicking, send your eTransfer to activate. We'll confirm within 24 hours.</p>
                 <div id="upgrade-result" class="error-msg"></div>
                 {% endif %}
@@ -136,7 +136,7 @@
             <div class="icon">🎉</div>
             <h2>You're All Set!</h2>
             <p>Your managed services request has been submitted. We'll take it from here.</p>
-            <p style="margin-top:8px;">Please send your eTransfer to <strong>lavaldigital@gmail.com</strong> to activate.</p>
+            <p style="margin-top:8px;">Please send your eTransfer to <strong>{{ CONTACT_EMAIL }}</strong> to activate.</p>
             <div style="margin-top:20px;">
                 <a href="{{ url_for('client_dashboard') }}" class="btn btn-red">Back to Dashboard</a>
             </div>
@@ -144,7 +144,7 @@
 
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
     function startManaged() {
         const btn = document.getElementById('start-managed-btn');
         const result = document.getElementById('upgrade-result');
@@ -154,7 +154,7 @@
 
         fetch('/api/managed/upgrade', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' }
         })
         .then(r => r.json())
         .then(data => {
@@ -180,7 +180,7 @@
         result.textContent = 'Processing...';
         fetch('/api/managed/cancel', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' }
         })
         .then(r => r.json())
         .then(data => {
@@ -196,6 +196,9 @@
             result.textContent = 'Error: ' + err.message;
         });
     }
+    document.getElementById('start-managed-btn').addEventListener('click', startManaged);
+    const cancelBtn = document.getElementById('btn-cancel-managed');
+    if (cancelBtn) cancelBtn.addEventListener('click', cancelManaged);
     </script>
 </body>
 </html>

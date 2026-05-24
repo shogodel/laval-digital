@@ -17,5 +17,4 @@ class SMSMarketingAgent(BaseAgent):
     def execute(self, draft_output: str) -> str:
         return f"SMS campaign ready for review: {draft_output[:80]}..."
 
-    def get_tools(self) -> List[Any]:
-        return []
+

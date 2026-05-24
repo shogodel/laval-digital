@@ -7,8 +7,8 @@
     <title>Client Dashboard — Laval Digital</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
@@ -84,15 +84,15 @@
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
             <span>Client Portal</span>
         </div>
-        <button class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">☰</button>
+        <button class="hamburger" id="nav-hamburger">☰</button>
         <div class="nav-links" id="nav-links">
-            <a href="javascript:void(0)" onclick="if(window.frankie)frankie.toggle()" style="color:#6ee7b7;font-weight:700;">🤖 Talk to Frankie</a>
+            <a href="javascript:void(0)" id="frankie-toggle" style="color:#6ee7b7;font-weight:700;">🤖 Talk to Frankie</a>
             <a href="{{ url_for('client_dashboard') }}" class="active">My Dashboard</a>
-            <a href="#submit-task" onclick="document.getElementById('nav-links').classList.remove('open')">Submit Task</a>
-            <a href="#payments" onclick="document.getElementById('nav-links').classList.remove('open')">My Payments</a>
-            <a href="#client-analytics" onclick="loadClientAnalytics();document.getElementById('nav-links').classList.remove('open')">Analytics</a>
+            <a href="#submit-task" class="nav-close-btn">Submit Task</a>
+            <a href="#payments" class="nav-close-btn">My Payments</a>
+            <a href="#client-analytics" class="nav-close-btn nav-analytics-btn">Analytics</a>
             <a href="{{ url_for('client_managed_services') }}">Managed Services</a>
-            <a href="/training" target="_blank">Help &amp; Training</a>
+            <a href="{{ url_for('training.training_hub') }}" target="_blank">Help &amp; Training</a>
             <a href="{{ url_for('client_logout') }}" class="logout">Logout</a>
         </div>
     </nav>
@@ -108,7 +108,7 @@
             <div style="font-size:3rem;margin-bottom:8px;">🤖</div>
             <h2 style="font-size:1.1rem;font-weight:700;color:#065f46;margin-bottom:4px;">Frankie is Here to Help</h2>
             <p style="font-size:0.9rem;color:#047857;margin-bottom:16px;">Your AI command center. Ask Frankie to write content, run SEO, create social posts, or check performance — all in plain English.</p>
-            <button onclick="if(window.frankie)frankie.toggle()" style="background:#059669;color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;">💬 Talk to Frankie</button>
+            <button id="frankie-hero-btn" style="background:#059669;color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;">💬 Talk to Frankie</button>
         </div>
 
         <div class="stats-grid">
@@ -188,7 +188,7 @@
             {% endif %}
             <textarea id="task-input" placeholder="e.g., I need more plumbing leads in Laval this week"></textarea>
             <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
-                <button class="btn btn-red" onclick="submitClientTask()">Submit Request</button>
+                <button class="btn btn-red" id="submit-task-btn">Submit Request</button>
                 <span id="task-result"></span>
             </div>
         </div>
@@ -196,28 +196,28 @@
         <div class="card">
             <div class="card-header"><h2>Chat with AI Agents</h2><p>Talk directly to each agent</p></div>
             <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                <a href="/client/agent/local_seo/chat" class="btn btn-gray btn-sm">🔍 SEO Agent</a>
-                <a href="/client/agent/social_media/chat" class="btn btn-gray btn-sm">📱 Social Agent</a>
-                <a href="/client/agent/lead_conversion/chat" class="btn btn-gray btn-sm">💬 Lead Agent</a>
-                <a href="/client/agent/paid_ads/chat" class="btn btn-gray btn-sm">📢 Ads Agent</a>
-                <a href="/client/agent/email_marketing/chat" class="btn btn-gray btn-sm">✉️ Email Agent</a>
-                <a href="/client/agent/reputation/chat" class="btn btn-gray btn-sm">⭐ Reputation Agent</a>
-                <a href="/client/agent/tiktok/chat" class="btn btn-gray btn-sm">🎵 TikTok Agent</a>
-                <a href="/client/agent/outreach/chat" class="btn btn-gray btn-sm">📨 Outreach Agent</a>
-                <a href="/client/agent/backlinks/chat" class="btn btn-gray btn-sm">🔗 Backlinks Agent</a>
+                <a href="{{ url_for('client.client_agent_chat', agent_id='local_seo') }}" class="btn btn-gray btn-sm">🔍 SEO Agent</a>
+                <a href="{{ url_for('client.client_agent_chat', agent_id='social_media') }}" class="btn btn-gray btn-sm">📱 Social Agent</a>
+                <a href="{{ url_for('client.client_agent_chat', agent_id='lead_conversion') }}" class="btn btn-gray btn-sm">💬 Lead Agent</a>
+                <a href="{{ url_for('client.client_agent_chat', agent_id='paid_ads') }}" class="btn btn-gray btn-sm">📢 Ads Agent</a>
+                <a href="{{ url_for('client.client_agent_chat', agent_id='email_marketing') }}" class="btn btn-gray btn-sm">✉️ Email Agent</a>
+                <a href="{{ url_for('client.client_agent_chat', agent_id='reputation') }}" class="btn btn-gray btn-sm">⭐ Reputation Agent</a>
+                <a href="{{ url_for('client.client_agent_chat', agent_id='tiktok') }}" class="btn btn-gray btn-sm">🎵 TikTok Agent</a>
+                <a href="{{ url_for('client.client_agent_chat', agent_id='outreach') }}" class="btn btn-gray btn-sm">📨 Outreach Agent</a>
+                <a href="{{ url_for('client.client_agent_chat', agent_id='backlinks') }}" class="btn btn-gray btn-sm">🔗 Backlinks Agent</a>
             </div>
         </div>
 
         <div class="card">
             <div class="card-header"><h2>Download Contract</h2><p>View your signed agreement</p></div>
-            <button class="btn btn-gray btn-sm" onclick="alert('Contract download will be available soon.')">Download Contract (PDF)</button>
+            <button class="btn btn-gray btn-sm" id="download-contract-btn">Download Contract (PDF)</button>
         </div>
 
         {% include 'client/analytics.html' %}
 
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
     /* ── CSRF: patch fetch to include X-CSRFToken on all non-GET requests ── */
     (function() {
         var token = document.querySelector('meta[name="csrf-token"]');
@@ -255,8 +255,37 @@
             const status = data.status === 'completed' ? 'Completed' : 'Pending approval';
             el.innerHTML = '<span style="color:var(--green);">✓ ' + status + '</span>';
         })
-        .catch(err => { el.innerHTML = '<span style="color:var(--red);">Error: ' + err.message + '</span>'; });
+        .catch(err => {
+            var span = document.createElement('span');
+            span.style.color = 'var(--red)';
+            span.textContent = 'Error: ' + err.message;
+            el.innerHTML = '';
+            el.appendChild(span);
+        });
     }
+
+    document.getElementById('nav-hamburger').addEventListener('click', function() {
+        document.getElementById('nav-links').classList.toggle('open');
+    });
+    document.querySelectorAll('.nav-close-btn').forEach(function(el) {
+        el.addEventListener('click', function() {
+            document.getElementById('nav-links').classList.remove('open');
+        });
+    });
+    document.querySelector('.nav-analytics-btn')?.addEventListener('click', function() {
+        if (typeof loadClientAnalytics === 'function') loadClientAnalytics();
+    });
+    document.getElementById('frankie-toggle')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (window.frankie) window.frankie.toggle();
+    });
+    document.getElementById('frankie-hero-btn')?.addEventListener('click', function() {
+        if (window.frankie) window.frankie.toggle();
+    });
+    document.getElementById('submit-task-btn').addEventListener('click', submitClientTask);
+    document.getElementById('download-contract-btn').addEventListener('click', function() {
+        alert('Contract download will be available soon.');
+    });
     </script>
 {% include 'admin/frankie.html' %}
 </body>

@@ -1,10 +1,13 @@
 """Google Business Profile MCP Server for Frankie — Complete local SEO management."""
 import logging
 import json
+import re
+import requests
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from .base_server import MCPServer
+from .base_server import MCPServer, _safe_error
+from ._safe_url import _is_safe_url
 
 logger = logging.getLogger(__name__)
 
@@ -61,13 +64,17 @@ class GMBMCPServer(MCPServer):
         """Create a GMB post. Types: standard, event, offer, covid, video."""
         if api_credentials and api_credentials.get("account_id") and api_credentials.get("location_id") and api_credentials.get("access_token"):
             try:
-                import requests
                 url = f"https://mybusiness.googleapis.com/v4/accounts/{api_credentials['account_id']}/locations/{api_credentials['location_id']}/localPosts"
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
                 payload = {"summary": content[:1500], "topicType": "STANDARD", "callToAction": {"actionType": "LEARN_MORE"}}
                 if post_type == "event" and event_start:
                     payload["topicType"] = "EVENT"
-                    payload["event"] = {"title": content[:100], "schedule": {"startDate": {"year": int(event_start[:4]), "month": int(event_start[5:7]), "day": int(event_start[8:10])}}}
+                    try:
+                        if not re.match(r'^\d{4}-\d{2}-\d{2}$', event_start):
+                            raise ValueError("event_start must be in YYYY-MM-DD format")
+                        payload["event"] = {"title": content[:100], "schedule": {"startDate": {"year": int(event_start[:4]), "month": int(event_start[5:7]), "day": int(event_start[8:10])}}}
+                    except (ValueError, IndexError) as e:
+                        return {"success": False, "result": "", "error": f"Invalid event_start date: {e}"}
                 elif post_type == "offer":
                     payload["topicType"] = "OFFER"
                     payload["callToAction"]["actionType"] = "SIGN_UP"
@@ -97,7 +104,6 @@ class GMBMCPServer(MCPServer):
             response_text = tones.get(sentiment, tones["neutral"])
         if api_credentials and api_credentials.get("access_token") and review_id:
             try:
-                import requests
                 url = f"https://mybusiness.googleapis.com/v4/accounts/{api_credentials['account_id']}/locations/{api_credentials.get('location_id', '')}/reviews/{review_id}/reply"
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
                 resp = requests.put(url, headers=headers, json={"comment": response_text}, timeout=15)
@@ -140,7 +146,6 @@ class GMBMCPServer(MCPServer):
         }
         if api_credentials and api_credentials.get("access_token"):
             try:
-                import requests
                 url = f"https://mybusiness.googleapis.com/v4/accounts/{api_credentials['account_id']}/locations/{api_credentials.get('location_id', '')}"
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
                 resp = requests.patch(url, headers=headers, json={"location": kwargs}, timeout=15)
@@ -160,20 +165,8 @@ class GMBMCPServer(MCPServer):
         gmb_type = photo_types.get(photo_type, "ADDITIONAL")
         if api_credentials and api_credentials.get("access_token") and photo_url:
             try:
-                import requests, socket
-                from urllib.parse import urlparse
-                # SSRF prevention: block private IPs
-                hostname = urlparse(photo_url).hostname or ""
-                addrs = socket.getaddrinfo(hostname, None)
-                for _, _, _, _, sockaddr in addrs:
-                    cip = sockaddr[0]
-                    if ":" not in cip:
-                        p = [int(x) for x in cip.split(".")]
-                        if p[0] in (127, 10, 0) or (p[0] == 169 and p[1] == 254) or (p[0] == 192 and p[1] == 168) or (p[0] == 172 and 16 <= p[1] <= 31):
-                            return {"success": False, "error": "Photo URL resolves to a private IP"}
-                    else:
-                        if cip.startswith("::1") or cip.startswith("fc") or cip.startswith("fd") or cip.startswith("fe80"):
-                            return {"success": False, "error": "Photo URL resolves to a private IPv6"}
+                if not _is_safe_url(photo_url):
+                    return {"success": False, "error": "Photo URL resolves to a private IP"}
                 url = f"https://mybusiness.googleapis.com/v4/accounts/{api_credentials['account_id']}/locations/{api_credentials.get('location_id', '')}/media"
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
                 resp = requests.post(url, headers=headers, json={"mediaFormat": "PHOTO", "locationAssociation": {"category": gmb_type}, "sourceUrl": photo_url}, timeout=15)
@@ -406,4 +399,4 @@ class GMBMCPServer(MCPServer):
                 f.write(json.dumps(record) + "\n")
             return {"success": True, "result": f"GMB {action_type} queued", "error": None}
         except Exception as e:
-            return {"success": False, "result": "", "error": str(e)}
+            return {"success": False, "result": "", "error": _safe_error(e)}

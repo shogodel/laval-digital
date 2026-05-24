@@ -3,8 +3,9 @@ import logging
 import json
 from datetime import datetime
 from pathlib import Path
+import requests
 from typing import Dict, Any, List, Optional
-from .base_server import MCPServer
+from .base_server import MCPServer, _safe_error
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,6 @@ class SocialMCPServer(MCPServer):
         """Post to Facebook Page. post_type: feed, story, video, carousel."""
         if api_credentials and api_credentials.get("page_id") and api_credentials.get("access_token"):
             try:
-                import requests
                 token = api_credentials["access_token"]
                 url = f"https://graph.facebook.com/v19.0/{api_credentials['page_id']}/"
                 if post_type == "story":
@@ -79,7 +79,7 @@ class SocialMCPServer(MCPServer):
                     data = {"message": content}
                     if media_url:
                         data["link"] = media_url
-                resp = requests.post(url, data=data, params={"access_token": token}, timeout=15)
+                resp = requests.post(url, data=data, headers={"Authorization": f"Bearer {token}"}, timeout=15)
                 result = resp.json()
                 if resp.status_code == 200 and result.get("id"):
                     return {"success": True, "result": f"Posted to Facebook ({post_type}, id={result['id']})", "error": None}
@@ -93,7 +93,6 @@ class SocialMCPServer(MCPServer):
         """Post to Instagram. post_type: feed, reels, story, carousel."""
         if api_credentials and api_credentials.get("account_id") and api_credentials.get("access_token"):
             try:
-                import requests
                 token = api_credentials["access_token"]
                 url = f"https://graph.facebook.com/v19.0/{api_credentials['account_id']}/media"
                 data = {"caption": content}
@@ -104,11 +103,11 @@ class SocialMCPServer(MCPServer):
                     data["media_type"] = "REELS"
                 elif post_type == "story":
                     data["media_type"] = "STORIES"
-                resp = requests.post(url, data=data, params={"access_token": token}, timeout=15)
+                resp = requests.post(url, data=data, headers={"Authorization": f"Bearer {token}"}, timeout=15)
                 creation = resp.json()
                 if resp.status_code == 200 and creation.get("id"):
                     pub_url = f"https://graph.facebook.com/v19.0/{api_credentials['account_id']}/media_publish"
-                    pub_resp = requests.post(pub_url, data={"creation_id": creation["id"]}, params={"access_token": token}, timeout=15)
+                    pub_resp = requests.post(pub_url, data={"creation_id": creation["id"]}, headers={"Authorization": f"Bearer {token}"}, timeout=15)
                     if pub_resp.status_code == 200:
                         return {"success": True, "result": f"Posted to Instagram ({post_type})", "error": None}
                 return {"success": False, "result": "", "error": f"Instagram API: {creation}"}
@@ -120,7 +119,6 @@ class SocialMCPServer(MCPServer):
         """Post to TikTok with video upload and caption optimization."""
         if api_credentials and api_credentials.get("access_token") and media_url:
             try:
-                import requests
                 url = "https://open.tiktokapis.com/v2/post/publish/video/init/"
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
                 payload = {"post_info": {"title": content[:150], "privacy_level": "PUBLIC_TO_EVERYONE"}}
@@ -137,7 +135,6 @@ class SocialMCPServer(MCPServer):
         """Post to LinkedIn. post_type: post, article, document, company."""
         if api_credentials and api_credentials.get("access_token"):
             try:
-                import requests
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
                 urn = api_credentials.get("person_urn", api_credentials.get("organization_urn", ""))
                 if post_type == "article":
@@ -178,8 +175,8 @@ class SocialMCPServer(MCPServer):
         """Post to X/Twitter. post_type: tweet, thread, poll."""
         if api_credentials and api_credentials.get("access_token"):
             try:
-                import requests
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
+
                 url = "https://api.twitter.com/2/tweets"
                 payload = {"text": content[:280]}
                 if media_url:
@@ -197,7 +194,6 @@ class SocialMCPServer(MCPServer):
         """Post to Pinterest: pin, board creation, rich pin setup."""
         if api_credentials and api_credentials.get("access_token"):
             try:
-                import requests
                 url = "https://api.pinterest.com/v5/pins"
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
                 payload = {
@@ -225,7 +221,6 @@ class SocialMCPServer(MCPServer):
         """Post to Threads: text, image, or video."""
         if api_credentials and api_credentials.get("access_token"):
             try:
-                import requests
                 token = api_credentials["access_token"]
                 user_id = api_credentials.get("threads_user_id", "")
                 url = f"https://graph.threads.net/v1.0/{user_id}/threads"
@@ -233,11 +228,11 @@ class SocialMCPServer(MCPServer):
                 if media_url:
                     data["media_type"] = "IMAGE"
                     data["image_url"] = media_url
-                resp = requests.post(url, data=data, params={"access_token": token}, timeout=15)
+                resp = requests.post(url, data=data, headers={"Authorization": f"Bearer {token}"}, timeout=15)
                 result = resp.json()
                 if resp.status_code == 200 and result.get("id"):
                     publish_url = f"https://graph.threads.net/v1.0/{user_id}/threads_publish"
-                    pub_resp = requests.post(publish_url, data={"creation_id": result["id"]}, params={"access_token": token}, timeout=15)
+                    pub_resp = requests.post(publish_url, data={"creation_id": result["id"]}, headers={"Authorization": f"Bearer {token}"}, timeout=15)
                     if pub_resp.status_code == 200:
                         return {"success": True, "result": "Posted to Threads", "error": None}
                 return {"success": False, "result": "", "error": f"Threads API: {result}"}
@@ -421,4 +416,4 @@ class SocialMCPServer(MCPServer):
                 f.write(json.dumps(record) + "\n")
             return {"success": True, "result": f"Queued for {platform} ({post_type})", "error": None}
         except Exception as e:
-            return {"success": False, "result": "", "error": str(e)}
+            return {"success": False, "result": "", "error": _safe_error(e)}

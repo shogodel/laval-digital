@@ -7,8 +7,8 @@
     <title>Affiliate Dashboard — Frankie</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
@@ -78,12 +78,12 @@
             <span style="font-size:1.2rem;">&#129302;</span>
             <span>Affiliate Portal</span>
         </div>
-        <button class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">☰</button>
+        <button class="hamburger" id="hamburger-btn">☰</button>
         <div class="nav-links" id="nav-links">
-            <a href="/" style="color:rgba(255,255,255,0.5);font-size:0.8rem;padding-right:8px;">&#8592; Dashboard</a>
+            <a href="{{ url_for('home') }}" style="color:rgba(255,255,255,0.5);font-size:0.8rem;padding-right:8px;">&#8592; Dashboard</a>
             <a href="{{ url_for('affiliate_dashboard') }}" class="active">My Referrals</a>
-            <a href="#link" onclick="document.getElementById('nav-links').classList.remove('open')">My Link</a>
-            <a href="#earnings" onclick="document.getElementById('nav-links').classList.remove('open')">Earnings</a>
+            <a href="#link" class="nav-smooth" data-target="link">My Link</a>
+            <a href="#earnings" class="nav-smooth" data-target="earnings">Earnings</a>
             <a href="{{ url_for('affiliate_logout') }}" class="logout">Logout</a>
         </div>
     </nav>
@@ -106,7 +106,7 @@
             <div class="card-header"><h2>Your Referral Link</h2><p>Share this link — your friends get their first month free</p></div>
             <div class="copy-link">
                 <input type="text" id="ref-link" value="{{ referral_link }}" readonly>
-                <button class="btn btn-green btn-sm" onclick="copyRefLink()">Copy</button>
+                <button class="btn btn-green btn-sm" id="btn-copy-link">Copy</button>
             </div>
             <p style="font-size:0.78rem;color:var(--gray-400);margin-top:10px;">&#128279; Link format: https://laval.digital/?ref=YOUR_CODE</p>
         </div>
@@ -161,7 +161,7 @@
                 <p style="font-size:0.9rem;color:var(--gray-600);margin-bottom:12px;">
                     Available balance: <strong id="balance-display">${{ "%.2f"|format(stats.total_commissions) }}</strong>
                 </p>
-                <button class="btn btn-green" onclick="requestPayout()" id="payout-btn">Request Payout</button>
+                <button class="btn btn-green" id="payout-btn">Request Payout</button>
                 <span id="payout-status" style="margin-left:12px;font-size:0.85rem;"></span>
             </div>
         </div>
@@ -190,7 +190,7 @@
 
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
     /* ── CSRF: patch fetch to include X-CSRFToken on all non-GET requests ── */
     (function() {
         var token = document.querySelector('meta[name="csrf-token"]');
@@ -246,6 +246,16 @@
         btn.disabled = false;
         btn.textContent = 'Request Payout';
     }
+    document.getElementById('hamburger-btn').addEventListener('click', function() {
+        document.getElementById('nav-links').classList.toggle('open');
+    });
+    document.querySelectorAll('.nav-smooth').forEach(function(a) {
+        a.addEventListener('click', function(e) {
+            document.getElementById('nav-links').classList.remove('open');
+        });
+    });
+    document.getElementById('btn-copy-link').addEventListener('click', copyRefLink);
+    document.getElementById('payout-btn').addEventListener('click', requestPayout);
     </script>
 </body>
 </html>

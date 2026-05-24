@@ -1,12 +1,11 @@
 import logging
 import json
-import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 from core import database
-from .base_server import MCPServer
+from .base_server import MCPServer, _safe_error
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +94,9 @@ class AnalyticsMCPServer(MCPServer):
                                 "roi_pct": round(roi, 1),
                                 "agent_breakdown": agent_tasks}}
         except Exception as e:
-            return {"success": False, "result": "", "error": str(e)}
+            return {"success": False, "result": "", "error": _safe_error(e)}
+        finally:
+            conn.close()
 
     def create_client_dashboard(self, **kwargs) -> Dict[str, Any]:
         dashboard = {
@@ -169,7 +170,9 @@ class AnalyticsMCPServer(MCPServer):
                                "lead_growth": lead_growth},
                     "insights": self._generate_trend_insights(daily_executions, success_trend, agent_activity)}
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": _safe_error(e)}
+        finally:
+            conn.close()
 
     def _generate_trend_insights(self, daily_execs, success_trend, agent_activity):
         insights = []
@@ -193,7 +196,7 @@ class AnalyticsMCPServer(MCPServer):
         period_b_days = kwargs.get("period_b_days", 30)
         offset_days = kwargs.get("offset_days", period_a_days)
         try:
-            now = datetime.now()
+            now = datetime.now(timezone.utc)
             a_start = (now - timedelta(days=period_a_days)).isoformat()
             a_end = now.isoformat()
             b_start = (now - timedelta(days=period_a_days + period_b_days)).isoformat()
@@ -222,7 +225,9 @@ class AnalyticsMCPServer(MCPServer):
                         "leads": period_a["leads"] - period_b["leads"],
                     }}
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": _safe_error(e)}
+        finally:
+            conn.close()
 
     def get_executive_summary(self, user_id: int = 0, **kwargs) -> Dict[str, Any]:
         conn = self._conn()
@@ -256,7 +261,9 @@ class AnalyticsMCPServer(MCPServer):
                         "top_agent": top["agent_name"] if top else "N/A",
                     }}
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": _safe_error(e)}
+        finally:
+            conn.close()
 
     def get_chart_data(self, user_id: int = 0, **kwargs) -> Dict[str, Any]:
         conn = self._conn()
@@ -298,4 +305,6 @@ class AnalyticsMCPServer(MCPServer):
                 data = []
             return {"success": True, "chart_type": chart_type, "data": data}
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": _safe_error(e)}
+        finally:
+            conn.close()

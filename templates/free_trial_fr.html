@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Essayez Frankie Gratuitement 7 Jours — Laval Digital</title>
     <meta name="description" content="Démarrez votre essai gratuit de 7 jours de Frankie — le centre de commandement marketing IA. 16 agents, 111+ outils, aucune carte de crédit requise.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         :root {
             --navy: #0f2b45;
             --navy-light: #1a3a5c;
@@ -117,12 +118,12 @@
 <body>
 <nav>
     <div class="container">
-        <a href="/fr/" class="logo"><span>LAVAL DIGITAL</span></a>
+        <a href="{{ url_for('home_fr') }}" class="logo"><span>LAVAL DIGITAL</span></a>
         <ul>
-            <li><a href="/fr/">Accueil</a></li>
-            <li><a href="/fr/demo">Démo</a></li>
-            <li><a href="/login">Connexion</a></li>
-            <li><a href="/free-trial" class="lang-toggle">EN</a></li>
+            <li><a href="{{ url_for('home_fr') }}">Accueil</a></li>
+            <li><a href="{{ url_for('demo_fr') }}">Démo</a></li>
+            <li><a href="{{ url_for('client.client_login') }}">Connexion</a></li>
+            <li><a href="{{ url_for('free_trial') }}" class="lang-toggle">EN</a></li>
         </ul>
     </div>
 </nav>
@@ -165,7 +166,7 @@
 
 <footer>&copy; 2026 Laval Digital. Tous droits réservés.</footer>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 document.getElementById("signup-form").addEventListener("submit", async function(e) {
     e.preventDefault();
     const btn = document.getElementById("submit-btn");
@@ -182,7 +183,7 @@ document.getElementById("signup-form").addEventListener("submit", async function
     try {
         const resp = await fetch("/api/signup", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').content },
             body: JSON.stringify({ name, email, password })
         });
         const data = await resp.json();

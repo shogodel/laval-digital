@@ -6,8 +6,8 @@
     <title>Démo Frankie — Centre de Commande Marketing IA</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --navy: #0f2b45; --navy-light: #1a3a5c; --red: #D42B2B; --red-dark: #A82323;
@@ -130,16 +130,16 @@
 <body>
 
     <nav class="nav">
-        <a href="/fr/" class="nav-brand">
+        <a href="{{ url_for('home_fr') }}" class="nav-brand">
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
             <span>Laval Digital</span>
         </a>
-        <button class="hamburger" onclick="document.getElementById('nav-links').classList.toggle('open')">☰</button>
+        <button class="hamburger" id="nav-hamburger">☰</button>
         <div class="nav-links" id="nav-links">
-            <a href="/fr/">Accueil</a>
-            <a href="/fr/demo">Démo</a>
-            <a href="/fr/signup" class="cta">Essayer Frankie Gratuit</a>
-            <a href="/demo" class="lang-toggle">EN</a>
+            <a href="{{ url_for('home_fr') }}">Accueil</a>
+            <a href="{{ url_for('demo_fr') }}">Démo</a>
+            <a href="{{ url_for('free_trial_fr') }}" class="cta">Essayer Frankie Gratuit</a>
+            <a href="{{ url_for('demo') }}" class="lang-toggle">EN</a>
         </div>
     </nav>
 
@@ -147,7 +147,7 @@
         <h1>Voyez <span>Frankie</span> en Action — Votre Centre de Commande Marketing IA</h1>
         <p>Frankie se connecte à votre site web existant, vos réseaux sociaux, votre courriel et vos plateformes publicitaires. 16 agents IA spécialisés travaillent 24h/24 pour faire croître votre entreprise. Voici exactement à quoi cela ressemble.</p>
         <div class="btn-group">
-            <a href="/fr/signup" class="btn btn-red">Démarrez Votre Essai Gratuit</a>
+            <a href="{{ url_for('free_trial_fr') }}" class="btn btn-red">Démarrez Votre Essai Gratuit</a>
             <a href="#ce-que-vous-obtenez" class="btn btn-outline">Découvrir</a>
         </div>
     </section>
@@ -394,14 +394,14 @@
     <div class="bg-alt" style="text-align:center;padding:64px 24px;">
         <h2 style="font-size:2rem;font-weight:800;letter-spacing:-0.015em;margin-bottom:12px;">Prêt à Rencontrer Frankie ?</h2>
         <p style="font-size:1.05rem;color:var(--gray-500);max-width:500px;margin:0 auto 24px;">Votre essai gratuit de 7 jours inclut l'accès complet aux 16 agents et au centre de commande Frankie. Aucune carte de crédit requise.</p>
-        <a href="/fr/signup" class="btn btn-red" style="font-size:1.05rem;padding:14px 36px;">Démarrez Votre Essai Gratuit →</a>
+        <a href="{{ url_for('free_trial_fr') }}" class="btn btn-red" style="font-size:1.05rem;padding:14px 36px;">Démarrez Votre Essai Gratuit →</a>
     </div>
 
     <div class="footer">
         <p>⚜️ © 2026 <strong>Laval Digital</strong> — Fièrement Québécois. Automatisation Marketing IA pour les PME d'ici.</p>
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
     document.querySelector('.hamburger')?.addEventListener('click', function() {
         document.getElementById('nav-links').classList.toggle('open');
     });

@@ -8,9 +8,11 @@ import json
 import logging
 import logging.handlers
 import socket
+import ssl
+import smtplib
 import threading
 import requests
-import socket
+from functools import wraps
 from urllib.parse import urlparse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -19,10 +21,14 @@ from typing import Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 
+import ipaddress
+
 def _safe_url(url: str, timeout: int = 10) -> requests.Response:
     """Fetch a URL with SSRF protection (blocks private/reserved IPs for IPv4 and IPv6)."""
-    from urllib.parse import urlparse
-    hostname = urlparse(url).hostname or ""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Blocked URL scheme: {parsed.scheme}")
+    hostname = parsed.hostname or ""
     try:
         # Check ALL resolved IPs (IPv4 and IPv6)
         addrs = socket.getaddrinfo(hostname, None)
@@ -40,13 +46,21 @@ def _safe_url(url: str, timeout: int = 10) -> requests.Response:
                     raise ValueError(f"Blocked request to private IP: {ip}")
                 if parts[0] == 172 and 16 <= parts[1] <= 31:
                     raise ValueError(f"Blocked request to private IP: {ip}")
+                if parts[0] == 100 and 64 <= parts[1] <= 127:
+                    raise ValueError(f"Blocked request to CGNAT IP: {ip}")
             # IPv6
             if ":" in ip:
-                if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd") or ip.startswith("fe80"):
+                if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd"):
                     raise ValueError(f"Blocked request to private IPv6 IP: {ip}")
+                if ipaddress.IPv6Address(ip).is_link_local:
+                    raise ValueError(f"Blocked request to link-local IPv6: {ip}")
     except socket.gaierror:
         raise ValueError(f"Could not resolve hostname: {hostname}")
-    return requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"}, allow_redirects=False)
+    resp = requests.get(url, timeout=timeout, headers={"User-Agent": "LavalDigital/1.0 (Security Scanner)"}, allow_redirects=False)
+    try:
+        return resp
+    finally:
+        resp.close()
 
 
 # Suppress warnings before any imports that might trigger them
@@ -58,13 +72,25 @@ from flask import (Flask, render_template, jsonify, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
+from core.api_helpers import api_success, api_error
 
 
 def _safe_error(e: Exception, status: int = 500):
     """Log the real error and return a generic response to the client."""
     logger.error("Internal error: %s", e, exc_info=True)
-    return jsonify({"error": "An internal error occurred."}), status
+    return api_error("An internal error occurred.", status)
+
+
+def _safe_int(val, default=0):
+    """Safely convert to int, returning default on failure."""
+    if val is None:
+        return default
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
 
 
 load_dotenv()
@@ -103,9 +129,11 @@ if len(pw) < 8 or not any(c.isdigit() for c in pw) or not any(c in "!@#$%^&*()_+
         "ADMIN_PASSWORD must be at least 8 characters, include at least one "
         "digit and one special character."
     )
-
-# Hash admin password for constant-time comparison
-_admin_password_hash = generate_password_hash(os.getenv("ADMIN_PASSWORD", ""))
+if not os.getenv("CREDENTIAL_SALT"):
+    raise RuntimeError(
+        "CREDENTIAL_SALT environment variable is required. "
+        "Create a .env file with CREDENTIAL_SALT=$(python3 -c \"import secrets; print(secrets.token_hex(16))\")"
+    )
 
 # Credential encryption helpers (Fernet symmetric encryption)
 from cryptography.fernet import Fernet
@@ -116,7 +144,9 @@ import base64 as _b64
 def _derive_fernet_key() -> Fernet:
     """Derive a Fernet key from FLASK_SECRET_KEY for credential encryption."""
     secret = os.getenv("FLASK_SECRET_KEY", "").encode()
-    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=b"laval-digital-cred", iterations=100_000)
+    salt_str = os.getenv("CREDENTIAL_SALT", "laval-digital-cred")
+    salt = salt_str.encode()[:16].ljust(16, b'\0')
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100_000)
     key = _b64.urlsafe_b64encode(kdf.derive(secret))
     return Fernet(key)
 
@@ -167,22 +197,33 @@ AGENT_CLASSES = {
 }
 from core.auth import (
     init_auth, User, find_user_by_email, add_user_to_tenant,
-    client_required,
+    client_required, SESSION_TIMEOUT,
     validate_password, _check_rate_limit, _record_attempt,
 )
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
-app.permanent_session_lifetime = timedelta(days=30)
+app.permanent_session_lifetime = timedelta(hours=8)
 app.session_cookie_httponly = True
-app.session_cookie_samesite = "Lax"
+app.session_cookie_samesite = "Strict"
 if os.getenv("DEV_MODE", "").lower() not in ("true", "1"):
     app.session_cookie_secure = True
+
+app.config["CONTACT_PHONE"] = os.getenv("CONTACT_PHONE", "(514) 243-1580")
+app.config["CONTACT_EMAIL"] = os.getenv("CONTACT_EMAIL", "lavaldigital@gmail.com")
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB
+
+# Trust nginx reverse proxy headers
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 
 # Public API routes that don't require authentication
 _API_PUBLIC: set = {
     "/api/affiliate/status",
     "/api/affiliate/signup",
+    "/api/contact",
+    "/api/push/vapid-key",
+    "/api/personalities",
+    "/api/models",
 }
 
 # CSRF protection
@@ -194,21 +235,44 @@ def inject_csrf_token():
     return dict(csrf_token=lambda: generate_csrf())
 
 
+@app.before_request
+def generate_request_id():
+    """Generate a unique request ID for correlation logging."""
+    g.request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+
+
+@app.context_processor
+def inject_csp_nonce():
+    """Inject CSP nonce for inline scripts/styles."""
+    nonce = secrets.token_urlsafe(16)
+    g.csp_nonce = nonce
+    return dict(csp_nonce=nonce)
+
+
 @app.after_request
 def add_security_headers(response):
     """Add security headers to every response."""
+    if response.content_type and response.content_type.startswith("application/json"):
+        response.content_type = "application/json; charset=utf-8"
+    response.headers["X-Request-ID"] = getattr(g, "request_id", "")
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    nonce = getattr(g, "csp_nonce", "")
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+        f"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net; "
+        f"style-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data:; "
         "connect-src 'self' https://api.deepseek.com; "
-        "frame-ancestors 'none'"
+        "frame-ancestors 'none'; "
+        "form-action 'self'; "
+        "base-uri 'self'; "
+        "object-src 'none'; "
+        "upgrade-insecure-requests"
     )
     ALLOWED_ORIGINS = {"https://lavaldigital.ca", "https://www.lavaldigital.ca", "http://127.0.0.1:5000", "http://localhost:5000"}
     origin = request.headers.get("Origin")
@@ -216,6 +280,7 @@ def add_security_headers(response):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRFToken, Authorization"
+        response.headers["Vary"] = "Origin"
     return response
 
 
@@ -232,7 +297,7 @@ def require_api_auth():
         return
     if request.method == "OPTIONS":
         return
-    return jsonify({"error": "Authentication required"}), 401
+    return api_error("Authentication required", 401)
 
 
 # Configure logging with rotation (10 MB per file, keep 5 backups)
@@ -270,8 +335,20 @@ agent_memory = AgentMemory()
 # Initialize Flask-Login auth
 login_manager = init_auth(app)
 
-# Store active threads and their states (in-memory cache for orchestrator resume)
-active_threads: Dict[str, Dict[str, Any]] = {}
+# Register blueprints
+# Blueprint registrations — keep imports above registrations
+from blueprints.admin_bp import admin_bp, admin_fr_bp
+app.register_blueprint(admin_bp)
+app.register_blueprint(admin_fr_bp)
+
+from blueprints.affiliate_bp import affiliate_bp
+app.register_blueprint(affiliate_bp)
+from blueprints.mcp_bp import mcp_bp
+app.register_blueprint(mcp_bp)
+from blueprints.training_bp import training_bp
+app.register_blueprint(training_bp)
+from blueprints.client_bp import client_bp
+app.register_blueprint(client_bp)
 
 # ---------------------------------------------------------------------------
 # Tenant helpers
@@ -279,7 +356,7 @@ active_threads: Dict[str, Dict[str, Any]] = {}
 
 def get_tenant_agent_activity(user_id: str) -> dict:
     try:
-        uid = int(user_id)
+        uid = _safe_int(user_id)
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
@@ -291,7 +368,7 @@ def get_tenant_agent_activity(user_id: str) -> dict:
         rows = cursor.fetchall()
         return {row["agent_id"]: dict(row) for row in rows}
     except Exception as e:
-        logger.error(f"Failed to get agent activity for user {user_id}: {e}")
+        logger.error("Failed to get agent activity for user %s: %s", user_id, e)
         return {}
 
 
@@ -311,7 +388,7 @@ def update_tenant_agent_activity(
         "confidence_threshold": "UPDATE agent_configs SET confidence_threshold = ? WHERE agent_id = ? AND user_id = ?",
     }
     try:
-        uid = int(user_id)
+        uid = _safe_int(user_id)
         conn = database._get_conn()
         cursor = conn.cursor()
         for key, value in kwargs.items():
@@ -322,15 +399,39 @@ def update_tenant_agent_activity(
         conn.commit()
     except Exception as e:
         logger.error(
-            f"Failed to update agent activity for {agent_id} for user {user_id}: {e}"
+            "Failed to update agent activity for %s for user %s: %s", agent_id, user_id, e
         )
+
+
+def admin_required(f):
+    """Decorator that requires admin session authentication (returns 401 JSON)."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("admin_logged_in"):
+            return jsonify({"error": "Unauthorized"}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+
+def admin_page_required(f):
+    """Decorator that requires admin session authentication (redirects to login)."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("admin_logged_in"):
+            return redirect(url_for("admin.login"))
+        return f(*args, **kwargs)
+    return decorated
+
 
 
 def get_current_user_id() -> Optional[str]:
     if current_user.is_authenticated:
         return str(current_user.id)
     if session.get("admin_logged_in"):
-        return session.get("active_user_id")
+        active = session.get("active_user_id")
+        if active:
+            logger.info("Admin acting on behalf of user %s", active)
+        return active
     return None
 
 
@@ -363,38 +464,28 @@ def load_user_from_request(request):
 @app.before_request
 def check_session_timeout():
     """Log out users after 2 hours of inactivity."""
-    if current_user.is_authenticated:
-        last_active = session.get("last_active")
-        if last_active:
-            try:
-                last = datetime.fromisoformat(last_active)
-                if datetime.now() - last > timedelta(hours=2):
+    last_active = session.get("last_active")
+    if last_active:
+        try:
+            last = datetime.fromisoformat(last_active)
+            if last.tzinfo is None:
+                last = last.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) - last > SESSION_TIMEOUT:
+                session.clear()
+                flash("Session expired. Please log in again.", "error")
+                if current_user.is_authenticated:
                     user_role = current_user.role if hasattr(current_user, 'role') else None
                     logout_user()
-                    session.clear()
-                    flash("Session expired. Please log in again.", "error")
                     if user_role in ("client", "user"):
-                        return redirect(url_for("client_login"))
+                        return redirect(url_for("client.client_login"))
                     elif user_role == "affiliate":
-                        return redirect(url_for("affiliate_login"))
-                    return redirect(url_for("admin_login"))
-
-            except Exception:
-                logger.warning("Session timeout check failed", exc_info=True)
-        session["last_active"] = datetime.now().isoformat()
-    elif session.get("admin_logged_in"):
-        last_active = session.get("last_active")
-        if last_active:
-            try:
-                last = datetime.fromisoformat(last_active)
-                if datetime.now() - last > timedelta(hours=2):
+                        return redirect(url_for("affiliate.affiliate_login"))
+                elif session.get("admin_logged_in"):
                     session.pop("admin_logged_in", None)
-                    session.clear()
-                    flash("Session expired. Please log in again.", "error")
-                    return redirect(url_for("admin_login"))
-            except Exception:
-                logger.warning("Admin session timeout check failed", exc_info=True)
-        session["last_active"] = datetime.now().isoformat()
+                    return redirect(url_for("admin.login"))
+        except Exception as e:
+            logger.debug("Session timeout check failed: %s", e)
+    session["last_active"] = datetime.now(timezone.utc).isoformat()
 
 
 @app.before_request
@@ -592,7 +683,7 @@ for agent_id, config in AGENT_CONFIGS.items():
 
 # Initialize MCP Servers for execution
 mcp_servers = init_mcp_servers()
-logger.info(f"MCP servers ready: {list(mcp_servers.keys())}")
+logger.info("MCP servers ready: %s", list(mcp_servers.keys()))
 
 # Agent display metadata for chat interfaces
 AGENT_META: Dict[str, Dict[str, str]] = {
@@ -654,20 +745,6 @@ def get_orchestrator():
 # Public page routes
 # ---------------------------------------------------------------------------
 
-@app.route("/affiliate")
-def affiliate_signup():
-    """Serve the affiliate program signup page."""
-    has_ref = "affiliate_ref" in session
-    return render_template("affiliate.html", has_ref=has_ref)
-
-
-@app.route("/fr/affiliate")
-def affiliate_signup_fr():
-    """Serve the French affiliate program signup page."""
-    has_ref = "affiliate_ref" in session
-    return render_template("affiliate_fr.html", has_ref=has_ref)
-
-
 @app.route("/health")
 def health():
     """Health check endpoint for Docker/K8s probes."""
@@ -676,17 +753,17 @@ def health():
     try:
         conn = database._get_conn()
         conn.execute("SELECT 1")
-        conn.close()
         status["database"] = "ok"
     except Exception as e:
-        status["database"] = f"error: {e}"
+        status["database"] = "error"
         status["status"] = "degraded"
     # Check LLM adapter (lightweight model list call)
     try:
         models = llm_adapter.get_available_models()
         status["llm"] = "ok" if models else "no_models"
     except Exception as e:
-        status["llm"] = f"error: {e}"
+        status["llm"] = "unhealthy"
+        logger.error("Health check LLM error: %s", e)
         status["status"] = "degraded"
     http_code = 200 if status["status"] == "ok" else 503
     return jsonify(status), http_code
@@ -732,7 +809,7 @@ def blog_fr():
 def free_trial():
     """Serve the 7-day free trial signup page."""
     if current_user.is_authenticated:
-        return redirect(url_for("client_dashboard"))
+        return redirect(url_for("client.client_dashboard"))
     return render_template("free_trial.html")
 
 
@@ -740,7 +817,7 @@ def free_trial():
 def free_trial_fr():
     """Serve the French 7-day free trial signup page."""
     if current_user.is_authenticated:
-        return redirect(url_for("client_dashboard"))
+        return redirect(url_for("client.client_dashboard"))
     return render_template("free_trial_fr.html")
 
 
@@ -759,14 +836,13 @@ def contact_fr():
 @app.route("/api/contact", methods=["POST"])
 def api_contact():
     """Handle contact form submissions and email to lavaldigital@gmail.com."""
-    import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
     from html import escape
 
     data = request.json
     if not data:
-        return jsonify({"error": "No data provided"}), 400
+        return api_error("No data provided", 400)
 
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip()
@@ -775,7 +851,7 @@ def api_contact():
     message = (data.get("message") or "").strip()
 
     if not name or not email or not phone:
-        return jsonify({"error": "Name, email, and phone are required"}), 400
+        return api_error("Name, email, and phone are required", 400)
 
     service_labels = {
         "managed": "Managed For You ($897.99/mo)",
@@ -801,10 +877,10 @@ def api_contact():
             now = datetime.now(timezone.utc).isoformat()
             conn.execute(
                 "INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (lead_id, 0, name, phone, service, "", now),
+                (lead_id, None, name, phone, service, "", now),
             )
             conn.commit()
-            return jsonify({"status": "ok", "message": "Message received (email not configured)"}), 201
+            return api_success({"status": "ok", "message": "Message received (email not configured)"}, status_code=201)
 
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"Contact Form: {service_label} — {name}"
@@ -840,28 +916,27 @@ Message:
         msg.attach(MIMEText(text_body, "plain", "utf-8"))
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-        server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
-        if use_tls:
-            server.starttls()
-        server.login(smtp_user, smtp_pass)
-        server.send_message(msg)
-        server.quit()
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+            if use_tls:
+                server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
 
         conn = database._get_conn()
         lead_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
         conn.execute(
             "INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (lead_id, 0, name, phone, service, "", now),
+            (lead_id, None, name, phone, service, "", now),
         )
         conn.commit()
 
         logger.info("Contact form email sent to lavaldigital@gmail.com from %s (%s)", email, name)
-        return jsonify({"status": "ok", "message": "Message sent successfully"}), 201
+        return api_success({"status": "ok", "message": "Message sent successfully"}, status_code=201)
 
     except Exception as e:
         logger.error("Contact form email failed: %s", e)
-        return jsonify({"error": "Failed to send message. Please try again later."}), 500
+        return api_error("Failed to send message. Please try again later.", 500)
 
 
 @app.route("/trial-expired")
@@ -873,17 +948,20 @@ def trial_expired():
 @app.route("/api/signup", methods=["POST"])
 def api_signup():
     """Create a new trial user account and log them in."""
+    if not _check_rate_limit():
+        return api_error("Too many attempts. Please try again later.", 429)
+
     data = request.json
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip().lower()
     password = data.get("password", "")
 
     if not name or not email or not password:
-        return jsonify({"success": False, "error": "Name, email, and password are required."}), 400
+        return api_error("Name, email, and password are required.", 400)
 
     is_valid, err_msg = validate_password(password)
     if not is_valid:
-        return jsonify({"success": False, "error": err_msg}), 400
+        return api_error(err_msg, 400)
 
     try:
         now = datetime.now(timezone.utc)
@@ -909,81 +987,23 @@ def api_signup():
             status="trial", trial_ends_at=trial_ends,
         )
         login_user(temp_user)
-        session["last_active"] = datetime.now().isoformat()
+        session["last_active"] = datetime.now(timezone.utc).isoformat()
 
         logger.info("New trial user created: %s (id=%s)", email, uid)
-        return jsonify({"success": True, "redirect": url_for("client_dashboard")}), 201
+        _record_attempt(True)
+        return api_success({"redirect": url_for("client.client_dashboard")}, status_code=201)
 
     except ValueError as e:
-        return jsonify({"success": False, "error": str(e)}), 400
+        _record_attempt(False)
+        logger.warning("Signup validation failed: %s", e)
+        return api_error("Invalid signup data. Please check your information.", 400)
     except RuntimeError as e:
+        _record_attempt(False)
         logger.error("Signup failed: %s", e, exc_info=True)
-        return jsonify({"success": False, "error": "Account creation failed. Please try again later."}), 500
+        return api_error("Account creation failed. Please try again later.", 500)
 
 
-# ---------------------------------------------------------------------------
-# Client auth routes
-# ---------------------------------------------------------------------------
 
-@app.route("/client/login", methods=["GET", "POST"])
-def client_login():
-    """Serve client login page and authenticate."""
-    if current_user.is_authenticated and current_user.role in ("client", "user"):
-        return redirect(url_for("client_dashboard"))
-    if request.method == "POST":
-        email = request.form.get("email", "").strip()
-        password = request.form.get("password", "")
-
-        if not _check_rate_limit():
-            flash("Too many login attempts. Try again later.", "error")
-            return render_template("client/login.html")
-
-        user_row = find_user_by_email(email)
-        if not user_row or user_row["role"] not in ("client", "user"):
-            _record_attempt(False)
-            flash("Invalid email or password.", "error")
-            return render_template("client/login.html")
-
-        temp_user = User(
-            row_id=user_row["id"], email=user_row["email"],
-            password_hash=user_row["password_hash"], role=user_row["role"],
-            display_name=user_row["display_name"],
-        )
-        if not temp_user.check_password(password):
-            _record_attempt(False)
-            flash("Invalid email or password.", "error")
-            return render_template("client/login.html")
-
-        login_user(temp_user)
-        _record_attempt(True)
-        session["tenant_id"] = str(user_row["id"])
-        session["user_role"] = "client"
-        session["last_active"] = datetime.now().isoformat()
-
-        # Update last_login
-        try:
-            conn = database._get_conn()
-            cursor = conn.cursor()
-            cursor.execute(
-                "UPDATE users SET last_login = ? WHERE id = ?",
-                (datetime.now().isoformat(), user_row["id"]),
-            )
-            conn.commit()
-        except Exception:
-            logger.warning("Failed to update login timestamp for client", exc_info=True)
-
-        return redirect(url_for("client_dashboard"))
-
-    return render_template("client/login.html")
-
-
-@app.route("/client/logout")
-def client_logout():
-    """Log out client and redirect to login."""
-    logout_user()
-    session.clear()
-    flash("You have been logged out.", "success")
-    return redirect(url_for("client_login"))
 
 
 @app.route("/logout")
@@ -997,262 +1017,88 @@ def logout():
 @app.route("/login")
 def login_redirect():
     """Redirect to the client login page."""
-    return redirect(url_for("client_login"))
+    return redirect(url_for("client.client_login"))
 
 
-@app.route("/client/agent/<agent_id>/chat")
-@client_required
-def client_agent_chat(agent_id):
-    """Serve the client agent chat interface."""
-    if agent_id not in agent_registry:
-        return "Agent not found", 404
-    return render_template(
-        "client/agent_chat.html",
-        agent_id=agent_id,
-        agent=agent_registry[agent_id],
-        agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),
-    )
 
-
-@app.route("/fr/client/agent/<agent_id>/chat")
-@client_required
-def client_agent_chat_fr(agent_id):
-    """Serve the French client agent chat interface."""
-    if agent_id not in agent_registry:
-        return "Agent introuvable", 404
-    return render_template(
-        "client/agent_chat_fr.html",
-        agent_id=agent_id,
-        agent=agent_registry[agent_id],
-        agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),
-    )
-
-
-@app.route("/client/dashboard")
-@client_required
-def client_dashboard():
-    """Serve the client project dashboard."""
-    tenant_id = current_user.id
-
-    # Gather payment info from tenant database
-    payments = []
-    total_paid = 0
-    total_owed = 0
-    try:
-        conn = database._get_conn()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM payments WHERE user_id = ? ORDER BY installment_number", (int(tenant_id),))
-        for row in cursor.fetchall():
-            p = dict(row)
-            payments.append(p)
-            if p.get("paid"):
-                total_paid += p["amount"]
-            else:
-                total_owed += p["amount"]
-    except Exception:
-        logger.warning("Failed to load payment data for client dashboard", exc_info=True)
-
-    # Gather site URL from client_details
-    site_url = None
-    managed = False
-    managed_since = None
-    try:
-        conn = database._get_conn()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT site_url, managed_service, managed_since FROM client_details WHERE user_id = ?",
-            (int(tenant_id),)
-        )
-        row = cursor.fetchone()
-        if row:
-            site_url = row["site_url"]
-            managed = bool(row.get("managed_service", False))
-            ms = row.get("managed_since")
-            managed_since = ms[:10] if ms else None
-    except Exception:
-        pass
-
-    return render_template(
-        "client/dashboard.html",
-        payments=payments,
-        total_paid=total_paid,
-        total_owed=total_owed,
-        site_url=site_url,
-        project_status="Live" if site_url else "In Progress",
-        active_agents=11,
-        tasks_this_month=0,
-        managed=managed,
-        managed_since=managed_since,
-    )
 
 
 # ---------------------------------------------------------------------------
 # Affiliate auth routes
 # ---------------------------------------------------------------------------
-
-@app.route("/affiliate/login", methods=["GET", "POST"])
-def affiliate_login():
-    """Serve affiliate login page and authenticate."""
-    if current_user.is_authenticated and current_user.role == "affiliate":
-        return redirect(url_for("affiliate_dashboard"))
-    if request.method == "POST":
-        email = request.form.get("email", "").strip()
-        password = request.form.get("password", "")
-
-        if not _check_rate_limit():
-            flash("Too many login attempts. Try again later.", "error")
-            return render_template("affiliate/login.html")
-
-        user_row = find_user_by_email(email)
-        if not user_row or user_row["role"] != "affiliate":
-            _record_attempt(False)
-            flash("Invalid email or password.", "error")
-            return render_template("affiliate/login.html")
-
-        temp_user = User(
-            row_id=user_row["id"], email=user_row["email"],
-            password_hash=user_row["password_hash"], role=user_row["role"],
-            display_name=user_row["display_name"],
-        )
-        if not temp_user.check_password(password):
-            _record_attempt(False)
-            flash("Invalid email or password.", "error")
-            return render_template("affiliate/login.html")
-
-        login_user(temp_user)
-        _record_attempt(True)
-        session["tenant_id"] = str(user_row["id"])
-        session["user_role"] = "affiliate"
-        session["last_active"] = datetime.now().isoformat()
-
-        try:
-            conn = database._get_conn()
-            cursor = conn.cursor()
-            cursor.execute(
-                "UPDATE users SET last_login = ? WHERE id = ?",
-                (datetime.now().isoformat(), user_row["id"]),
-            )
-            conn.commit()
-        except Exception:
-            pass
-
-        return redirect(url_for("affiliate_dashboard"))
-
-    return render_template("affiliate/login.html")
-
-
-@app.route("/affiliate/logout")
-def affiliate_logout():
-    """Log out affiliate and redirect to login."""
-    logout_user()
-    session.clear()
-    flash("You have been logged out.", "success")
-    return redirect(url_for("affiliate_login"))
-
-
-@app.route("/affiliate/dashboard")
-@login_required
-def affiliate_dashboard():
-    """Serve the affiliate referral dashboard."""
-    tenant_id = current_user.id
-
-    # Gather affiliate profile from platform DB
-    aff = affiliate_manager.get_affiliate(tenant_id)
-    profile = aff or {}
-
-    # Gather leads from affiliate's tenant DB
-    referrals = affiliate_manager.get_leads(tenant_id)
-    stats = {"total_clicks": 0, "total_leads": 0, "total_clients": 0, "total_commissions": 0}
-    for r in referrals:
-        if r.get("status") == "client":
-            stats["total_clients"] += 1
-            stats["total_commissions"] += r.get("commission") or 0
-        else:
-            stats["total_leads"] += 1
-
-    # Gather commissions from platform DB
-    commissions = affiliate_manager.get_commissions(tenant_id)
-
-    # Gather payouts
-    payouts = affiliate_manager.get_payouts(tenant_id)
-
-    # Build referral link
-    referral_link = f"https://lavaldigital.ca/?ref={tenant_id}"
-
-    return render_template(
-        "affiliate/dashboard.html",
-        stats=stats,
-        referrals=referrals,
-        payouts=payouts,
-        commissions=commissions,
-        profile=profile,
-        referral_link=referral_link,
-    )
-
-
-# ---------------------------------------------------------------------------
 # API: User management (admin only)
 # ---------------------------------------------------------------------------
 
 @app.route("/api/users", methods=["GET"])
+@admin_required
 def api_list_users():
-    """List all users for the active tenant (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
 
     tenant_id = session.get("active_user_id")
-    if not tenant_id:
-        return jsonify({"error": "No client selected"}), 400
-
     role_filter = request.args.get("role", "").strip().lower()
 
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
-        if role_filter in ("client", "affiliate"):
-            cursor.execute(
-                "SELECT id, email, display_name, role, created_at, last_login "
-                "FROM users WHERE (id = ? OR tenant_id = ?) AND role = ? ORDER BY created_at DESC",
-                (int(tenant_id), int(tenant_id), role_filter),
-            )
+        if tenant_id:
+            if role_filter in ("user", "affiliate"):
+                cursor.execute(
+                    "SELECT id, email, display_name, role, created_at, last_login "
+                    "FROM users WHERE (id = ? OR tenant_id = ?) AND role = ? ORDER BY created_at DESC",
+                    (_safe_int(tenant_id), _safe_int(tenant_id), role_filter),
+                )
+            else:
+                cursor.execute(
+                    "SELECT id, email, display_name, role, created_at, last_login "
+                    "FROM users WHERE id = ? OR tenant_id = ? ORDER BY created_at DESC",
+                    (_safe_int(tenant_id), _safe_int(tenant_id)),
+                )
         else:
-            cursor.execute(
-                "SELECT id, email, display_name, role, created_at, last_login "
-                "FROM users WHERE id = ? OR tenant_id = ? ORDER BY created_at DESC",
-                (int(tenant_id), int(tenant_id)),
-            )
+            if role_filter in ("user", "affiliate"):
+                cursor.execute(
+                    "SELECT id, email, display_name, role, created_at, last_login "
+                    "FROM users WHERE role = ? ORDER BY created_at DESC",
+                    (role_filter,),
+                )
+            else:
+                cursor.execute(
+                    "SELECT id, email, display_name, role, created_at, last_login "
+                    "FROM users ORDER BY created_at DESC",
+                )
         users = [dict(row) for row in cursor.fetchall()]
-        return jsonify({"users": users})
+        return api_success({"users": users})
     except Exception as e:
         return _safe_error(e, 500)
 
 
 @app.route("/api/users", methods=["POST"])
+@admin_required
 def api_add_user():
-    """Add a user to the active tenant (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-
-    tenant_id = session.get("active_user_id")
-    if not tenant_id:
-        return jsonify({"error": "No client selected"}), 400
 
     data = request.json
     email = (data.get("email") or "").strip()
     password = data.get("password", "")
-    role = data.get("role", "client")
+    role = data.get("role", "user")
     display_name = (data.get("display_name") or "").strip()
 
+    if role not in ("user", "affiliate"):
+        return api_error("Invalid role. Must be 'user' or 'affiliate'.", 400)
+
     if not email or not password:
-        return jsonify({"error": "Email and password are required"}), 400
+        return api_error("Email and password are required", 400)
+
+    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        return api_error("Invalid email format.", 400)
 
     is_valid, err_msg = validate_password(password)
     if not is_valid:
-        return jsonify({"error": err_msg}), 400
+        return api_error(err_msg, 400)
+
+    # Allow creating first user without active_user_id (tenant_id = NULL)
+    tenant_id = session.get("active_user_id")
 
     try:
-        result = add_user_to_tenant(email, password, role, display_name, tenant_id)
-        return jsonify(result), 201
+        result = add_user_to_tenant(email, password, role, display_name, tenant_id or "")
+        return api_success(result, status_code=201)
     except ValueError as e:
         return _safe_error(e, 400)
     except RuntimeError as e:
@@ -1260,296 +1106,35 @@ def api_add_user():
 
 
 @app.route("/api/users/<int:user_id>", methods=["DELETE"])
+@admin_required
 def api_delete_user(user_id):
-    """Delete a user from the active tenant (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
 
     tenant_id = session.get("active_user_id")
-    if not tenant_id:
-        return jsonify({"error": "No client selected"}), 400
-
-    if str(user_id) == str(tenant_id):
-        return jsonify({"error": "Cannot delete the currently selected client"}), 400
+    if tenant_id and str(user_id) == str(tenant_id):
+        return api_error("Cannot delete the currently selected client", 400)
 
     try:
-        conn = database._get_conn()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM users WHERE id = ? AND tenant_id = ?", (user_id, int(tenant_id)))
-        conn.commit()
-        if cursor.rowcount == 0:
-            return jsonify({"error": "User not found or cannot be deleted"}), 404
-        return jsonify({"success": True, "message": "User deleted"})
+        user = database.get_user_by_id(user_id)
+        if not user:
+            return api_error("User not found", 404)
+        if tenant_id and user.get("tenant_id") is not None and str(user["tenant_id"]) != str(tenant_id):
+            return api_error("User does not belong to the selected client", 403)
+        database.delete_user(user_id)
+        return api_success({"message": "User deleted"})
     except Exception as e:
         return _safe_error(e, 500)
 
 
-# ---------------------------------------------------------------------------
-# Admin auth routes
-# ---------------------------------------------------------------------------
-
-@app.route("/admin/login", methods=["GET", "POST"])
-def admin_login():
-    """Serve the admin login page and handle authentication."""
-    if request.method == "POST":
-        if not _check_rate_limit():
-            return render_template(
-                "login.html", error="Too many attempts. Please try again later.", now=datetime.now()
-            )
-        username = request.form.get("username", "")
-        password = request.form.get("password", "")
-        expected_user = os.getenv("ADMIN_USERNAME")
-        if username == expected_user and check_password_hash(_admin_password_hash, password):
-            _record_attempt(True)
-            session["admin_logged_in"] = True
-            return redirect(url_for("admin_panel_redirect"))
-        _record_attempt(False)
-        return render_template(
-            "login.html", error="Invalid username or password.", now=datetime.now()
-        )
-    return render_template("login.html", now=datetime.now())
-
-
-@app.route("/admin/logout")
-def admin_logout():
-    """Log out and redirect to login."""
-    session.pop("admin_logged_in", None)
-    return redirect(url_for("admin_login"))
-
-
-@app.route("/admin")
-def admin_panel_redirect():
-    """Serve the admin panel with session-based auth."""
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
-    logo_status = request.args.get("logo_uploaded", "")
-    tenants = {
-        "direct_clients": database.list_users(role='user'),
-    }
-    active_tenant = session.get("active_user_id")
-    return render_template(
-        "admin.html",
-        logo_uploaded=logo_status,
-        tenants=tenants,
-        active_tenant=active_tenant,
-    )
-
-
-@app.route("/admin/agent/<agent_id>/chat")
-def admin_agent_chat(agent_id):
-    """Serve the admin agent chat interface."""
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
-    if agent_id not in agent_registry:
-        return "Agent not found", 404
-    return render_template(
-        "admin/agent_chat.html",
-        agent_id=agent_id,
-        agent=agent_registry[agent_id],
-        agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),
-    )
-
-
-@app.route("/fr/admin/agent/<agent_id>/chat")
-def admin_agent_chat_fr(agent_id):
-    """Serve the French admin agent chat interface."""
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login_fr"))
-    if agent_id not in agent_registry:
-        return "Agent introuvable", 404
-    return render_template(
-        "admin/agent_chat_fr.html",
-        agent_id=agent_id,
-        agent=agent_registry[agent_id],
-        agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),
-    )
-
-
-@app.route("/fr/admin/login", methods=["GET", "POST"])
-def admin_login_fr():
-    """Serve the French admin login page."""
-    if request.method == "POST":
-        if not _check_rate_limit():
-            return render_template(
-                "login_fr.html", error="Trop de tentatives. Veuillez réessayer plus tard.", now=datetime.now()
-            )
-        username = request.form.get("username", "")
-        password = request.form.get("password", "")
-        expected_user = os.getenv("ADMIN_USERNAME")
-        if username == expected_user and check_password_hash(_admin_password_hash, password):
-            _record_attempt(True)
-            session["admin_logged_in"] = True
-            return redirect(url_for("admin_panel_redirect_fr"))
-        _record_attempt(False)
-        return render_template(
-            "login_fr.html",
-            error="Nom d'utilisateur ou mot de passe invalide.",
-            now=datetime.now(),
-        )
-    return render_template("login_fr.html", now=datetime.now())
-
-
-@app.route("/fr/admin/logout")
-def admin_logout_fr():
-    """Log out from French admin and redirect to login."""
-    session.pop("admin_logged_in", None)
-    return redirect(url_for("admin_login_fr"))
-
-
-@app.route("/fr/admin")
-def admin_panel_redirect_fr():
-    """Serve the French admin panel with session-based auth."""
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login_fr"))
-    logo_status = request.args.get("logo_uploaded", "")
-    tenants = {
-        "direct_clients": database.list_users(role='user'),
-    }
-    active_tenant = session.get("active_user_id")
-    return render_template(
-        "admin_fr.html",
-        logo_uploaded=logo_status,
-        tenants=tenants,
-        active_tenant=active_tenant,
-    )
-
-
 @app.context_processor
-def inject_logo():
-    """Always use the SVG logo from the repo."""
-    return dict(logo_file="logo.svg")
-
-
-# ---------------------------------------------------------------------------
-# API: affiliate
-# ---------------------------------------------------------------------------
-
-@app.route("/api/affiliate/status")
-@csrf.exempt
-def affiliate_status():
-    """Return current affiliate status for the visitor."""
-    ref_code = session.get("affiliate_ref")
-    if ref_code and affiliate_manager.is_valid_code(ref_code):
-        aff = affiliate_manager.get_affiliate(ref_code)
-        if aff:
-            return jsonify({
-                "active": True,
-                "code": ref_code,
-                "discount": 500,
-                "affiliate_name": aff.get("name", "Partner"),
-            })
-    return jsonify({"active": False, "discount": 0})
-
-
-@app.route("/api/affiliate/signup", methods=["POST"])
-@csrf.exempt
-def affiliate_signup_api():
-    """Register a new affiliate and return their referral code."""
-    data = request.json
-    name = (data.get("name") or "").strip()
-    email = (data.get("email") or "").strip()
-    phone = (data.get("phone") or "").strip()
-
-    if not name or not email:
-        return jsonify({"error": "Name and email are required"}), 400
-
-    try:
-        aff = affiliate_manager.create_affiliate(name, email, phone)
-        code = aff["code"]
-
-        password = secrets.token_urlsafe(12) + "A1!"
-        try:
-            add_user_to_tenant(email, password, "affiliate", name, code, "direct")
-            logger.info("Affiliate user created: %s (tenant=%s)", email, code)
-        except Exception as e:
-            logger.error("Failed to create affiliate user for %s: %s", email, e)
-            return jsonify({
-                "success": False,
-                "error": "Account creation failed. Please try again later.",
-            }), 500
-
-        return jsonify({
-            "success": True,
-            "code": code,
-            "referral_link": f"https://lavaldigital.ca/?ref={code}",
-            "message": "Your login credentials have been created. Please check your email for your password.",
-        }), 201
-    except Exception as e:
-        logger.error("Affiliate signup failed: %s", e, exc_info=True)
-        return jsonify({"success": False, "error": "Signup failed. Please try again."}), 500
-
-
-# ---------------------------------------------------------------------------
-# API: affiliate payouts
-# ---------------------------------------------------------------------------
-
-
-@app.route("/api/affiliate/commissions", methods=["GET"])
-@login_required
-def api_affiliate_commissions():
-    """Return the current affiliate's commission history."""
-    tenant_id = current_user.tenant_id
-    commissions = affiliate_manager.get_commissions(tenant_id)
-    total_pending = sum(c["amount"] for c in commissions if c["status"] == "pending")
-    total_paid = sum(c["amount"] for c in commissions if c["status"] == "paid")
-    return jsonify({
-        "commissions": commissions,
-        "total_pending": total_pending,
-        "total_paid": total_paid,
-    })
-
-
-@app.route("/api/affiliate/payouts", methods=["GET"])
-@login_required
-def api_affiliate_payouts():
-    """Return the current affiliate's payout history."""
-    tenant_id = current_user.tenant_id
-    return jsonify({"payouts": affiliate_manager.get_payouts(tenant_id)})
-
-
-@app.route("/api/affiliate/payouts", methods=["POST"])
-@login_required
-def api_request_payout():
-    """Request a payout for the current affiliate's pending commissions."""
-    tenant_id = current_user.tenant_id
-    commissions = affiliate_manager.get_commissions(tenant_id)
-    total_pending = sum(c["amount"] for c in commissions if c["status"] == "pending")
-    if total_pending < 50:
-        return jsonify({"error": "Minimum payout is $50. You have $" + str(round(total_pending, 2))}), 400
-    payout_id = affiliate_manager.create_payout(tenant_id, total_pending)
-    if payout_id:
-        return jsonify({"success": True, "payout_id": payout_id, "amount": total_pending})
-    return jsonify({"error": "Failed to create payout"}), 500
-
-
-@app.route("/api/admin/affiliates", methods=["GET"])
-def api_admin_affiliates():
-    """List all affiliates with stats (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    affiliates = affiliate_manager.get_all_affiliates()
-    commissions = affiliate_manager.get_all_commissions(limit=200)
-    payouts = affiliate_manager.get_payouts(limit=200)
-    return jsonify({
-        "affiliates": affiliates,
-        "recent_commissions": commissions,
-        "recent_payouts": payouts,
-    })
-
-
-@app.route("/api/admin/affiliates/<code>/payout", methods=["POST"])
-def api_admin_process_payout(code):
-    """Process (approve) a payout for an affiliate (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    data = request.json
-    payout_id = data.get("payout_id", "")
-    if not payout_id:
-        return jsonify({"error": "payout_id required"}), 400
-    success = affiliate_manager.process_payout(payout_id)
-    if success:
-        return jsonify({"success": True, "message": "Payout processed"})
-    return jsonify({"error": "Payout not found or already processed"}), 404
+def inject_globals():
+    """Inject global template variables."""
+    phone = app.config["CONTACT_PHONE"]
+    return dict(
+        logo_file="logo.svg",
+        CONTACT_PHONE=phone,
+        CONTACT_PHONE_CLEAN=phone.replace("(", "").replace(")", "").replace(" ", "").replace("-", ""),
+        CONTACT_EMAIL=app.config["CONTACT_EMAIL"],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1561,14 +1146,16 @@ def handle_leads():
     """Capture and list lead form submissions."""
     conn = database._get_conn()
     if request.method == "POST":
+        if not _check_rate_limit():
+            return api_error("Too many attempts. Please try again later.", 429)
         data = request.json
         name = data.get("name", "")
         phone = data.get("phone", "")
         if not name or not phone:
-            return jsonify({"error": "Name and phone are required"}), 400
+            return api_error("Name and phone are required", 400)
         lead_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
-        user_id = 0
+        user_id = None
         if not current_user.is_anonymous:
             user_id = int(current_user.id)
         conn.execute(
@@ -1576,19 +1163,19 @@ def handle_leads():
             (lead_id, user_id, name, phone, data.get("service", ""), data.get("urgency", ""), now),
         )
         conn.commit()
-        return jsonify({"status": "ok", "lead": {"id": lead_id, "name": name, "phone": phone}}), 201
+        return api_success({"lead": {"id": lead_id, "name": name, "phone": phone}}, status_code=201)
     if current_user.is_anonymous and not session.get("admin_logged_in"):
-        return jsonify({"error": "Authentication required"}), 401
+        return api_error("Authentication required", 401)
     if session.get("admin_logged_in"):
         tenant_id = session.get("active_user_id")
         if tenant_id:
-            rows = conn.execute("SELECT * FROM leads WHERE user_id = ? ORDER BY created_at DESC LIMIT 100", (int(tenant_id),)).fetchall()
+            rows = conn.execute("SELECT * FROM leads WHERE user_id = ? ORDER BY created_at DESC LIMIT 100", (_safe_int(tenant_id),)).fetchall()
         else:
             rows = conn.execute("SELECT * FROM leads ORDER BY created_at DESC LIMIT 100").fetchall()
     else:
         user_id = int(current_user.id)
         rows = conn.execute("SELECT * FROM leads WHERE user_id = ? ORDER BY created_at DESC LIMIT 100", (user_id,)).fetchall()
-    return jsonify({"leads": [dict(r) for r in rows]})
+    return api_success({"leads": [dict(r) for r in rows]})
 
 
 # ---------------------------------------------------------------------------
@@ -1633,14 +1220,14 @@ def get_agents():
                 "last_draft_preview": None,
             })
 
-    return jsonify({"agents": agents_status})
+    return api_success({"agents": agents_status})
 
 
 @app.route("/api/agents/<agent_id>", methods=["GET"])
 def get_agent_stats(agent_id):
     """Get stats for a specific agent (for the agent chat panel)."""
     if agent_id not in agent_registry:
-        return jsonify({"error": "Agent not found"}), 404
+        return api_error("Agent not found", 404)
     tenant_id = str(current_user.id) if not current_user.is_anonymous else None
     stats = {"agent_id": agent_id, "task_count": 0, "success_count": 0, "failure_count": 0, "enabled": agent_registry[agent_id].enabled, "model": agent_registry[agent_id].model}
     if tenant_id:
@@ -1648,22 +1235,20 @@ def get_agent_stats(agent_id):
             conn = database._get_conn()
             row = conn.execute(
                 "SELECT task_count, success_count, failure_count FROM agent_configs WHERE agent_id = ? AND user_id = ?",
-                (agent_id, int(tenant_id)),
+                (agent_id, _safe_int(tenant_id)),
             ).fetchone()
             if row:
                 stats.update(dict(row))
-        except Exception:
-            pass
-    return jsonify(stats)
+        except Exception as e:
+            logger.debug("Silent exception in %s: %s", __name__, e)
+    return api_success(stats)
 
 
 @app.route("/api/agents/<agent_id>/toggle", methods=["POST"])
+@admin_required
 def toggle_agent(agent_id):
-    """Toggle agent on/off. Admin only (affects global state)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     if agent_id not in agent_registry:
-        return jsonify({"error": "Agent not found"}), 404
+        return api_error("Agent not found", 404)
 
     agent = agent_registry[agent_id]
     agent.enabled = not agent.enabled
@@ -1676,13 +1261,13 @@ def toggle_agent(agent_id):
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE agent_configs SET enabled = ? WHERE agent_id = ? AND user_id = ?",
-                (int(agent.enabled), agent_id, int(tenant_id)),
+                (int(agent.enabled), agent_id, _safe_int(tenant_id)),
             )
             conn.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Silent exception in %s: %s", __name__, e)
 
-    return jsonify({"agent_id": agent_id, "enabled": agent.enabled})
+    return api_success({"agent_id": agent_id, "enabled": agent.enabled})
 
 
 # ---------------------------------------------------------------------------
@@ -1690,14 +1275,14 @@ def toggle_agent(agent_id):
 # ---------------------------------------------------------------------------
 
 @app.route("/api/agents/<agent_id>/config", methods=["GET"])
+@admin_required
 def get_agent_config(agent_id):
-    """Get configuration for a specific agent."""
     if agent_id not in AGENT_CONFIGS:
-        return jsonify({"error": "Agent not found"}), 404
+        return api_error("Agent not found", 404)
     config = AGENT_CONFIGS[agent_id]
     api_key = config.get("credentials", {}).get("api_key", "")
     masked_key = ("****" + api_key[-4:]) if api_key and len(api_key) > 4 else ""
-    return jsonify({
+    return api_success({
         "agent_id": agent_id,
         "model": config.get("model", "deepseek-chat"),
         "api_key": masked_key,
@@ -1706,19 +1291,17 @@ def get_agent_config(agent_id):
 
 
 @app.route("/api/agents/<agent_id>/config", methods=["POST"])
+@admin_required
 def update_agent_config(agent_id):
-    """Update configuration for a specific agent. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     if agent_id not in AGENT_CONFIGS:
-        return jsonify({"error": "Agent not found"}), 404
+        return api_error("Agent not found", 404)
 
     data = request.json
     config = AGENT_CONFIGS[agent_id]
 
     if "model" in data and data["model"]:
         if not LLMAdapter.is_valid_model(data["model"]):
-            return jsonify({"error": f"Invalid model '{data['model']}'"}), 400
+            return api_error(f"Invalid model '{data['model']}'", 400)
         config["model"] = data["model"]
 
     if "api_key" in data:
@@ -1735,7 +1318,7 @@ def update_agent_config(agent_id):
     with _orchestrator_lock:
         orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
 
-    return jsonify({
+    return api_success({
         "agent_id": agent_id,
         "model": config["model"],
         "message": "Configuration updated and agent reinitialized",
@@ -1743,13 +1326,11 @@ def update_agent_config(agent_id):
 
 
 @app.route("/api/agents/bulk/config", methods=["POST"])
+@admin_required
 def update_all_agents_config():
-    """Apply the same configuration to ALL agents at once. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
-        return jsonify({"error": "No data provided"}), 400
+        return api_error("No data provided", 400)
 
     model = data.get("model")
     api_key = data.get("api_key")
@@ -1791,8 +1372,7 @@ def update_all_agents_config():
     with _orchestrator_lock:
         orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
 
-    return jsonify({
-        "success": True,
+    return api_success({
         "message": f"Updated {updated_count} agents",
         "updated": updated_count,
         "applied": {
@@ -1809,68 +1389,6 @@ def _reinitialize_agent(agent_id: str, config: dict) -> None:
         agent_registry[agent_id] = cls(agent_id, config)
 
 
-@app.route("/api/agents/config/bulk", methods=["POST"])
-def bulk_update_agent_config():
-    """Update configuration for multiple agents at once.
-
-    Accepts a JSON body with:
-        agent_ids (list): List of agent IDs to update.
-        model (str, optional): Model name to set on all listed agents.
-        api_key (str, optional): API key to set on all listed agents.
-        api_base (str, optional): API base URL to set on all listed agents.
-
-    Returns a summary of which agents were updated and any errors.
-    """
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-
-    data = request.json
-    agent_ids = data.get("agent_ids", [])
-    model = data.get("model")
-    api_key = data.get("api_key")
-    api_base = data.get("api_base")
-
-    if not agent_ids:
-        return jsonify({"error": "agent_ids list is required"}), 400
-
-    results = {"updated": [], "errors": []}
-
-    for agent_id in agent_ids:
-        if agent_id not in AGENT_CONFIGS:
-            results["errors"].append({"agent_id": agent_id, "error": "Agent not found"})
-            continue
-
-        config = AGENT_CONFIGS[agent_id]
-
-        if model:
-            if not LLMAdapter.is_valid_model(model):
-                results["errors"].append({"agent_id": agent_id, "error": f"Invalid model '{model}'"})
-                continue
-            config["model"] = model
-
-        if api_key is not None:
-            config["credentials"]["api_key"] = api_key
-
-        if api_base is not None:
-            config["credentials"]["api_base"] = api_base
-
-        # Re-initialize the agent with new config
-        _reinitialize_agent(agent_id, config)
-        results["updated"].append(agent_id)
-
-    # Rebuild orchestrator if any agent was updated
-    if results["updated"]:
-        global orchestrator
-        with _orchestrator_lock:
-            orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
-
-    return jsonify({
-        "updated": results["updated"],
-        "errors": results["errors"],
-        "message": f"Updated {len(results['updated'])} agent(s) with {len(results['errors'])} error(s)",
-    })
-
-
 # ---------------------------------------------------------------------------
 # API: models
 # ---------------------------------------------------------------------------
@@ -1880,9 +1398,9 @@ def get_available_models():
     """Return list of all available LLM models via litellm."""
     try:
         models = LLMAdapter.get_available_models()
-        return jsonify({"models": models})
+        return api_success({"models": models})
     except Exception:
-        return jsonify({
+        return api_success({
             "models": ["deepseek-chat", "gpt-4o", "claude-3.5-sonnet"]
         })
 
@@ -1893,15 +1411,13 @@ def detect_models():
     data = request.json
     api_key = data.get("api_key", "")
     if not api_key:
-        return jsonify({"error": "API key is required"}), 400
+        return api_error("API key is required", 400)
     try:
         result = LLMAdapter.detect_models(api_key)
-        return jsonify(result)
+        return api_success(result)
     except Exception as e:
         logger.error("Model detection failed: %s", type(e).__name__)
-        return jsonify({
-            "provider": "unknown", "models": [], "error": "Model detection failed."
-        }), 500
+        return api_error("Model detection failed.", 500, data={"provider": "unknown", "models": []})
 
 
 # ---------------------------------------------------------------------------
@@ -1909,33 +1425,28 @@ def detect_models():
 # ---------------------------------------------------------------------------
 
 @app.route("/api/executioner/settings", methods=["GET", "PUT"])
+@admin_required
 def handle_executioner_settings():
-    """Get or update ExecutionerAgent settings. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     if request.method == "PUT":
         data = request.json
         if data:
             executioner.update_settings(data)
-        return jsonify(executioner.get_public_settings())
-    return jsonify(executioner.get_public_settings())
+        return api_success(executioner.get_public_settings())
+    return api_success(executioner.get_public_settings())
 
 
 @app.route("/api/executioner/test-smtp", methods=["POST"])
+@admin_required
 def test_smtp():
-    """Send a test email to verify SMTP configuration. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
-        return jsonify({"error": "No data provided"}), 400
+        return api_error("No data provided", 400)
 
     to_email = data.get("to_email", "")
     if not to_email:
-        return jsonify({"error": "No recipient email provided"}), 400
+        return api_error("No recipient email provided", 400)
 
     try:
-        import smtplib
         from email.mime.text import MIMEText
 
         msg = MIMEText("This is a test email from your Laval Digital platform. Your SMTP configuration is working correctly! 🚀")
@@ -1956,133 +1467,117 @@ def test_smtp():
                         ip_parts[0] == 169 and ip_parts[1] == 254 or
                         ip_parts[0] == 192 and ip_parts[1] == 168 or
                         ip_parts[0] == 172 and 16 <= ip_parts[1] <= 31):
-                        return jsonify({"error": "SMTP host resolves to a private IP address"}), 400
+                        return api_error("SMTP host resolves to a private IP address", 400)
                 if ":" in smtp_ip:
                     if smtp_ip.startswith("::1") or smtp_ip.startswith("fc") or smtp_ip.startswith("fd") or smtp_ip.startswith("fe80"):
-                        return jsonify({"error": "SMTP host resolves to a private IPv6 address"}), 400
+                        return api_error("SMTP host resolves to a private IPv6 address", 400)
         except socket.gaierror:
-            return jsonify({"error": f"Could not resolve SMTP host: {smtp_host}"}), 400
+            return api_error(f"Could not resolve SMTP host: {smtp_host}", 400)
 
-        server = smtplib.SMTP(smtp_host,
-                              int(data.get("smtp_port", 587)), timeout=15)
-        if data.get("smtp_use_tls", True):
-            server.starttls()
-        server.login(data.get("smtp_username", ""), data.get("smtp_password", ""))
-        server.send_message(msg)
-        server.quit()
+        with smtplib.SMTP(smtp_host,
+                          int(data.get("smtp_port", 587)), timeout=15) as server:
+            if data.get("smtp_use_tls", True):
+                server.starttls()
+            server.login(data.get("smtp_username", ""), data.get("smtp_password", ""))
+            server.send_message(msg)
 
-        return jsonify({"success": True, "message": "Test email sent"})
+        return api_success({"message": "Test email sent"})
     except Exception as e:
-        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
 
 
 @app.route("/api/executioner/validate-social-key", methods=["POST"])
+@admin_required
 def validate_social_key():
-    """Validate a unified social media API key and return connected accounts. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
-        return jsonify({"error": "No data provided"}), 400
+        return api_error("No data provided", 400)
 
     provider = data.get("provider", "socialapi")
     api_key = data.get("api_key", "")
 
     if not api_key:
-        return jsonify({"error": "No API key provided"}), 400
+        return api_error("No API key provided", 400)
 
     try:
         if provider == "socialapi":
             from socialapi import SocialAPI
             client = SocialAPI(api_key=api_key)
             accounts = client.accounts.list()
-            return jsonify({
-                "success": True,
+            return api_success({
                 "accounts": [{"platform": a.platform, "account_name": a.account_name} for a in accounts]
             })
         else:
-            return jsonify({"error": f"Provider '{provider}' is not yet supported."}), 400
+            return api_error(f"Provider '{provider}' is not yet supported.", 400)
     except ImportError:
-        return jsonify({"error": "socialapi package is not installed. Run: pip install socialapi"}), 500
+        return api_error("socialapi package is not installed. Run: pip install socialapi", 500)
     except Exception as e:
-        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
 
 
 @app.route("/api/executioner/social-settings", methods=["POST"])
+@admin_required
 def save_social_settings():
-    """Save the unified social media settings to the Executioner. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     executioner.update_settings({
         "social_api_provider": data.get("provider", "socialapi"),
         "social_api_key": data.get("api_key", ""),
     })
-    return jsonify({"success": True, "message": "Social media settings saved."})
+    return api_success({"message": "Social media settings saved."})
 
 
 @app.route("/api/executioner/pending", methods=["GET"])
+@admin_required
 def get_pending_executions():
-    """Get all executions awaiting confirmation. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
-    return jsonify({"pending": executioner.get_pending_executions()})
+    return api_success({"pending": executioner.get_pending_executions()})
 
 
 @app.route("/api/executioner/confirm/<execution_id>", methods=["POST"])
+@admin_required
 def confirm_execution(execution_id):
-    """Confirm and execute a queued execution. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     try:
         result = executioner.confirm_execution(execution_id)
-        return jsonify(result)
+        return api_success(result)
     except Exception as e:
         return _safe_error(e, 400)
 
 
 @app.route("/api/executioner/reject/<execution_id>", methods=["POST"])
+@admin_required
 def reject_execution(execution_id):
-    """Reject a queued execution without running it. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     try:
         result = executioner.reject_execution(execution_id)
-        return jsonify(result)
+        return api_success(result)
     except Exception as e:
         return _safe_error(e, 400)
 
 
 @app.route("/api/executioner/execute-chat", methods=["POST"])
+@admin_required
 def execute_chat_response():
-    """Execute an agent response directly from the chat interface. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
-        return jsonify({"error": "No data provided"}), 400
+        return api_error("No data provided", 400)
 
     agent_id = data.get("agent_id", "")
     content = data.get("content", "")
 
     if not agent_id or not content:
-        return jsonify({"error": "Agent ID and content are required"}), 400
+        return api_error("Agent ID and content are required", 400)
 
     try:
         result = executioner.execute(agent_id, content)
-        return jsonify(result)
+        return api_success(result)
     except Exception as e:
         return _safe_error(e, 500)
 
 
 @app.route("/api/executions", methods=["GET"])
+@admin_required
 def get_executions():
-    """Get recent execution history. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     limit = request.args.get("limit", 50, type=int)
     history = executioner.get_execution_history(limit)
-    return jsonify({"executions": history})
+    return api_success({"executions": history})
 
 
 # ---------------------------------------------------------------------------
@@ -2091,52 +1586,44 @@ def get_executions():
 
 
 @app.route("/api/speech/settings", methods=["GET"])
+@admin_required
 def get_speech_settings():
-    """Get current speech engine settings (public, no secrets). Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
-    return jsonify(speech_engine.get_public_settings())
+    return api_success(speech_engine.get_public_settings())
 
 
 @app.route("/api/speech/settings", methods=["PUT"])
+@admin_required
 def update_speech_settings():
-    """Update speech engine settings. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data:
-        return jsonify({"error": "No data provided"}), 400
+        return api_error("No data provided", 400)
     speech_engine.update_settings(data)
-    return jsonify(speech_engine.get_public_settings())
+    return api_success(speech_engine.get_public_settings())
 
 
 @app.route("/api/speech/stt", methods=["POST"])
+@admin_required
 def speech_to_text():
-    """Transcribe uploaded audio to text. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     if "audio" not in request.files:
-        return jsonify({"error": "No audio file provided"}), 400
+        return api_error("No audio file provided", 400)
 
     audio_file = request.files["audio"]
     language = request.form.get("language", "en")
 
     try:
         text = speech_engine.transcribe(audio_file.read(), language)
-        return jsonify({"text": text, "language": language})
+        return api_success({"text": text, "language": language})
     except Exception as e:
         logger.error("Speech-to-text failed: %s", e)
         return _safe_error(e, 500)
 
 
 @app.route("/api/speech/tts", methods=["POST"])
+@admin_required
 def text_to_speech():
-    """Synthesize speech from text and return audio. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     if not data or not data.get("text"):
-        return jsonify({"error": "No text provided"}), 400
+        return api_error("No text provided", 400)
 
     text = data["text"]
     language = data.get("language", "en")
@@ -2150,15 +1637,15 @@ def text_to_speech():
 
 
 @app.route("/api/speech/voices", methods=["GET"])
+@admin_required
 def get_speech_voices():
-    """Return available voices for the configured TTS provider."""
     provider = speech_engine.get_settings().get("tts_provider", "browser")
     if provider == "openai":
-        return jsonify({"voices": ["alloy", "echo", "fable", "nova", "shimmer"]})
+        return api_success({"voices": ["alloy", "echo", "fable", "nova", "shimmer"]})
     elif provider == "elevenlabs":
         api_key = speech_engine.get_settings().get("elevenlabs_api_key", "")
         if not api_key:
-            return jsonify({"voices": []})
+            return api_success({"voices": []})
         try:
             resp = requests.get(
                 "https://api.elevenlabs.io/v1/voices",
@@ -2167,10 +1654,10 @@ def get_speech_voices():
             )
             resp.raise_for_status()
             voices = [{"id": v["voice_id"], "name": v["name"]} for v in resp.json().get("voices", [])]
-            return jsonify({"voices": voices})
+            return api_success({"voices": voices})
         except Exception:
-            return jsonify({"voices": []})
-    return jsonify({"voices": []})
+            return api_success({"voices": []})
+    return api_success({"voices": []})
 
 
 # ---------------------------------------------------------------------------
@@ -2178,15 +1665,13 @@ def get_speech_voices():
 # ---------------------------------------------------------------------------
 
 @app.route("/api/tasks", methods=["POST"])
+@admin_required
 def submit_task():
-    """Submit a task to the chat orchestrator for immediate response. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     data = request.json
     user_request = data.get("request", "").strip()
 
     if not user_request:
-        return jsonify({"error": "No request provided"}), 400
+        return api_error("No request provided", 400)
 
     thread_id = data.get("thread_id", str(uuid.uuid4()))
     language = data.get("language", "")
@@ -2200,7 +1685,7 @@ def submit_task():
             conn = database._get_conn()
             rows = conn.execute(
                 "SELECT agent_id, autonomy, confidence_threshold FROM agent_configs WHERE user_id = ?",
-                (int(user_id),),
+                (_safe_int(user_id),),
             ).fetchall()
             autonomy_config = {
                 r["agent_id"]: {"autonomy": r["autonomy"], "confidence_threshold": r["confidence_threshold"]}
@@ -2211,26 +1696,24 @@ def submit_task():
             user_request, thread_id,
             language=language or None,
             autonomy_config=autonomy_config,
-            user_id=int(user_id) if user_id else 0,
+            user_id=_safe_int(user_id) if user_id else 0,
         )
 
-        return jsonify(result)
+        return api_success(result)
     except Exception as e:
         logger.error("Task failed: %s", e, exc_info=True)
-        return jsonify({
+        return api_error("I had trouble processing that request. Please try again.", 500, data={
             "response": "I had trouble processing that request. Please try again.",
             "agent": "error",
             "status": "error",
             "thread_id": thread_id,
             "pending_approval": False
-        }), 500
+        })
 
 
 @app.route("/api/approvals", methods=["GET"])
+@admin_required
 def get_approvals():
-    """Get pending approvals from the orchestrator's in-memory store. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     orch = get_orchestrator()
     user_id = get_current_user_id()
     approvals = []
@@ -2241,8 +1724,8 @@ def get_approvals():
             "draft": draft_info.get("draft", ""),
             "task": draft_info.get("task", "")
         })
-    logger.info(f"Returning {len(approvals)} pending approvals")
-    return jsonify({"approvals": approvals})
+    logger.info("Returning %d pending approvals", len(approvals))
+    return api_success({"approvals": approvals})
 
 
 @app.route("/api/orchestrator/welcome", methods=["POST"])
@@ -2251,7 +1734,7 @@ def api_orchestrator_welcome():
     data = request.json or {}
     language = data.get("language", "en")
     orch = get_orchestrator()
-    return jsonify(orch.get_welcome(language))
+    return api_success(orch.get_welcome(language))
 
 
 @app.route("/api/orchestrator/suggestions", methods=["POST"])
@@ -2260,7 +1743,7 @@ def api_orchestrator_suggestions():
     data = request.json or {}
     language = data.get("language", "en")
     orch = get_orchestrator()
-    return jsonify(orch.get_suggestions(language))
+    return api_success(orch.get_suggestions(language))
 
 
 # ---------------------------------------------------------------------------
@@ -2269,31 +1752,27 @@ def api_orchestrator_suggestions():
 
 
 @app.route("/api/orchestrator/panic", methods=["POST"])
+@admin_required
 def api_panic():
-    """Stop all auto-executions immediately. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     orch = get_orchestrator()
     orch.panic()
-    return jsonify({"status": "panicked", "message": "All agents stopped."})
+    return api_success({"status": "panicked", "message": "All agents stopped."})
 
 
 @app.route("/api/orchestrator/resume", methods=["POST"])
+@admin_required
 def api_resume():
-    """Resume auto-executions after a panic. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     orch = get_orchestrator()
     orch.clear_panic()
-    return jsonify({"status": "active", "message": "Agents resumed."})
+    return api_success({"status": "active", "message": "Agents resumed."})
 
 
 @app.route("/api/orchestrator/status", methods=["GET"])
+@admin_required
 def api_orchestrator_status():
-    """Return orchestrator status (panicked, pending drafts, activity count)."""
     orch = get_orchestrator()
     user_id = get_current_user_id()
-    return jsonify({
+    return api_success({
         "panicked": orch.is_panicked,
         "pending_drafts": len(orch.get_pending_drafts(user_id)),
         "activity_count": len(orch.get_activity_feed(200)),
@@ -2301,22 +1780,16 @@ def api_orchestrator_status():
 
 
 @app.route("/api/orchestrator/activity", methods=["GET"])
+@admin_required
 def api_activity():
-    """Return the orchestrator's activity feed."""
     limit = request.args.get("limit", 50, type=int)
     orch = get_orchestrator()
-    return jsonify({"activities": orch.get_activity_feed(limit)})
+    return api_success({"activities": orch.get_activity_feed(limit)})
 
 
 @app.route("/api/events/stream")
+@admin_required
 def api_events_stream():
-    """Server-Sent Events stream for real-time agent dashboard. Admin only.
-
-    Yields SSE-formatted events as they happen. The client reconnects
-    automatically on disconnect (built into EventSource API).
-    """
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     event_bus = get_event_bus()
     q = event_bus.subscribe()
 
@@ -2344,21 +1817,19 @@ def api_events_stream():
 
 
 @app.route("/api/events/history", methods=["GET"])
+@admin_required
 def api_events_history():
-    """Return recent event history for dashboard bootstrapping. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     limit = request.args.get("limit", 100, type=int)
     event_type = request.args.get("type", "").strip() or None
     agent = request.args.get("agent", "").strip() or None
     events = get_event_bus().get_history(limit=limit, event_type=event_type, agent=agent)
-    return jsonify({"events": events})
+    return api_success({"events": events})
 
 
 @app.route("/api/events/stats", methods=["GET"])
+@admin_required
 def api_events_stats():
-    """Return aggregate event stats for the dashboard."""
-    return jsonify(get_event_bus().get_stats())
+    return api_success(get_event_bus().get_stats())
 
 
 # ---------------------------------------------------------------------------
@@ -2369,7 +1840,7 @@ def api_events_stats():
 @app.route("/api/push/vapid-key", methods=["GET"])
 def api_push_vapid_key():
     """Return the VAPID public key for push subscription."""
-    return jsonify({"public_key": push_manager.public_key, "enabled": push_manager.enabled})
+    return api_success({"public_key": push_manager.public_key, "enabled": push_manager.enabled})
 
 
 @app.route("/api/push/subscribe", methods=["POST"])
@@ -2377,9 +1848,9 @@ def api_push_subscribe():
     """Store a push subscription from the browser."""
     data = request.json
     if not data:
-        return jsonify({"error": "No subscription data"}), 400
+        return api_error("No subscription data", 400)
     ok = push_manager.subscribe(data)
-    return jsonify({"success": ok})
+    return api_success({"success": ok})
 
 
 @app.route("/api/push/unsubscribe", methods=["POST"])
@@ -2388,9 +1859,9 @@ def api_push_unsubscribe():
     data = request.json
     endpoint = (data or {}).get("endpoint", "")
     if not endpoint:
-        return jsonify({"error": "No endpoint"}), 400
+        return api_error("No endpoint", 400)
     ok = push_manager.unsubscribe(endpoint)
-    return jsonify({"success": ok})
+    return api_success({"success": ok})
 
 
 # ---------------------------------------------------------------------------
@@ -2399,10 +1870,8 @@ def api_push_unsubscribe():
 
 
 @app.route("/api/inbox", methods=["GET"])
+@admin_required
 def api_inbox():
-    """Unified inbox: merges pending approvals, activity, and agent messages."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     limit = request.args.get("limit", 50, type=int)
     orch = get_orchestrator()
     user_id = session.get("active_user_id")
@@ -2432,17 +1901,15 @@ def api_inbox():
         })
 
     items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-    return jsonify({"items": items[:limit]})
+    return api_success({"items": items[:limit]})
 
 
 @app.route("/api/orchestrator/undo", methods=["POST"])
+@admin_required
 def api_undo():
-    """Undo the last execution."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     orch = get_orchestrator()
     result = orch.undo_last()
-    return jsonify(result if result else {"success": False, "action": "nothing_to_undo"})
+    return api_success(result) if result else api_success({"action": "nothing_to_undo"})
 
 
 @app.route("/api/frankie/inspect", methods=["GET"])
@@ -2450,14 +1917,14 @@ def api_frankie_inspect():
     """Frankie inspects the client's live website and returns actionable suggestions."""
     user_id = get_current_user_id()
     if not user_id:
-        return jsonify({"suggestions": [], "error": "No user"})
+        return api_success({"suggestions": [], "error": "No user"})
     try:
         conn = database._get_conn()
-        row = conn.execute("SELECT site_url, business_name, city, niche FROM client_details WHERE user_id = ? LIMIT 1", (int(user_id),)).fetchone()
+        row = conn.execute("SELECT site_url, business_name, city, niche FROM client_details WHERE user_id = ? LIMIT 1", (_safe_int(user_id),)).fetchone()
     except Exception:
         row = None
     if not row or not row.get("site_url"):
-        return jsonify({"suggestions": [], "site": None})
+        return api_success({"suggestions": [], "site": None})
 
     site_url = row["site_url"]
     business = row.get("business_name", "")
@@ -2510,23 +1977,21 @@ def api_frankie_inspect():
         if not has_whatsapp:
             pass  # optional
 
-        return jsonify({
+        return api_success({
             "site": {"url": site_url, "title": title[:80], "meta_desc": meta_desc[:120], "business": business, "city": city, "niche": niche},
             "suggestions": suggestions[:5],
         })
     except Exception as e:
-        return jsonify({"suggestions": [f"Could not reach {site_url}. Make sure the site is live."], "site": None})
+        return api_success({"suggestions": [f"Could not reach {site_url}. Make sure the site is live."], "site": None})
 
 
 @app.route("/api/dashboard/ask", methods=["POST"])
+@admin_required
 def api_dashboard_ask():
-    """Frankie: processes both questions AND actions through the orchestrator."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     query = (data or {}).get("query", "").strip()
     if not query:
-        return jsonify({"error": "No query provided"}), 400
+        return api_error("No query provided", 400)
     lang = "fr" if (session.get("lang") == "fr" or (request.accept_languages and request.accept_languages.best and request.accept_languages.best.startswith("fr"))) else "en"
     try:
         orch = get_orchestrator()
@@ -2536,7 +2001,7 @@ def api_dashboard_ask():
             conn = database._get_conn()
             rows = conn.execute(
                 "SELECT agent_id, autonomy, confidence_threshold FROM agent_configs WHERE user_id = ?",
-                (int(user_id),),
+                (_safe_int(user_id),),
             ).fetchall()
             autonomy_config = {
                 r["agent_id"]: {"autonomy": r["autonomy"], "confidence_threshold": r["confidence_threshold"]}
@@ -2548,7 +2013,7 @@ def api_dashboard_ask():
             thread_id="frankie-" + uuid.uuid4().hex[:8],
             language=lang if lang else None,
             autonomy_config=autonomy_config,
-            user_id=int(user_id) if user_id else 0,
+            user_id=_safe_int(user_id) if user_id else 0,
             source="frankie",
         )
 
@@ -2564,24 +2029,24 @@ def api_dashboard_ask():
             draft_preview = (response or "")[:200]
             en = f"{emoji} I asked **{p.get('short', agent)}** to handle this. Here's the draft:\n\n{draft_preview}\n\n---\n\nYou can **approve** or **reject** it in the Tasks tab."
             fr = f"{emoji} J'ai demandé à **{p.get('short_fr', agent)}** de s'en occuper. Voici le projet :\n\n{draft_preview}\n\n---\n\nVous pouvez **approuver** ou **rejeter** dans l'onglet Tâches."
-            return jsonify({"response": fr if lang == "fr" else en, "pending_approval": True, "agent": agent, "thread_id": result.get("thread_id")})
+            return api_success({"response": fr if lang == "fr" else en, "pending_approval": True, "agent": agent, "thread_id": result.get("thread_id")})
         elif status == "auto_executed":
             agent = result.get("agent", "agent")
             p = AGENT_PERSONALITIES.get(agent, {})
             emoji = p.get("emoji", "✅")
             en = f"{emoji} Done! **{p.get('short', agent)}** handled it automatically."
             fr = f"{emoji} Terminé ! **{p.get('short_fr', agent)}** s'en est occupé automatiquement."
-            return jsonify({"response": fr if lang == "fr" else en})
+            return api_success({"response": fr if lang == "fr" else en})
         elif status == "executed_silent":
-            return jsonify({"response": "✅ Done."})
+            return api_success({"response": "✅ Done."})
         elif status == "error":
-            return jsonify({"response": response or "I couldn't process that."})
+            return api_success({"response": response or "I couldn't process that."})
         else:
-            return jsonify({"response": response or "Done."})
+            return api_success({"response": response or "Done."})
     except Exception as e:
         logger.error("Frankie query failed: %s", e, exc_info=True)
         fallback = "Je n'ai pas pu traiter ça. Essayez de me parler des agents, des approbations ou de l'activité récente." if lang == "fr" else "I couldn't process that. Try asking about agents, approvals, or recent activity."
-        return jsonify({"response": fallback})
+        return api_success({"response": fallback})
 
 
 AGENT_PERSONALITIES = {
@@ -2615,7 +2080,7 @@ def api_personalities():
         entry = dict(p)
         entry["short"] = p.get("short_fr", p["short"]) if lang == "fr" else p["short"]
         data[aid] = entry
-    return jsonify({"personalities": data})
+    return api_success({"personalities": data})
 
 
 # ---------------------------------------------------------------------------
@@ -2628,14 +2093,9 @@ def api_onboarding_status():
     """Return onboarding completion status for the current user."""
     user_id = get_current_user_id()
     if not user_id:
-        return jsonify({"onboarded": False, "error": "No user"}), 400
-    return jsonify({"onboarded": True, "steps": {"welcome": True, "agents": True, "autonomy": True, "done": True}})
+        return api_error("No user", 400, data={"onboarded": False})
+    return api_success({"onboarded": True, "steps": {"welcome": True, "agents": True, "autonomy": True, "done": True}})
 
-
-@app.route("/api/onboarding/step", methods=["POST"])
-def api_onboarding_step():
-    """Stub — onboarding was removed. Always returns success."""
-    return jsonify({"success": True})
 
 
 # ---------------------------------------------------------------------------
@@ -2644,89 +2104,44 @@ def api_onboarding_step():
 
 
 @app.route("/api/schedules", methods=["GET"])
+@admin_required
 def api_list_schedules():
-    """List all scheduled tasks (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     tenant_id = request.args.get("tenant_id", "")
-    schedules = scheduler_manager.get_schedules(user_id=int(tenant_id) if tenant_id else None)
-    return jsonify({"schedules": schedules, "enabled": scheduler_manager.enabled})
+    schedules = scheduler_manager.get_schedules(user_id=_safe_int(tenant_id) if tenant_id else None)
+    return api_success({"schedules": schedules, "enabled": scheduler_manager.enabled})
 
 
 @app.route("/api/schedules", methods=["POST"])
+@admin_required
 def api_create_schedule():
-    """Create a new scheduled task (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     if not data:
-        return jsonify({"error": "No data"}), 400
+        return api_error("No data", 400)
     tenant_id = data.get("tenant_id", "")
     agent_id = data.get("agent_id", "")
     task = data.get("task", "")
     cron = data.get("cron", "")
     lang = data.get("language", "en")
     if not all([tenant_id, agent_id, task, cron]):
-        return jsonify({"error": "tenant_id, agent_id, task, and cron are required"}), 400
-    sid = scheduler_manager.create_schedule(int(tenant_id), agent_id, task, cron, lang)
-    return jsonify({"id": sid, "success": True}), 201
+        return api_error("tenant_id, agent_id, task, and cron are required", 400)
+    sid = scheduler_manager.create_schedule(_safe_int(tenant_id), agent_id, task, cron, lang)
+    return api_success({"id": sid}, status_code=201)
 
 
 @app.route("/api/schedules/<schedule_id>", methods=["DELETE"])
+@admin_required
 def api_delete_schedule(schedule_id):
-    """Delete a scheduled task (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     ok = scheduler_manager.delete_schedule(schedule_id)
-    return jsonify({"success": ok})
+    return api_success({"success": ok})
 
 
 @app.route("/api/schedules/<schedule_id>/toggle", methods=["POST"])
+@admin_required
 def api_toggle_schedule(schedule_id):
-    """Enable or disable a scheduled task (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     enabled = (data or {}).get("enabled", True)
     ok = scheduler_manager.toggle_schedule(schedule_id, enabled)
-    return jsonify({"success": ok})
-
-
-@app.route("/admin/dashboard")
-def admin_dashboard():
-    """Serve the real-time agent dashboard."""
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
-    return render_template(
-        "admin/dashboard.html",
-        agents=AGENT_META,
-    )
-
-
-# ---------------------------------------------------------------------------
-# Connector page (bookmarklet + email bridge setup)
-# ---------------------------------------------------------------------------
-
-
-@app.route("/admin/connector")
-def admin_connector():
-    """Serve the connector setup page (bookmarklet + email bridge)."""
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
-    tenant_id = session.get("active_user_id")
-    if not tenant_id:
-        return render_template("admin/connector.html", error="Select a client first to configure the connector.")
-    base_url = request.url_root.rstrip("/")
-    bookmarklet_code = (
-        'javascript:(function(){var s=document.createElement("script");'
-        f's.src="{base_url}/static/bookmarklet.js";'
-        "document.body.appendChild(s);})()"
-    )
-    return render_template(
-        "admin/connector.html",
-        bookmarklet_code=bookmarklet_code,
-        tenant_id=tenant_id,
-    )
+    return api_success({"success": ok})
 
 
 # ---------------------------------------------------------------------------
@@ -2818,19 +2233,17 @@ def api_pending_actions():
     """Return pending actions for the current tenant (used by bookmarklet)."""
     tenant_id = session.get("active_user_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
     if not tenant_id:
-        return jsonify({"actions": []})
+        return api_success({"actions": []})
     actions = _get_pending_actions(tenant_id)
-    return jsonify({"actions": actions})
+    return api_success({"actions": actions})
 
 
 @app.route("/api/actions/sms-pending", methods=["GET"])
+@admin_required
 def api_sms_pending():
-    """Return pending SMS messages from the executioner's JSONL queue. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
     sms_file = Path(__file__).parent / "content" / "sms" / "sms.jsonl"
     if not sms_file.exists():
-        return jsonify({"messages": []})
+        return api_success({"messages": []})
     messages = []
     for line in sms_file.read_text().strip().split("\n"):
         if line.strip():
@@ -2840,7 +2253,7 @@ def api_sms_pending():
                     messages.append(msg)
             except json.JSONDecodeError:
                 continue
-    return jsonify({"messages": messages[::-1]})
+    return api_success({"messages": messages[::-1]})
 
 
 @app.route("/api/actions/<action_id>/confirm", methods=["POST"])
@@ -2848,37 +2261,41 @@ def api_confirm_action(action_id):
     """Confirm and execute a pending action (called by bookmarklet or email bridge)."""
     tenant_id = session.get("active_user_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
     if not tenant_id:
-        return jsonify({"error": "No tenant context"}), 400
+        return api_error("No tenant context", 400)
     result = _confirm_pending_action(tenant_id, action_id)
-    return jsonify(result)
+    return api_success(result)
+
+
+_sms_lock = threading.Lock()
 
 
 @app.route("/api/actions/sms-sent", methods=["POST"])
+@admin_required
 def api_sms_mark_sent():
-    """Mark an SMS as sent so it doesn't show up in pending again."""
     data = request.json
     timestamp = (data or {}).get("timestamp", "")
     if not timestamp:
-        return jsonify({"error": "timestamp required"}), 400
+        return api_error("timestamp required", 400)
     sms_file = Path(__file__).parent / "content" / "sms" / "sms.jsonl"
     if not sms_file.exists():
-        return jsonify({"success": True})
-    try:
-        lines = sms_file.read_text().strip().split("\n")
-        new_lines = []
-        for line in lines:
-            if line.strip():
-                try:
-                    msg = json.loads(line)
-                    if msg.get("timestamp") == timestamp:
-                        msg["status"] = "sent"
-                    new_lines.append(json.dumps(msg))
-                except json.JSONDecodeError:
-                    new_lines.append(line)
-        sms_file.write_text("\n".join(new_lines) + "\n")
-    except Exception:
-        pass
-    return jsonify({"success": True})
+        return api_success({"success": True})
+    with _sms_lock:
+        try:
+            lines = sms_file.read_text().strip().split("\n")
+            new_lines = []
+            for line in lines:
+                if line.strip():
+                    try:
+                        msg = json.loads(line)
+                        if msg.get("timestamp") == timestamp:
+                            msg["status"] = "sent"
+                        new_lines.append(json.dumps(msg))
+                    except json.JSONDecodeError:
+                        new_lines.append(line)
+            sms_file.write_text("\n".join(new_lines) + "\n")
+        except Exception as e:
+            logger.debug("Silent exception in %s: %s", __name__, e)
+    return api_success({"success": True})
 
 
 @app.route("/api/actions/<action_id>/skip", methods=["POST"])
@@ -2886,10 +2303,10 @@ def api_skip_action(action_id):
     """Skip/discard a pending action without executing."""
     tenant_id = session.get("active_user_id") or getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
     if not tenant_id:
-        return jsonify({"error": "No tenant context"}), 400
+        return api_error("No tenant context", 400)
     uid = _safe_tenant_id(tenant_id)
     if uid is None:
-        return jsonify({"error": "Invalid tenant"}), 400
+        return api_error("Invalid tenant", 400)
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
@@ -2898,19 +2315,19 @@ def api_skip_action(action_id):
             (datetime.now(timezone.utc).isoformat(), action_id, uid),
         )
         conn.commit()
-        return jsonify({"success": True, "action_id": action_id})
+        return api_success({"action_id": action_id})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 @app.route("/api/actions/bridge/email", methods=["POST"])
 def api_set_email_bridge():
     """Configure the email bridge for the current user."""
     if not current_user.is_authenticated and not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
+        return api_error("Unauthorized", 401)
     data = request.json
     if not data:
-        return jsonify({"error": "No data provided"}), 400
+        return api_error("No data provided", 400)
     tenant_id = current_user.tenant_id
     settings = {
         "imap_host": data.get("imap_host", "imap.gmail.com"),
@@ -2922,27 +2339,26 @@ def api_set_email_bridge():
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT OR REPLACE INTO client_details (user_id, email, services) "
-            "VALUES (?, COALESCE((SELECT email FROM client_details WHERE user_id=?), ?), ?)",
-            (int(tenant_id), int(tenant_id), settings["username"], json.dumps({"email_bridge": settings})),
+            "UPDATE client_details SET email = ?, services = ? WHERE user_id = ?",
+            (settings["username"], json.dumps({"email_bridge": settings}), _safe_int(tenant_id)),
         )
         conn.commit()
         decrypted_pw = _decrypt_credential(settings["password"])
-        bridge = _get_email_bridge()
-        bridge.stop()
-        bridge2 = EmailBridge(
-            imap_host=settings["imap_host"],
-            imap_port=settings["imap_port"],
-            username=settings["username"],
-            password=decrypted_pw,
-        )
-        bridge2.set_handler(lambda action, subj, body: _email_bridge_handler(action, subj, body, tenant_id))
-        bridge2.start()
-        _set_email_bridge(bridge2)
-        return jsonify({"success": True, "message": "Email bridge configured"})
+        with _email_bridge_lock:
+            bridge = _get_email_bridge()
+            bridge.stop()
+            bridge2 = EmailBridge(
+                imap_host=settings["imap_host"],
+                imap_port=settings["imap_port"],
+                username=settings["username"],
+                password=decrypted_pw,
+            )
+            bridge2.set_handler(lambda action, subj, body: _email_bridge_handler(action, subj, body, tenant_id))
+            bridge2.start()
+            _set_email_bridge(bridge2)
+        return api_success({"message": "Email bridge configured"})
     except Exception as e:
-        logger.error("Email bridge setup failed: %s", e)
-        return jsonify({"success": False, "error": str(e)}), 500
+        return _safe_error(e, 500)
 
 
 # Email bridge handler
@@ -2963,24 +2379,27 @@ def _email_bridge_handler(action: str, subject: str, body: str, tenant_id: str) 
                     (datetime.now(timezone.utc).isoformat(), actions[0]["id"]),
                 )
                 conn.commit()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Silent exception in %s: %s", __name__, e)
 
 
 _email_bridge_instance = None
+_email_bridge_lock = threading.RLock()
 
 
 def _get_email_bridge():
     global _email_bridge_instance
-    if _email_bridge_instance is None:
-        _email_bridge_instance = EmailBridge()
-        _email_bridge_instance.set_handler(lambda a, s, b: logger.warning("Email bridge: no tenant configured, ignoring action '%s'", a))
-    return _email_bridge_instance
+    with _email_bridge_lock:
+        if _email_bridge_instance is None:
+            _email_bridge_instance = EmailBridge()
+            _email_bridge_instance.set_handler(lambda a, s, b: logger.warning("Email bridge: no tenant configured, ignoring action '%s'", a))
+        return _email_bridge_instance
 
 
 def _set_email_bridge(bridge):
     global _email_bridge_instance
-    _email_bridge_instance = bridge
+    with _email_bridge_lock:
+        _email_bridge_instance = bridge
 
 
 # Start email bridge on boot (if configured in env)
@@ -2997,7 +2416,6 @@ if os.getenv("EMAIL_BRIDGE_USER") and os.getenv("EMAIL_BRIDGE_PASS"):
             password=decrypted,
         )
         _bridge.set_handler(lambda a, s, b: _email_bridge_handler(a, s, b, tenant_for_bridge))
-        import threading
         threading.Thread(target=_bridge.start, daemon=True).start()
 
 # Start proactive monitor
@@ -3010,32 +2428,32 @@ scheduler_manager.start()
 
 
 @app.route("/api/agents/<agent_id>/autonomy", methods=["GET", "PUT"])
+@admin_required
 def api_agent_autonomy(agent_id):
-    """Get or update autonomy settings for an agent in the current user."""
     user_id = get_current_user_id()
     if not user_id:
-        return jsonify({"error": "No user selected"}), 400
+        return api_error("No user selected", 400)
 
     conn = database._get_conn()
-    uid = int(user_id)
+    uid = _safe_int(user_id)
 
     if request.method == "PUT":
         data = request.json
         if not data:
-            return jsonify({"error": "No data provided"}), 400
+            return api_error("No data provided", 400)
 
         autonomy = data.get("autonomy", "manual")
         threshold = float(data.get("confidence_threshold", 0.7))
 
         if autonomy not in ("manual", "suggest", "auto", "silent"):
-            return jsonify({"error": f"Invalid autonomy '{autonomy}'. Must be one of: manual, suggest, auto, silent"}), 400
+            return api_error(f"Invalid autonomy '{autonomy}'. Must be one of: manual, suggest, auto, silent", 400)
 
         conn.execute(
             "UPDATE agent_configs SET autonomy = ?, confidence_threshold = ? WHERE user_id = ? AND agent_id = ?",
             (autonomy, threshold, uid, agent_id),
         )
         conn.commit()
-        return jsonify({"agent_id": agent_id, "autonomy": autonomy, "confidence_threshold": threshold})
+        return api_success({"agent_id": agent_id, "autonomy": autonomy, "confidence_threshold": threshold})
 
     rows = conn.execute(
         "SELECT agent_id, autonomy, confidence_threshold FROM agent_configs WHERE user_id = ?",
@@ -3043,22 +2461,22 @@ def api_agent_autonomy(agent_id):
     ).fetchall()
     configs = {r["agent_id"]: {"autonomy": r["autonomy"], "confidence_threshold": r["confidence_threshold"]} for r in rows}
     cfg = configs.get(agent_id, {"autonomy": "manual", "confidence_threshold": 0.7})
-    return jsonify({"agent_id": agent_id, **cfg})
+    return api_success({"agent_id": agent_id, **cfg})
 
 
 @app.route("/api/agents/autonomy/bulk", methods=["GET"])
+@admin_required
 def api_all_agent_autonomy():
-    """Get autonomy settings for all agents in the current user."""
     user_id = get_current_user_id()
     if not user_id:
-        return jsonify({"error": "No user selected"}), 400
+        return api_error("No user selected", 400)
     conn = database._get_conn()
     rows = conn.execute(
         "SELECT agent_id, autonomy, confidence_threshold FROM agent_configs WHERE user_id = ?",
-        (int(user_id),),
+        (_safe_int(user_id),),
     ).fetchall()
     configs = {r["agent_id"]: {"autonomy": r["autonomy"], "confidence_threshold": r["confidence_threshold"]} for r in rows}
-    return jsonify({"autonomy": configs})
+    return api_success({"autonomy": configs})
 
 
 # ---------------------------------------------------------------------------
@@ -3069,18 +2487,20 @@ def api_all_agent_autonomy():
 @app.route("/api/approvals/<thread_id>/respond", methods=["POST"])
 def respond_approval(thread_id):
     """Respond to an approval request using the chat orchestrator."""
+    tenant_id = get_current_user_id()
+    if not tenant_id:
+        return api_error("Authentication required", 401)
     data = request.json
     approved = data.get("approved", False)
-    now_iso = datetime.now().isoformat()
-    tenant_id = get_current_user_id()
+    now_iso = datetime.now(timezone.utc).isoformat()
 
     orch = get_orchestrator()
 
     # Delegate to orchestrator which now handles execution internally
     drafts = orch.get_pending_drafts(tenant_id)
     if thread_id in drafts:
-        result = orch._handle_approval(thread_id, approved=approved)
-        return jsonify({
+        result = orch.handle_approval(thread_id, approved=approved)
+        return api_success({
             "thread_id": thread_id,
             "status": "completed" if approved else "rejected",
             "execution": result.get("execution"),
@@ -3088,78 +2508,75 @@ def respond_approval(thread_id):
         })
 
     # Fallback: check tenant database if no in-memory draft found
-    if tenant_id:
-        uid = _safe_tenant_id(tenant_id)
-        if uid is None:
-            return jsonify({"error": "Invalid tenant"}), 400
-        try:
-            conn = database._get_conn()
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT routed_agent, agent_draft FROM threads WHERE thread_id = ? AND user_id = ?",
-                (thread_id, uid),
-            )
-            row = cursor.fetchone()
-            if not row:
-                return jsonify({"error": "Thread not found"}), 404
+    uid = _safe_tenant_id(tenant_id)
+    if uid is None:
+        return api_error("Invalid tenant", 400)
+    try:
+        conn = database._get_conn()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT routed_agent, agent_draft FROM threads WHERE thread_id = ? AND user_id = ?",
+            (thread_id, uid),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return api_error("Thread not found", 404)
 
-            agent_name = row["routed_agent"]
-            draft = row["agent_draft"]
-            execution_result = None
+        agent_name = row["routed_agent"]
+        draft = row["agent_draft"]
+        execution_result = None
 
-            cursor.execute(
-                """
-                UPDATE threads
-                SET approved = ?, status = 'completed', updated_at = ?
-                WHERE thread_id = ? AND user_id = ?
-                """,
-                (int(approved), now_iso, thread_id, uid),
-            )
-            conn.commit()
+        cursor.execute(
+            """
+            UPDATE threads
+            SET approved = ?, status = 'completed', updated_at = ?
+            WHERE thread_id = ? AND user_id = ?
+            """,
+            (int(approved), now_iso, thread_id, uid),
+        )
+        conn.commit()
 
-            if approved and agent_name and agent_name in agent_registry:
-                # Try MCP execution first, fall back to Executioner
-                exec_result = None
-                mcp_mapping = AGENT_MCP_ROUTING
+        if approved and agent_name and agent_name in agent_registry:
+            # Try MCP execution first, fall back to Executioner
+            exec_result = None
+            mcp_mapping = AGENT_MCP_ROUTING
 
-                mapping = mcp_mapping.get(agent_name)
-                if mapping:
-                    server_name, tool_name = mapping
-                    mcp_server = get_mcp_server(server_name)
-                    if mcp_server:
-                        try:
-                            mcp_result = mcp_server.call_tool(tool_name, content=draft)
-                            exec_result = {
-                                "success": mcp_result.get("success", False),
-                                "result": mcp_result.get("result", ""),
-                                "error": mcp_result.get("error"),
-                                "execution_id": f"mcp-{server_name}-{tool_name}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-                            }
-                            logger.info(f"MCP execution: {server_name}/{tool_name} → success={exec_result['success']}")
-                        except Exception as e:
-                            logger.warning(f"MCP execution failed, falling back to Executioner: {e}")
-
-                # Fall back to old Executioner if MCP failed or no mapping
-                if not exec_result:
+            mapping = mcp_mapping.get(agent_name)
+            if mapping:
+                server_name, tool_name = mapping
+                mcp_server = get_mcp_server(server_name)
+                if mcp_server:
                     try:
-                        exec_result = executioner.execute(agent_name, draft)
-                    except Exception as exec_err:
-                        exec_result = {"success": False, "error": str(exec_err)}
+                        mcp_result = mcp_server.call_tool(tool_name, content=draft)
+                        exec_result = {
+                            "success": mcp_result.get("success", False),
+                            "result": mcp_result.get("result", ""),
+                            "error": mcp_result.get("error"),
+                            "execution_id": f"mcp-{server_name}-{tool_name}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                        }
+                        logger.info("MCP execution: %s/%s → success=%s", server_name, tool_name, exec_result['success'])
+                    except Exception as e:
+                        logger.warning("MCP execution failed, falling back to Executioner: %s", e)
 
-                execution_result = {
-                    "success": exec_result.get("success", False),
-                    "result": exec_result.get("result", "")
-                }
+            # Fall back to old Executioner if MCP failed or no mapping
+            if not exec_result:
+                try:
+                    exec_result = executioner.execute(agent_name, draft)
+                except Exception as exec_err:
+                    exec_result = {"success": False, "error": str(exec_err)}
 
-            return jsonify({
-                "thread_id": thread_id,
-                "status": "completed",
-                "execution": execution_result
-            })
-        except Exception as e:
-            return _safe_error(e, 500)
+            execution_result = {
+                "success": exec_result.get("success", False),
+                "result": exec_result.get("result", "")
+            }
 
-    return jsonify({"error": "Thread not found"}), 404
+        return api_success({
+            "thread_id": thread_id,
+            "status": "completed",
+            "execution": execution_result
+        })
+    except Exception as e:
+        return _safe_error(e, 500)
 
 
 # ---------------------------------------------------------------------------
@@ -3167,24 +2584,24 @@ def respond_approval(thread_id):
 # ---------------------------------------------------------------------------
 
 @app.route("/api/agents/<agent_id>/invoke", methods=["POST"])
+@admin_required
 def invoke_agent(agent_id):
-    """Directly invoke a specific agent (bypass orchestrator)."""
     if agent_id not in agent_registry:
-        return jsonify({"error": "Agent not found"}), 404
+        return api_error("Agent not found", 404)
 
     agent = agent_registry[agent_id]
 
     if not agent.enabled:
-        return jsonify({"error": "Agent is disabled"}), 403
+        return api_error("Agent is disabled", 403)
 
     data = request.json
     task = data.get("task")
 
     if not task:
-        return jsonify({"error": "No task provided"}), 400
+        return api_error("No task provided", 400)
 
     tenant_id = get_current_user_id()
-    now_iso = datetime.now().isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
 
     try:
         if tenant_id:
@@ -3192,17 +2609,10 @@ def invoke_agent(agent_id):
                 update_tenant_agent_activity(
                     tenant_id, agent_id, status="processing"
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Silent exception in %s: %s", __name__, e)
 
-        graph = agent.build_graph()
-        result = graph.invoke({
-            "task": task,
-            "draft_output": None,
-            "approved": None,
-            "feedback": None,
-            "result": None,
-        })
+        result = agent._invoke_llm(task)
 
         draft = result.get("draft_output", "")
         draft_preview = (draft[:120] + "...") if len(draft) > 120 else draft
@@ -3216,73 +2626,54 @@ def invoke_agent(agent_id):
                     last_invoked=now_iso,
                     last_draft_preview=draft_preview,
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Silent exception in %s: %s", __name__, e)
 
-        return jsonify({"agent_id": agent_id, "result": result})
+        return api_success({"agent_id": agent_id, "result": result})
     except Exception as e:
         if tenant_id:
             try:
                 update_tenant_agent_activity(
                     tenant_id, agent_id, status="idle"
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Silent exception in %s: %s", __name__, e)
         return _safe_error(e, 500)
 
 
 @app.route("/api/agents/<agent_id>/chat", methods=["POST"])
+@admin_required
 def agent_chat(agent_id):
-    """
-    Send a message directly to a specific agent and get its response.
-    Supports conversation threading -- pass an existing thread_id to continue
-    a conversation with full context.
-
-    Request body:
-    {
-        "message": "Write a blog post about winter plumbing tips",
-        "thread_id": "optional-existing-thread-uuid"
-    }
-
-    Response:
-    {
-        "agent_id": "local_seo",
-        "response": "Here's your blog post...",
-        "thread_id": "abc-123",
-        "thinking": "[Agent processed using deepseek-chat]",
-        "model": "deepseek-chat"
-    }
-    """
     if agent_id not in agent_registry:
-        return jsonify({"error": f"Agent '{agent_id}' not found"}), 404
+        return api_error(f"Agent '{agent_id}' not found", 404)
 
     agent = agent_registry[agent_id]
     if not agent.enabled:
-        return jsonify({"error": "Agent is disabled"}), 403
+        return api_error("Agent is disabled", 403)
 
     data = request.json
     if not data:
-        return jsonify({"error": "No data provided"}), 400
+        return api_error("No data provided", 400)
 
     message = data.get("message", "").strip()
     thread_id = data.get("thread_id", str(uuid.uuid4()))
     language = data.get("language", "")
 
     if not message:
-        return jsonify({"error": "No message provided"}), 400
+        return api_error("No message provided", 400)
 
     if not language:
         from core.base_agent import BaseAgent
         language = BaseAgent._detect_language(message)
 
     tenant_id = str(current_user.id) if not current_user.is_anonymous else None
-    now_iso = datetime.now().isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
 
     # Build conversation context from previous messages in this thread
     conversation_context = ""
     if tenant_id:
         try:
-            uid = int(tenant_id)
+            uid = _safe_int(tenant_id)
             conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
@@ -3295,32 +2686,22 @@ def agent_chat(agent_id):
                 for row in history:
                     conversation_context += f"User: {row['agent_task']}\nAgent: {row['agent_draft'][:300]}...\n"
                 conversation_context += "--- End of history ---\n\n"
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Silent exception in %s: %s", __name__, e)
 
     # Build the full task with context
     full_task = f"{conversation_context}Current request: {message}" if conversation_context else message
 
     try:
-        # Use the agent's existing graph to generate a response
-        graph = agent.build_graph()
-        result = graph.invoke(
-            {
-                "task": full_task,
-                "draft_output": None,
-                "approved": None,
-                "feedback": None,
-                "result": None,
-            },
-            config={"configurable": {"thread_id": thread_id}}
-        )
+        # Use the agent's LLM to generate a response
+        result = agent._invoke_llm(full_task)
 
         draft = result.get("draft_output", "")
 
         # Store the conversation turn in the tenant database
         if tenant_id:
             try:
-                uid = int(tenant_id)
+                uid = _safe_int(tenant_id)
                 conn = database._get_conn()
                 cursor = conn.cursor()
                 cursor.execute(
@@ -3330,8 +2711,8 @@ def agent_chat(agent_id):
                     (thread_id, agent_id, message, draft, now_iso, now_iso, uid)
                 )
                 conn.commit()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Silent exception in %s: %s", __name__, e)
 
         # Update agent activity
         if tenant_id:
@@ -3343,10 +2724,10 @@ def agent_chat(agent_id):
                     last_invoked=now_iso,
                     last_draft_preview=(draft[:120] + "...") if len(draft) > 120 else draft,
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Silent exception in %s: %s", __name__, e)
 
-        return jsonify({
+        return api_success({
             "agent_id": agent_id,
             "response": draft,
             "thread_id": thread_id,
@@ -3355,7 +2736,7 @@ def agent_chat(agent_id):
             "model": agent.model,
         })
     except Exception as e:
-        logger.error(f"Agent chat failed for {agent_id}: {e}")
+        logger.error("Agent chat failed for %s: %s", agent_id, e)
         return _safe_error(e, 500)
 
 
@@ -3366,11 +2747,11 @@ def get_agent_threads(agent_id):
     Returns list of thread IDs with preview of the first message.
     """
     if agent_id not in agent_registry:
-        return jsonify({"error": f"Agent '{agent_id}' not found"}), 404
+        return api_error(f"Agent '{agent_id}' not found", 404)
 
     tenant_id = get_current_user_id()
     if not tenant_id:
-        return jsonify({"threads": []})
+        return api_success({"threads": []})
 
     try:
         conn = database._get_conn()
@@ -3383,7 +2764,7 @@ def get_agent_threads(agent_id):
                WHERE routed_agent = ? AND user_id = ? AND status = 'chat'
                GROUP BY thread_id
                ORDER BY started_at DESC LIMIT 30""",
-            (agent_id, int(tenant_id))
+            (agent_id, _safe_int(tenant_id))
         )
         threads = []
         for row in cursor.fetchall():
@@ -3392,7 +2773,7 @@ def get_agent_threads(agent_id):
                 "started_at": row["started_at"],
                 "first_message": (row["first_message"] or "")[:80] + "..." if row["first_message"] and len(row["first_message"]) > 80 else (row["first_message"] or "New conversation"),
             })
-        return jsonify({"threads": threads})
+        return api_success({"threads": threads})
     except Exception as e:
         return _safe_error(e, 500)
 
@@ -3404,11 +2785,11 @@ def get_agent_thread_history(agent_id, thread_id):
     Returns all messages in chronological order.
     """
     if agent_id not in agent_registry:
-        return jsonify({"error": f"Agent '{agent_id}' not found"}), 404
+        return api_error(f"Agent '{agent_id}' not found", 404)
 
     tenant_id = get_current_user_id()
     if not tenant_id:
-        return jsonify({"messages": []})
+        return api_success({"messages": []})
 
     try:
         conn = database._get_conn()
@@ -3418,7 +2799,7 @@ def get_agent_thread_history(agent_id, thread_id):
                FROM threads
                WHERE thread_id = ? AND user_id = ? AND routed_agent = ?
                ORDER BY created_at ASC""",
-            (thread_id, int(tenant_id), agent_id)
+            (thread_id, _safe_int(tenant_id), agent_id)
         )
         messages = []
         for row in cursor.fetchall():
@@ -3432,7 +2813,7 @@ def get_agent_thread_history(agent_id, thread_id):
                 "content": row["agent_draft"],
                 "timestamp": row["created_at"],
             })
-        return jsonify({"messages": messages, "thread_id": thread_id, "agent_id": agent_id})
+        return api_success({"messages": messages, "thread_id": thread_id, "agent_id": agent_id})
     except Exception as e:
         return _safe_error(e, 500)
 
@@ -3445,7 +2826,7 @@ def api_list_threads():
     else:
         tenant_id = getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
     if not tenant_id:
-        return jsonify({"threads": []})
+        return api_success({"threads": []})
 
     agent_filter = request.args.get("agent", "")
     try:
@@ -3456,15 +2837,15 @@ def api_list_threads():
                 ("SELECT thread_id, agent_task, created_at FROM threads "
                  "WHERE status = 'chat' AND routed_agent = ? AND user_id = ? "
                  "ORDER BY created_at DESC LIMIT 50"),
-                (agent_filter, int(tenant_id)),
+                (agent_filter, _safe_int(tenant_id)),
             )
         else:
             cursor.execute(
                 "SELECT thread_id, agent_task, created_at FROM threads WHERE status = 'chat' AND user_id = ? ORDER BY created_at DESC LIMIT 50",
-                (int(tenant_id),)
+                (_safe_int(tenant_id),)
             )
         rows = cursor.fetchall()
-        return jsonify({
+        return api_success({
             "threads": [
                 {"thread_id": r["thread_id"], "agent_task": r["agent_task"], "created_at": r["created_at"]}
                 for r in rows
@@ -3482,77 +2863,26 @@ def api_get_thread_messages(thread_id):
     else:
         tenant_id = getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
     if not tenant_id:
-        return jsonify({"messages": []})
+        return api_success({"messages": []})
 
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT agent_task, agent_draft, result FROM threads WHERE thread_id = ? AND user_id = ? AND status = 'chat' ORDER BY created_at ASC",
-            (thread_id, int(tenant_id)),
+            (thread_id, _safe_int(tenant_id)),
         )
         rows = cursor.fetchall()
         messages = []
         for r in rows:
             messages.append({"role": "user", "content": r["agent_task"]})
             messages.append({"role": "agent", "content": r["agent_draft"], "thinking": None})
-        return jsonify({"messages": messages})
+        return api_success({"messages": messages})
     except Exception as e:
         return _safe_error(e, 500)
 
 
-@app.route("/api/client/threads")
-@client_required
-def api_client_list_threads():
-    """List chat threads for the current client, optionally filtered by agent."""
-    tenant_id = current_user.tenant_id
-    agent_filter = request.args.get("agent", "")
-    try:
-        conn = database._get_conn()
-        cursor = conn.cursor()
-        if agent_filter:
-            cursor.execute(
-                ("SELECT thread_id, agent_task, created_at FROM threads "
-                 "WHERE status = 'chat' AND routed_agent = ? AND user_id = ? "
-                 "ORDER BY created_at DESC LIMIT 50"),
-                (agent_filter, int(tenant_id)),
-            )
-        else:
-            cursor.execute(
-                "SELECT thread_id, agent_task, created_at FROM threads WHERE status = 'chat' AND user_id = ? ORDER BY created_at DESC LIMIT 50",
-                (int(tenant_id),)
-            )
-        rows = cursor.fetchall()
-        return jsonify({
-            "threads": [
-                {"thread_id": r["thread_id"], "agent_task": r["agent_task"], "created_at": r["created_at"]}
-                for r in rows
-            ]
-        })
-    except Exception:
-        return jsonify({"threads": []})
 
-
-@app.route("/api/client/threads/<thread_id>/messages")
-@client_required
-def api_client_get_thread_messages(thread_id):
-    """Get all messages in a chat thread for the current client."""
-    tenant_id = current_user.tenant_id
-    try:
-        conn = database._get_conn()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT agent_task, agent_draft FROM threads WHERE thread_id = ? AND user_id = ? AND status = 'chat' ORDER BY created_at ASC",
-            (thread_id, int(tenant_id)),
-        )
-        rows = cursor.fetchall()
-        messages = []
-        for r in rows:
-            messages.append({"role": "user", "content": r["agent_task"]})
-            messages.append({"role": "agent", "content": r["agent_draft"]})
-        return jsonify({"messages": messages})
-    except Exception:
-        return jsonify({"messages": []})
 
 
 # ---------------------------------------------------------------------------
@@ -3560,37 +2890,33 @@ def api_client_get_thread_messages(thread_id):
 # ---------------------------------------------------------------------------
 
 @app.route("/api/tenants", methods=["GET"])
+@admin_required
 def list_tenants():
-    """List all tenants (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
 
     direct = [str(u["id"]) for u in database.list_users(role='user')]
 
-    return jsonify({
+    return api_success({
         "direct_clients": direct,
         "active_tenant": session.get("active_user_id"),
     })
 
 
 @app.route("/api/tenants/switch", methods=["POST"])
+@admin_required
 def switch_tenant():
-    """Switch the admin's active tenant context."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
 
     data = request.json
     tenant_id = data.get("tenant_id")
 
     if tenant_id:
         session["active_user_id"] = tenant_id
-        return jsonify({
+        return api_success({
             "active_tenant": tenant_id,
             "message": f"Switched to {tenant_id}",
         })
     else:
         session.pop("active_user_id", None)
-        return jsonify({
+        return api_success({
             "active_tenant": None,
             "message": "Client cleared",
         })
@@ -3606,6 +2932,9 @@ from core.analytics import AnalyticsEngine
 @app.route("/api/analytics/summary")
 def api_analytics_summary():
     """Return summary analytics for a user or all users (admin)."""
+    if not session.get("admin_logged_in"):
+        return api_error("Unauthorized", 401)
+
     user_id = request.args.get("client", "").strip()
     days = int(request.args.get("days", 30))
     end_date = datetime.now().strftime("%Y-%m-%d")
@@ -3615,12 +2944,12 @@ def api_analytics_summary():
     session_user = session.get("active_user_id") or getattr(current_user, "id", None)
 
     if user_id and is_admin:
-        engine = AnalyticsEngine(int(user_id))
+        engine = AnalyticsEngine(_safe_int(user_id))
         perf = engine.get_performance_summary()
         leads = engine.get_lead_metrics(start_date, end_date)
         agents = engine.get_agent_metrics(start_date, end_date)
         execs = engine.get_execution_metrics(start_date, end_date)
-        return jsonify({
+        return api_success({
             "total_clients": 1,
             "total_leads": perf.get("leads_this_month", 0),
             "total_tasks": perf.get("tasks_this_month", 0),
@@ -3696,7 +3025,7 @@ def api_analytics_summary():
         leads_by_month = [{"label": k, "count": v} for k, v in sorted(all_leads_by_month.items())]
         total_clients = len(all_user_ids)
         avg_sr = round((total_success / (total_success + total_fail) * 100) if (total_success + total_fail) else 0, 1)
-        return jsonify({
+        return api_success({
             "total_clients": total_clients,
             "total_leads": total_leads,
             "total_tasks": total_tasks,
@@ -3720,7 +3049,7 @@ def api_analytics_summary():
         leads = engine.get_lead_metrics(start_date, end_date)
         agents = engine.get_agent_metrics(start_date, end_date)
         execs = engine.get_execution_metrics(start_date, end_date)
-        return jsonify({
+        return api_success({
             "leads_this_month": perf.get("leads_this_month", 0),
             "tasks_this_month": perf.get("tasks_this_month", 0),
             "success_rate": perf.get("success_rate", 0),
@@ -3739,7 +3068,7 @@ def api_analytics_summary():
             ),
         })
 
-    return jsonify({"error": "Unauthorized"}), 401
+    return api_error("Unauthorized", 401)
 
 
 def _leads_by_month(engine, months: int = 6) -> list:
@@ -3767,65 +3096,63 @@ def _leads_by_month(engine, months: int = 6) -> list:
 
 
 @app.route("/api/analytics/leads")
+@admin_required
 def api_analytics_leads():
-    """Return lead metrics for a date range."""
     user_id = request.args.get("client", "").strip() or session.get("active_user_id") or getattr(current_user, "id", None)
     start = request.args.get("start")
     end = request.args.get("end")
     if not user_id:
-        return jsonify({"error": "No user context"}), 400
-    engine = AnalyticsEngine(int(user_id))
-    return jsonify(engine.get_lead_metrics(start, end))
+        return api_error("No user context", 400)
+    engine = AnalyticsEngine(_safe_int(user_id))
+    return api_success(engine.get_lead_metrics(start, end))
 
 
 @app.route("/api/analytics/agents")
+@admin_required
 def api_analytics_agents():
-    """Return agent performance metrics."""
     user_id = request.args.get("client", "").strip() or session.get("active_user_id") or getattr(current_user, "id", None)
     start = request.args.get("start")
     end = request.args.get("end")
     if not user_id:
-        return jsonify({"error": "No user context"}), 400
-    engine = AnalyticsEngine(int(user_id))
-    return jsonify(engine.get_agent_metrics(start, end))
+        return api_error("No user context", 400)
+    engine = AnalyticsEngine(_safe_int(user_id))
+    return api_success(engine.get_agent_metrics(start, end))
 
 
 @app.route("/api/analytics/executions")
+@admin_required
 def api_analytics_executions():
-    """Return execution metrics."""
     user_id = request.args.get("client", "").strip() or session.get("active_user_id") or getattr(current_user, "id", None)
     start = request.args.get("start")
     end = request.args.get("end")
     if not user_id:
-        return jsonify({"error": "No user context"}), 400
-    engine = AnalyticsEngine(int(user_id))
-    return jsonify(engine.get_execution_metrics(start, end))
+        return api_error("No user context", 400)
+    engine = AnalyticsEngine(_safe_int(user_id))
+    return api_success(engine.get_execution_metrics(start, end))
 
 
 @app.route("/api/analytics/report/generate", methods=["POST"])
+@admin_required
 def api_analytics_generate_report():
-    """Generate a monthly report HTML for a tenant."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     user_id = data.get("user_id") or session.get("active_user_id")
     month = data.get("month")
     year = data.get("year")
     if not user_id:
-        return jsonify({"error": "user_id required"}), 400
-    engine = AnalyticsEngine(int(user_id))
+        return api_error("user_id required", 400)
+    engine = AnalyticsEngine(_safe_int(user_id))
     html = engine.generate_monthly_report(year, month)
-    return jsonify({"html": html})
+    return api_success({"html": html})
 
 
 # In-memory report history store (survives within a process lifetime)
 _report_history: list = []
+_report_history_lock = threading.Lock()
 
 
 @app.route("/api/analytics/report/save", methods=["POST"])
+@admin_required
 def api_analytics_save_report():
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     report_id = uuid.uuid4().hex[:12]
     entry = {
@@ -3836,72 +3163,56 @@ def api_analytics_save_report():
         "html": data.get("html", ""),
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
-    _report_history.insert(0, entry)
-    _report_history[:] = _report_history[:100]
-    return jsonify({"success": True, "id": report_id})
+    with _report_history_lock:
+        _report_history.insert(0, entry)
+        _report_history[:] = _report_history[:100]
+    return api_success({"id": report_id})
 
 
 @app.route("/api/analytics/reports/history", methods=["GET"])
+@admin_required
 def api_analytics_report_history():
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     user_id = request.args.get("user_id", "")
-    reports = [r for r in _report_history if not user_id or r.get("user_id") == user_id]
+    with _report_history_lock:
+        reports = [r for r in _report_history if not user_id or r.get("user_id") == user_id]
     safe = [{"id": r["id"], "month": r["month"], "year": r["year"], "created_at": r["created_at"]} for r in reports]
-    return jsonify({"reports": safe})
+    return api_success({"reports": safe})
 
 
 @app.route("/api/analytics/report/<report_id>", methods=["GET"])
+@admin_required
 def api_analytics_get_report(report_id):
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    for r in _report_history:
-        if r["id"] == report_id:
-            return jsonify({"html": r["html"]})
-    return jsonify({"error": "Report not found"}), 404
+    with _report_history_lock:
+        for r in _report_history:
+            if r["id"] == report_id:
+                return api_success({"html": r["html"]})
+    return api_error("Report not found", 404)
 
 
 @app.route("/api/analytics/report/<report_id>/email", methods=["POST"])
+@admin_required
 def api_analytics_email_saved_report(report_id):
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    report = None
-    for r in _report_history:
-        if r["id"] == report_id:
-            report = r
-            break
+    with _report_history_lock:
+        report = None
+        for r in _report_history:
+            if r["id"] == report_id:
+                report = r
+                break
     if not report:
-        return jsonify({"error": "Report not found"}), 404
-    # Forward to the existing email endpoint
-    from flask import request as _flask_req
-    with app.test_request_context(json={"html": report["html"], "user_id": report["user_id"]}):
-        try:
-            return api_analytics_email_report()
-        except Exception as e:
-            return jsonify({"success": False, "error": str(e)}), 500
+        return api_error("Report not found", 404)
+    return _send_report_email(report["html"], report["user_id"])
 
 
-@app.route("/api/analytics/report/email", methods=["POST"])
-def api_analytics_email_report():
-    """Email a monthly report to the client."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    data = request.json
-    user_id = data.get("user_id")
-    month = data.get("month")
-    year = data.get("year")
-    html = data.get("html")
-    if not user_id or not html:
-        return jsonify({"error": "user_id and html are required"}), 400
+def _send_report_email(html: str, user_id: str):
+    """Shared helper to email a report HTML to a client."""
     try:
-        engine = AnalyticsEngine(int(user_id))
-        biz_row = engine._fetchone("SELECT business_name, email FROM client_details WHERE user_id = ?", (int(user_id),))
+        engine = AnalyticsEngine(_safe_int(user_id))
+        biz_row = engine._fetchone("SELECT business_name, email FROM client_details WHERE user_id = ?", (_safe_int(user_id),))
         business_name = biz_row["business_name"] if biz_row else user_id
         client_email = biz_row["email"] if biz_row else None
         if not client_email:
-            return jsonify({"error": "No client email found"}), 400
+            return api_error("No client email found", 400)
         settings = executioner.get_settings()
-        import smtplib
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
         msg = MIMEMultipart("alternative")
@@ -3910,85 +3221,36 @@ def api_analytics_email_report():
         msg["To"] = client_email
         part = MIMEText(html, "html")
         msg.attach(part)
+        ssl_context = ssl.create_default_context()
         with smtplib.SMTP(settings.get("smtp_host", "smtp.gmail.com"), settings.get("smtp_port", 587)) as server:
             if settings.get("smtp_use_tls", True):
-                server.starttls()
+                server.starttls(context=ssl_context)
             if settings.get("smtp_username"):
                 server.login(settings["smtp_username"], settings.get("smtp_password", ""))
             server.send_message(msg)
-        return jsonify({"success": True, "message": f"Report emailed to {client_email}"})
+        return api_success({"message": f"Report emailed to {client_email}"})
     except Exception as e:
         logger.error("Failed to email report: %s", e)
-        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
+        return api_error("An internal error occurred.", 500)
 
 
-@app.route("/admin/analytics")
-def admin_analytics_page():
-    """Serve the admin analytics dashboard page."""
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
-    tenants = {
-        "direct_clients": [str(u["id"]) for u in database.list_users(role='user')],
-    }
-    active_tenant = session.get("active_user_id")
-    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
+@app.route("/api/analytics/report/email", methods=["POST"])
+@admin_required
+def api_analytics_email_report():
+    data = request.json
+    user_id = data.get("user_id")
+    html = data.get("html")
+    if not user_id or not html:
+        return api_error("user_id and html are required", 400)
+    return _send_report_email(html, user_id)
 
-
-@app.route("/admin/reports")
-def admin_reports_page():
-    """Serve the report generation page."""
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
-    tenants = {
-        "direct_clients": [str(u["id"]) for u in database.list_users(role='user')],
-    }
-    active_tenant = session.get("active_user_id")
-    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
-
-
-@app.route("/client/analytics")
-@client_required
-def client_analytics_page():
-    """Serve the client analytics view."""
-    return redirect(url_for("client_dashboard"))
-
-
-@app.route("/client/analytics/report")
-@client_required
-def client_analytics_report():
-    """Generate and serve a printable monthly report for the client."""
-    user_id = current_user.id
-    engine = AnalyticsEngine(user_id)
-    html = engine.generate_monthly_report()
-    return html, 200, {"Content-Type": "text/html"}
 
 
 # ---------------------------------------------------------------------------
 # Managed Services routes
 # ---------------------------------------------------------------------------
 
-MANAGED_MONTHLY_FEE = 499
-
-
-@app.route("/client/managed-services")
-@client_required
-def client_managed_services():
-    """Serve the managed services opt-in page."""
-    tenant_id = current_user.tenant_id
-    managed = False
-    try:
-        conn = database._get_conn()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT managed_service FROM client_details WHERE user_id = ?",
-            (int(tenant_id),)
-        )
-        row = cursor.fetchone()
-        if row:
-            managed = bool(row.get("managed_service", False))
-    except Exception:
-        pass
-    return render_template("client/managed_services.html", managed=managed)
+MANAGED_MONTHLY_FEE = int(os.getenv("MANAGED_MONTHLY_FEE", "499"))
 
 
 @app.route("/api/managed/upgrade", methods=["POST"])
@@ -3996,33 +3258,33 @@ def client_managed_services():
 def api_managed_upgrade():
     """Upgrade the current client to managed services."""
     tenant_id = current_user.tenant_id
-    now_iso = datetime.now().isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE client_details SET managed_service = 1, managed_since = ? WHERE user_id = ?",
-            (now_iso, int(tenant_id)),
+            (now_iso, _safe_int(tenant_id)),
         )
         conn.commit()
 
         # Log to execution_log
         try:
             cursor.execute(
-                "INSERT INTO execution_log (execution_id, agent_name, tool_name, success, draft_preview, timestamp) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
-                (str(uuid.uuid4()), "system", "managed_services", 1,
+                "INSERT INTO execution_log (user_id, execution_id, agent_name, tool_name, success, draft_preview, timestamp) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (_safe_int(tenant_id), str(uuid.uuid4()), "system", "managed_services", 1,
                  f"Client upgraded to Managed Services (${MANAGED_MONTHLY_FEE}/mo)", now_iso),
             )
             conn.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Silent exception in %s: %s", __name__, e)
 
         logger.info("Client %s upgraded to Managed Services", tenant_id)
-        return jsonify({"success": True, "message": "Upgraded to Managed Services"})
+        return api_success({"message": "Upgraded to Managed Services"})
     except Exception as e:
         logger.error("Failed to upgrade %s: %s", tenant_id, e)
-        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
 
 
 @app.route("/api/managed/cancel", methods=["POST"])
@@ -4030,38 +3292,36 @@ def api_managed_upgrade():
 def api_managed_cancel():
     """Request cancellation of managed services (30-day notice)."""
     tenant_id = current_user.tenant_id
-    now_iso = datetime.now().isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE client_details SET managed_service = 0 WHERE user_id = ? AND managed_service = 1",
-            (int(tenant_id),)
+            (_safe_int(tenant_id),)
         )
         conn.commit()
         logger.info("Client %s cancelled Managed Services", tenant_id)
         # Log cancellation
         try:
             cursor.execute(
-                "INSERT INTO execution_log (execution_id, agent_name, tool_name, success, draft_preview, timestamp) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
-                (str(uuid.uuid4()), "system", "managed_services", 1,
+                "INSERT INTO execution_log (user_id, execution_id, agent_name, tool_name, success, draft_preview, timestamp) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (_safe_int(tenant_id), str(uuid.uuid4()), "system", "managed_services", 1,
                  "Client cancelled Managed Services (30-day notice)", now_iso),
             )
             conn.commit()
-        except Exception:
-            pass
-        return jsonify({"success": True, "message": "Cancellation requested"})
+        except Exception as e:
+            logger.debug("Silent exception in %s: %s", __name__, e)
+        return api_success({"message": "Cancellation requested"})
     except Exception as e:
         logger.error("Failed to cancel managed for %s: %s", tenant_id, e)
-        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
 
 
 @app.route("/api/managed/clients")
+@admin_required
 def api_managed_clients():
-    """List all managed clients (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
 
     filter_mode = request.args.get("filter", "active")
     all_tenants = [str(u["id"]) for u in database.list_users(role='user')]
@@ -4097,8 +3357,8 @@ def api_managed_clients():
                     while next_date < dt_date.today():
                         next_date += td(days=30)
                     next_billing = next_date.isoformat()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Silent exception in %s: %s", __name__, e)
 
             # Determine status
             status = "active"
@@ -4109,8 +3369,8 @@ def api_managed_clients():
                     if billing_dt < dt_date.today():
                         status = "past_due"
                         past_due_count += 1
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Silent exception in %s: %s", __name__, e)
 
             if filter_mode != "all" and status != filter_mode:
                 continue
@@ -4141,7 +3401,7 @@ def api_managed_clients():
         except Exception:
             continue
 
-    return jsonify({
+    return api_success({
         "clients": clients,
         "total_mrr": total_mrr,
         "total_pending_approvals": total_pending,
@@ -4150,71 +3410,65 @@ def api_managed_clients():
 
 
 @app.route("/api/managed/pause", methods=["POST"])
+@admin_required
 def api_managed_pause():
-    """Pause managed services for a client (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     tenant_id = data.get("tenant_id")
     if not tenant_id:
-        return jsonify({"error": "tenant_id required"}), 400
+        return api_error("tenant_id required", 400)
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE client_details SET managed_service = 0 WHERE user_id = ? AND managed_service = 1",
-            (int(tenant_id),)
+            (_safe_int(tenant_id),)
         )
         conn.commit()
         logger.info("Admin paused Managed Services for %s", tenant_id)
-        return jsonify({"success": True, "message": "Managed services paused"})
+        return api_success({"message": "Managed services paused"})
     except Exception as e:
-        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
 
 
 @app.route("/api/managed/resume", methods=["POST"])
+@admin_required
 def api_managed_resume():
-    """Resume managed services for a client (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     tenant_id = data.get("tenant_id")
     if not tenant_id:
-        return jsonify({"error": "tenant_id required"}), 400
-    now_iso = datetime.now().isoformat()
+        return api_error("tenant_id required", 400)
+    now_iso = datetime.now(timezone.utc).isoformat()
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE client_details SET managed_service = 1, managed_since = ? WHERE user_id = ?",
-            (now_iso, int(tenant_id)),
+            (now_iso, _safe_int(tenant_id)),
         )
         conn.commit()
         logger.info("Admin resumed Managed Services for %s", tenant_id)
-        return jsonify({"success": True, "message": "Managed services resumed"})
+        return api_success({"message": "Managed services resumed"})
     except Exception as e:
-        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
 
 
 @app.route("/api/managed/bulk-approve", methods=["POST"])
+@admin_required
 def api_managed_bulk_approve():
-    """Approve all pending approvals for a managed client (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     tenant_id = data.get("tenant_id")
     if not tenant_id:
-        return jsonify({"error": "tenant_id required"}), 400
+        return api_error("tenant_id required", 400)
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT thread_id, routed_agent, agent_draft FROM threads WHERE user_id = ? AND status = 'pending_approval'",
-            (int(tenant_id),)
+            (_safe_int(tenant_id),)
         )
         pending = cursor.fetchall()
         approved_count = 0
-        now_iso = datetime.now().isoformat()
+        now_iso = datetime.now(timezone.utc).isoformat()
 
         for row in pending:
             thread_id = row["thread_id"]
@@ -4224,7 +3478,7 @@ def api_managed_bulk_approve():
             # Approve the thread
             cursor.execute(
                 "UPDATE threads SET approved = 1, status = 'completed', updated_at = ? WHERE thread_id = ? AND user_id = ?",
-                (now_iso, thread_id, int(tenant_id)),
+                (now_iso, thread_id, _safe_int(tenant_id)),
             )
 
             # Execute via executioner if agent exists and draft is not empty
@@ -4233,34 +3487,31 @@ def api_managed_bulk_approve():
                     exec_result = executioner.execute(agent_name, draft)
                     # Log execution
                     cursor.execute(
-                        "INSERT INTO execution_log (execution_id, agent_name, tool_name, success, draft_preview, timestamp) "
-                        "VALUES (?, ?, ?, ?, ?, ?)",
-                        (str(uuid.uuid4()), agent_name, "managed_bulk_approve",
+                        "INSERT INTO execution_log (user_id, execution_id, agent_name, tool_name, success, draft_preview, timestamp) "
+                        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (_safe_int(tenant_id), str(uuid.uuid4()), agent_name, "managed_bulk_approve",
                          int(exec_result.get("success", False)),
                          (draft[:120] + "...") if len(draft) > 120 else draft, now_iso),
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Silent exception in %s: %s", __name__, e)
 
             approved_count += 1
 
         conn.commit()
         logger.info("Bulk approved %d items for %s", approved_count, tenant_id)
-        return jsonify({
-            "success": True,
+        return api_success({
             "approved_count": approved_count,
             "message": f"Approved {approved_count} pending item(s)",
         })
     except Exception as e:
         logger.error("Bulk approve failed for %s: %s", tenant_id, e)
-        logger.error("Internal error: %s", e, exc_info=True); return jsonify({"success": False, "error": "An internal error occurred."}), 500
+        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
 
 
 @app.route("/api/managed/mrr")
+@admin_required
 def api_managed_mrr():
-    """Return total MRR from managed services (admin only)."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
     all_tenants = [str(u["id"]) for u in database.list_users(role='user')]
     active_count = 0
     for tid in all_tenants:
@@ -4274,246 +3525,16 @@ def api_managed_mrr():
         except Exception:
             continue
     total_mrr = active_count * MANAGED_MONTHLY_FEE
-    return jsonify({
+    return api_success({
         "active_managed_clients": active_count,
         "monthly_fee": MANAGED_MONTHLY_FEE,
         "total_mrr": total_mrr,
     })
 
 
-@app.route("/admin/managed")
-def admin_managed_page():
-    """Serve the managed clients admin page."""
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
-    tenants = {
-        "direct_clients": database.list_users(role='user'),
-    }
-    active_tenant = session.get("active_user_id")
-    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
+# Training Hub routes — moved to blueprints/training_bp.py
 
 
-# ---------------------------------------------------------------------------
-# Training Hub routes
-# ---------------------------------------------------------------------------
-
-from core.training_articles import ARTICLES as TRAINING_ARTICLES
-
-# Build slug-to-article lookup
-_TRAINING_BY_SLUG = {a["slug"]: a for a in TRAINING_ARTICLES}
-
-
-@app.route("/training")
-def training_hub():
-    """Serve the training hub landing page."""
-    import json
-    articles_json = json.dumps(TRAINING_ARTICLES)
-    return render_template("blog/training_hub.html", articles_json=articles_json)
-
-
-@app.route("/training/<slug>")
-def training_article(slug):
-    """Serve an individual training article."""
-    article = _TRAINING_BY_SLUG.get(slug)
-    if not article:
-        return redirect(url_for("training_hub"))
-
-    # Find related articles (same category, exclude current)
-    related = [
-        a for a in TRAINING_ARTICLES
-        if a["slug"] != slug and a["category"] == article["category"]
-    ][:3]
-
-    return render_template(
-        "blog/training_article.html",
-        article=article,
-        related=related,
-    )
-
-
-@app.route("/api/training/articles")
-def api_training_articles():
-    """Return the list of training articles (for search/filter)."""
-    return jsonify(TRAINING_ARTICLES)
-
-
-@app.route("/api/training/feedback", methods=["POST"])
-def api_training_feedback():
-    """Log training article feedback."""
-    data = request.json
-    slug = data.get("slug", "")
-    helpful = data.get("helpful")
-    logger.info("Training feedback: slug=%s helpful=%s", slug, helpful)
-    return jsonify({"success": True})
-
-
-# ---------------------------------------------------------------------------
-# MCP Server API routes
-# ---------------------------------------------------------------------------
-
-@app.route("/api/mcp/servers", methods=["GET"])
-def list_mcp_servers():
-    """List all available MCP servers and their status."""
-    servers = {}
-    for name, server in get_all_mcp_servers().items():
-        servers[name] = server.get_status()
-    return jsonify({"servers": servers})
-
-
-@app.route("/api/mcp/servers/<server_name>/tools", methods=["GET"])
-def list_mcp_tools(server_name):
-    """List all tools for a specific MCP server."""
-    server = get_mcp_server(server_name)
-    if not server:
-        return jsonify({"error": f"MCP server '{server_name}' not found"}), 404
-    return jsonify({"server": server_name, "tools": server.list_tools()})
-
-
-@app.route("/api/mcp/call", methods=["POST"])
-def call_mcp_tool():
-    """Call a tool on an MCP server. Admin only.
-
-    Request body:
-    {
-        "server": "seo",
-        "tool": "publish_blog_post",
-        "params": {
-            "content": "Blog post content...",
-            "title": "My Blog Post",
-            "cms_type": "wordpress",
-            "api_credentials": {...}
-        }
-    }
-    """
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
-    data = request.json
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
-
-    server_name = data.get("server", "")
-    tool_name = data.get("tool", "")
-    params = data.get("params", {})
-
-    if not server_name or not tool_name:
-        return jsonify({"error": "server and tool are required"}), 400
-
-    server = get_mcp_server(server_name)
-    if not server:
-        return jsonify({"error": f"MCP server '{server_name}' not found"}), 404
-
-    result = server.call_tool(tool_name, **params)
-    return jsonify(result)
-
-
-@app.route("/api/mcp/credentials", methods=["GET"])
-def get_mcp_credentials():
-    """Get stored MCP credentials for the current tenant. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
-    tenant_id = get_current_user_id()
-    if not tenant_id:
-        return jsonify({"credentials": {}, "error": "No tenant selected"}), 400
-
-    try:
-        conn = database._get_conn()
-        cursor = conn.cursor()
-        cursor.execute("SELECT server_name, platform, credential_key, credential_value FROM mcp_credentials WHERE user_id = ?", (int(tenant_id),))
-        creds = {}
-        for row in cursor.fetchall():
-            key = f"{row['server_name']}.{row['platform']}.{row['credential_key']}"
-            try:
-                creds[key] = _decrypt_credential(row["credential_value"])
-            except Exception:
-                creds[key] = row["credential_value"]
-        return jsonify({"credentials": creds})
-    except Exception as e:
-        return jsonify({"credentials": {}, "error": str(e)})
-
-
-@app.route("/api/mcp/credentials", methods=["POST"])
-def save_mcp_credentials():
-    """Save MCP credentials for the current tenant. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
-    tenant_id = get_current_user_id()
-    if not tenant_id:
-        return jsonify({"error": "No tenant selected"}), 400
-
-    data = request.json
-    server_name = data.get("server_name", "")
-    platform = data.get("platform", "")
-    credentials = data.get("credentials", {})
-
-    if not server_name:
-        return jsonify({"error": "server_name is required"}), 400
-
-    try:
-        conn = database._get_conn()
-        cursor = conn.cursor()
-        now = datetime.now().isoformat()
-
-        for key, value in credentials.items():
-            encrypted = _encrypt_credential(str(value))
-            cursor.execute("""
-                INSERT OR REPLACE INTO mcp_credentials
-                (user_id, server_name, platform, credential_key, credential_value, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM mcp_credentials WHERE server_name=? AND platform=? AND credential_key=?), ?), ?)
-            """, (int(tenant_id), server_name, platform, key, encrypted, server_name, platform, key, now, now))
-
-        conn.commit()
-        return jsonify({"success": True, "message": f"Credentials saved for {server_name}"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/mcp/credentials/<server_name>", methods=["DELETE"])
-def delete_mcp_credentials(server_name):
-    """Delete all credentials for an MCP server. Admin only."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
-    tenant_id = get_current_user_id()
-    if not tenant_id:
-        return jsonify({"error": "No tenant selected"}), 400
-
-    try:
-        conn = database._get_conn()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM mcp_credentials WHERE user_id = ? AND server_name = ?", (int(tenant_id), server_name))
-        conn.commit()
-        return jsonify({"success": True, "message": f"Credentials deleted for {server_name}"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/mcp/execute", methods=["POST"])
-def execute_via_mcp():
-    """Execute an approved agent draft via the appropriate MCP server. Admin only.
-    Auto-selects the correct MCP server based on the agent that generated the content.
-    """
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Admin access required"}), 403
-    data = request.json
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
-
-    agent_id = data.get("agent_id", "")
-    content = data.get("content", "")
-
-    if not agent_id or not content:
-        return jsonify({"error": "agent_id and content are required"}), 400
-
-    mapping = AGENT_MCP_ROUTING.get(agent_id)
-    if not mapping:
-        return jsonify({"error": f"No MCP mapping for agent '{agent_id}'"}), 400
-
-    server_name, tool_name = mapping
-    server = get_mcp_server(server_name)
-    if not server:
-        return jsonify({"error": f"MCP server '{server_name}' not found"}), 404
-
-    result = server.call_tool(tool_name, content=content)
-    return jsonify(result)
 
 
 # ---------------------------------------------------------------------------
