@@ -30,7 +30,8 @@
         }
         .blog-section { padding: 60px 0; }
         .blog-section h1 { color: var(--navy); margin-bottom: 40px; text-align: center; font-size: 2.2rem; }
-        .blog-card { background: var(--white); border: 1px solid #eee; border-radius: 12px; padding: 30px; margin-bottom: 25px; box-shadow: 0 3px 15px rgba(0,0,0,0.05); }
+        .blog-card { background: var(--white); border: 1px solid #eee; border-radius: 12px; padding: 30px; margin-bottom: 25px; box-shadow: 0 3px 15px rgba(0,0,0,0.05); transition: box-shadow 0.2s; }
+        .blog-card:hover { box-shadow: 0 6px 25px rgba(0,0,0,0.1); }
         .blog-card h2 { color: var(--navy); margin-bottom: 10px; font-size: 1.5rem; }
         .blog-card h2 a { color: var(--navy); text-decoration: none; }
         .blog-card h2 a:hover { color: var(--orange); }
@@ -61,33 +62,19 @@
     <div class="container">
         <h1>AI Marketing Insights</h1>
         <p style="text-align:center; margin-bottom:40px; color:#666;">Learn how AI is transforming local business marketing. Tips, case studies, and strategies from Laval Digital.</p>
-        
+
+        {% for article in articles %}
         <div class="blog-card">
-            <h2><a href="#">How AI SEO Agents Are Replacing $2,000/Month Agencies</a></h2>
-            <p class="meta">Published: May 7, 2026 • 4 min read</p>
-            <p>Discover how local businesses in Laval are using AI-powered SEO agents to rank higher on Google, optimize their Google Business Profile, and generate service pages automatically — all without monthly retainers.</p>
+            <h2><a href="{{ url_for('blog_article', slug=article.slug) }}">{{ article.title }}</a></h2>
+            <p class="meta">Published: {{ article.date }} • {{ article.read_time }}</p>
+            <p>{{ article.summary }}</p>
             <div class="tags">
-                <span>SEO</span><span>AI Agents</span><span>Local Business</span>
+                {% for tag in article.tags %}
+                <span>{{ tag }}</span>
+                {% endfor %}
             </div>
         </div>
-        
-        <div class="blog-card">
-            <h2><a href="#">5 Social Media Posts Your Plumbing Business Needs This Week</a></h2>
-            <p class="meta">Published: May 5, 2026 • 3 min read</p>
-            <p>Our AI Social Media Agent analyzed the best-performing content for local trades. Here are the 5 post types getting the most engagement in Laval right now — including templates you can use today.</p>
-            <div class="tags">
-                <span>Social Media</span><span>Content Marketing</span><span>Plumbing</span>
-            </div>
-        </div>
-        
-        <div class="blog-card">
-            <h2><a href="#">Why Your Website Needs a Lead Qualification Chatbot in 2026</a></h2>
-            <p class="meta">Published: May 3, 2026 • 5 min read</p>
-            <p>Speed-to-lead is the #1 factor in converting local service calls. Our AI chatbot qualifies leads 24/7, asks the right questions, and texts you immediately when a hot lead is ready to book.</p>
-            <div class="tags">
-                <span>Lead Generation</span><span>Chatbots</span><span>Conversion</span>
-            </div>
-        </div>
+        {% endfor %}
     </div>
 </section>
 

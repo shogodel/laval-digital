@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }} — Laval Digital</title>
+    <style nonce="{{ csp_nonce }}">
+        :root { --navy: #1a3a5c; --orange: #D42B2B; --white: #ffffff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f8f9fa; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        nav { background: var(--navy); padding: 15px 0; }
+        nav .container { display: flex; justify-content: space-between; align-items: center; }
+        nav .logo { color: var(--white); font-size: 1.5rem; font-weight: 700; text-decoration: none; }
+        nav .logo img { vertical-align: middle; }
+        nav .logo span { color: var(--orange); }
+        nav ul { list-style: none; display: flex; gap: 25px; }
+        nav ul li a { color: var(--white); text-decoration: none; }
+        nav ul li a:hover { color: var(--orange); }
+        .lang-toggle { background: transparent; color: var(--white); border: 1px solid var(--white); padding: 6px 14px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; text-decoration: none; }
+        .lang-toggle:hover { background: var(--white); color: var(--navy); }
+        .hamburger { display: none; background: none; border: none; color: var(--white); font-size: 1.8rem; cursor: pointer; padding: 4px 8px; }
+        @media (max-width: 768px) {
+            .hamburger { display: block; }
+            nav ul { display: none; flex-direction: column; width: 100%; gap: 0; padding: 15px 0; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 10px; }
+            nav ul.open { display: flex; }
+            nav ul li { text-align: center; padding: 10px 0; }
+            nav ul li a { font-size: 1.1rem; }
+            nav .container { flex-wrap: wrap; }
+        }
+        .article-header { padding: 60px 0 30px; }
+        .article-header .meta { color: #999; font-size: 0.9rem; margin-bottom: 10px; }
+        .article-header .tags { margin-top: 15px; }
+        .article-header .tags span { display: inline-block; background: #f0f0f0; padding: 5px 12px; border-radius: 15px; font-size: 0.85rem; margin-right: 8px; color: #666; }
+        .article-header .back-link { display: inline-block; margin-bottom: 15px; color: var(--navy); text-decoration: none; font-size: 0.9rem; }
+        .article-header .back-link:hover { text-decoration: underline; }
+        .article-body { background: var(--white); border-radius: 12px; padding: 40px; box-shadow: 0 3px 15px rgba(0,0,0,0.05); line-height: 1.8; color: #333; font-size: 1.05rem; }
+        .article-body p { margin-bottom: 1.2em; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="container">
+        <a href="{{ url_for(home_route) }}" class="logo"><img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="64"></a>
+        <button class="hamburger" id="nav-hamburger">&#9776;</button>
+        <ul id="nav-menu">
+            <li><a href="{{ url_for(home_route) }}">{{ home_label }}</a></li>
+            <li><a href="{{ url_for(demo_route) }}">{{ demo_label }}</a></li>
+            <li><a href="{{ url_for(blog_route) }}">{{ blog_label }}</a></li>
+            <li><a href="{{ url_for('training.training_hub') }}">{{ training_label }}</a></li>
+            <li><a href="tel:{{ CONTACT_PHONE_CLEAN }}">📞 {{ CONTACT_PHONE }}</a></li>
+            <li><a href="{{ url_for(other_lang_route) }}" class="lang-toggle">{{ other_lang_label }}</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container article-header">
+    <a href="{{ url_for(blog_route) }}" class="back-link">&larr; {{ back_label }}</a>
+    <h1>{{ article.title }}</h1>
+    <p class="meta">{{ article.date }} • {{ article.read_time }}</p>
+    <div class="tags">
+        {% for tag in article.tags %}
+        <span>{{ tag }}</span>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="container article-body">
+    {% for paragraph in article.content %}
+    <p>{{ paragraph | safe }}</p>
+    {% endfor %}
+</div>
+
+<script nonce="{{ csp_nonce }}">
+document.getElementById('nav-hamburger').addEventListener('click', function() {
+    document.getElementById('nav-menu').classList.toggle('open');
+});
+</script>
+</body>
+</html>

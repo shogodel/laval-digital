@@ -30,7 +30,8 @@
         }
         .blog-section { padding: 60px 0; }
         .blog-section h1 { color: var(--navy); margin-bottom: 40px; text-align: center; font-size: 2.2rem; }
-        .blog-card { background: var(--white); border: 1px solid #eee; border-radius: 12px; padding: 30px; margin-bottom: 25px; box-shadow: 0 3px 15px rgba(0,0,0,0.05); }
+        .blog-card { background: var(--white); border: 1px solid #eee; border-radius: 12px; padding: 30px; margin-bottom: 25px; box-shadow: 0 3px 15px rgba(0,0,0,0.05); transition: box-shadow 0.2s; }
+        .blog-card:hover { box-shadow: 0 6px 25px rgba(0,0,0,0.1); }
         .blog-card h2 { color: var(--navy); margin-bottom: 10px; font-size: 1.5rem; }
         .blog-card h2 a { color: var(--navy); text-decoration: none; }
         .blog-card h2 a:hover { color: var(--orange); }
@@ -49,8 +50,9 @@
             <li><a href="{{ url_for('home_fr') }}">Accueil</a></li>
             <li><a href="{{ url_for('demo_fr') }}">Démo</a></li>
             <li><a href="{{ url_for('blog_fr') }}">Blogue</a></li>
+            <li><a href="{{ url_for('training.training_hub') }}">Formation</a></li>
             <li><a href="tel:{{ CONTACT_PHONE_CLEAN }}">📞 {{ CONTACT_PHONE }}</a></li>
-            <li><a href="{{ url_for('home') }}" class="lang-toggle">EN</a></li>
+            <li><a href="{{ url_for('blog') }}" class="lang-toggle">EN</a></li>
         </ul>
     </div>
 </nav>
@@ -60,32 +62,18 @@
         <h1>Marketing IA</h1>
         <p style="text-align:center; margin-bottom:40px; color:#666;">Découvrez comment l'IA transforme le marketing des PME. Conseils, études de cas et stratégies de Laval Digital.</p>
 
+        {% for article in articles %}
         <div class="blog-card">
-            <h2><a href="#">Comment les Agents SEO IA Remplacent les Agences à 2 000 $/Mois</a></h2>
-            <p class="meta">Publié : 7 mai 2026 • 4 min de lecture</p>
-            <p>Découvrez comment les PME de Laval utilisent des agents SEO propulsés par l'IA pour mieux se classer sur Google, optimiser leur profil d'entreprise et générer des pages de service automatiquement — sans frais mensuels.</p>
+            <h2><a href="{{ url_for('blog_article_fr', slug=article.slug) }}">{{ article.title }}</a></h2>
+            <p class="meta">Publié : {{ article.date }} • {{ article.read_time }}</p>
+            <p>{{ article.summary }}</p>
             <div class="tags">
-                <span>SEO</span><span>Agents IA</span><span>PME</span>
+                {% for tag in article.tags %}
+                <span>{{ tag }}</span>
+                {% endfor %}
             </div>
         </div>
-
-        <div class="blog-card">
-            <h2><a href="#">5 Publications Facebook pour Votre Entreprise de Plomberie Cette Semaine</a></h2>
-            <p class="meta">Publié : 5 mai 2026 • 3 min de lecture</p>
-            <p>Notre agent Médias Sociaux IA a analysé le contenu le plus performant pour les métiers locaux. Voici les 5 types de publications qui fonctionnent le mieux à Laval en ce moment — avec des modèles prêts à utiliser.</p>
-            <div class="tags">
-                <span>Médias Sociaux</span><span>Marketing de Contenu</span><span>Plomberie</span>
-            </div>
-        </div>
-
-        <div class="blog-card">
-            <h2><a href="#">Pourquoi Votre Site Web a Besoin d'un Chatbot de Qualification de Leads en 2026</a></h2>
-            <p class="meta">Publié : 3 mai 2026 • 5 min de lecture</p>
-            <p>La rapidité de réponse est le facteur n°1 de conversion des appels de service locaux. Notre chatbot IA qualifie les prospects 24h/24, pose les bonnes questions et vous texte immédiatement quand un lead est prêt à réserver.</p>
-            <div class="tags">
-                <span>Génération de Leads</span><span>Chatbots</span><span>Conversion</span>
-            </div>
-        </div>
+        {% endfor %}
     </div>
 </section>
 

@@ -68,7 +68,7 @@ warnings.filterwarnings("ignore", module="langgraph")
 warnings.filterwarnings("ignore", module="langchain")
 
 from flask import (Flask, render_template, jsonify, request,
-                   redirect, url_for, session, flash, g,
+                   redirect, url_for, session, flash, g, abort,
                    Response, stream_with_context)
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
@@ -76,6 +76,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 from core.api_helpers import api_success, api_error
+from core.blog_articles import ARTICLES_EN, ARTICLES_FR, ARTICLES_BY_SLUG_EN, ARTICLES_BY_SLUG_FR
 
 
 def _safe_error(e: Exception, status: int = 500):
@@ -776,12 +777,40 @@ def demo_fr():
 
 @app.route("/blog")
 def blog():
-    return render_template("blog.html")
+    return render_template("blog.html", articles=ARTICLES_EN)
+
+
+@app.route("/blog/<slug>")
+def blog_article(slug):
+    article = ARTICLES_BY_SLUG_EN.get(slug)
+    if not article:
+        abort(404)
+    return render_template("blog_article.html",
+        article=article, lang="en",
+        home_route="home", demo_route="demo", blog_route="blog",
+        home_label="Home", demo_label="Live Demo", blog_label="Blog",
+        training_label="Training Hub",
+        other_lang_route="blog_fr", other_lang_label="FR",
+        back_label="Back to Blog")
 
 
 @app.route("/fr/blogue")
 def blog_fr():
-    return render_template("blog_fr.html")
+    return render_template("blog_fr.html", articles=ARTICLES_FR)
+
+
+@app.route("/fr/blogue/<slug>")
+def blog_article_fr(slug):
+    article = ARTICLES_BY_SLUG_FR.get(slug)
+    if not article:
+        abort(404)
+    return render_template("blog_article.html",
+        article=article, lang="fr",
+        home_route="home_fr", demo_route="demo_fr", blog_route="blog_fr",
+        home_label="Accueil", demo_label="Démo", blog_label="Blogue",
+        training_label="Formation",
+        other_lang_route="blog", other_lang_label="EN",
+        back_label="Retour au blogue")
 
 
 @app.route("/free-trial")
