@@ -1692,11 +1692,25 @@ def submit_task():
                 for r in rows
             }
 
+        # Load conversation history for multi-turn context
+        conversation_history: list = []
+        if user_id:
+            cursor = conn.execute(
+                "SELECT agent_task, agent_draft FROM threads WHERE thread_id = ? AND user_id = ? AND status = 'chat' ORDER BY created_at ASC",
+                (thread_id, _safe_int(user_id)),
+            )
+            for row in cursor.fetchall():
+                if row["agent_task"]:
+                    conversation_history.append({"role": "user", "content": row["agent_task"]})
+                if row["agent_draft"]:
+                    conversation_history.append({"role": "assistant", "content": row["agent_draft"]})
+
         result = orch.process_message(
             user_request, thread_id,
             language=language or None,
             autonomy_config=autonomy_config,
             user_id=_safe_int(user_id) if user_id else 0,
+            conversation_history=conversation_history[-20:],
         )
 
         return api_success(result)

@@ -196,9 +196,15 @@ class ExecutionerAgent:
     ) -> Dict[str, Any]:
         """Execute an approved draft through a registered tool.
 
-        Tries MCP execution first, falls back to built-in tools.
+        Uses a deterministic execution path:
+        1. If ``tool_name`` is given, use that tool directly (built-in).
+        2. If ``tool_name`` is ``None`` and ``agent_name`` has an MCP routing
+           entry, execute via MCP. If MCP fails, return the error — no silent
+           fallback to a different implementation.
+        3. If ``tool_name`` is ``None`` and no MCP routing exists, resolve to
+           the built-in tool via :meth:`_select_tool`.
 
-        When the resolved tool is in the ``confirm_tools`` list and
+        When the resolved built-in tool is in the ``confirm_tools`` list and
         ``force`` is ``False``, the execution is queued for human
         confirmation instead of running immediately.
 
@@ -206,46 +212,60 @@ class ExecutionerAgent:
             agent_name: Source agent name used for auto-selection when
                 ``tool_name`` is not given.
             approved_draft: The full approved draft text to execute.
-            tool_name: Explicit tool name. When ``None``, the tool is
-                auto-selected based on ``agent_name``:
-                - ``local_seo`` → ``publish_blog_post``
-                - ``social_media`` → ``post_to_social``
-                - ``lead_conversion`` → ``send_email``
+            tool_name: Explicit built-in tool name. When ``None``, the tool is
+                auto-selected based on ``agent_name``.
             force: If ``True``, bypass the confirmation queue and run
                 immediately.
 
         Returns:
-            Dict with keys ``success``, ``result``, ``error``, and
-            ``execution_id``.  When queued for confirmation the result
+            Dict with keys ``success``, ``result``, ``error``,
+            ``execution_id``, and ``execution_source`` (``"mcp"`` or
+            ``"built-in"``).  When queued for confirmation the result
             is ``"pending_confirmation"`` and the caller should prompt
             the operator to call :meth:`confirm_execution`.
 
         Raises:
             ExecutionerError: If no tool can be found for the given inputs.
         """
-        # Try MCP execution first
-        try:
-            from mcp import get_mcp_server
+        # ── Path 1: MCP execution when agent has a routing entry ──
+        if tool_name is None:
             mapping = AGENT_MCP_ROUTING.get(agent_name)
             if mapping:
                 server_name, mcp_tool = mapping
-                mcp_server = get_mcp_server(server_name)
-                if mcp_server:
-                    try:
+                try:
+                    from mcp import get_mcp_server
+                    mcp_server = get_mcp_server(server_name)
+                    if mcp_server:
                         result = mcp_server.call_tool(mcp_tool, content=approved_draft)
                         if result.get("success"):
                             return {
                                 "success": True,
-                                "result": f"MCP: {result.get('result', 'Done')}",
+                                "result": result.get("result", "Done"),
                                 "error": None,
-                                "execution_id": f"mcp-{server_name}-{mcp_tool}"
+                                "execution_id": f"mcp-{server_name}-{mcp_tool}",
+                                "execution_source": "mcp",
                             }
-                    except Exception as e:
-                        logger.warning(f"MCP call failed for {server_name}/{mcp_tool}: {e}")
-        except ImportError:
-            pass  # MCP not available, fall back to built-in tools
-        except Exception as e:
-            logger.warning(f"MCP execution failed, falling back: {e}")
+                        return {
+                            "success": False,
+                            "error": f"MCP tool '{mcp_tool}' returned failure: {result.get('error', 'Unknown')}",
+                            "result": "",
+                            "execution_id": f"mcp-{server_name}-{mcp_tool}",
+                            "execution_source": "mcp",
+                        }
+                except ImportError:
+                    logger.warning("MCP module not available for %s/%s", server_name, mcp_tool)
+                except Exception as e:
+                    logger.error(
+                        "MCP execution failed for %s/%s (agent=%s): %s",
+                        server_name, mcp_tool, agent_name, e, exc_info=True,
+                    )
+                    return {
+                        "success": False,
+                        "error": f"MCP execution failed: {e}",
+                        "result": "",
+                        "execution_id": f"mcp-{server_name}-{mcp_tool}",
+                        "execution_source": "mcp",
+                    }
 
         resolved_tool = tool_name or self._select_tool(agent_name)
 
@@ -283,14 +303,17 @@ class ExecutionerAgent:
                 "result": "Awaiting confirmation before execution",
                 "error": None,
                 "execution_id": execution_id,
+                "execution_source": "built-in",
             }
 
-        return self._run_tool(
+        result = self._run_tool(
             execution_id=execution_id,
             agent_name=agent_name,
             tool_name=resolved_tool,
             approved_draft=approved_draft,
         )
+        result["execution_source"] = "built-in"
+        return result
 
     def _run_tool(
         self,
