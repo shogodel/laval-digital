@@ -271,12 +271,14 @@ class Orchestrator:
     # Welcome / Suggestions
     # ------------------------------------------------------------------
 
-    def get_welcome(self, language: str = "en") -> Dict[str, Any]:
+    def get_welcome(self, language: str = "en", user_id: int = 0) -> Dict[str, Any]:
         lang_label = "français" if language == "fr" else "english"
         try:
             response = self._llm_adapter.invoke(
                 system_prompt=f"You are a friendly AI orchestrator for local business marketing. Respond in {lang_label}.",
                 user_message=WELCOME_PROMPT.format(language=lang_label),
+                user_id=user_id,
+                endpoint="welcome",
             )
             return {"response": response, "agent": "orchestrator", "status": "welcome"}
         except Exception as e:
@@ -326,12 +328,14 @@ class Orchestrator:
             except Exception as e:
                 logger.debug("Exception in %s: %s", __name__, e)
 
-    def get_suggestions(self, language: str = "en") -> Dict[str, Any]:
+    def get_suggestions(self, language: str = "en", user_id: int = 0) -> Dict[str, Any]:
         lang_label = "français" if language == "fr" else "english"
         try:
             response = self._llm_adapter.invoke(
                 system_prompt=f"You are a proactive AI marketing assistant. Respond in {lang_label}.",
                 user_message=SUGGESTIONS_PROMPT.format(language=lang_label),
+                user_id=user_id,
+                endpoint="suggestions",
             )
             return {"response": response, "agent": "orchestrator", "status": "suggestions"}
         except Exception as e:
@@ -480,6 +484,10 @@ class Orchestrator:
             response = self._llm_adapter.invoke(
                 system_prompt=system_role,
                 user_message=user_prompt,
+                user_id=user_id,
+                endpoint="orchestrator",
+                agent_id=selected_agent,
+                thread_id=thread_id,
             )
 
             agent_name = self._extract_agent_from_response(response)

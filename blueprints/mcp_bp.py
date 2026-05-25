@@ -7,6 +7,7 @@ from mcp import get_all_mcp_servers, get_mcp_server, AGENT_MCP_ROUTING
 from core import database
 from core.api_helpers import api_success, api_error
 from core.auth import admin_required
+from core.app_state import get_credential_cipher, safe_error
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +27,11 @@ def _get_current_user_id():
 
 
 def _encrypt_credential(plaintext: str) -> str:
-    from app import _credential_cipher
-    return _credential_cipher.encrypt(plaintext.encode()).decode()
+    return get_credential_cipher().encrypt(plaintext.encode()).decode()
 
 
 def _decrypt_credential(ciphertext: str) -> str:
-    from app import _credential_cipher
-    return _credential_cipher.decrypt(ciphertext.encode()).decode()
+    return get_credential_cipher().decrypt(ciphertext.encode()).decode()
 
 
 # ---------------------------------------------------------------------------
@@ -108,8 +107,7 @@ def get_mcp_credentials():
                 creds[key] = row["credential_value"]
         return api_success({"credentials": creds})
     except Exception as e:
-        from app import _safe_error
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 
 @mcp_bp.route("/api/mcp/credentials", methods=["POST"])
@@ -145,8 +143,7 @@ def save_mcp_credentials():
         conn.commit()
         return api_success(message=f"Credentials saved for {server_name}")
     except Exception as e:
-        from app import _safe_error
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 
 @mcp_bp.route("/api/mcp/credentials/<server_name>", methods=["DELETE"])
@@ -165,8 +162,7 @@ def delete_mcp_credentials(server_name):
         conn.commit()
         return api_success(message=f"Credentials deleted for {server_name}")
     except Exception as e:
-        from app import _safe_error
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 
 @mcp_bp.route("/api/mcp/execute", methods=["POST"])

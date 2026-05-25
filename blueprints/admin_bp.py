@@ -99,7 +99,9 @@ def agent_chat(agent_id):
     auth_check = admin_page_required()
     if auth_check:
         return auth_check
-    from app import agent_registry, AGENT_META
+    from core.app_state import get_agent_registry, get_agent_meta
+    agent_registry = get_agent_registry()
+    AGENT_META = get_agent_meta()
     if agent_id not in agent_registry:
         return "Agent not found", 404
     return render_template(
@@ -116,10 +118,10 @@ def dashboard():
     auth_check = admin_page_required()
     if auth_check:
         return auth_check
-    from app import AGENT_META
+    from core.app_state import get_agent_meta
     return render_template(
         "admin/dashboard.html",
-        agents=AGENT_META,
+        agents=get_agent_meta(),
     )
 
 
@@ -237,7 +239,9 @@ def panel_redirect_fr():
 @admin_page_required_fr
 def agent_chat_fr(agent_id):
     """Serve the French admin agent chat interface."""
-    from app import agent_registry, AGENT_META
+    from core.app_state import get_agent_registry, get_agent_meta
+    agent_registry = get_agent_registry()
+    AGENT_META = get_agent_meta()
     if agent_id not in agent_registry:
         return "Agent introuvable", 404
     return render_template(

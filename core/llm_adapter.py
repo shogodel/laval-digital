@@ -5,6 +5,8 @@ import requests
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.language_models import BaseChatModel
 
+from core.rate_limiter import check_rate_limits, count_tokens, log_usage, RateLimitExceeded
+
 try:
     from langchain_litellm import ChatLiteLLM
 except ImportError:
@@ -252,20 +254,32 @@ class LLMAdapter:
         except Exception as e:
             raise LLMAdapterError(f"Failed to initialize LLM: {str(e)}") from e
 
-    def invoke(self, system_prompt: str, user_message: str) -> str:
+    def invoke(self, system_prompt: str, user_message: str,
+               user_id: int = 0, endpoint: str = "unknown",
+               agent_id: Optional[str] = None, thread_id: Optional[str] = None) -> str:
         """Invoke the LLM with system prompt and user message.
 
         Args:
             system_prompt: System prompt to guide LLM behavior.
             user_message: User task or query to process.
+            user_id: User ID for rate limiting and cost tracking (0 = anonymous/system).
+            endpoint: Label identifying the caller (e.g. 'orchestrator', 'agent_chat').
+            agent_id: Optional agent ID for usage logging.
+            thread_id: Optional thread ID for usage logging.
 
         Returns:
             LLM response content as a string.
 
         Raises:
             LLMAdapterError: If LLM invocation fails for any reason.
+            RateLimitExceeded: If user has exceeded rate or cost limits.
         """
         logger.debug("Invoking LLM %s with task: %s...", self._model, user_message[:50])
+
+        if user_id > 0:
+            check_rate_limits(user_id)
+
+        prompt_tokens = count_tokens(system_prompt + user_message, self._model)
 
         try:
             llm = self._get_llm()
@@ -274,27 +288,49 @@ class LLMAdapter:
                 HumanMessage(content=user_message),
             ]
             response = llm.invoke(messages)
-            logger.debug("LLM response received: %s...", response.content[:100])
-            return response.content
+            completion = response.content
+            logger.debug("LLM response received: %s...", completion[:100])
+
+            completion_tokens = count_tokens(completion, self._model)
+            if user_id > 0:
+                log_usage(user_id, self._model, prompt_tokens, completion_tokens,
+                          endpoint=endpoint, agent_id=agent_id, thread_id=thread_id)
+
+            return completion
+        except RateLimitExceeded:
+            raise
         except Exception as e:
             error_msg = f"LLM invocation failed: {str(e)}"
             logger.error(error_msg, exc_info=True)
             raise LLMAdapterError(error_msg) from e
 
-    def stream(self, system_prompt: str, user_message: str) -> Generator[str, None, None]:
+    def stream(self, system_prompt: str, user_message: str,
+               user_id: int = 0, endpoint: str = "unknown",
+               agent_id: Optional[str] = None, thread_id: Optional[str] = None) -> Generator[str, None, None]:
         """Stream LLM response tokens in real-time.
 
         Args:
             system_prompt: System prompt to guide LLM behavior.
             user_message: User task or query to process.
+            user_id: User ID for rate limiting and cost tracking (0 = anonymous/system).
+            endpoint: Label identifying the caller (e.g. 'orchestrator', 'agent_chat').
+            agent_id: Optional agent ID for usage logging.
+            thread_id: Optional thread ID for usage logging.
 
         Yields:
             Individual tokens from the LLM response.
 
         Raises:
             LLMAdapterError: If LLM streaming fails for any reason.
+            RateLimitExceeded: If user has exceeded rate or cost limits.
         """
         logger.debug("Streaming LLM %s with task: %s...", self._model, user_message[:50])
+
+        if user_id > 0:
+            check_rate_limits(user_id)
+
+        prompt_tokens = count_tokens(system_prompt + user_message, self._model)
+        collected: list[str] = []
 
         try:
             llm = self._get_llm()
@@ -305,7 +341,16 @@ class LLMAdapter:
 
             for chunk in llm.stream(messages):
                 if chunk.content:
+                    collected.append(chunk.content)
                     yield chunk.content
+
+            completion = "".join(collected)
+            completion_tokens = count_tokens(completion, self._model)
+            if user_id > 0:
+                log_usage(user_id, self._model, prompt_tokens, completion_tokens,
+                          endpoint=endpoint, agent_id=agent_id, thread_id=thread_id)
+        except RateLimitExceeded:
+            raise
         except Exception as e:
             error_msg = f"LLM streaming failed: {str(e)}"
             logger.error(error_msg, exc_info=True)

@@ -89,7 +89,9 @@ def client_logout():
 @client_required
 def client_agent_chat(agent_id):
     """Serve the client agent chat interface."""
-    from app import agent_registry, AGENT_META
+    from core.app_state import get_agent_registry, get_agent_meta
+    agent_registry = get_agent_registry()
+    AGENT_META = get_agent_meta()
     if agent_id not in agent_registry:
         return "Agent not found", 404
     return render_template(
@@ -104,7 +106,9 @@ def client_agent_chat(agent_id):
 @client_required
 def client_agent_chat_fr(agent_id):
     """Serve the French client agent chat interface."""
-    from app import agent_registry, AGENT_META
+    from core.app_state import get_agent_registry, get_agent_meta
+    agent_registry = get_agent_registry()
+    AGENT_META = get_agent_meta()
     if agent_id not in agent_registry:
         return "Agent introuvable", 404
     return render_template(

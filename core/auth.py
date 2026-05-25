@@ -211,18 +211,44 @@ def login_required(f):
 client_required = login_required
 
 
-def admin_required():
-    """Check if admin is logged in, return 401 JSON if not."""
-    if not session.get("admin_logged_in"):
-        return jsonify({"error": "Unauthorized"}), 401
-    return None
+def admin_required(f=None):
+    """Can be used as a decorator (``@admin_required``) or middleware (``admin_required()``).
+
+    As a decorator, wraps the route function and returns 401 if not logged in.
+    As middleware, returns a 401 response tuple if not logged in, else None.
+    """
+    if f is None:
+        if not session.get("admin_logged_in"):
+            return jsonify({"error": "Unauthorized"}), 401
+        return None
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        check = admin_required()
+        if check:
+            return check
+        return f(*args, **kwargs)
+    return decorated
 
 
-def admin_page_required():
-    """Check if admin is logged in, redirect to login if not."""
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin.login"))
-    return None
+def admin_page_required(f=None):
+    """Can be used as a decorator (``@admin_page_required``) or middleware.
+
+    As a decorator, wraps the route function and redirects to login if not logged in.
+    As middleware, returns a redirect response if not logged in, else None.
+    """
+    if f is None:
+        if not session.get("admin_logged_in"):
+            return redirect(url_for("admin.login"))
+        return None
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        check = admin_page_required()
+        if check:
+            return check
+        return f(*args, **kwargs)
+    return decorated
 
 
 def create_user_and_tenant(email: str, password: str, display_name: str = "") -> dict:

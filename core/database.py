@@ -4,6 +4,7 @@ Replaces the multi-tenant TenantManager with one SQLite database
 at data/frankie.db.  All user-scoped data has a user_id column.
 """
 
+import os
 import sqlite3
 import logging
 import threading
@@ -13,7 +14,8 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = Path(__file__).parent.parent / "data" / "frankie.db"
+def _db_path() -> Path:
+    return Path(os.environ.get("FRANKIE_DB_PATH", str(Path(__file__).parent.parent / "data" / "frankie.db")))
 _local = threading.local()
 
 DEFAULT_AGENTS = [
@@ -29,8 +31,9 @@ def _get_conn() -> sqlite3.Connection:
     """Return the thread-local database connection, creating it if needed."""
     current_tid = threading.get_ident()
     if not hasattr(_local, "conn") or _local.conn is None or getattr(_local, "tid", None) != current_tid:
-        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-        _local.conn = sqlite3.connect(str(DB_PATH), timeout=30)
+        db_path = _db_path()
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        _local.conn = sqlite3.connect(str(db_path), timeout=30)
         _local.conn.row_factory = sqlite3.Row
         _local.conn.execute("PRAGMA foreign_keys = ON")
         _local.conn.execute("PRAGMA journal_mode = WAL")
@@ -370,6 +373,40 @@ def init_db() -> None:
             pass
     conn.commit()
 
+    # ── Migration: add LLM usage log table for rate limiting ──
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS llm_usage_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            timestamp TEXT NOT NULL,
+            model TEXT NOT NULL,
+            prompt_tokens INTEGER DEFAULT 0,
+            completion_tokens INTEGER DEFAULT 0,
+            total_tokens INTEGER DEFAULT 0,
+            cost REAL DEFAULT 0.0,
+            endpoint TEXT NOT NULL DEFAULT 'unknown',
+            agent_id TEXT,
+            thread_id TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_llm_usage_user_time ON llm_usage_log(user_id, timestamp);
+        CREATE INDEX IF NOT EXISTS idx_llm_usage_user_month ON llm_usage_log(user_id, substr(timestamp,1,7));
+    """)
+    conn.commit()
+
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS user_llm_quotas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL UNIQUE REFERENCES users(id),
+            requests_per_hour INTEGER DEFAULT 60,
+            requests_per_day INTEGER DEFAULT 500,
+            tokens_per_day INTEGER DEFAULT 1000000,
+            cost_per_day REAL DEFAULT 5.00,
+            cost_per_month REAL DEFAULT 100.00,
+            blocked INTEGER DEFAULT 0
+        );
+    """)
+    conn.commit()
+
     # ── Migration: add indexes on frequently queried columns ──
     indexes = [
         "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
@@ -482,6 +519,8 @@ def delete_user(uid: int) -> None:
         conn.execute("DELETE FROM agent_preferences WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM agent_findings WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM agent_schedules WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM llm_usage_log WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM user_llm_quotas WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM affiliate_leads WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM affiliates WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM commissions WHERE affiliate_code IN (SELECT code FROM affiliates WHERE user_id = ?)", (uid,))

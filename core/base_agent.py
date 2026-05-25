@@ -151,13 +151,16 @@ class BaseAgent(ABC):
             f"{confidence_instruction}"
         )
 
-    def _invoke_llm(self, task: str) -> Dict[str, Any]:
+    def _invoke_llm(self, task: str, user_id: int = 0) -> Dict[str, Any]:
         adapter = self._get_llm_adapter()
         system_content = self._build_system_content(task)
 
         from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
         def _invoke():
-            return adapter.invoke(system_content, task)
+            return adapter.invoke(system_content, task,
+                                  user_id=user_id,
+                                  endpoint="agent_invoke",
+                                  agent_id=self._agent_id)
 
         try:
             with ThreadPoolExecutor(max_workers=1) as executor:
@@ -171,7 +174,7 @@ class BaseAgent(ABC):
             "confidence": self._parse_confidence(raw),
         }
 
-    def _stream_llm(self, task: str):
+    def _stream_llm(self, task: str, user_id: int = 0):
         """Stream LLM response tokens, yielding each chunk as it arrives.
 
         After the final token, yields a sentinel dict with the full result:
@@ -181,7 +184,10 @@ class BaseAgent(ABC):
         system_content = self._build_system_content(task)
         collected: list[str] = []
 
-        for token in adapter.stream(system_content, task):
+        for token in adapter.stream(system_content, task,
+                                    user_id=user_id,
+                                    endpoint="agent_chat",
+                                    agent_id=self._agent_id):
             collected.append(token)
             yield token
 

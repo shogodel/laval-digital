@@ -109,7 +109,8 @@ def affiliate_logout():
 @login_required
 def affiliate_dashboard():
     """Serve the affiliate referral dashboard."""
-    from app import affiliate_manager
+    from core.app_state import get_affiliate_manager
+    affiliate_manager = get_affiliate_manager()
     tenant_id = current_user.id
 
     aff = affiliate_manager.get_affiliate(tenant_id)
@@ -147,7 +148,8 @@ def affiliate_dashboard():
 @affiliate_bp.route("/api/affiliate/status")
 def affiliate_status():
     """Return current affiliate status for the visitor."""
-    from app import affiliate_manager
+    from core.app_state import get_affiliate_manager
+    affiliate_manager = get_affiliate_manager()
     ref_code = session.get("affiliate_ref")
     if ref_code and affiliate_manager.is_valid_code(ref_code):
         aff = affiliate_manager.get_affiliate(ref_code)
@@ -209,7 +211,8 @@ def affiliate_signup_api():
 @login_required
 def api_affiliate_commissions():
     """Return the current affiliate's commission history."""
-    from app import affiliate_manager
+    from core.app_state import get_affiliate_manager
+    affiliate_manager = get_affiliate_manager()
     tenant_id = current_user.tenant_id
     commissions = affiliate_manager.get_commissions(tenant_id)
     total_pending = sum(c["amount"] for c in commissions if c["status"] == "pending")
@@ -225,7 +228,8 @@ def api_affiliate_commissions():
 @login_required
 def api_affiliate_payouts():
     """Return the current affiliate's payout history."""
-    from app import affiliate_manager
+    from core.app_state import get_affiliate_manager
+    affiliate_manager = get_affiliate_manager()
     tenant_id = current_user.tenant_id
     return api_success({"payouts": affiliate_manager.get_payouts(tenant_id)})
 
@@ -234,7 +238,8 @@ def api_affiliate_payouts():
 @login_required
 def api_request_payout():
     """Request a payout for the current affiliate's pending commissions."""
-    from app import affiliate_manager
+    from core.app_state import get_affiliate_manager
+    affiliate_manager = get_affiliate_manager()
     tenant_id = current_user.tenant_id
     commissions = affiliate_manager.get_commissions(tenant_id)
     total_pending = sum(c["amount"] for c in commissions if c["status"] == "pending")
@@ -255,7 +260,8 @@ def api_admin_affiliates():
     auth_check = admin_required()
     if auth_check:
         return auth_check
-    from app import affiliate_manager
+    from core.app_state import get_affiliate_manager
+    affiliate_manager = get_affiliate_manager()
     affiliates = affiliate_manager.get_all_affiliates()
     commissions = affiliate_manager.get_all_commissions(limit=200)
     payouts = affiliate_manager.get_payouts(limit=200)
@@ -271,7 +277,8 @@ def api_admin_process_payout(code):
     auth_check = admin_required()
     if auth_check:
         return auth_check
-    from app import affiliate_manager
+    from core.app_state import get_affiliate_manager
+    affiliate_manager = get_affiliate_manager()
     data = request.json
     payout_id = data.get("payout_id", "")
     if not payout_id:
