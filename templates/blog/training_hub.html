@@ -97,6 +97,11 @@
     </div>
 
     <script nonce="{{ csp_nonce }}">
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
     const ARTICLES = {{ articles | tojson }};
 
     function renderArticles(list) {
