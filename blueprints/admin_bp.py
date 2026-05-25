@@ -150,7 +150,7 @@ def analytics():
     if auth_check:
         return auth_check
     tenants = {
-        "direct_clients": [str(u["id"]) for u in database.list_users(role='user')],
+        "direct_clients": database.list_users(role='user'),
     }
     active_tenant = session.get("active_user_id")
     return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
@@ -163,7 +163,7 @@ def reports():
     if auth_check:
         return auth_check
     tenants = {
-        "direct_clients": [str(u["id"]) for u in database.list_users(role='user')],
+        "direct_clients": database.list_users(role='user'),
     }
     active_tenant = session.get("active_user_id")
     return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
