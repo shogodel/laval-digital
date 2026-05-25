@@ -293,17 +293,64 @@ async function sendMessage() {
         const r = await fetch('/api/agents/' + AGENT_ID + '/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text, thread_id: CURRENT_THREAD })
+            body: JSON.stringify({ message: text, thread_id: CURRENT_THREAD, stream: true })
         });
-        const data = await r.json();
-        hideTyping();
 
-        if (data.error) {
-            appendMessage('agent', "Désolé, l'IA n'a pas pu traiter cela. Essayez de reformuler votre demande ?");
+        const contentType = r.headers.get('Content-Type') || '';
+
+        if (contentType.includes('text/event-stream')) {
+            const reader = r.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let fullContent = '';
+            hideTyping();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const evt = JSON.parse(line.slice(6));
+                            if (evt.type === 'token') {
+                                fullContent += evt.content;
+                                const container = document.getElementById('chat-messages');
+                                let streamingMsg = container.querySelector('.message.streaming');
+                                if (!streamingMsg) {
+                                    streamingMsg = document.createElement('div');
+                                    streamingMsg.className = 'message agent streaming';
+                                    container.appendChild(streamingMsg);
+                                }
+                                streamingMsg.textContent = fullContent;
+                                container.scrollTop = container.scrollHeight;
+                            } else if (evt.type === 'done') {
+                                const container = document.getElementById('chat-messages');
+                                const streamingMsg = container.querySelector('.message.streaming');
+                                if (streamingMsg) streamingMsg.remove();
+                                CURRENT_THREAD = evt.thread_id;
+                                appendMessage('agent', evt.response);
+                                loadThreads();
+                            }
+                        } catch (e) { }
+                    }
+                }
+            }
         } else {
-            CURRENT_THREAD = data.thread_id;
-            appendMessage('agent', data.response);
-            loadThreads();
+            const data = await r.json();
+            hideTyping();
+
+            if (data.error) {
+                appendMessage('agent', "Désolé, l'IA n'a pas pu traiter cela. Essayez de reformuler votre demande ?");
+            } else {
+                CURRENT_THREAD = data.thread_id;
+                appendMessage('agent', data.response);
+                loadThreads();
+            }
         }
     } catch (e) {
         hideTyping();

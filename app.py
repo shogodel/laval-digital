@@ -68,7 +68,8 @@ warnings.filterwarnings("ignore", module="langgraph")
 warnings.filterwarnings("ignore", module="langchain")
 
 from flask import (Flask, render_template, jsonify, request,
-                   redirect, url_for, session, flash, g)
+                   redirect, url_for, session, flash, g,
+                   Response, stream_with_context)
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -2705,50 +2706,54 @@ def agent_chat(agent_id):
 
     # Build the full task with context
     full_task = f"{conversation_context}Current request: {message}" if conversation_context else message
+    stream = data.get("stream", False)
 
-    try:
-        # Use the agent's LLM to generate a response
-        result = agent._invoke_llm(full_task)
-
-        draft = result.get("draft_output", "")
-
-        # Store the conversation turn in the tenant database
+    def _store_draft(draft_text: str) -> None:
         if tenant_id:
             try:
                 uid = _safe_int(tenant_id)
                 conn = database._get_conn()
-                cursor = conn.cursor()
-                cursor.execute(
+                conn.execute(
                     """INSERT INTO threads
                        (thread_id, routed_agent, agent_task, agent_draft, status, created_at, updated_at, user_id)
                        VALUES (?, ?, ?, ?, 'chat', ?, ?, ?)""",
-                    (thread_id, agent_id, message, draft, now_iso, now_iso, uid)
+                    (thread_id, agent_id, message, draft_text, now_iso, now_iso, uid),
                 )
                 conn.commit()
-            except Exception as e:
-                logger.debug("Silent exception in %s: %s", __name__, e)
-
-        # Update agent activity
-        if tenant_id:
-            try:
                 update_tenant_agent_activity(
-                    tenant_id,
-                    agent_id,
-                    status="idle",
-                    last_invoked=now_iso,
-                    last_draft_preview=(draft[:120] + "...") if len(draft) > 120 else draft,
+                    tenant_id, agent_id,
+                    status="idle", last_invoked=now_iso,
+                    last_draft_preview=(draft_text[:120] + "...") if len(draft_text) > 120 else draft_text,
                 )
             except Exception as e:
                 logger.debug("Silent exception in %s: %s", __name__, e)
 
-        return api_success({
-            "agent_id": agent_id,
-            "response": draft,
-            "thread_id": thread_id,
-            "language": language,
-            "thinking": f"Agent '{agent_id}' processed your request using model '{agent.model}'. The agent applied its specialized system prompt to generate this response.",
-            "model": agent.model,
-        })
+    try:
+        if stream:
+            def generate():
+                collected: list[str] = []
+                for item in agent._stream_llm(full_task):
+                    if isinstance(item, str):
+                        collected.append(item)
+                        yield f"data: {json.dumps({'type': 'token', 'content': item})}\n\n"
+                    else:
+                        draft = item.get("draft_output", "")
+                        thinking = f"Agent '{agent_id}' processed your request using model '{agent.model}'."
+                        _store_draft(draft)
+                        yield f"data: {json.dumps({'type': 'done', 'response': draft, 'thread_id': thread_id, 'language': language, 'thinking': thinking, 'model': agent.model})}\n\n"
+            return Response(stream_with_context(generate()), mimetype='text/event-stream')
+        else:
+            result = agent._invoke_llm(full_task)
+            draft = result.get("draft_output", "")
+            _store_draft(draft)
+            return api_success({
+                "agent_id": agent_id,
+                "response": draft,
+                "thread_id": thread_id,
+                "language": language,
+                "thinking": f"Agent '{agent_id}' processed your request using model '{agent.model}'. The agent applied its specialized system prompt to generate this response.",
+                "model": agent.model,
+            })
     except Exception as e:
         logger.error("Agent chat failed for %s: %s", agent_id, e)
         return _safe_error(e, 500)

@@ -136,8 +136,7 @@ class BaseAgent(ABC):
         )]
         return "\n".join(cleaned).strip()
 
-    def _invoke_llm(self, task: str) -> Dict[str, Any]:
-        adapter = self._get_llm_adapter()
+    def _build_system_content(self, task: str) -> str:
         language_instruction = self._get_language_instruction(task)
         confidence_instruction = (
             "When you finish your response, end with two lines:\n"
@@ -146,11 +145,15 @@ class BaseAgent(ABC):
             "The confidence score represents how sure you are that this "
             "output is correct, complete, and ready to execute."
         )
-        system_content = (
+        return (
             f"{self._system_prompt}\n\n"
             f"{language_instruction}\n\n"
             f"{confidence_instruction}"
         )
+
+    def _invoke_llm(self, task: str) -> Dict[str, Any]:
+        adapter = self._get_llm_adapter()
+        system_content = self._build_system_content(task)
 
         from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
         def _invoke():
@@ -163,6 +166,28 @@ class BaseAgent(ABC):
         except FuturesTimeout:
             raise RuntimeError("LLM invocation timed out after 120 seconds")
         return {
+            "draft_output": self._strip_confidence_metadata(raw),
+            "language": self._detect_language(task),
+            "confidence": self._parse_confidence(raw),
+        }
+
+    def _stream_llm(self, task: str):
+        """Stream LLM response tokens, yielding each chunk as it arrives.
+
+        After the final token, yields a sentinel dict with the full result:
+        ``{"type": "result", "draft_output": ..., "language": ..., "confidence": ...}``
+        """
+        adapter = self._get_llm_adapter()
+        system_content = self._build_system_content(task)
+        collected: list[str] = []
+
+        for token in adapter.stream(system_content, task):
+            collected.append(token)
+            yield token
+
+        raw = "".join(collected)
+        yield {
+            "type": "result",
             "draft_output": self._strip_confidence_metadata(raw),
             "language": self._detect_language(task),
             "confidence": self._parse_confidence(raw),
