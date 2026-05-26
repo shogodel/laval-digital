@@ -1912,7 +1912,8 @@ def api_managed_upgrade():
         return api_success({"message": "Upgraded to Managed Services"})
     except Exception as e:
         logger.error("Failed to upgrade %s: %s", tenant_id, e)
-        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
+        logger.error("Internal error: %s", e, exc_info=True)
+        return api_error("An internal error occurred.", 500)
 
 @main_bp.route("/api/managed/cancel", methods=["POST"])
 @client_required
@@ -1943,7 +1944,8 @@ def api_managed_cancel():
         return api_success({"message": "Cancellation requested"})
     except Exception as e:
         logger.error("Failed to cancel managed for %s: %s", tenant_id, e)
-        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
+        logger.error("Internal error: %s", e, exc_info=True)
+        return api_error("An internal error occurred.", 500)
 
 @main_bp.route("/api/managed/clients")
 @admin_required
@@ -2052,7 +2054,8 @@ def api_managed_pause():
         logger.info("Admin paused Managed Services for %s", tenant_id)
         return api_success({"message": "Managed services paused"})
     except Exception as e:
-        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
+        logger.error("Internal error: %s", e, exc_info=True)
+        return api_error("An internal error occurred.", 500)
 
 @main_bp.route("/api/managed/resume", methods=["POST"])
 @admin_required
@@ -2073,7 +2076,8 @@ def api_managed_resume():
         logger.info("Admin resumed Managed Services for %s", tenant_id)
         return api_success({"message": "Managed services resumed"})
     except Exception as e:
-        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
+        logger.error("Internal error: %s", e, exc_info=True)
+        return api_error("An internal error occurred.", 500)
 
 @main_bp.route("/api/managed/bulk-approve", methods=["POST"])
 @admin_required
@@ -2129,7 +2133,8 @@ def api_managed_bulk_approve():
         })
     except Exception as e:
         logger.error("Bulk approve failed for %s: %s", tenant_id, e)
-        logger.error("Internal error: %s", e, exc_info=True); return api_error("An internal error occurred.", 500)
+        logger.error("Internal error: %s", e, exc_info=True)
+        return api_error("An internal error occurred.", 500)
 
 @main_bp.route("/api/managed/mrr")
 @admin_required

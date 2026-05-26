@@ -61,7 +61,7 @@ def count_tokens(text: str, model: str = DEFAULT_MODEL) -> int:
     if enc:
         try:
             return len(enc.encode(text))
-        except Exception:
+        except (KeyError, TypeError):
             pass
     return max(1, len(text) // 4)
 

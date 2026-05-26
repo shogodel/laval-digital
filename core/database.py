@@ -294,121 +294,76 @@ def init_db() -> None:
     """)
 
     conn.commit()
+    _run_migrations(conn)
+    _seed_default_agents(conn)
 
-    # ── Migration: add trial columns to users (idempotent) ──────────
-    # The column comes from a hardcoded tuple — no user input
-    for col in ("status", "trial_ends_at", "stripe_customer_id"):
-        try:
-            conn.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT")
-        except sqlite3.OperationalError:
-            pass  # column already exists
+
+def _get_schema_version(conn: sqlite3.Connection) -> int:
+    row = conn.execute("SELECT MAX(version) as v FROM schema_version").fetchone()
+    return row["v"] if row and row["v"] else 0
+
+
+def _set_schema_version(conn: sqlite3.Connection, version: int) -> None:
     conn.execute(
-        "UPDATE users SET status = 'active' WHERE status IS NULL"
+        "INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES (?, ?)",
+        (version, datetime.now(timezone.utc).isoformat()),
     )
-    conn.commit()
 
-    # ── Migration: add tenant_id to users for sub-user management ──
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN tenant_id INTEGER REFERENCES users(id)")
-    except sqlite3.OperationalError:
-        pass  # column already exists
-    conn.commit()
 
-    # ── Migration: make leads.user_id nullable (was NOT NULL, broke anonymous leads) ──
-    try:
-        conn.execute("ALTER TABLE leads RENAME TO leads_old")
-        conn.execute("""
-            CREATE TABLE leads (
-                id TEXT PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id),
-                name TEXT,
-                phone TEXT,
-                service TEXT,
-                urgency TEXT,
-                created_at TEXT,
-                status TEXT DEFAULT 'new'
-            )
-        """)
-        conn.execute("""
-            INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at, status)
-            SELECT id, user_id, name, phone, service, urgency, created_at, status FROM leads_old
-        """)
-        conn.execute("DROP TABLE leads_old")
+def _run_migrations(conn: sqlite3.Connection) -> None:
+    current = _get_schema_version(conn)
+
+    for version, sqls in MIGRATIONS:
+        if version <= current:
+            continue
+        for sql in sqls:
+            try:
+                conn.execute(sql)
+            except sqlite3.OperationalError:
+                pass  # column/table/index already exists (legacy catch-up)
+        _set_schema_version(conn, version)
         conn.commit()
-    except sqlite3.OperationalError:
-        conn.rollback()  # leads table may not exist yet or migration already applied
+        logger.info("Migration v%d applied", version)
 
-    # ── Migration: add login_attempts table for cross-worker rate limiting ──
-    conn.executescript("""
-        CREATE TABLE IF NOT EXISTS login_attempts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ip TEXT NOT NULL,
-            success INTEGER NOT NULL,
-            attempted_at TEXT NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time
-            ON login_attempts(ip, attempted_at);
-    """)
-    conn.commit()
 
-    # ── Migration: add managed service columns to client_details ──
-    # The column comes from a hardcoded tuple — no user input
-    for col_def in (
-        ("managed_service", "INTEGER DEFAULT 0"),
-        ("managed_since", "TEXT"),
-        ("site_url", "TEXT"),
-    ):
-        try:
-            conn.execute(f"ALTER TABLE client_details ADD COLUMN {col_def[0]} {col_def[1]}")
-        except sqlite3.OperationalError:
-            pass  # column already exists
-    conn.commit()
-
-    # ── Migration: remove dead tables (payments, deployments) ──
-    # The table names come from a hardcoded tuple — no user input
-    for table in ("deployments", "payments"):
-        try:
-            conn.execute(f"DROP TABLE IF EXISTS {table}")
-        except sqlite3.OperationalError:
-            pass
-    conn.commit()
-
-    # ── Migration: add LLM usage log table for rate limiting ──
-    conn.executescript("""
-        CREATE TABLE IF NOT EXISTS llm_usage_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL REFERENCES users(id),
-            timestamp TEXT NOT NULL,
-            model TEXT NOT NULL,
-            prompt_tokens INTEGER DEFAULT 0,
-            completion_tokens INTEGER DEFAULT 0,
-            total_tokens INTEGER DEFAULT 0,
-            cost REAL DEFAULT 0.0,
-            endpoint TEXT NOT NULL DEFAULT 'unknown',
-            agent_id TEXT,
-            thread_id TEXT
-        );
-        CREATE INDEX IF NOT EXISTS idx_llm_usage_user_time ON llm_usage_log(user_id, timestamp);
-        CREATE INDEX IF NOT EXISTS idx_llm_usage_user_month ON llm_usage_log(user_id, substr(timestamp,1,7));
-    """)
-    conn.commit()
-
-    conn.executescript("""
-        CREATE TABLE IF NOT EXISTS user_llm_quotas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL UNIQUE REFERENCES users(id),
-            requests_per_hour INTEGER DEFAULT 60,
-            requests_per_day INTEGER DEFAULT 500,
-            tokens_per_day INTEGER DEFAULT 1000000,
-            cost_per_day REAL DEFAULT 5.00,
-            cost_per_month REAL DEFAULT 100.00,
-            blocked INTEGER DEFAULT 0
-        );
-    """)
-    conn.commit()
-
-    # ── Migration: add indexes on frequently queried columns ──
-    indexes = [
+MIGRATIONS: list[tuple[int, list[str]]] = [
+    (1, [
+        "ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'",
+        "ALTER TABLE users ADD COLUMN trial_ends_at TEXT",
+        "ALTER TABLE users ADD COLUMN stripe_customer_id TEXT",
+        "UPDATE users SET status = 'active' WHERE status IS NULL",
+    ]),
+    (2, [
+        "ALTER TABLE users ADD COLUMN tenant_id INTEGER REFERENCES users(id)",
+    ]),
+    (3, [
+        "ALTER TABLE leads RENAME TO leads_old",
+        "CREATE TABLE IF NOT EXISTS leads (id TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id), name TEXT, phone TEXT, service TEXT, urgency TEXT, created_at TEXT, status TEXT DEFAULT 'new')",
+        "INSERT OR IGNORE INTO leads (id, user_id, name, phone, service, urgency, created_at, status) SELECT id, user_id, name, phone, service, urgency, created_at, status FROM leads_old",
+        "DROP TABLE IF EXISTS leads_old",
+    ]),
+    (4, [
+        "CREATE TABLE IF NOT EXISTS login_attempts (id INTEGER PRIMARY KEY AUTOINCREMENT, ip TEXT NOT NULL, success INTEGER NOT NULL, attempted_at TEXT NOT NULL)",
+        "CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts(ip, attempted_at)",
+    ]),
+    (5, [
+        "ALTER TABLE client_details ADD COLUMN managed_service INTEGER DEFAULT 0",
+        "ALTER TABLE client_details ADD COLUMN managed_since TEXT",
+        "ALTER TABLE client_details ADD COLUMN site_url TEXT",
+    ]),
+    (6, [
+        "DROP TABLE IF EXISTS deployments",
+        "DROP TABLE IF EXISTS payments",
+    ]),
+    (7, [
+        "CREATE TABLE IF NOT EXISTS llm_usage_log (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(id), timestamp TEXT NOT NULL, model TEXT NOT NULL, prompt_tokens INTEGER DEFAULT 0, completion_tokens INTEGER DEFAULT 0, total_tokens INTEGER DEFAULT 0, cost REAL DEFAULT 0.0, endpoint TEXT NOT NULL DEFAULT 'unknown', agent_id TEXT, thread_id TEXT)",
+        "CREATE INDEX IF NOT EXISTS idx_llm_usage_user_time ON llm_usage_log(user_id, timestamp)",
+        "CREATE INDEX IF NOT EXISTS idx_llm_usage_user_month ON llm_usage_log(user_id, substr(timestamp,1,7))",
+    ]),
+    (8, [
+        "CREATE TABLE IF NOT EXISTS user_llm_quotas (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL UNIQUE REFERENCES users(id), requests_per_hour INTEGER DEFAULT 60, requests_per_day INTEGER DEFAULT 500, tokens_per_day INTEGER DEFAULT 1000000, cost_per_day REAL DEFAULT 5.00, cost_per_month REAL DEFAULT 100.00, blocked INTEGER DEFAULT 0)",
+    ]),
+    (9, [
         "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
         "CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)",
         "CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id)",
@@ -426,16 +381,8 @@ def init_db() -> None:
         "CREATE INDEX IF NOT EXISTS idx_agent_schedules_user ON agent_schedules(user_id)",
         "CREATE INDEX IF NOT EXISTS idx_agent_feedback_user ON agent_feedback(user_id)",
         "CREATE INDEX IF NOT EXISTS idx_agent_findings_user ON agent_findings(user_id)",
-    ]
-    for idx_sql in indexes:
-        try:
-            conn.execute(idx_sql)
-        except sqlite3.OperationalError:
-            pass  # index already exists
-    conn.commit()
-
-    # Seed default agent configs for all existing users
-    _seed_default_agents(conn)
+    ]),
+]
 
 
 def _seed_default_agents(conn: sqlite3.Connection) -> None:
