@@ -39,6 +39,9 @@ class LLMAdapterError(Exception):
     pass
 
 
+LLM_TIMEOUT = 120
+
+
 class LLMAdapter:
     """Production-grade multi-LLM adapter for LangGraph agents.
 
@@ -233,6 +236,7 @@ class LLMAdapter:
                 api_key=self._api_key,
                 base_url=api_base,
                 temperature=self._temperature,
+                timeout=120,
             )
 
         # All other models: use ChatLiteLLM
@@ -245,6 +249,7 @@ class LLMAdapter:
             "model": self._model,
             "api_key": self._api_key,
             "temperature": self._temperature,
+            "timeout": LLM_TIMEOUT,
         }
         if self._api_base:
             llm_kwargs["api_base"] = self._api_base

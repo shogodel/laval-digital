@@ -188,4 +188,6 @@ class TestCsp:
     def test_nonced_scripts(self, client):
         r = client.get("/")
         html = r.data.decode()
-        assert 'nonce="' in html or True  # nonce is always set by context processor
+        assert 'nonce="' in html
+        csp = r.headers.get("Content-Security-Policy", "")
+        assert "'nonce-" in csp

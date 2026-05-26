@@ -291,24 +291,23 @@ class Orchestrator:
         if not self._last_execution:
             return None
         last = self._last_execution
-        if last.get("tool") in ("publish_blog_post", "save_content_calendar", "save_technical_seo_report", "save_report"):
-            path = last.get("file_path", "")
-            if path:
-                import os as _os
-                resolved = _os.path.realpath(path)
-                allowed = _os.path.realpath(Path(__file__).parent.parent / "content")
-                if not resolved.startswith(allowed + "/"):
-                    logger.warning("Undo blocked path traversal attempt: %s", path)
-                    return {"success": False, "action": "blocked_path"}
-                try:
-                    _os.remove(resolved)
-                    logger.info("Undo: deleted %s", resolved)
-                    return {"success": True, "action": "deleted", "file": resolved}
-                except FileNotFoundError:
-                    return {"success": False, "action": "file_not_found"}
-                except OSError as e:
-                    logger.warning("Undo delete failed: %s", e)
-                    return {"success": False, "action": "delete_error"}
+        path = last.get("file_path", "")
+        if path:
+            import os as _os
+            resolved = _os.path.realpath(path)
+            allowed = _os.path.realpath(Path(__file__).parent.parent / "content")
+            if not resolved.startswith(allowed + "/"):
+                logger.warning("Undo blocked path traversal attempt: %s", path)
+                return {"success": False, "action": "blocked_path"}
+            try:
+                _os.remove(resolved)
+                logger.info("Undo: deleted %s", resolved)
+                return {"success": True, "action": "deleted", "file": resolved}
+            except FileNotFoundError:
+                return {"success": False, "action": "file_not_found"}
+            except OSError as e:
+                logger.warning("Undo delete failed: %s", e)
+                return {"success": False, "action": "delete_error"}
         return {"success": False, "action": "no_undo_available"}
 
     def _record_feedback(self, user_id: int, agent_id: str, draft: str, approved: bool) -> None:
@@ -425,15 +424,12 @@ class Orchestrator:
         if language is None:
             language = self._detect_language(user_message)
 
-        if message_lower in (
-            "approve", "approved", "yes", "execute", "run it", "go ahead", "confirm",
-            "approuvé", "approuve", "oui", "exécute", "exécuter", "confirmer",
-        ):
+        approve_words = {"approve", "approved", "yes", "execute", "run it", "go ahead", "confirm", "approuvé", "approuve", "oui", "exécute", "exécuter", "confirmer"}
+        reject_words = {"reject", "rejected", "no", "discard", "cancel", "stop", "non", "rejeté", "rejeter", "annuler", "supprimer"}
+        message_words = set(message_lower.split())
+        if message_words & approve_words:
             return self._handle_approval(thread_id, approved=True, user_id=user_id)
-        elif message_lower in (
-            "reject", "rejected", "no", "discard", "cancel", "stop",
-            "non", "rejeté", "rejeter", "annuler", "supprimer",
-        ):
+        elif message_words & reject_words:
             return self._handle_approval(thread_id, approved=False, user_id=user_id)
 
         return self._route_and_respond(user_message, thread_id, language, autonomy_config, user_id, source, conversation_history)
@@ -516,16 +512,15 @@ class Orchestrator:
 
             # ------ AUTONOMY POLICY GATE ------
             exec_decision = None  # None = pending, True = approved, False = rejected
+            min_auto_confidence = threshold * 0.5  # floor for auto/silent modes
 
-            if autonomy_level == "auto":
-                exec_decision = True
-            elif autonomy_level == "silent":
+            if autonomy_level in ("auto", "silent") and confidence >= min_auto_confidence:
                 exec_decision = True
             elif autonomy_level == "suggest" and confidence >= threshold:
                 exec_decision = True
             elif autonomy_level == "suggest" and confidence < threshold:
                 exec_decision = None  # needs human
-            # manual: stays None (needs human)
+            # manual or low-confidence auto/silent: stays None (needs human)
 
             clean_draft = BaseAgent._strip_confidence_metadata(response)
 
@@ -561,7 +556,7 @@ class Orchestrator:
                 # Track last execution for undo
                 self._last_execution = {
                     "agent": agent_name,
-                    "tool": execution_result.get("tool", "") if execution_result else "",
+                    "tool": agent_name,
                     "file_path": execution_result.get("result", "") if execution_result else "",
                     "draft": clean_draft[:200],
                 }

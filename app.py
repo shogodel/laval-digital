@@ -226,6 +226,15 @@ _API_PUBLIC: set = {
     "/api/push/vapid-key",
     "/api/personalities",
     "/api/models",
+    # Routes that are public or have internal auth checks
+    "/api/signup",
+    "/api/leads",
+    "/api/orchestrator/welcome",
+    "/api/orchestrator/suggestions",
+    "/api/push/subscribe",
+    "/api/push/unsubscribe",
+    "/api/training/articles",
+    "/api/training/feedback",
 }
 
 # CSRF protection
@@ -284,6 +293,21 @@ def add_security_headers(response):
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRFToken, Authorization"
         response.headers["Vary"] = "Origin"
     return response
+
+
+@app.errorhandler(404)
+def not_found(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Not found"}), 404
+    return render_template("404.html"), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    logger.error("Internal server error: %s", e, exc_info=True)
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Internal server error"}), 500
+    return render_template("500.html"), 500
 
 
 @app.before_request

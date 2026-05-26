@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 — Page Not Found | Laval Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0f2b45; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
+        nav { padding: 20px 40px; }
+        nav .container { max-width: 1200px; margin: 0 auto; }
+        nav a { color: #fff; text-decoration: none; }
+        .error-page { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px; text-align: center; }
+        .error-page h1 { font-size: 120px; font-weight: 900; background: linear-gradient(135deg, #d42b2b, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1; }
+        .error-page p { font-size: 20px; color: #94a3b8; margin: 20px 0 30px; max-width: 500px; }
+        .error-page a { display: inline-block; padding: 14px 32px; background: #d42b2b; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; transition: background .2s; }
+        .error-page a:hover { background: #b82020; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="/">Laval Digital</a>
+        </div>
+    </nav>
+    <div class="error-page">
+        <div>
+            <h1>404</h1>
+            <p>This page doesn't exist. It may have moved or the link may be incorrect.</p>
+            <a href="/">Go Home</a>
+        </div>
+    </div>
+</body>
+</html>
