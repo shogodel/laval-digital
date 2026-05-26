@@ -820,6 +820,24 @@ class ExecutionerAgent:
             }
 
         try:
+            # SSRF prevention: block private IPs for SMTP host
+            try:
+                import socket as _socket
+                import ipaddress as _ipaddress
+                addrs = _socket.getaddrinfo(smtp_host, None)
+                for _, _, _, _, sockaddr in addrs:
+                    cip = sockaddr[0]
+                    if ":" not in cip:
+                        p = [int(x) for x in cip.split(".")]
+                        if p[0] in (127, 10, 0) or (p[0] == 169 and p[1] == 254) or (p[0] == 192 and p[1] == 168) or (p[0] == 172 and 16 <= p[1] <= 31) or (p[0] == 100 and 64 <= p[1] <= 127):
+                            return {"success": False, "result": "", "error": "SMTP host resolves to a private IP"}
+                    else:
+                        addr = _ipaddress.IPv6Address(cip)
+                        if addr.is_loopback or addr.is_link_local or addr.is_multicast or cip.startswith("fc") or cip.startswith("fd") or addr in _ipaddress.IPv6Network("2001:db8::/32"):
+                            return {"success": False, "result": "", "error": "SMTP host resolves to a private/reserved IPv6"}
+            except (_socket.gaierror, ValueError, _ipaddress.AddressValueError):
+                return {"success": False, "result": "", "error": "Could not resolve SMTP host"}
+
             # Strip Subject:/To: header lines from draft body to avoid duplication
             body_lines = draft.split("\n")
             while body_lines and body_lines[0].strip().lower().startswith(("subject:", "to:")):

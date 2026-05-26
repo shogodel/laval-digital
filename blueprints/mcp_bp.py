@@ -2,36 +2,16 @@
 import logging
 
 from datetime import datetime, timezone
-from flask import Blueprint, request, session
+from flask import Blueprint, request
 from mcp import get_all_mcp_servers, get_mcp_server, AGENT_MCP_ROUTING
 from core import database
 from core.api_helpers import api_success, api_error
 from core.auth import admin_required
-from core.app_state import get_credential_cipher, safe_error
+from core.app_state import get_credential_cipher, get_current_user_id, safe_error
 
 logger = logging.getLogger(__name__)
 
 mcp_bp = Blueprint("mcp", __name__, url_prefix="")
-
-
-def _get_current_user_id():
-    from flask import current_user
-    if current_user.is_authenticated:
-        return str(current_user.id)
-    if session.get("admin_logged_in"):
-        active = session.get("active_user_id")
-        if active:
-            logger.info("Admin acting on behalf of user %s", active)
-        return active
-    return None
-
-
-def _encrypt_credential(plaintext: str) -> str:
-    return get_credential_cipher().encrypt(plaintext.encode()).decode()
-
-
-def _decrypt_credential(ciphertext: str) -> str:
-    return get_credential_cipher().decrypt(ciphertext.encode()).decode()
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +70,7 @@ def get_mcp_credentials():
     auth_check = admin_required()
     if auth_check:
         return auth_check
-    tenant_id = _get_current_user_id()
+    tenant_id = get_current_user_id()
     if not tenant_id:
         return api_error("No tenant selected", 400, data={"credentials": {}})
 
@@ -99,10 +79,11 @@ def get_mcp_credentials():
         cursor = conn.cursor()
         cursor.execute("SELECT server_name, platform, credential_key, credential_value FROM mcp_credentials WHERE user_id = ?", (int(tenant_id),))
         creds = {}
+        cipher = get_credential_cipher()
         for row in cursor.fetchall():
             key = f"{row['server_name']}.{row['platform']}.{row['credential_key']}"
             try:
-                creds[key] = _decrypt_credential(row["credential_value"])
+                creds[key] = cipher.decrypt(row["credential_value"].encode()).decode()
             except Exception:
                 creds[key] = row["credential_value"]
         return api_success({"credentials": creds})
@@ -115,7 +96,7 @@ def save_mcp_credentials():
     auth_check = admin_required()
     if auth_check:
         return auth_check
-    tenant_id = _get_current_user_id()
+    tenant_id = get_current_user_id()
     if not tenant_id:
         return api_error("No tenant selected", 400)
 
@@ -131,9 +112,10 @@ def save_mcp_credentials():
         conn = database._get_conn()
         cursor = conn.cursor()
         now = datetime.now(timezone.utc).isoformat()
+        cipher = get_credential_cipher()
 
         for key, value in credentials.items():
-            encrypted = _encrypt_credential(str(value))
+            encrypted = cipher.encrypt(str(value).encode()).decode()
             cursor.execute("""
                 INSERT OR REPLACE INTO mcp_credentials
                 (user_id, server_name, platform, credential_key, credential_value, created_at, updated_at)
@@ -151,7 +133,7 @@ def delete_mcp_credentials(server_name):
     auth_check = admin_required()
     if auth_check:
         return auth_check
-    tenant_id = _get_current_user_id()
+    tenant_id = get_current_user_id()
     if not tenant_id:
         return api_error("No tenant selected", 400)
 

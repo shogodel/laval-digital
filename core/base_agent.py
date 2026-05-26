@@ -162,12 +162,14 @@ class BaseAgent(ABC):
                                   endpoint="agent_invoke",
                                   agent_id=self._agent_id)
 
+        executor = ThreadPoolExecutor(max_workers=1)
         try:
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(_invoke)
-                raw = future.result(timeout=120)
+            future = executor.submit(_invoke)
+            raw = future.result(timeout=120)
         except FuturesTimeout:
             raise RuntimeError("LLM invocation timed out after 120 seconds")
+        finally:
+            executor.shutdown(wait=False)
         return {
             "draft_output": self._strip_confidence_metadata(raw),
             "language": self._detect_language(task),

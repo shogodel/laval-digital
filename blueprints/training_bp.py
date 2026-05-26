@@ -1,9 +1,9 @@
 """Training hub blueprint — articles, search, and feedback."""
 import json
-import re
 from flask import Blueprint, render_template, redirect, url_for, request, session
 import logging
 
+import bleach
 from core.api_helpers import api_success, api_error
 from core.training_articles import ARTICLES as TRAINING_ARTICLES
 
@@ -28,7 +28,17 @@ def training_article(slug):
         return redirect(url_for("training.training_hub"))
 
     content_html = article.get("content_html", "")
-    content_html = re.sub(r'<script[^>]*>.*?</script>', '', content_html, flags=re.DOTALL)
+    content_html = bleach.clean(
+        content_html,
+        tags={"p", "br", "strong", "em", "u", "h1", "h2", "h3", "h4", "h5", "h6",
+              "ul", "ol", "li", "a", "code", "pre", "blockquote", "img", "hr",
+              "table", "thead", "tbody", "tr", "th", "td", "span", "div"},
+        attributes={"a": ("href", "title", "rel"), "img": ("src", "alt", "title", "width", "height"),
+                    "td": ("colspan", "rowspan"), "th": ("colspan", "rowspan"),
+                    "*": ("class", "id")},
+        protocols={"https", "http", "mailto"},
+        strip=True,
+    )
     article = {**article, "content_html": content_html}
 
     related = [
