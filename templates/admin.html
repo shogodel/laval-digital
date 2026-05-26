@@ -604,6 +604,25 @@
             </div>
         </div>
         <div class="card">
+            <div class="card-header"><h2>Logo</h2><p>Upload your company logo (PNG or SVG)</p></div>
+            {% if logo_uploaded == "success" %}
+            <p style="color:var(--green);font-weight:600;margin-bottom:10px;">✓ Logo uploaded successfully!</p>
+            {% elif logo_uploaded == "invalid" %}
+            <p style="color:var(--red);font-weight:600;margin-bottom:10px;">✗ Invalid file. Please upload a PNG or SVG.</p>
+            {% endif %}
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+                <div style="background:var(--gray-100);padding:10px 16px;border-radius:8px;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:0.85rem;color:var(--gray-500);">Current:</span>
+                    <img src="{{ url_for('static', filename=logo_file) }}" alt="Logo" height="48">
+                </div>
+            </div>
+            <form method="POST" action="{{ url_for('admin.logo') }}" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="file" name="logo" accept=".png,.svg" required style="width:auto;flex:1;min-width:200px;">
+                <button type="submit" class="btn btn-red" style="white-space:nowrap;">Upload</button>
+            </form>
+        </div>
+        <div class="card">
             <div class="card-header"><h2>Execution Settings</h2><p>SMTP credentials and social API key</p></div>
             <div class="settings-grid">
                 <div>
