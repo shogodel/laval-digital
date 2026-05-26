@@ -1,89 +1,125 @@
-"""Shared application state — lazily imported to break circular imports.
+"""Shared application state — populated by app.py at boot time.
 
-All getters import from ``app`` at call time (when routes are actually
-handled), by which point ``app.py`` is fully initialized.
+All getters reference module-level variables set once during startup,
+avoiding fragile call-time importlib.import_module() patterns.
 """
 
 from typing import Any, Dict, Optional
-from threading import Lock
+
+# Module-level state — set by app.py at boot time
+_agent_registry: dict = None
+_llm_adapter = None
+_orchestrator_fn = None  # factory function (lazy-built singleton)
+_executioner = None
+_push_manager = None
+_agent_memory = None
+_speech_engine = None
+_affiliate_manager = None
+_scheduler_manager = None
+_agent_meta: Dict[str, Dict[str, str]] = None
+_agent_configs: dict = None
+_agent_personalities: dict = None
+_email_bridge = None
+_credential_cipher = None
+_current_user_id_fn = None
+_safe_int_fn = None
+_safe_error_fn = None
+_update_agent_activity_fn = None
 
 
-def _get_app_attr(name: str):
-    import importlib
-    return getattr(importlib.import_module("app"), name)
+def _require(name: str, value: Any):
+    if value is None:
+        raise RuntimeError(f"app_state.{name} accessed before boot — app.py must populate it first")
+    return value
 
 
-# ── Agent / LLM state ─────────────────────────────────────────────────────
+def init_agent_registry(v: dict): global _agent_registry; _agent_registry = v
+def init_llm_adapter(v): global _llm_adapter; _llm_adapter = v
+def init_orchestrator_fn(v): global _orchestrator_fn; _orchestrator_fn = v
+def init_executioner(v): global _executioner; _executioner = v
+def init_push_manager(v): global _push_manager; _push_manager = v
+def init_agent_memory(v): global _agent_memory; _agent_memory = v
+def init_speech_engine(v): global _speech_engine; _speech_engine = v
+def init_affiliate_manager(v): global _affiliate_manager; _affiliate_manager = v
+def init_scheduler_manager(v): global _scheduler_manager; _scheduler_manager = v
+def init_agent_meta(v): global _agent_meta; _agent_meta = v
+def init_agent_configs(v): global _agent_configs; _agent_configs = v
+def init_agent_personalities(v): global _agent_personalities; _agent_personalities = v
+def init_email_bridge(v): global _email_bridge; _email_bridge = v
+def init_credential_cipher(v): global _credential_cipher; _credential_cipher = v
+def init_current_user_id_fn(v): global _current_user_id_fn; _current_user_id_fn = v
+def init_safe_int_fn(v): global _safe_int_fn; _safe_int_fn = v
+def init_safe_error_fn(v): global _safe_error_fn; _safe_error_fn = v
+def init_update_agent_activity_fn(v): global _update_agent_activity_fn; _update_agent_activity_fn = v
+
 
 def get_agent_registry() -> dict:
-    return _get_app_attr("agent_registry")
+    return _require("agent_registry", _agent_registry)
 
 
 def get_llm_adapter():
-    return _get_app_attr("llm_adapter")
+    return _require("llm_adapter", _llm_adapter)
 
 
 def get_orchestrator():
-    return _get_app_attr("get_orchestrator")()
+    return _require("orchestrator_fn", _orchestrator_fn)()
 
 
 def get_executioner():
-    return _get_app_attr("executioner")
+    return _require("executioner", _executioner)
 
 
 def get_push_manager():
-    return _get_app_attr("push_manager")
+    return _require("push_manager", _push_manager)
 
 
 def get_agent_memory():
-    return _get_app_attr("agent_memory")
+    return _require("agent_memory", _agent_memory)
 
 
 def get_speech_engine():
-    return _get_app_attr("speech_engine")
+    return _require("speech_engine", _speech_engine)
 
 
 def get_affiliate_manager():
-    return _get_app_attr("affiliate_manager")
+    return _require("affiliate_manager", _affiliate_manager)
 
 
 def get_scheduler_manager():
-    return _get_app_attr("scheduler_manager")
+    return _require("scheduler_manager", _scheduler_manager)
 
 
 def get_agent_meta() -> Dict[str, Dict[str, str]]:
-    return _get_app_attr("AGENT_META")
+    return _require("agent_meta", _agent_meta)
 
 
 def get_agent_configs() -> dict:
-    return _get_app_attr("AGENT_CONFIGS")
+    return _require("agent_configs", _agent_configs)
 
 
 def get_agent_personalities() -> dict:
-    return _get_app_attr("AGENT_PERSONALITIES")
+    return _require("agent_personalities", _agent_personalities)
 
 
 def get_email_bridge():
-    return _get_app_attr("email_bridge")
+    return _require("email_bridge", _email_bridge)
 
 
 def get_credential_cipher():
-    return _get_app_attr("_credential_cipher")
+    return _require("credential_cipher", _credential_cipher)
 
-
-# ── Helper functions ───────────────────────────────────────────────────────
 
 def get_current_user_id() -> Optional[str]:
-    return _get_app_attr("get_current_user_id")()
+    return _require("current_user_id_fn", _current_user_id_fn)()
 
 
 def safe_int(val, default=0) -> int:
-    return _get_app_attr("_safe_int")(val, default)
+    return _require("safe_int_fn", _safe_int_fn)(val, default)
 
 
 def safe_error(e: Exception, status: int = 500):
-    return _get_app_attr("_safe_error")(e, status)
+    return _require("safe_error_fn", _safe_error_fn)(e, status)
 
 
 def update_agent_activity(user_id: str, agent_id: str, **kwargs) -> None:
-    return _get_app_attr("update_tenant_agent_activity")(user_id, agent_id, **kwargs)
+    return _require("update_agent_activity_fn", _update_agent_activity_fn)(user_id, agent_id, **kwargs)

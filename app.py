@@ -1073,47 +1073,33 @@ _main_bp_mod.update_tenant_agent_activity = update_tenant_agent_activity
 _main_bp_mod.get_tenant_agent_activity = get_tenant_agent_activity
 
 
+# ── Inject globals into core.app_state ──────────────────────────────────
+# Replaces the fragile call-time importlib.import_module("app") pattern.
+import core.app_state as _app_state
+_app_state.init_agent_registry(agent_registry)
+_app_state.init_llm_adapter(llm_adapter)
+_app_state.init_orchestrator_fn(get_orchestrator)
+_app_state.init_executioner(executioner)
+_app_state.init_push_manager(push_manager)
+_app_state.init_agent_memory(agent_memory)
+_app_state.init_speech_engine(speech_engine)
+_app_state.init_affiliate_manager(affiliate_manager)
+_app_state.init_scheduler_manager(scheduler_manager)
+_app_state.init_agent_meta(AGENT_META)
+_app_state.init_agent_configs(AGENT_CONFIGS)
+_app_state.init_credential_cipher(_credential_cipher)
+_app_state.init_current_user_id_fn(get_current_user_id)
+_app_state.init_safe_int_fn(_safe_int)
+_app_state.init_safe_error_fn(_safe_error)
+_app_state.init_update_agent_activity_fn(update_tenant_agent_activity)
+
+
 # ── Analytics ───────────────────────────────────────────────────────────
 
 from core.analytics import AnalyticsEngine
 
 
 # ── Entry point ─────────────────────────────────────────────────────────
-# API: approvals
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# API: agent direct invoke
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-# API: tenant management (admin only)
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-# Analytics routes
-# ---------------------------------------------------------------------------
-
-from core.analytics import AnalyticsEngine
-
-
-# In-memory report history store (survives within a process lifetime)
-
-
-# ---------------------------------------------------------------------------
-# Managed Services routes
-# ---------------------------------------------------------------------------
-
-
-# Training Hub routes — moved to blueprints/training_bp.py
-
-
-
-
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)
