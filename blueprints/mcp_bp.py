@@ -84,7 +84,7 @@ def get_mcp_credentials():
             key = f"{row['server_name']}.{row['platform']}.{row['credential_key']}"
             try:
                 creds[key] = cipher.decrypt(row["credential_value"].encode()).decode()
-            except Exception:
+            except (ValueError, TypeError):
                 creds[key] = row["credential_value"]
         return api_success({"credentials": creds})
     except Exception as e:

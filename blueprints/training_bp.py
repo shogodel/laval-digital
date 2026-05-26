@@ -1,6 +1,7 @@
 """Training hub blueprint — articles, search, and feedback."""
 import json
 from flask import Blueprint, render_template, redirect, url_for, request, session
+from flask_login import current_user
 import logging
 
 import bleach
@@ -62,7 +63,7 @@ def api_training_articles():
 @training_bp.route("/api/training/feedback", methods=["POST"])
 def api_training_feedback():
     """Log training article feedback."""
-    if not session.get("admin_logged_in") and not session.get("_user_id"):
+    if not (current_user.is_authenticated and current_user.role == "admin") and not session.get("_user_id"):
         return api_error("Unauthorized", 401)
     data = request.json
     slug = data.get("slug", "")

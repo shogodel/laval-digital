@@ -401,9 +401,9 @@ def handle_leads():
         )
         conn.commit()
         return api_success({"lead": {"id": lead_id, "name": name, "phone": phone}}, status_code=201)
-    if current_user.is_anonymous and not session.get("admin_logged_in"):
+    if current_user.is_anonymous:
         return api_error("Authentication required", 401)
-    if session.get("admin_logged_in"):
+    if current_user.is_authenticated and current_user.role == "admin":
         tenant_id = session.get("active_user_id")
         if tenant_id:
             rows = conn.execute("SELECT * FROM leads WHERE user_id = ? ORDER BY created_at DESC LIMIT 100", (_safe_int(tenant_id),)).fetchall()
@@ -521,6 +521,7 @@ def get_available_models():
         models = LLMAdapter.get_available_models()
         return api_success({"models": models})
     except Exception:
+        logger.warning("Failed to fetch models from LLM provider, using fallback list", exc_info=True)
         return api_success({
             "models": ["deepseek-chat", "gpt-4o", "claude-3.5-sonnet"]
         })
@@ -613,6 +614,7 @@ def get_speech_voices():
             voices = [{"id": v["voice_id"], "name": v["name"]} for v in resp.json().get("voices", [])]
             return api_success({"voices": voices})
         except Exception:
+            logger.warning("Failed to fetch ElevenLabs voices", exc_info=True)
             return api_success({"voices": []})
     return api_success({"voices": []})
 
@@ -857,6 +859,7 @@ def api_frankie_inspect():
         conn = database._get_conn()
         row = conn.execute("SELECT site_url, business_name, city, niche FROM client_details WHERE user_id = ? LIMIT 1", (_safe_int(user_id),)).fetchone()
     except Exception:
+        logger.warning("Failed to query client_details for suggestions", exc_info=True)
         row = None
     if not row or not row.get("site_url"):
         return api_success({"suggestions": [], "site": None})
@@ -1126,7 +1129,7 @@ def api_skip_action(action_id):
 @main_bp.route("/api/actions/bridge/email", methods=["POST"])
 def api_set_email_bridge():
     """Configure the email bridge for the current user."""
-    if not current_user.is_authenticated and not session.get("admin_logged_in"):
+    if not current_user.is_authenticated:
         return api_error("Unauthorized", 401)
     data = request.json
     if not data:
@@ -1545,7 +1548,7 @@ def get_agent_thread_history(agent_id, thread_id):
 @main_bp.route("/api/threads")
 def api_list_threads():
     """List chat threads for the current tenant, optionally filtered by agent."""
-    if session.get("admin_logged_in"):
+    if current_user.is_authenticated and current_user.role == "admin":
         tenant_id = session.get("active_user_id")
     else:
         tenant_id = getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
@@ -1581,7 +1584,7 @@ def api_list_threads():
 @main_bp.route("/api/threads/<thread_id>/messages")
 def api_get_thread_messages(thread_id):
     """Get all messages in a chat thread."""
-    if session.get("admin_logged_in"):
+    if current_user.is_authenticated and current_user.role == "admin":
         tenant_id = session.get("active_user_id")
     else:
         tenant_id = getattr(current_user, "tenant_id", None) if not current_user.is_anonymous else None
@@ -1638,7 +1641,7 @@ def switch_tenant():
 @main_bp.route("/api/analytics/summary")
 def api_analytics_summary():
     """Return summary analytics for a user or all users (admin)."""
-    if not session.get("admin_logged_in"):
+    if not (current_user.is_authenticated and current_user.role == "admin"):
         return api_error("Unauthorized", 401)
 
     user_id = request.args.get("client", "").strip()
@@ -1646,7 +1649,7 @@ def api_analytics_summary():
     end_date = datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
 
-    is_admin = session.get("admin_logged_in", False)
+    is_admin = current_user.is_authenticated and current_user.role == "admin"
     session_user = session.get("active_user_id") or getattr(current_user, "id", None)
 
     if user_id and is_admin:
@@ -2015,6 +2018,7 @@ def api_managed_clients():
                 pending_count = pending_row["cnt"] if pending_row else 0
                 total_pending += pending_count
             except Exception:
+                logger.warning("Failed to count pending approvals for tenant %s", tid, exc_info=True)
                 pending_count = 0
 
             clients.append({
@@ -2027,6 +2031,7 @@ def api_managed_clients():
                 "pending_approvals": pending_count,
             })
         except Exception:
+            logger.warning("Failed to process managed client %s, skipping", tid, exc_info=True)
             continue
 
     return api_success({
@@ -2150,6 +2155,7 @@ def api_managed_mrr():
             if row and row.get("managed_service"):
                 active_count += 1
         except Exception:
+            logger.warning("Failed to check managed service for tenant %s, skipping", tid, exc_info=True)
             continue
     total_mrr = active_count * MANAGED_MONTHLY_FEE
     return api_success({

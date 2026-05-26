@@ -262,6 +262,7 @@ def api_client_list_threads():
             ]
         })
     except Exception:
+        logger.error("Failed to load client threads", exc_info=True)
         return api_success({"threads": []})
 
 
@@ -284,4 +285,5 @@ def api_client_get_thread_messages(thread_id):
             messages.append({"role": "agent", "content": r["agent_draft"]})
         return api_success({"messages": messages})
     except Exception:
+        logger.error("Failed to load client thread messages", exc_info=True)
         return api_success({"messages": []})

@@ -137,6 +137,7 @@ class EmailBridge:
                 for part, charset in parts
             )
         except Exception:
+            logger.warning("Failed to decode email header", exc_info=True)
             return str(header_value)
 
     @staticmethod

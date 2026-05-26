@@ -76,6 +76,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 from core.api_helpers import api_success, api_error
+from core.auth import admin_required
 from core.blog_articles import ARTICLES_EN, ARTICLES_FR, ARTICLES_BY_SLUG_EN, ARTICLES_BY_SLUG_FR
 
 
@@ -317,7 +318,7 @@ def require_api_auth():
         return
     if request.path in _API_PUBLIC:
         return
-    if session.get("admin_logged_in"):
+    if current_user.is_authenticated and current_user.role == "admin":
         return
     if current_user.is_authenticated:
         return
@@ -436,35 +437,14 @@ def update_tenant_agent_activity(
         )
 
 
-def admin_required(f):
-    """Decorator that requires admin session authentication (returns 401 JSON)."""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get("admin_logged_in"):
-            return jsonify({"error": "Unauthorized"}), 401
-        return f(*args, **kwargs)
-    return decorated
-
-
-def admin_page_required(f):
-    """Decorator that requires admin session authentication (redirects to login)."""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get("admin_logged_in"):
-            return redirect(url_for("admin.login"))
-        return f(*args, **kwargs)
-    return decorated
-
-
-
 def get_current_user_id() -> Optional[str]:
-    if current_user.is_authenticated:
-        return str(current_user.id)
-    if session.get("admin_logged_in"):
+    if current_user.is_authenticated and current_user.role == "admin":
         active = session.get("active_user_id")
         if active:
             logger.info("Admin acting on behalf of user %s", active)
         return active
+    if current_user.is_authenticated:
+        return str(current_user.id)
     return None
 
 
@@ -513,9 +493,8 @@ def check_session_timeout():
                         return redirect(url_for("client.client_login"))
                     elif user_role == "affiliate":
                         return redirect(url_for("affiliate.affiliate_login"))
-                elif session.get("admin_logged_in"):
-                    session.pop("admin_logged_in", None)
-                    return redirect(url_for("admin.login"))
+                    elif user_role == "admin":
+                        return redirect(url_for("admin.login"))
         except Exception as e:
             logger.debug("Session timeout check failed: %s", e)
     session["last_active"] = datetime.now(timezone.utc).isoformat()

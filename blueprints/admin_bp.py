@@ -7,12 +7,13 @@ from functools import wraps
 from pathlib import Path
 from xml.etree import ElementTree as ET
 from flask import Blueprint, render_template, redirect, url_for, session, request, flash, current_app
+from flask_login import login_user, logout_user, current_user
 from werkzeug.security import check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
 
 from core import database
-from core.auth import admin_required, admin_page_required, _check_rate_limit, _record_attempt
+from core.auth import admin_required, admin_page_required, AdminUser, _check_rate_limit, _record_attempt
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 admin_fr_bp = Blueprint("admin_fr", __name__, url_prefix="/fr/admin")
@@ -33,7 +34,7 @@ def admin_page_required_fr(f):
     """Decorator that requires admin session authentication (redirects to French login)."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not session.get("admin_logged_in"):
+        if not (current_user.is_authenticated and current_user.role == "admin"):
             return redirect(url_for("admin_fr.login_fr"))
         return f(*args, **kwargs)
     return decorated
@@ -56,7 +57,7 @@ def login():
         expected_user = os.getenv("ADMIN_USERNAME")
         if hmac.compare_digest(username, expected_user) and check_password_hash(_get_admin_password_hash(), password):
             _record_attempt(True, "admin")
-            session["admin_logged_in"] = True
+            login_user(AdminUser("admin"))
             return redirect(url_for("admin.panel"))
         _record_attempt(False, "admin")
         return render_template(
@@ -68,7 +69,7 @@ def login():
 @admin_bp.route("/logout")
 def logout():
     """Log out and redirect to login."""
-    session.pop("admin_logged_in", None)
+    logout_user()
     return redirect(url_for("admin.login"))
 
 
@@ -202,7 +203,7 @@ def login_fr():
         expected_user = os.getenv("ADMIN_USERNAME")
         if hmac.compare_digest(username, expected_user) and check_password_hash(_get_admin_password_hash(), password):
             _record_attempt(True, "admin")
-            session["admin_logged_in"] = True
+            login_user(AdminUser("admin"))
             return redirect(url_for("admin_fr.panel_redirect_fr"))
         _record_attempt(False, "admin")
         return render_template(
@@ -216,7 +217,7 @@ def login_fr():
 @admin_fr_bp.route("/logout")
 def logout_fr():
     """Log out from French admin and redirect to login."""
-    session.pop("admin_logged_in", None)
+    logout_user()
     return redirect(url_for("admin_fr.login_fr"))
 
 
@@ -280,7 +281,7 @@ def _sanitize_svg(content: str) -> str:
 @admin_bp.route("/logo", methods=["POST"])
 def logo():
     """Upload a logo file (PNG or SVG) to static/."""
-    if not session.get("admin_logged_in"):
+    if not (current_user.is_authenticated and current_user.role == "admin"):
         return redirect(url_for("admin.login"))
     if "logo" not in request.files:
         return redirect(url_for("admin_fr.panel_redirect_fr", logo_uploaded="invalid"))

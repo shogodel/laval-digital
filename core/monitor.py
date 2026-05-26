@@ -84,7 +84,7 @@ class _Monitor:
                                 url="/admin/dashboard",
                             )
                         except Exception:
-                            logger.warning("Push notification failed")
+                            logger.warning("Push notification failed", exc_info=True)
                         self._last_alert["idle"] = now
                 except Exception as e:
                     logger.debug("Exception in %s: %s", __name__, e)
@@ -98,7 +98,7 @@ class _Monitor:
                     url="/admin/dashboard",
                 )
             except Exception:
-                logger.warning("Push notification failed")
+                logger.warning("Push notification failed", exc_info=True)
             self._last_alert["panic"] = now
 
     def _can_alert(self, key: str, now: float) -> bool:

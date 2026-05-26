@@ -119,6 +119,16 @@ def init_auth(app):
     return login_manager
 
 
+class AdminUser(UserMixin):
+    def __init__(self, user_id: str):
+        self.id = user_id
+        self.role = "admin"
+        self.display_name = "Admin"
+
+    def get_id(self) -> str:
+        return self.id
+
+
 # Rate limiting stored in SQLite — works across gunicorn workers
 
 def _check_rate_limit(prefix: str = "admin") -> bool:
@@ -211,6 +221,10 @@ def login_required(f):
 client_required = login_required
 
 
+def _is_admin() -> bool:
+    return current_user.is_authenticated and current_user.role == "admin"
+
+
 def admin_required(f=None):
     """Can be used as a decorator (``@admin_required``) or middleware (``admin_required()``).
 
@@ -218,7 +232,7 @@ def admin_required(f=None):
     As middleware, returns a 401 response tuple if not logged in, else None.
     """
     if f is None:
-        if not session.get("admin_logged_in"):
+        if not _is_admin():
             return jsonify({"error": "Unauthorized"}), 401
         return None
 
@@ -238,7 +252,7 @@ def admin_page_required(f=None):
     As middleware, returns a redirect response if not logged in, else None.
     """
     if f is None:
-        if not session.get("admin_logged_in"):
+        if not _is_admin():
             return redirect(url_for("admin.login"))
         return None
 
