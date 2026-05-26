@@ -496,6 +496,106 @@
                 </form>
             </div>
             <div class="card">
+                <div class="card-header"><h2>Plateformes Connectées</h2><p>Connectez vos comptes existants pour que Frankie puisse publier directement</p></div>
+                <p style="font-size:0.85rem;color:var(--gray-500);margin-bottom:16px;">Cliquez sur une plateforme ci-dessous pour la connecter. Frankie vous guidera à travers une configuration simple — aucune connaissance technique requise.</p>
+                <div id="platform-connections">
+                    <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <strong>🌐 Votre Site Web</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">WordPress, Webflow, Shopify, Wix, Squarespace, ou tout site</p>
+                            </div>
+                            <button class="btn btn-gray btn-sm" id="connect-website-btn">Connecter</button>
+                        </div>
+                        <div id="connect-website" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
+                            <p style="font-size:0.85rem;margin-bottom:8px;">Quel type de site web avez-vous ?</p>
+                            <select id="website-type" style="margin-bottom:8px;">
+                                <option value="wordpress">WordPress</option>
+                                <option value="webflow">Webflow</option>
+                                <option value="shopify">Shopify</option>
+                                <option value="wix">Wix</option>
+                                <option value="squarespace">Squarespace</option>
+                                <option value="other">Autre / Personnalisé</option>
+                            </select>
+                            <input type="text" id="website-url" placeholder="https://votresite.com" style="margin-bottom:8px;">
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:8px;">Frankie analysera et optimisera votre site. Aucun mot de passe requis pour les fonctions de base.</p>
+                            <button class="btn btn-green btn-sm" id="save-website-btn">Enregistrer & Connecter</button>
+                            <span id="connect-website-result"></span>
+                        </div>
+                    </div>
+
+                    <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <strong>📱 Facebook & Instagram</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Publiez directement sur votre Page Facebook et votre compte Instagram</p>
+                            </div>
+                            <button class="btn btn-gray btn-sm" id="connect-facebook-btn">Connecter</button>
+                        </div>
+                        <div id="connect-facebook" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
+                            <p style="font-size:0.85rem;margin-bottom:8px;">Cliquez sur le bouton ci-dessous pour connecter votre Page Facebook. Vous serez redirigé vers Facebook pour autoriser Frankie. Cela prend environ 30 secondes.</p>
+                            <button class="btn btn-green btn-sm" id="connect-fb-page-btn">🔗 Connecter la Page Facebook</button>
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">Frankie pourra : créer des publications, lire l'engagement et gérer votre page.</p>
+                        </div>
+                    </div>
+
+                    <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <strong>📧 Votre Courriel</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Envoyez des infolettres et des campagnes via votre compte courriel</p>
+                            </div>
+                            <button class="btn btn-gray btn-sm" id="connect-email-toggle-btn">Connecter</button>
+                        </div>
+                        <div id="connect-email" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
+                            <p style="font-size:0.85rem;margin-bottom:8px;">Entrez vos identifiants courriel. Pour Gmail, vous aurez besoin d'un mot de passe d'application.</p>
+                            <input type="email" id="email-address" placeholder="vous@gmail.com" style="margin-bottom:8px;">
+                            <input type="password" id="email-password" placeholder="Mot de passe d'application" style="margin-bottom:8px;">
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:8px;">
+                                <strong>Vous utilisez Gmail ?</strong> 
+                                <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--blue);">Créez un mot de passe d'application ici</a> — cela prend 30 secondes.
+                                Sélectionnez « Courriel » et « Autre », nommez-le « Frankie », et collez le code à 16 caractères ci-dessus.
+                            </p>
+                            <button class="btn btn-green btn-sm" id="save-email-btn">Enregistrer & Connecter</button>
+                            <span id="connect-email-result"></span>
+                        </div>
+                    </div>
+
+                    <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <strong>📍 Google Business Profile</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Publiez des mises à jour et répondez aux avis sur votre fiche Google</p>
+                            </div>
+                            <button class="btn btn-gray btn-sm" id="connect-google-toggle-btn">Connecter</button>
+                        </div>
+                        <div id="connect-google" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
+                            <p style="font-size:0.85rem;margin-bottom:8px;">Pour connecter Google Business Profile, nous avons besoin que vous ajoutiez Frankie comme gestionnaire.</p>
+                            <ol style="font-size:0.82rem;color:var(--gray-600);padding-left:20px;line-height:1.8;">
+                                <li>Allez sur <a href="https://business.google.com" target="_blank" style="color:var(--blue);">business.google.com</a></li>
+                                <li>Cliquez sur « Utilisateurs » dans le menu de gauche</li>
+                                <li>Cliquez sur « Ajouter » et entrez : <strong>{{ CONTACT_EMAIL }}</strong></li>
+                                <li>Sélectionnez le rôle « Gestionnaire » et cliquez sur « Inviter »</li>
+                            </ol>
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">Une fois l'invitation envoyée, Frankie pourra commencer à gérer votre profil dans les 24 heures.</p>
+                        </div>
+                    </div>
+
+                    <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <strong>📢 TikTok</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Créez et planifiez du contenu TikTok</p>
+                            </div>
+                            <button class="btn btn-gray btn-sm" id="connect-tiktok-toggle-btn">Connecter</button>
+                        </div>
+                        <div id="connect-tiktok" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
+                            <p style="font-size:0.85rem;margin-bottom:8px;">La connexion TikTok sera bientôt disponible. Pour l'instant, Frankie rédigera votre contenu et vous pourrez le publier manuellement.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
                 <div class="card-header"><h2>Paramètres d'Exécution</h2><p>Identifiants SMTP et API des médias sociaux</p></div>
                 <div class="settings-grid">
                     <div>
@@ -1275,6 +1375,56 @@ function deleteUser(userId) {
 
 
 
+/* ── Connexion des plateformes ── */
+function showSimpleConnect(platform) {
+    const el = document.getElementById('connect-' + platform);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function saveSimpleConnect(platform) {
+    const resultEl = document.getElementById('connect-' + platform + '-result');
+    if (!resultEl) return;
+
+    let serverName, credentials = {};
+
+    if (platform === 'website') {
+        serverName = 'seo';
+        credentials = {
+            cms_type: document.getElementById('website-type')?.value || 'other',
+            site_url: document.getElementById('website-url')?.value || ''
+        };
+    } else if (platform === 'email') {
+        serverName = 'email';
+        credentials = {
+            provider: 'smtp',
+            smtp_host: 'smtp.gmail.com',
+            smtp_port: '587',
+            smtp_username: document.getElementById('email-address')?.value || '',
+            smtp_password: document.getElementById('email-password')?.value || ''
+        };
+    } else {
+        resultEl.innerHTML = '<span style="color:var(--green);">✓ Instructions enregistrées ! Frankie vous guidera pour les prochaines étapes.</span>';
+        return;
+    }
+
+    resultEl.innerHTML = '<span style="color:var(--blue);">Enregistrement...</span>';
+
+    fetch('/api/mcp/credentials', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({server_name: serverName, platform: platform, credentials: credentials})
+    })
+    .then(r => r.json())
+    .then(data => {
+        resultEl.innerHTML = data.success
+            ? '<span style="color:var(--green);">✓ Connecté ! Frankie peut maintenant publier sur votre plateforme.</span>'
+            : '<span style="color:var(--red);">Erreur : ' + (data.error || 'Veuillez réessayer.') + '</span>';
+    })
+    .catch(() => {
+        resultEl.innerHTML = '<span style="color:var(--red);">Échec de la connexion. Veuillez réessayer.</span>';
+    });
+}
+
 /* ── Toast ── */
 function toast(msg, type) {
     var el = document.getElementById('toast');
@@ -1405,6 +1555,14 @@ window.onload = function() {
     document.getElementById('refresh-approvals-btn').addEventListener('click', loadApprovals);
     document.getElementById('refresh-pending-btn').addEventListener('click', loadPendingExecutions);
     document.getElementById('validate-social-btn').addEventListener('click', validateSocialApiKey);
+    document.getElementById('connect-website-btn').addEventListener('click', function() { showSimpleConnect('website'); });
+    document.getElementById('save-website-btn').addEventListener('click', function() { saveSimpleConnect('website'); });
+    document.getElementById('connect-facebook-btn').addEventListener('click', function() { showSimpleConnect('facebook'); });
+    document.getElementById('connect-fb-page-btn').addEventListener('click', function() { toast('La connexion Facebook ouvrira une popup. Autorisez les popups pour ce site.'); });
+    document.getElementById('connect-email-toggle-btn').addEventListener('click', function() { showSimpleConnect('email'); });
+    document.getElementById('save-email-btn').addEventListener('click', function() { saveSimpleConnect('email'); });
+    document.getElementById('connect-google-toggle-btn').addEventListener('click', function() { showSimpleConnect('google'); });
+    document.getElementById('connect-tiktok-toggle-btn').addEventListener('click', function() { showSimpleConnect('tiktok'); });
     document.getElementById('reload-settings-btn').addEventListener('click', loadExecutionerSettings);
     document.getElementById('save-settings-btn').addEventListener('click', saveExecutionerSettings);
     document.getElementById('test-email-btn').addEventListener('click', function(e) { testSmtp(e); });
