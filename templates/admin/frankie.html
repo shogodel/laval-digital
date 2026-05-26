@@ -1,13 +1,13 @@
 <div id="frankie-container">
     <button id="frankie-bubble" aria-label="Open Frankie AI assistant" title="Frankie AI Assistant">
-        <span id="frankie-bubble-icon" aria-hidden="true">🤖</span>
+        <img src="{{ url_for('static', filename='frankie.svg') }}" alt="Frankie" id="frankie-bubble-icon" style="width:36px;height:36px;">
         <span id="frankie-status-dot"></span>
     </button>
 
     <div id="frankie-panel">
         <div id="frankie-header">
             <div style="display:flex;align-items:center;gap:10px;">
-                <span style="font-size:1.8rem;">🤖</span>
+                <img src="{{ url_for('static', filename='frankie.svg') }}" alt="Frankie" style="width:32px;height:32px;vertical-align:middle;">
                 <div>
                     <strong style="font-size:1rem;color:var(--white);">Frankie</strong>
                     <div style="font-size:0.7rem;color:rgba(255,255,255,0.6);" id="frankie-status">Online</div>
@@ -51,7 +51,7 @@
         <div id="frankie-body">
             <div id="frankie-messages">
                 <div class="frankie-msg frankie-bot" id="frankie-greeting">
-                    <div class="frankie-avatar">🤖</div>
+<div class="frankie-avatar"><img src="{{ url_for('static', filename='frankie.svg') }}" alt="Frankie" style="width:28px;height:28px;"></div>
                     <div class="frankie-bubble">
                         <div id="frankie-greeting-text">Loading...</div>
                         <div id="frankie-suggestions" style="margin-top:10px;"></div>
@@ -507,7 +507,15 @@ window.frankie = {
         div.className = 'frankie-msg frankie-' + role;
         var avatar = document.createElement('div');
         avatar.className = 'frankie-avatar';
-        avatar.textContent = role === 'user' ? '\uD83D\uDC64' : '\uD83E\uDD16';
+        if (role === 'user') {
+            avatar.textContent = '\uD83D\uDC64';
+        } else {
+            var _fi = document.createElement('img');
+            _fi.src = '/static/frankie.svg';
+            _fi.alt = 'Frankie';
+            _fi.style.cssText = 'width:28px;height:28px;';
+            avatar.appendChild(_fi);
+        }
         var bubble = document.createElement('div');
         bubble.className = 'frankie-bubble';
         bubble.textContent = text;
@@ -522,7 +530,15 @@ window.frankie = {
         div.className = 'frankie-msg frankie-' + role;
         var avatar = document.createElement('div');
         avatar.className = 'frankie-avatar';
-        avatar.textContent = role === 'user' ? '\uD83D\uDC64' : '\uD83E\uDD16';
+        if (role === 'user') {
+            avatar.textContent = '\uD83D\uDC64';
+        } else {
+            var _fi = document.createElement('img');
+            _fi.src = '/static/frankie.svg';
+            _fi.alt = 'Frankie';
+            _fi.style.cssText = 'width:28px;height:28px;';
+            avatar.appendChild(_fi);
+        }
         var bubble = document.createElement('div');
         bubble.className = 'frankie-bubble';
         bubble.textContent = text;
@@ -537,7 +553,7 @@ window.frankie = {
         var div = document.createElement('div');
         div.className = 'frankie-msg frankie-bot';
         div.id = 'frankie-typing';
-        div.innerHTML = '<div class="frankie-avatar">🤖</div><div class="frankie-bubble"><div class="frankie-typing"><span></span><span></span><span></span></div></div>';
+        div.innerHTML = '<div class="frankie-avatar"><img src="/static/frankie.svg" alt="Frankie" style="width:28px;height:28px;"></div><div class="frankie-bubble"><div class="frankie-typing"><span></span><span></span><span></span></div></div>';
         this.messages.appendChild(div);
         this.messages.scrollTop = this.messages.scrollHeight;
     },

@@ -341,7 +341,7 @@
         </div>
         <nav class="sidebar-nav">
             <a href="#" class="active" data-tab="dashboard"><span class="icon">📊</span> Tableau de Bord</a>
-            <a href="#" data-tab="agents"><span class="icon">🤖</span> Agents</a>
+            <a href="#" data-tab="agents"><span class="icon"><img src="{{ url_for('static', filename='frankie.svg') }}" alt="" style="width:20px;height:20px;vertical-align:middle;"></span> Agents</a>
             <a href="#" data-tab="tasks"><span class="icon">📋</span> Tâches &amp; Approbations</a>
             <a href="#" data-tab="settings"><span class="icon">⚙️</span> Paramètres</a>
             <a href="#" data-tab="users"><span class="icon">👤</span> Utilisateurs</a>
@@ -351,7 +351,7 @@
         </nav>
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
             <a href="{{ url_for('admin.dashboard') }}" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:12px 16px;border-radius:10px;font-size:0.9rem;font-weight:700;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
-                🤖 Ouvrir Frankie
+                <img src="{{ url_for('static', filename='frankie.svg') }}" alt="" style="width:20px;height:20px;vertical-align:middle;"> Ouvrir Frankie
             </a>
             <button id="sidebar-install-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;width:100%;">📲 Installer l'App</button>
             <a href="{{ url_for('admin_fr.logout_fr') }}" style="font-size:0.75rem;color:rgba(255,255,255,0.35);text-decoration:none;text-align:center;padding:4px 0;transition:color 0.15s;">Déconnexion</a>

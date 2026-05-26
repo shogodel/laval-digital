@@ -163,7 +163,7 @@
 
 <div class="chat-layout">
     <div class="left-panel" id="panel-left">
-        <div class="frankie-brand">🤖 Frankie</div>
+        <div class="frankie-brand"><img src="{{ url_for('static', filename='frankie.svg') }}" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:4px;"> Frankie</div>
         <div class="section-header">
             Fils
             <button id="new-thread-btn">+ Nouveau</button>
@@ -185,7 +185,7 @@
         </div>
         <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
             <div class="empty-chat" id="empty-chat">
-                <div class="big-icon">🤖</div>
+                <div class="big-icon"><img src="{{ url_for('static', filename='frankie.svg') }}" alt="" style="width:64px;height:64px;"></div>
                 <h3>Je suis Frankie — votre centre de commande marketing IA.</h3>
                 <p>Je peux rédiger du contenu, gérer votre SEO, lancer des annonces, publier sur les réseaux sociaux, gérer des campagnes courriel, et plus encore. Dites-moi simplement ce dont vous avez besoin.</p>
                 <div class="example-chips">

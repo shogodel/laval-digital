@@ -179,7 +179,7 @@
 <div class="chat-layout">
     <!-- LEFT COLUMN: Threads + Tools -->
     <div class="left-panel" id="panel-left">
-        <div class="frankie-brand">🤖 Frankie</div>
+        <div class="frankie-brand"><img src="{{ url_for('static', filename='frankie.svg') }}" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:4px;"> Frankie</div>
         <div class="section-header">
             Threads
             <button id="new-thread-btn">+ New</button>
@@ -202,7 +202,7 @@
         </div>
         <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
             <div class="empty-chat" id="empty-chat">
-                <div class="big-icon">🤖</div>
+                <div class="big-icon"><img src="{{ url_for('static', filename='frankie.svg') }}" alt="" style="width:64px;height:64px;"></div>
                 <h3>I'm Frankie — your AI marketing command center.</h3>
                 <p>I can write content, manage your SEO, run ads, post to social media, handle email campaigns, and more. Just tell me what you need.</p>
                 <div class="example-chips">
