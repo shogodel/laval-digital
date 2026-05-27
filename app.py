@@ -356,6 +356,10 @@ def create_app(config_name: Optional[str] = None):
             return jsonify({"error": "Internal server error"}), 500
         return render_template("500.html"), 500
 
+    @app.route("/favicon.ico")
+    def favicon():
+        return redirect(url_for("static", filename="favicon.svg"))
+
     @app.before_request
     def require_api_auth():
         if not request.path.startswith("/api/"):

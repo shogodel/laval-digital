@@ -741,6 +741,7 @@ function toast(msg, type) {
 })();
 
 /* ── Tab navigation ── */
+var defaultTab = "{{ default_tab|default('') }}";
 function switchTab(tab) {
     document.querySelectorAll('.sidebar-nav a').forEach(function(a) { a.classList.remove('active'); });
     document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
@@ -763,6 +764,7 @@ document.querySelectorAll('.sidebar-nav a[data-tab]').forEach(link => {
 
     });
 });
+if (defaultTab) switchTab(defaultTab);
 
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');

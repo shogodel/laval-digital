@@ -151,7 +151,7 @@ def analytics():
         "direct_clients": database.list_users(role='user'),
     }
     active_tenant = session.get("active_user_id")
-    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="analytics")
 
 
 @admin_bp.route("/reports")
@@ -164,7 +164,7 @@ def reports():
         "direct_clients": database.list_users(role='user'),
     }
     active_tenant = session.get("active_user_id")
-    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="reports")
 
 
 @admin_bp.route("/managed")
@@ -177,7 +177,7 @@ def managed():
         "direct_clients": database.list_users(role='user'),
     }
     active_tenant = session.get("active_user_id")
-    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant)
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="managed")
 
 
 # ---------------------------------------------------------------------------
@@ -246,6 +246,57 @@ def agent_chat_fr(agent_id):
         agent=agent_registry[agent_id],
         agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),
     )
+
+
+@admin_fr_bp.route("/dashboard")
+@admin_page_required_fr
+def dashboard_fr():
+    """Serve the real-time agent dashboard (French)."""
+    from core.app_state import get_agent_meta
+    return render_template("admin/dashboard.html", agents=get_agent_meta())
+
+
+@admin_fr_bp.route("/connector")
+@admin_page_required_fr
+def connector_fr():
+    """Serve the connector setup page (French)."""
+    tenant_id = session.get("active_user_id")
+    if not tenant_id:
+        return render_template("admin/connector.html", error="Sélectionnez d'abord un client pour configurer le connecteur.")
+    base_url = request.host_url.rstrip("/")
+    bookmarklet_code = (
+        'javascript:(function(){var s=document.createElement("script");'
+        f's.src="{base_url}/static/bookmarklet.js";'
+        "document.body.appendChild(s);})()"
+    )
+    return render_template("admin/connector.html", bookmarklet_code=bookmarklet_code, tenant_id=tenant_id)
+
+
+@admin_fr_bp.route("/analytics")
+@admin_page_required_fr
+def analytics_fr():
+    """Serve the analytics dashboard (French SPA)."""
+    tenants = {"direct_clients": database.list_users(role='user')}
+    active_tenant = session.get("active_user_id")
+    return render_template("admin_fr.html", tenants=tenants, active_tenant=active_tenant, default_tab="analytics")
+
+
+@admin_fr_bp.route("/reports")
+@admin_page_required_fr
+def reports_fr():
+    """Serve the reports page (French SPA)."""
+    tenants = {"direct_clients": database.list_users(role='user')}
+    active_tenant = session.get("active_user_id")
+    return render_template("admin_fr.html", tenants=tenants, active_tenant=active_tenant, default_tab="reports")
+
+
+@admin_fr_bp.route("/managed")
+@admin_page_required_fr
+def managed_fr():
+    """Serve the managed clients page (French SPA)."""
+    tenants = {"direct_clients": database.list_users(role='user')}
+    active_tenant = session.get("active_user_id")
+    return render_template("admin_fr.html", tenants=tenants, active_tenant=active_tenant, default_tab="managed")
 
 
 
