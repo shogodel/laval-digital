@@ -23,22 +23,10 @@ class LeadConversionAgent(BaseAgent):
         logger.info(f"LeadConversionAgent initialized: {agent_id}")
 
     def execute(self, draft_output: str) -> str:
-        """Execute the Lead Conversion task with the approved draft.
-
-        For MVP, this simply confirms the draft output.
-        Full execution with CRM/email APIs will be added in Phase 2.
-
-        Args:
-            draft_output: The approved draft output from the LLM.
-
-        Returns:
-            Confirmation message with the draft content.
-        """
-        logger.info(f"LeadConversionAgent executing task for agent_id: {self.agent_id}")
-        logger.info(f"Draft output length: {len(draft_output)} characters")
-
-        result = f"Lead Conversion task executed successfully.\n\nContent:\n{draft_output}"
-        logger.info("Lead Conversion task completed")
-        return result
+        logger.info("LeadConversionAgent executing task for agent_id: %s", self.agent_id)
+        logger.info("Draft output length: %s characters", len(draft_output))
+        fp = self._save_output("leads", "followup", draft_output)
+        logger.info("Lead Conversion task completed — saved to %s", fp)
+        return f"Lead Conversion task completed successfully.\n\nSaved to: {fp}\n\n{draft_output}"
 
 

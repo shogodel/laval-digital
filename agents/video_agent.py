@@ -15,6 +15,10 @@ class VideoAgent(BaseAgent):
         logger.info("VideoAgent initialized: %s", agent_id)
 
     def execute(self, draft_output: str) -> str:
-        return f"Video script ready for review: {draft_output[:80]}..."
+        logger.info("VideoAgent executing task for agent_id: %s", self.agent_id)
+        logger.info("Draft output length: %s characters", len(draft_output))
+        fp = self._save_output("video", "script", draft_output)
+        logger.info("Video Production task completed — saved to %s", fp)
+        return f"Video Production task completed successfully.\n\nSaved to: {fp}\n\n{draft_output}"
 
 

@@ -201,6 +201,28 @@ class BaseAgent(ABC):
             "confidence": self._parse_confidence(raw),
         }
 
+    @staticmethod
+    def _slugify(text: str) -> str:
+        import re
+        text = text.lower().strip()
+        text = re.sub(r"[^\w\s-]", "", text)
+        text = re.sub(r"[\s_]+", "-", text)
+        text = re.sub(r"-+", "-", text)
+        return text.strip("-")
+
+    @staticmethod
+    def _save_output(subdir: str, prefix: str, content: str, ext: str = "md") -> str:
+        from datetime import datetime
+        from pathlib import Path
+        target_dir = Path("content") / subdir
+        target_dir.mkdir(parents=True, exist_ok=True)
+        first_line = content.strip().split("\n")[0][:60] if content else "output"
+        slug = BaseAgent._slugify(first_line) or "output"
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        fp = target_dir / f"{prefix}-{slug}-{timestamp}.{ext}"
+        fp.write_text(content.strip(), encoding="utf-8")
+        return str(fp)
+
     @abstractmethod
     def execute(self, draft_output: str) -> str:
         pass

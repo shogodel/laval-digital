@@ -15,6 +15,10 @@ class TechnicalSEOAgent(BaseAgent):
         logger.info("TechnicalSEOAgent initialized: %s", agent_id)
 
     def execute(self, draft_output: str) -> str:
-        return f"Technical SEO report ready for review: {draft_output[:80]}..."
+        logger.info("TechnicalSEOAgent executing task for agent_id: %s", self.agent_id)
+        logger.info("Draft output length: %s characters", len(draft_output))
+        fp = self._save_output("technical_seo", "audit", draft_output)
+        logger.info("Technical SEO task completed — saved to %s", fp)
+        return f"Technical SEO task completed successfully.\n\nSaved to: {fp}\n\n{draft_output}"
 
 

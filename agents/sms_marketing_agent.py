@@ -15,6 +15,10 @@ class SMSMarketingAgent(BaseAgent):
         logger.info("SMSMarketingAgent initialized: %s", agent_id)
 
     def execute(self, draft_output: str) -> str:
-        return f"SMS campaign ready for review: {draft_output[:80]}..."
+        logger.info("SMSMarketingAgent executing task for agent_id: %s", self.agent_id)
+        logger.info("Draft output length: %s characters", len(draft_output))
+        fp = self._save_output("sms_campaigns", "campaign", draft_output)
+        logger.info("SMS Marketing task completed — saved to %s", fp)
+        return f"SMS Marketing task completed successfully.\n\nSaved to: {fp}\n\n{draft_output}"
 
 

@@ -15,6 +15,10 @@ class CROAgent(BaseAgent):
         logger.info("CROAgent initialized: %s", agent_id)
 
     def execute(self, draft_output: str) -> str:
-        return f"CRO analysis ready for review: {draft_output[:80]}..."
+        logger.info("CROAgent executing task for agent_id: %s", self.agent_id)
+        logger.info("Draft output length: %s characters", len(draft_output))
+        fp = self._save_output("cro", "analysis", draft_output)
+        logger.info("CRO task completed — saved to %s", fp)
+        return f"CRO task completed successfully.\n\nSaved to: {fp}\n\n{draft_output}"
 
 

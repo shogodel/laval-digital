@@ -15,6 +15,10 @@ class ContentStrategyAgent(BaseAgent):
         logger.info("ContentStrategyAgent initialized: %s", agent_id)
 
     def execute(self, draft_output: str) -> str:
-        return f"Content strategy ready for review: {draft_output[:80]}..."
+        logger.info("ContentStrategyAgent executing task for agent_id: %s", self.agent_id)
+        logger.info("Draft output length: %s characters", len(draft_output))
+        fp = self._save_output("strategy", "calendar", draft_output)
+        logger.info("Content Strategy task completed — saved to %s", fp)
+        return f"Content Strategy task completed successfully.\n\nSaved to: {fp}\n\n{draft_output}"
 
 

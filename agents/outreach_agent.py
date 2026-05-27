@@ -16,10 +16,10 @@ class OutreachAgent(BaseAgent):
         logger.info(f"OutreachAgent initialized: {agent_id}")
 
     def execute(self, draft_output: str) -> str:
-        logger.info(f"OutreachAgent executing task for agent_id: {self.agent_id}")
-        logger.info(f"Draft output length: {len(draft_output)} characters")
-        result = f"Outreach task queued for execution.\n\nContent:\n{draft_output}"
-        logger.info("Outreach task completed")
-        return result
+        logger.info("OutreachAgent executing task for agent_id: %s", self.agent_id)
+        logger.info("Draft output length: %s characters", len(draft_output))
+        fp = self._save_output("outreach", "prospect", draft_output)
+        logger.info("Outreach task completed — saved to %s", fp)
+        return f"Outreach task completed successfully.\n\nSaved to: {fp}\n\n{draft_output}"
 
 

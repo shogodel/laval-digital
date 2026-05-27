@@ -23,23 +23,10 @@ class PaidAdsAgent(BaseAgent):
         logger.info(f"PaidAdsAgent initialized: {agent_id}")
 
     def execute(self, draft_output: str) -> str:
-        """Execute the Paid Ads task with the approved draft.
-
-        Routes the approved draft to the ExecutionerAgent for publishing
-        to ad platforms. For MVP, returns a confirmation message.
-
-        Args:
-            draft_output: The approved draft output from the LLM.
-
-        Returns:
-            Confirmation message with the draft content for executioner.
-        """
-        logger.info(f"PaidAdsAgent executing task for agent_id: {self.agent_id}")
-        logger.info(f"Draft output length: {len(draft_output)} characters")
-        logger.info("Routing approved draft to Executioner for ad platform delivery")
-
-        result = f"Paid Ads task queued for execution.\n\nContent:\n{draft_output}"
-        logger.info("Paid Ads task completed")
-        return result
+        logger.info("PaidAdsAgent executing task for agent_id: %s", self.agent_id)
+        logger.info("Draft output length: %s characters", len(draft_output))
+        fp = self._save_output("ads", "campaign", draft_output)
+        logger.info("Paid Ads task completed — saved to %s", fp)
+        return f"Paid Ads task completed successfully.\n\nSaved to: {fp}\n\n{draft_output}"
 
 
