@@ -121,7 +121,7 @@ class ExecutionerAgent:
         }
         with self._settings_lock:
             for key, value in settings.items():
-                if key in allowed_keys:
+                if key in allowed_keys and value != "********":
                     self._settings[key] = value
         logger.debug("Settings updated: %s", [k for k in settings if k in allowed_keys])
 

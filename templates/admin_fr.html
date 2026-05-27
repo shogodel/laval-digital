@@ -1188,7 +1188,8 @@ function loadExecutionerSettings() {
             document.getElementById('smtp-host').value = s.smtp_host || '';
             document.getElementById('smtp-port').value = s.smtp_port || 587;
             document.getElementById('smtp-username').value = s.smtp_username || '';
-            document.getElementById('smtp-password').value = s.smtp_password || '';
+            document.getElementById('smtp-password').value = '';
+            document.getElementById('smtp-password').placeholder = s.smtp_password ? '········' : '';
             document.getElementById('smtp-from').value = s.smtp_from_email || '';
             document.getElementById('smtp-tls').checked = s.smtp_use_tls !== false;
             document.getElementById('social-api-provider').value = s.social_api_provider || 'socialapi';
@@ -1198,16 +1199,17 @@ function loadExecutionerSettings() {
 }
 
 function saveExecutionerSettings() {
+    const pw = document.getElementById('smtp-password').value;
     const settings = {
         smtp_host: document.getElementById('smtp-host').value,
         smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
         smtp_username: document.getElementById('smtp-username').value,
-        smtp_password: document.getElementById('smtp-password').value,
         smtp_from_email: document.getElementById('smtp-from').value,
         smtp_use_tls: document.getElementById('smtp-tls').checked,
         social_api_provider: document.getElementById('social-api-provider').value,
         unified_social_api_key: document.getElementById('unified-social-api-key').value,
     };
+    if (pw) settings.smtp_password = pw;
     fetch('/api/executioner/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
