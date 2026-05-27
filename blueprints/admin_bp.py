@@ -4,12 +4,9 @@ import hmac
 import re
 import uuid
 from functools import wraps
-from pathlib import Path
-from xml.etree import ElementTree as ET
 from flask import Blueprint, render_template, redirect, url_for, session, request, flash, current_app
 from flask_login import login_user, logout_user, current_user
 from werkzeug.security import check_password_hash
-from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
 
 from core import database
@@ -83,14 +80,12 @@ def panel():
     auth_check = admin_page_required()
     if auth_check:
         return auth_check
-    logo_status = request.args.get("logo_uploaded", "")
     tenants = {
         "direct_clients": database.list_users(role='user'),
     }
     active_tenant = session.get("active_user_id")
     return render_template(
         "admin.html",
-        logo_uploaded=logo_status,
         tenants=tenants,
         active_tenant=active_tenant,
     )
@@ -225,14 +220,12 @@ def logout_fr():
 @admin_page_required_fr
 def panel_redirect_fr():
     """Serve the French admin panel with session-based auth."""
-    logo_status = request.args.get("logo_uploaded", "")
     tenants = {
         "direct_clients": database.list_users(role='user'),
     }
     active_tenant = session.get("active_user_id")
     return render_template(
         "admin_fr.html",
-        logo_uploaded=logo_status,
         tenants=tenants,
         active_tenant=active_tenant,
     )
@@ -255,54 +248,4 @@ def agent_chat_fr(agent_id):
     )
 
 
-def _sanitize_svg(content: str) -> str:
-    """Strip scripts, event handlers, and javascript: URLs from SVG content."""
-    root = ET.fromstring(content)
-    NS = "{http://www.w3.org/2000/svg}"
-    for el in list(root.iter()):
-        tag = el.tag
-        if tag == f"{NS}script" or (isinstance(tag, str) and tag.lower().endswith("}script")):
-            root.remove(el)
-            continue
-        attrs_to_remove = []
-        for attr in el.attrib:
-            low_attr = attr.lower()
-            if low_attr.startswith("on"):
-                attrs_to_remove.append(attr)
-            elif low_attr in ("href", "xlink:href", "{http://www.w3.org/1999/xlink}href"):
-                val = el.attrib[attr].lower().strip()
-                if val.startswith("javascript:"):
-                    attrs_to_remove.append(attr)
-        for attr in attrs_to_remove:
-            del el.attrib[attr]
-    return ET.tostring(root, encoding="unicode")
 
-
-@admin_bp.route("/logo", methods=["POST"])
-def logo():
-    """Upload a logo file (PNG or SVG) to static/."""
-    if not (current_user.is_authenticated and current_user.role == "admin"):
-        return redirect(url_for("admin.login"))
-    if "logo" not in request.files:
-        return redirect(url_for("admin_fr.panel_redirect_fr", logo_uploaded="invalid"))
-    file = request.files["logo"]
-    if file.filename == "":
-        return redirect(url_for("admin_fr.panel_redirect_fr", logo_uploaded="invalid"))
-    ext = Path(file.filename).suffix.lower() if file.filename else ""
-    if ext not in (".png", ".svg"):
-        return redirect(url_for("admin_fr.panel_redirect_fr", logo_uploaded="invalid"))
-    filename = secure_filename(f"logo{ext}")
-    static_dir = Path(current_app.root_path) / "static"
-    static_dir.mkdir(parents=True, exist_ok=True)
-    if ext == ".svg":
-        raw = file.read()
-        if len(raw) > 2 * 1024 * 1024:
-            return redirect(url_for("admin_fr.panel_redirect_fr", logo_uploaded="invalid"))
-        try:
-            sanitized = _sanitize_svg(raw.decode("utf-8"))
-        except ET.ParseError:
-            return redirect(url_for("admin_fr.panel_redirect_fr", logo_uploaded="invalid"))
-        (static_dir / filename).write_text(sanitized, encoding="utf-8")
-    else:
-        file.save(str(static_dir / filename))
-    return redirect(url_for("admin_fr.panel_redirect_fr", logo_uploaded="success"))
