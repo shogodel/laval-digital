@@ -129,7 +129,7 @@ class AffiliateManager:
             ).fetchall()
             return [dict(r) for r in rows]
         except Exception as e:
-            logger.debug("Exception in %s: %s", __name__, e)
+            logger.error("Failed to get commissions: %s", e)
             return []
 
     def get_all_commissions(self, limit: int = 100) -> List[Dict[str, Any]]:
@@ -143,7 +143,7 @@ class AffiliateManager:
             ).fetchall()
             return [dict(r) for r in rows]
         except Exception as e:
-            logger.debug("Exception in %s: %s", __name__, e)
+            logger.error("Failed to get all commissions: %s", e)
             return []
 
     # ── Payouts ────────────────────────────────────────────────────────
@@ -207,7 +207,7 @@ class AffiliateManager:
                 ).fetchall()
             return [dict(r) for r in rows]
         except Exception as e:
-            logger.debug("Exception in %s: %s", __name__, e)
+            logger.error("Failed to get payouts: %s", e)
             return []
 
     # ── Lead tracking ──────────────────────────────────────────────────
@@ -239,7 +239,7 @@ class AffiliateManager:
             ).fetchall()
             return [dict(r) for r in rows]
         except Exception as e:
-            logger.debug("Exception in %s: %s", __name__, e)
+            logger.error("Failed to get leads: %s", e)
             return []
 
     def get_all_affiliates(self) -> List[Dict[str, Any]]:
@@ -251,5 +251,5 @@ class AffiliateManager:
             ).fetchall()
             return [dict(r) for r in rows]
         except Exception as e:
-            logger.debug("Exception in %s: %s", __name__, e)
+            logger.error("Failed to get all affiliates: %s", e)
             return []
