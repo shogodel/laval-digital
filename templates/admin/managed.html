@@ -43,6 +43,8 @@
 </div>
 
 <script nonce="{{ csp_nonce }}">
+function esc(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
 async function loadManagedClients() {
     const filter = document.getElementById('managed-filter').value;
     document.getElementById('managed-last-updated').textContent = new Date().toLocaleTimeString();
@@ -66,27 +68,28 @@ async function loadManagedClients() {
 
         var html = '';
         clients.forEach(function(c) {
+            var tid = esc(c.tenant_id);
             var statusBadge = c.status === 'past_due'
                 ? '<span style="background:#fef2f2;color:#991b1b;padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:600;">Past Due</span>'
                 : '<span style="background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:600;">Active</span>';
             var pendingBadge = c.pending_approvals > 0
-                ? '<span style="background:#fffbeb;color:#92400e;padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:600;">' + c.pending_approvals + '</span>'
+                ? '<span style="background:#fffbeb;color:#92400e;padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:600;">' + esc(c.pending_approvals) + '</span>'
                 : '0';
             html += '<tr style="border-bottom:1px solid var(--gray-100);">';
-            html += '<td style="padding:10px 12px;font-weight:500;">' + c.tenant_id + '</td>';
-            html += '<td style="padding:10px 12px;">' + (c.package || 'Standard') + '</td>';
-            html += '<td style="padding:10px 12px;">' + (c.managed_since || '-') + '</td>';
-            html += '<td style="padding:10px 12px;">' + (c.next_billing || '-') + '</td>';
+            html += '<td style="padding:10px 12px;font-weight:500;">' + tid + '</td>';
+            html += '<td style="padding:10px 12px;">' + esc(c.package || 'Standard') + '</td>';
+            html += '<td style="padding:10px 12px;">' + esc(c.managed_since || '-') + '</td>';
+            html += '<td style="padding:10px 12px;">' + esc(c.next_billing || '-') + '</td>';
             html += '<td style="padding:10px 12px;">' + statusBadge + '</td>';
             html += '<td style="padding:10px 12px;">' + pendingBadge + '</td>';
-            html += '<td style="padding:10px 12px;"><div style="display:flex;gap:6px;">';
+            html += '<td style="padding:10px 12px;"><div style="display:flex;gap:6px;" data-tid="' + tid + '">';
             if (c.pending_approvals > 0) {
-                html += '<button class="btn btn-sm btn-green" onclick="bulkApprove(\'' + c.tenant_id + '\')">Approve</button>';
+                html += '<button class="btn btn-sm btn-green managed-approve-btn">Approve</button>';
             }
             if (c.status === 'active') {
-                html += '<button class="btn btn-sm btn-gray" onclick="pauseManaged(\'' + c.tenant_id + '\')">Pause</button>';
+                html += '<button class="btn btn-sm btn-gray managed-pause-btn">Pause</button>';
             } else {
-                html += '<button class="btn btn-sm btn-red" onclick="resumeManaged(\'' + c.tenant_id + '\')">Resume</button>';
+                html += '<button class="btn btn-sm btn-red managed-resume-btn">Resume</button>';
             }
             html += '</div></td>';
             html += '</tr>';
@@ -97,48 +100,47 @@ async function loadManagedClients() {
     }
 }
 
-async function bulkApprove(tenantId) {
-    if (!confirm('Approve all pending items for ' + tenantId + '?')) return;
-    try {
-        const res = await fetch('/api/managed/bulk-approve', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
-            body: JSON.stringify({tenant_id: tenantId})
-        });
-        const data = await res.json();
-        if (data.success) { loadManagedClients(); }
-        else { alert('Failed: ' + (data.error || 'Unknown error')); }
-    } catch (e) { alert('Network error'); }
-}
-
-async function pauseManaged(tenantId) {
-    if (!confirm('Pause managed services for ' + tenantId + '?')) return;
-    try {
-        const res = await fetch('/api/managed/pause', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
-            body: JSON.stringify({tenant_id: tenantId})
-        });
-        const data = await res.json();
-        if (data.success) { loadManagedClients(); }
-        else { alert('Failed: ' + (data.error || 'Unknown error')); }
-    } catch (e) { alert('Network error'); }
-}
-
-async function resumeManaged(tenantId) {
-    if (!confirm('Resume managed services for ' + tenantId + '?')) return;
-    try {
-        const res = await fetch('/api/managed/resume', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
-            body: JSON.stringify({tenant_id: tenantId})
-        });
-        const data = await res.json();
-        if (data.success) { loadManagedClients(); }
-        else { alert('Failed: ' + (data.error || 'Unknown error')); }
-    } catch (e) { alert('Network error'); }
-}
-
 document.getElementById('managed-filter').addEventListener('change', loadManagedClients);
+
+document.getElementById('managed-clients-body').addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    var container = btn.closest('[data-tid]');
+    if (!container) return;
+    var tenantId = container.dataset.tid;
+
+    if (btn.classList.contains('managed-approve-btn')) {
+        if (!confirm('Approve all pending items for ' + tenantId + '?')) return;
+        fetch('/api/managed/bulk-approve', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+            body: JSON.stringify({tenant_id: tenantId})
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) { if (data.success) loadManagedClients(); else alert('Failed: ' + (data.error || 'Unknown error')); })
+        .catch(function() { alert('Network error'); });
+    } else if (btn.classList.contains('managed-pause-btn')) {
+        if (!confirm('Pause managed services for ' + tenantId + '?')) return;
+        fetch('/api/managed/pause', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+            body: JSON.stringify({tenant_id: tenantId})
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) { if (data.success) loadManagedClients(); else alert('Failed: ' + (data.error || 'Unknown error')); })
+        .catch(function() { alert('Network error'); });
+    } else if (btn.classList.contains('managed-resume-btn')) {
+        if (!confirm('Resume managed services for ' + tenantId + '?')) return;
+        fetch('/api/managed/resume', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+            body: JSON.stringify({tenant_id: tenantId})
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) { if (data.success) loadManagedClients(); else alert('Failed: ' + (data.error || 'Unknown error')); })
+        .catch(function() { alert('Network error'); });
+    }
+});
+
 loadManagedClients();
 </script>
