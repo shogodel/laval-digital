@@ -359,16 +359,16 @@
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
             <span>Frankie Control Center</span>
         </div>
-        <nav class="sidebar-nav">
-            <a href="#" class="active" data-tab="dashboard"><span class="icon">📊</span> Dashboard</a>
-            <a href="#" data-tab="agents"><span class="icon"><img src="{{ url_for('static', filename='frankie.svg') }}" alt="" style="width:20px;height:20px;vertical-align:middle;"></span> Frankie's Workers</a>
-            <a href="#" data-tab="tasks"><span class="icon">📋</span> Tasks &amp; Approvals</a>
-            <a href="#" data-tab="settings"><span class="icon">⚙️</span> Settings</a>
-            <a href="#" data-tab="users"><span class="icon">👤</span> Users</a>
-            <a href="#" data-tab="analytics"><span class="icon">📈</span> Analytics</a>
-            <a href="#" data-tab="reports"><span class="icon">📄</span> Reports</a>
-            <a href="#" data-tab="managed"><span class="icon">🤝</span> Managed</a>
-            <a href="#" data-tab="mcp"><span class="icon">🔌</span> MCP Servers</a>
+        <nav class="sidebar-nav" role="tablist">
+            <a href="#" class="active" data-tab="dashboard" role="tab" aria-selected="true" aria-controls="tab-dashboard"><span class="icon">📊</span> Dashboard</a>
+            <a href="#" data-tab="agents" role="tab" aria-selected="false" aria-controls="tab-agents"><span class="icon"><img src="{{ url_for('static', filename='frankie.svg') }}" alt="" style="width:20px;height:20px;vertical-align:middle;"></span> Frankie's Workers</a>
+            <a href="#" data-tab="tasks" role="tab" aria-selected="false" aria-controls="tab-tasks"><span class="icon">📋</span> Tasks &amp; Approvals</a>
+            <a href="#" data-tab="settings" role="tab" aria-selected="false" aria-controls="tab-settings"><span class="icon">⚙️</span> Settings</a>
+            <a href="#" data-tab="users" role="tab" aria-selected="false" aria-controls="tab-users"><span class="icon">👤</span> Users</a>
+            <a href="#" data-tab="analytics" role="tab" aria-selected="false" aria-controls="tab-analytics"><span class="icon">📈</span> Analytics</a>
+            <a href="#" data-tab="reports" role="tab" aria-selected="false" aria-controls="tab-reports"><span class="icon">📄</span> Reports</a>
+            <a href="#" data-tab="managed" role="tab" aria-selected="false" aria-controls="tab-managed"><span class="icon">🤝</span> Managed</a>
+            <a href="#" data-tab="mcp" role="tab" aria-selected="false" aria-controls="tab-mcp"><span class="icon">🔌</span> MCP Servers</a>
         </nav>
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
             <button id="sidebar-install-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;width:100%;">📲 Install App</button>
@@ -421,7 +421,7 @@
         <!-- ================================================================ -->
         <!-- TAB: Dashboard                                                    -->
         <!-- ================================================================ -->
-        <div class="tab-content active" id="tab-dashboard">
+        <div class="tab-content active" id="tab-dashboard" role="tabpanel">
             <div id="dashboard-alert" style="display:none;padding:12px 18px;border-radius:var(--radius);margin-bottom:16px;font-size:0.85rem;font-weight:600;"></div>
 
             <div class="stats-grid" id="stats-grid">
@@ -454,7 +454,7 @@
         <!-- ================================================================ -->
         <!-- TAB: Frankie's Workers                                            -->
         <!-- ================================================================ -->
-        <div class="tab-content" id="tab-agents">
+        <div class="tab-content" id="tab-agents" role="tabpanel">
             <div class="card">
                 <div class="card-header"><h2>Agent Status</h2></div>
                 <div id="agent-list"><p class="empty">Loading agents...</p></div>
@@ -464,7 +464,7 @@
         <!-- ================================================================ -->
         <!-- TAB: Tasks & Approvals                                            -->
         <!-- ================================================================ -->
-        <div class="tab-content" id="tab-tasks">
+        <div class="tab-content" id="tab-tasks" role="tabpanel">
             <div class="card" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #a7f3d0;">
                 <div style="text-align:center;padding:8px;">
                     <div style="font-size:2rem;margin-bottom:4px;">🤖</div>
@@ -492,7 +492,7 @@
         <!-- ================================================================ -->
         <!-- TAB: Users                                                        -->
         <!-- ================================================================ -->
-        <div class="tab-content" id="tab-users">
+        <div class="tab-content" id="tab-users" role="tabpanel">
             <div class="card">
                 <div class="card-header">
                     <h2>User Management</h2>
@@ -513,7 +513,7 @@
         <!-- ================================================================ -->
         <!-- TAB: Settings                                                     -->
         <!-- ================================================================ -->
-        <div class="tab-content" id="tab-settings">
+        <div class="tab-content" id="tab-settings" role="tabpanel">
             <div class="card">
                 <div class="card-header"><h2>Connected Platforms</h2><p>Connect your existing accounts so Frankie can publish directly</p></div>
                 <p style="font-size:0.85rem;color:var(--gray-500);margin-bottom:16px;">Click any platform below to connect it. Frankie will guide you through a simple setup — no technical knowledge required.</p>
@@ -682,7 +682,7 @@
         <!-- ================================================================ -->
         <!-- TAB: MCP Servers                                                  -->
         <!-- ================================================================ -->
-        <div class="tab-content" id="tab-mcp">
+        <div class="tab-content" id="tab-mcp" role="tabpanel">
             <div class="card">
                 <div class="card-header"><h2>MCP Servers</h2><p>Marketing Command Protocol servers and their tools</p></div>
                 <div id="mcp-server-list" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><p class="empty">Loading...</p></div>
@@ -760,19 +760,20 @@ function toast(msg, type) {
 /* ── Tab navigation ── */
 var defaultTab = "{{ default_tab|default('') }}";
 function switchTab(tab) {
-    document.querySelectorAll('.sidebar-nav a').forEach(function(a) { a.classList.remove('active'); });
+    document.querySelectorAll('.sidebar-nav a').forEach(function(a) { a.classList.remove('active'); a.setAttribute('aria-selected', 'false'); });
     document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
     var link = document.querySelector('.sidebar-nav a[data-tab="' + tab + '"]');
-    if (link) { link.classList.add('active'); document.getElementById('page-title').textContent = link.textContent.trim(); }
+    if (link) { link.classList.add('active'); link.setAttribute('aria-selected', 'true'); document.getElementById('page-title').textContent = link.textContent.trim(); }
     document.getElementById('tab-' + tab).classList.add('active');
 }
 
 document.querySelectorAll('.sidebar-nav a[data-tab]').forEach(link => {
     link.addEventListener('click', function(e) {
         e.preventDefault();
-        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+        document.querySelectorAll('.sidebar-nav a').forEach(a => { a.classList.remove('active'); a.setAttribute('aria-selected', 'false'); });
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         this.classList.add('active');
+        this.setAttribute('aria-selected', 'true');
         const tab = this.dataset.tab;
         document.getElementById('tab-' + tab).classList.add('active');
         document.getElementById('page-title').textContent = this.textContent.trim();
