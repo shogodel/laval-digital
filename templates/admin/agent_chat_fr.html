@@ -381,8 +381,7 @@ function appendMessage(role, content, thinking, scroll, meta) {
         div.appendChild(speakBtn);
     }
 
-    if (role === 'agent' && arguments[4]) {
-        const meta = arguments[4];
+    if (role === 'agent' && meta) {
         if (meta.autonomy && meta.autonomy !== 'manual') {
             const ci = document.createElement('div');
             ci.className = 'confidence-indicator';
