@@ -69,12 +69,6 @@
 <script nonce="{{ csp_nonce }}">
 let analyticsData = {};
 
-function escapeHtml(t) {
-    const d = document.createElement('div');
-    d.textContent = t;
-    return d.innerHTML;
-}
-
 function loadAnalytics() {
     const days = document.getElementById('analytics-period').value;
 
