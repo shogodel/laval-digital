@@ -10,10 +10,8 @@ Keeps the last 7 daily backups and 4 weekly backups.
 """
 
 import datetime
-import json
 import os
 import shutil
-import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
@@ -51,30 +49,24 @@ def _encrypt_file(src: Path, dst: Path, fernet) -> bool:
 
 
 def _verify_backup(src_path: Path, backup_path: Path) -> bool:
-    """Verify backup integrity by comparing row counts and running integrity_check."""
+    """Verify backup integrity via PRAGMA integrity_check and page count."""
     try:
         import sqlite3
         src_conn = sqlite3.connect(str(src_path))
-        src_checksum = src_conn.execute("PRAGMA integrity_check").fetchone()[0]
-        src_count = src_conn.execute(
-            "SELECT SUM(cnt) FROM (SELECT COUNT(*) as cnt FROM agents UNION ALL "
-            "SELECT COUNT(*) FROM threads UNION ALL SELECT COUNT(*) FROM execution_log)"
-        ).fetchone()[0]
+        src_integrity = src_conn.execute("PRAGMA integrity_check").fetchone()[0]
+        src_pages = src_conn.execute("PRAGMA page_count").fetchone()[0]
         src_conn.close()
 
         bak_conn = sqlite3.connect(str(backup_path))
-        bak_checksum = bak_conn.execute("PRAGMA integrity_check").fetchone()[0]
-        bak_count = bak_conn.execute(
-            "SELECT SUM(cnt) FROM (SELECT COUNT(*) as cnt FROM agents UNION ALL "
-            "SELECT COUNT(*) FROM threads UNION ALL SELECT COUNT(*) FROM execution_log)"
-        ).fetchone()[0]
+        bak_integrity = bak_conn.execute("PRAGMA integrity_check").fetchone()[0]
+        bak_pages = bak_conn.execute("PRAGMA page_count").fetchone()[0]
         bak_conn.close()
 
-        if src_checksum != "ok" or bak_checksum != "ok":
+        if src_integrity != "ok" or bak_integrity != "ok":
             print(f"Integrity check FAILED for {backup_path}")
             return False
-        if src_count != bak_count:
-            print(f"Row count mismatch: source={src_count}, backup={bak_count}")
+        if src_pages != bak_pages:
+            print(f"Page count mismatch: source={src_pages}, backup={bak_pages}")
             return False
         return True
     except Exception as e:

@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <title>Frankie Control Center</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
@@ -366,6 +367,7 @@
             <a href="#" data-tab="users"><span class="icon">👤</span> Users</a>
             <a href="#" data-tab="analytics"><span class="icon">📈</span> Analytics</a>
             <a href="#" data-tab="reports"><span class="icon">📄</span> Reports</a>
+            <a href="#" data-tab="managed"><span class="icon">🤝</span> Managed</a>
             <a href="#" data-tab="mcp"><span class="icon">🔌</span> MCP Servers</a>
         </nav>
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
@@ -405,6 +407,16 @@
         </div>
 
         <span id="tenant-switch-result" style="font-size:0.85rem;color:var(--green);margin-bottom:8px;display:block;"></span>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div style="margin-bottom:12px;">
+            {% for category, message in messages %}
+            <div style="padding:10px 16px;border-radius:var(--radius);font-size:0.85rem;font-weight:500;margin-bottom:6px;{% if category == 'warning' %}background:#fffbeb;color:#92400e;border:1px solid #fde68a{% elif category == 'error' %}background:#fef2f2;color:#991b1b;border:1px solid #fecaca{% else %}background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
 
         <!-- ================================================================ -->
         <!-- TAB: Dashboard                                                    -->
@@ -602,55 +614,55 @@
                     </div>
                 </div>
             </div>
-        <div class="card">
-            <div class="card-header"><h2>Execution Settings</h2><p>SMTP credentials and social API key</p></div>
-            <div class="settings-grid">
-                <div>
-                    <h3>SMTP</h3>
-                    <div class="form-group"><label for="smtp-host">Host</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
-                    <div class="form-group"><label for="smtp-port">Port</label><input type="number" id="smtp-port" placeholder="587"></div>
-                    <div class="form-group"><label for="smtp-username">Username</label><input type="text" id="smtp-username" placeholder="user@gmail.com"></div>
-                    <div class="form-group"><label for="smtp-password">Password</label><input type="password" id="smtp-password" placeholder="App password"></div>
-                    <div class="form-group"><label for="smtp-from">From Email</label><input type="text" id="smtp-from" placeholder="info@yourdomain.com"></div>
-                    <div class="form-group"><label for="smtp-tls"><input type="checkbox" id="smtp-tls" checked> Use TLS</label></div>
-                </div>
-                <div>
-                    <h3>Unified Social Media API</h3>
-                    <p style="font-size:0.85em;color:var(--gray-500);margin-bottom:12px;">
-                        Connect all your social platforms at once using a unified API key (e.g., SocialAPI, Buffer, or Hootsuite).
-                        This single key handles publishing to Facebook, Instagram, TikTok, YouTube, LinkedIn, and more.
-                    </p>
-                    <div class="form-group">
-                        <label>API Provider</label>
-                        <select id="social-api-provider">
-                            <option value="socialapi">SocialAPI (Recommended)</option>
-                            <option value="buffer">Buffer</option>
-                            <option value="hootsuite">Hootsuite</option>
-                            <option value="custom">Custom/Multi-Platform</option>
-                        </select>
+            <div class="card">
+                <div class="card-header"><h2>Execution Settings</h2><p>SMTP credentials and social API key</p></div>
+                <div class="settings-grid">
+                    <div>
+                        <h3>SMTP</h3>
+                        <div class="form-group"><label for="smtp-host">Host</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
+                        <div class="form-group"><label for="smtp-port">Port</label><input type="number" id="smtp-port" placeholder="587"></div>
+                        <div class="form-group"><label for="smtp-username">Username</label><input type="text" id="smtp-username" placeholder="user@gmail.com"></div>
+                        <div class="form-group"><label for="smtp-password">Password</label><input type="password" id="smtp-password" placeholder="App password"></div>
+                        <div class="form-group"><label for="smtp-from">From Email</label><input type="text" id="smtp-from" placeholder="info@yourdomain.com"></div>
+                        <div class="form-group"><label for="smtp-tls"><input type="checkbox" id="smtp-tls" checked> Use TLS</label></div>
                     </div>
-                    <div class="form-group">
-                        <label>Unified API Key</label>
-                        <div style="display:flex; gap:8px;">
-                            <input type="password" id="unified-social-api-key" placeholder="Paste your unified API key here">
-                            <button class="btn btn-gray btn-sm" id="test-social-key-btn">Test Connection</button>
+                    <div>
+                        <h3>Unified Social Media API</h3>
+                        <p style="font-size:0.85em;color:var(--gray-500);margin-bottom:12px;">
+                            Connect all your social platforms at once using a unified API key (e.g., SocialAPI, Buffer, or Hootsuite).
+                            This single key handles publishing to Facebook, Instagram, TikTok, YouTube, LinkedIn, and more.
+                        </p>
+                        <div class="form-group">
+                            <label>API Provider</label>
+                            <select id="social-api-provider">
+                                <option value="socialapi">SocialAPI (Recommended)</option>
+                                <option value="buffer">Buffer</option>
+                                <option value="hootsuite">Hootsuite</option>
+                                <option value="custom">Custom/Multi-Platform</option>
+                            </select>
                         </div>
-                        <div id="social-key-validation-result"></div>
-                    </div>
-                    <div id="connected-accounts-list" style="margin-top:16px;">
-                        <p style="font-size:0.85em;color:var(--gray-500);">Connected accounts will appear here after a successful test.</p>
+                        <div class="form-group">
+                            <label>Unified API Key</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="password" id="unified-social-api-key" placeholder="Paste your unified API key here">
+                                <button class="btn btn-gray btn-sm" id="test-social-key-btn">Test Connection</button>
+                            </div>
+                            <div id="social-key-validation-result"></div>
+                        </div>
+                        <div id="connected-accounts-list" style="margin-top:16px;">
+                            <p style="font-size:0.85em;color:var(--gray-500);">Connected accounts will appear here after a successful test.</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
-                <button class="btn btn-gray" id="reload-settings-btn">Reload</button>
-                <button class="btn btn-green" id="save-settings-btn">Save</button>
-                <input type="email" id="smtp-test-email" placeholder="Your email for testing" style="width:auto;flex:1;min-width:160px;">
-                <button class="btn btn-gray btn-sm" id="test-smtp-btn">📧 Send Test Email</button>
-                <span id="executioner-settings-result"></span>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+                    <button class="btn btn-gray" id="reload-settings-btn">Reload</button>
+                    <button class="btn btn-green" id="save-settings-btn">Save</button>
+                    <input type="email" id="smtp-test-email" placeholder="Your email for testing" style="width:auto;flex:1;min-width:160px;">
+                    <button class="btn btn-gray btn-sm" id="test-smtp-btn">📧 Send Test Email</button>
+                    <span id="executioner-settings-result"></span>
+                </div>
             </div>
         </div>
-    </div>
 
         <!-- ================================================================ -->
         <!-- TAB: Analytics                                                    -->
@@ -661,6 +673,11 @@
         <!-- TAB: Reports                                                      -->
         <!-- ================================================================ -->
         {% include 'admin/reports.html' %}
+
+        <!-- ================================================================ -->
+        <!-- TAB: Managed                                                      -->
+        <!-- ================================================================ -->
+        {% include 'admin/managed.html' %}
 
         <!-- ================================================================ -->
         <!-- TAB: MCP Servers                                                  -->
@@ -746,9 +763,8 @@ function switchTab(tab) {
     document.querySelectorAll('.sidebar-nav a').forEach(function(a) { a.classList.remove('active'); });
     document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
     var link = document.querySelector('.sidebar-nav a[data-tab="' + tab + '"]');
-    if (link) link.classList.add('active');
+    if (link) { link.classList.add('active'); document.getElementById('page-title').textContent = link.textContent.trim(); }
     document.getElementById('tab-' + tab).classList.add('active');
-    document.getElementById('page-title').textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
 }
 
 document.querySelectorAll('.sidebar-nav a[data-tab]').forEach(link => {
@@ -792,7 +808,8 @@ function switchTenant(tenantId) {
 
 function refreshAll() {
     loadAgents(); loadApprovals(); loadPendingExecutions(); loadExecutions(); updateDashboard(); loadUsers();
-    if (typeof loadAdminAnalytics === 'function') loadAdminAnalytics();
+    if (typeof loadAnalytics === 'function') loadAnalytics();
+    if (typeof loadManagedClients === 'function') loadManagedClients();
 }
 
 /* ── Dashboard ── */
@@ -1168,7 +1185,122 @@ function deleteUser(userId) {
         .catch(err => { toast('Error: ' + err.message, 'error'); });
 }
 
+/* ── Execution Settings ── */
+function loadExecutionerSettings() {
+    fetch('/api/executioner/settings')
+        .then(r => r.json())
+        .then(s => {
+            document.getElementById('smtp-host').value = s.smtp_host || '';
+            document.getElementById('smtp-port').value = s.smtp_port || 587;
+            document.getElementById('smtp-username').value = s.smtp_username || '';
+            document.getElementById('smtp-password').value = s.smtp_password || '';
+            document.getElementById('smtp-from').value = s.smtp_from_email || '';
+            document.getElementById('smtp-tls').checked = s.smtp_use_tls !== false;
+            document.getElementById('social-api-provider').value = s.social_api_provider || 'socialapi';
+            document.getElementById('unified-social-api-key').value = s.social_api_key || '';
+        })
+        .catch(() => {});
+}
 
+function saveExecutionerSettings() {
+    const settings = {
+        smtp_host: document.getElementById('smtp-host').value,
+        smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
+        smtp_username: document.getElementById('smtp-username').value,
+        smtp_password: document.getElementById('smtp-password').value,
+        smtp_from_email: document.getElementById('smtp-from').value,
+        smtp_use_tls: document.getElementById('smtp-tls').checked,
+        social_api_provider: document.getElementById('social-api-provider').value,
+        unified_social_api_key: document.getElementById('unified-social-api-key').value,
+    };
+    fetch('/api/executioner/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+    })
+    .then(r => r.json())
+    .then(() => {
+        document.getElementById('executioner-settings-result').innerHTML = '<span style="color:var(--green);">Saved!</span>';
+        setTimeout(() => { document.getElementById('executioner-settings-result').textContent = ''; }, 3000);
+    })
+    .catch(err => {
+        var span = document.createElement('span');
+        span.style.color = 'var(--red)';
+        span.textContent = 'Error: ' + err.message;
+        document.getElementById('executioner-settings-result').innerHTML = '';
+        document.getElementById('executioner-settings-result').appendChild(span);
+    });
+}
+
+function testSmtp(event) {
+    const testEmail = document.getElementById('smtp-test-email').value;
+    if (!testEmail) return alert('Please enter a test email address.');
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    fetch('/api/executioner/test-smtp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            to_email: testEmail,
+            smtp_host: document.getElementById('smtp-host').value,
+            smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
+            smtp_username: document.getElementById('smtp-username').value,
+            smtp_password: document.getElementById('smtp-password').value,
+            smtp_from_email: document.getElementById('smtp-from').value || document.getElementById('smtp-username').value,
+            smtp_use_tls: document.getElementById('smtp-tls').checked
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        const msg = data.success ? '✅ Test email sent! Check your inbox.' : '❌ Failed: ' + data.error;
+        document.getElementById('executioner-settings-result').innerHTML =
+            '<span style="color:' + (data.success ? 'var(--green)' : 'var(--red)') + ';">' + msg + '</span>';
+    })
+    .catch(err => {
+        document.getElementById('executioner-settings-result').innerHTML =
+            '<span style="color:var(--red);">Error: ' + err.message + '</span>';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = '📧 Send Test Email';
+    });
+}
+
+function validateSocialApiKey() {
+    const provider = document.getElementById('social-api-provider').value;
+    const apiKey = document.getElementById('unified-social-api-key').value;
+    if (!apiKey) return alert('Please enter your unified API key.');
+
+    const resultDiv = document.getElementById('social-key-validation-result');
+    resultDiv.innerHTML = '<span style="color:var(--blue);">Testing connection...</span>';
+
+    fetch('/api/executioner/validate-social-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, api_key: apiKey })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            resultDiv.innerHTML = '<span style="color:var(--green);">✅ Connection successful!</span>';
+            const accountsHtml = (data.accounts || []).map(acc =>
+                `<div class="agent-card enabled" style="padding:10px;margin:4px 0;">
+                    <span style="font-weight:700;">${acc.platform || acc.name}</span> — ${acc.account_name}
+                    <span class="badge badge-idle">Connected</span>
+                </div>`
+            ).join('');
+            document.getElementById('connected-accounts-list').innerHTML = accountsHtml;
+        } else {
+            var span = document.createElement('span');
+            span.style.color = 'var(--red)';
+            span.textContent = 'Connection failed: ' + data.error;
+            resultDiv.innerHTML = '';
+            resultDiv.appendChild(span);
+        }
+    });
+}
 
 function escapeHtml(t) {
     const d = document.createElement('div');
@@ -1269,6 +1401,7 @@ window.onload = function() {
     loadApprovals();
     loadPendingExecutions();
     loadExecutions();
+    loadExecutionerSettings();
     updateDashboard();
     loadUsers();
     loadMCPServers();

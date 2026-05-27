@@ -15,6 +15,16 @@ from core.auth import admin_required, admin_page_required, AdminUser, _check_rat
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 admin_fr_bp = Blueprint("admin_fr", __name__, url_prefix="/fr/admin")
 
+
+@admin_bp.context_processor
+def inject_logo():
+    return {"logo_file": "logo.svg"}
+
+
+@admin_fr_bp.context_processor
+def inject_logo_fr():
+    return {"logo_file": "logo.svg"}
+
 _admin_password_hash = ""
 
 
@@ -131,7 +141,8 @@ def connector():
         return auth_check
     tenant_id = session.get("active_user_id")
     if not tenant_id:
-        return render_template("admin/connector.html", error="Select a client first to configure the connector.")
+        flash("Select a client first to configure the connector.", "warning")
+        return redirect(url_for("admin.panel"))
     base_url = request.host_url.rstrip("/")
     bookmarklet_code = (
         'javascript:(function(){var s=document.createElement("script");'
@@ -262,7 +273,8 @@ def connector_fr():
     """Serve the connector setup page (French)."""
     tenant_id = session.get("active_user_id")
     if not tenant_id:
-        return render_template("admin/connector.html", error="Sélectionnez d'abord un client pour configurer le connecteur.")
+        flash("Sélectionnez d'abord un client pour configurer le connecteur.", "warning")
+        return redirect(url_for("admin_fr.panel_redirect_fr"))
     base_url = request.host_url.rstrip("/")
     bookmarklet_code = (
         'javascript:(function(){var s=document.createElement("script");'

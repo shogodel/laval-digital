@@ -1,0 +1,144 @@
+<div class="tab-content" id="tab-managed">
+    <div class="topbar">
+        <div><h1>Managed Clients</h1></div>
+        <div class="topbar-right">
+            <select id="managed-filter" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
+                <option value="active" selected>Active</option>
+                <option value="past_due">Past Due</option>
+                <option value="all">All</option>
+            </select>
+        </div>
+    </div>
+
+    <div style="font-size:0.75rem;color:var(--gray-400);margin-bottom:12px;">Last updated: <span id="managed-last-updated">never</span></div>
+
+    <div class="stats-grid" id="managed-summary-cards">
+        <div class="stat-card"><div class="stat-value" id="stat-managed-count">0</div><div class="stat-label">Managed Clients</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-managed-mrr">$0</div><div class="stat-label">Monthly Recurring Revenue</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-managed-pending">0</div><div class="stat-label">Pending Approvals</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-managed-past-due">0</div><div class="stat-label">Past Due</div></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2>Managed Clients</h2></div>
+        <div id="managed-clients-table">
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                <thead>
+                    <tr style="border-bottom:2px solid var(--gray-200);">
+                        <th style="text-align:left;padding:8px 12px;font-weight:600;">Tenant</th>
+                        <th style="text-align:left;padding:8px 12px;font-weight:600;">Plan</th>
+                        <th style="text-align:left;padding:8px 12px;font-weight:600;">Managed Since</th>
+                        <th style="text-align:left;padding:8px 12px;font-weight:600;">Next Billing</th>
+                        <th style="text-align:left;padding:8px 12px;font-weight:600;">Status</th>
+                        <th style="text-align:left;padding:8px 12px;font-weight:600;">Pending</th>
+                        <th style="text-align:left;padding:8px 12px;font-weight:600;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="managed-clients-body">
+                    <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400);">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script nonce="{{ csp_nonce }}">
+async function loadManagedClients() {
+    const filter = document.getElementById('managed-filter').value;
+    document.getElementById('managed-last-updated').textContent = new Date().toLocaleTimeString();
+    try {
+        const res = await fetch('/api/managed/clients?filter=' + encodeURIComponent(filter), {
+            headers: {'X-CSRFToken': '{{ csrf_token() }}'}
+        });
+        const data = await res.json();
+        if (!data.success) { document.getElementById('managed-clients-body').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400);">Failed to load clients</td></tr>'; return; }
+
+        const clients = data.clients || [];
+        document.getElementById('stat-managed-count').textContent = clients.length;
+        document.getElementById('stat-managed-mrr').textContent = '$' + (data.total_mrr || 0).toLocaleString();
+        document.getElementById('stat-managed-pending').textContent = data.total_pending_approvals || 0;
+        document.getElementById('stat-managed-past-due').textContent = data.past_due_count || 0;
+
+        if (clients.length === 0) {
+            document.getElementById('managed-clients-body').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400);">No managed clients found</td></tr>';
+            return;
+        }
+
+        var html = '';
+        clients.forEach(function(c) {
+            var statusBadge = c.status === 'past_due'
+                ? '<span style="background:#fef2f2;color:#991b1b;padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:600;">Past Due</span>'
+                : '<span style="background:#ecfdf5;color:#065f46;padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:600;">Active</span>';
+            var pendingBadge = c.pending_approvals > 0
+                ? '<span style="background:#fffbeb;color:#92400e;padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:600;">' + c.pending_approvals + '</span>'
+                : '0';
+            html += '<tr style="border-bottom:1px solid var(--gray-100);">';
+            html += '<td style="padding:10px 12px;font-weight:500;">' + c.tenant_id + '</td>';
+            html += '<td style="padding:10px 12px;">' + (c.package || 'Standard') + '</td>';
+            html += '<td style="padding:10px 12px;">' + (c.managed_since || '-') + '</td>';
+            html += '<td style="padding:10px 12px;">' + (c.next_billing || '-') + '</td>';
+            html += '<td style="padding:10px 12px;">' + statusBadge + '</td>';
+            html += '<td style="padding:10px 12px;">' + pendingBadge + '</td>';
+            html += '<td style="padding:10px 12px;"><div style="display:flex;gap:6px;">';
+            if (c.pending_approvals > 0) {
+                html += '<button class="btn btn-sm btn-green" onclick="bulkApprove(\'' + c.tenant_id + '\')">Approve</button>';
+            }
+            if (c.status === 'active') {
+                html += '<button class="btn btn-sm btn-gray" onclick="pauseManaged(\'' + c.tenant_id + '\')">Pause</button>';
+            } else {
+                html += '<button class="btn btn-sm btn-red" onclick="resumeManaged(\'' + c.tenant_id + '\')">Resume</button>';
+            }
+            html += '</div></td>';
+            html += '</tr>';
+        });
+        document.getElementById('managed-clients-body').innerHTML = html;
+    } catch (e) {
+        document.getElementById('managed-clients-body').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400);">Network error</td></tr>';
+    }
+}
+
+async function bulkApprove(tenantId) {
+    if (!confirm('Approve all pending items for ' + tenantId + '?')) return;
+    try {
+        const res = await fetch('/api/managed/bulk-approve', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+            body: JSON.stringify({tenant_id: tenantId})
+        });
+        const data = await res.json();
+        if (data.success) { loadManagedClients(); }
+        else { alert('Failed: ' + (data.error || 'Unknown error')); }
+    } catch (e) { alert('Network error'); }
+}
+
+async function pauseManaged(tenantId) {
+    if (!confirm('Pause managed services for ' + tenantId + '?')) return;
+    try {
+        const res = await fetch('/api/managed/pause', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+            body: JSON.stringify({tenant_id: tenantId})
+        });
+        const data = await res.json();
+        if (data.success) { loadManagedClients(); }
+        else { alert('Failed: ' + (data.error || 'Unknown error')); }
+    } catch (e) { alert('Network error'); }
+}
+
+async function resumeManaged(tenantId) {
+    if (!confirm('Resume managed services for ' + tenantId + '?')) return;
+    try {
+        const res = await fetch('/api/managed/resume', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+            body: JSON.stringify({tenant_id: tenantId})
+        });
+        const data = await res.json();
+        if (data.success) { loadManagedClients(); }
+        else { alert('Failed: ' + (data.error || 'Unknown error')); }
+    } catch (e) { alert('Network error'); }
+}
+
+document.getElementById('managed-filter').addEventListener('change', loadManagedClients);
+loadManagedClients();
+</script>
