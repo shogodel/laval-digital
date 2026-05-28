@@ -164,7 +164,7 @@ def client_dashboard():
             ms = row.get("managed_since")
             managed_since = ms[:10] if ms else None
     except Exception as e:
-        logger.debug("Silent exception in %s: %s", __name__, e)
+        logger.error("Silent exception in %s: %s", __name__, e)
 
     return render_template(
         "client/dashboard.html",
@@ -224,7 +224,7 @@ def client_managed_services():
         if row:
             managed = bool(row.get("managed_service", False))
     except Exception as e:
-        logger.debug("Silent exception in %s: %s", __name__, e)
+        logger.error("Silent exception in %s: %s", __name__, e)
     return render_template("client/managed_services.html", managed=managed)
 
 

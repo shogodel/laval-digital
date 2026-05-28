@@ -166,6 +166,16 @@ def _decrypt_credential(ciphertext: str) -> str:
 def create_app(config_name: Optional[str] = None):
     load_dotenv()
 
+    import sentry_sdk
+    sentry_dsn = os.getenv("SENTRY_DSN")
+    if sentry_dsn:
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            enable_tracing=True,
+            traces_sample_rate=0.1,
+            profiles_sample_rate=0.1,
+        )
+
     if not os.getenv("DEEPSEEK_API_KEY"):
         raise RuntimeError(
             "DEEPSEEK_API_KEY environment variable is required. "

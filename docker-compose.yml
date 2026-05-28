@@ -17,7 +17,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:5000/"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5000/api/health"]
+      start_period: 60s
       interval: 30s
       timeout: 5s
       retries: 3

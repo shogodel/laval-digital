@@ -766,7 +766,7 @@ function toggleSpeech() {
             if (s.speech_enabled) {
                 document.getElementById('auto-speak-toggle').checked = !!s.auto_speak;
             }
-        }).catch(() => {});
+        }).catch(e => console.error(e));
     } else {
         if (window.speechSynthesis) window.speechSynthesis.cancel();
     }
@@ -790,7 +790,7 @@ fetch('/api/agents/' + AGENT_ID).then(r => r.json()).then(a => {
     if (a.success_count !== undefined && a.task_count > 0) {
         document.getElementById('info-rate').textContent = Math.round(a.success_count / a.task_count * 100) + '%';
     }
-}).catch(() => {});
+}).catch(e => console.error(e));
 
 loadTools();
 loadThreads();

@@ -89,7 +89,7 @@ def affiliate_login():
             )
             conn.commit()
         except Exception as e:
-            logger.debug("Silent exception in %s: %s", __name__, e)
+            logger.error("Silent exception in %s: %s", __name__, e)
 
         return redirect(url_for("affiliate.affiliate_dashboard"))
 

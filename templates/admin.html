@@ -574,7 +574,7 @@ function loadPersonalities() {
         .then(function(data) {
             AGENT_PERSONALITIES = data.personalities || {};
         })
-        .catch(function() {});
+        .catch(function(e) { console.error(e); });
 }
 
 function loadAgents() {
@@ -905,7 +905,7 @@ function loadExecutionerSettings() {
             document.getElementById('social-api-provider').value = s.social_api_provider || 'socialapi';
             document.getElementById('unified-social-api-key').value = s.social_api_key || '';
         })
-        .catch(() => {});
+        .catch(e => console.error(e));
 }
 
 function saveExecutionerSettings() {
@@ -1126,7 +1126,7 @@ window.addEventListener('load', function() {
 
     // PWA Service Worker
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/sw.js').catch(function() {});
+        navigator.serviceWorker.register('/static/sw.js').catch(function(e) { console.error(e); });
     }
 });
 

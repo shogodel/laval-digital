@@ -541,7 +541,7 @@ if ('serviceWorker' in navigator) {
             const btn = document.getElementById('install-btn');
             if (btn) { btn.style.display = 'none'; }
         }
-    }).catch(() => {});
+    }).catch(e => console.error(e));
 } else {
     // Not supported
     const btn = document.getElementById('install-btn');

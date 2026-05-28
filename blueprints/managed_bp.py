@@ -52,7 +52,7 @@ def api_managed_upgrade():
             )
             conn.commit()
         except Exception as e:
-            logger.debug("Silent exception in %s: %s", __name__, e)
+            logger.error("Silent exception in %s: %s", __name__, e)
 
         logger.info("Client %s upgraded to Managed Services", tenant_id)
         return api_success({"message": "Upgraded to Managed Services"})
@@ -86,7 +86,7 @@ def api_managed_cancel():
             )
             conn.commit()
         except Exception as e:
-            logger.debug("Silent exception in %s: %s", __name__, e)
+            logger.error("Silent exception in %s: %s", __name__, e)
         return api_success({"message": "Cancellation requested"})
     except Exception as e:
         logger.error("Failed to cancel managed for %s: %s", tenant_id, e)
@@ -131,7 +131,7 @@ def api_managed_clients():
                         next_date += td(days=30)
                     next_billing = next_date.isoformat()
                 except Exception as e:
-                    logger.debug("Silent exception in %s: %s", __name__, e)
+                    logger.error("Silent exception in %s: %s", __name__, e)
 
             status = "active"
             if next_billing:
@@ -142,7 +142,7 @@ def api_managed_clients():
                         status = "past_due"
                         past_due_count += 1
                 except Exception as e:
-                    logger.debug("Silent exception in %s: %s", __name__, e)
+                    logger.error("Silent exception in %s: %s", __name__, e)
 
             if filter_mode != "all" and status != filter_mode:
                 continue
@@ -268,7 +268,7 @@ def api_managed_bulk_approve():
                          (draft[:120] + "...") if len(draft) > 120 else draft, now_iso),
                     )
                 except Exception as e:
-                    logger.debug("Silent exception in %s: %s", __name__, e)
+                    logger.error("Silent exception in %s: %s", __name__, e)
 
             approved_count += 1
 

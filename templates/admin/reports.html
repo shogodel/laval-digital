@@ -112,7 +112,7 @@ function generateReport() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ month: parseInt(month), year: parseInt(year), html: data.html })
-            }).then(function() { loadReportHistory(); }).catch(function() {});
+            }).then(function() { loadReportHistory(); }).catch(function(e) { console.error(e); });
         } else {
             resultEl.innerHTML = '<span style="color:var(--red);">' + escapeHtml(data.error || 'Failed to generate report.') + '</span>';
         }

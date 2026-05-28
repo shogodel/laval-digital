@@ -461,7 +461,7 @@ def get_agent_stats(agent_id):
             if row:
                 stats.update(dict(row))
         except Exception as e:
-            logger.debug("Silent exception in %s: %s", __name__, e)
+            logger.error("Silent exception in %s: %s", __name__, e)
     return api_success(stats)
 
 @main_bp.route("/api/agents/<agent_id>/toggle", methods=["POST"])
@@ -485,7 +485,7 @@ def toggle_agent(agent_id):
             )
             conn.commit()
         except Exception as e:
-            logger.debug("Silent exception in %s: %s", __name__, e)
+            logger.error("Silent exception in %s: %s", __name__, e)
 
     return api_success({"agent_id": agent_id, "enabled": agent.enabled})
 
@@ -1093,7 +1093,7 @@ def api_sms_mark_sent():
                         new_lines.append(line)
             sms_file.write_text("\n".join(new_lines) + "\n")
         except Exception as e:
-            logger.debug("Silent exception in %s: %s", __name__, e)
+            logger.error("Silent exception in %s: %s", __name__, e)
     return api_success({"success": True})
 
 @main_bp.route("/api/actions/<action_id>/skip", methods=["POST"])
@@ -1328,7 +1328,7 @@ def invoke_agent(agent_id):
                     tenant_id, agent_id, status="processing"
                 )
             except Exception as e:
-                logger.debug("Silent exception in %s: %s", __name__, e)
+                logger.error("Silent exception in %s: %s", __name__, e)
 
         result = agent._invoke_llm(task)
 
@@ -1345,7 +1345,7 @@ def invoke_agent(agent_id):
                     last_draft_preview=draft_preview,
                 )
             except Exception as e:
-                logger.debug("Silent exception in %s: %s", __name__, e)
+                logger.error("Silent exception in %s: %s", __name__, e)
 
         return api_success({"agent_id": agent_id, "result": result})
     except Exception as e:
@@ -1355,7 +1355,7 @@ def invoke_agent(agent_id):
                     tenant_id, agent_id, status="idle"
                 )
             except Exception as e:
-                logger.debug("Silent exception in %s: %s", __name__, e)
+                logger.error("Silent exception in %s: %s", __name__, e)
         return safe_error(e, 500)
 
 @main_bp.route("/api/agents/<agent_id>/chat", methods=["POST"])
@@ -1404,7 +1404,7 @@ def agent_chat(agent_id):
                     conversation_context += f"User: {row['agent_task']}\nAgent: {row['agent_draft'][:300]}...\n"
                 conversation_context += "--- End of history ---\n\n"
         except Exception as e:
-            logger.debug("Silent exception in %s: %s", __name__, e)
+            logger.error("Silent exception in %s: %s", __name__, e)
 
     # Build the full task with context
     full_task = f"{conversation_context}Current request: {message}" if conversation_context else message
@@ -1428,7 +1428,7 @@ def agent_chat(agent_id):
                     last_draft_preview=(draft_text[:120] + "...") if len(draft_text) > 120 else draft_text,
                 )
             except Exception as e:
-                logger.debug("Silent exception in %s: %s", __name__, e)
+                logger.error("Silent exception in %s: %s", __name__, e)
 
     try:
         if stream:
@@ -1729,7 +1729,7 @@ def _email_bridge_handler(action: str, subject: str, body: str, tenant_id: str) 
                 )
                 conn.commit()
             except Exception as e:
-                logger.debug("Silent exception in %s: %s", __name__, e)
+                logger.error("Silent exception in %s: %s", __name__, e)
 
 def _get_email_bridge():
     global _email_bridge_instance

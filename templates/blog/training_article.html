@@ -223,7 +223,7 @@
             if (helpful) document.getElementById('fb-yes').classList.add('selected');
             else document.getElementById('fb-no').classList.add('selected');
         })
-        .catch(() => {});
+        .catch(e => console.error(e));
     }
 
     document.getElementById('hamburger-btn').addEventListener('click', function() {
