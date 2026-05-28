@@ -34,12 +34,13 @@ from werkzeug.security import generate_password_hash
 from core import database
 from core.api_helpers import api_error, api_success
 from core.app_state import (
-    get_agent_configs, get_agent_meta,
+    encrypt_credential, get_agent_configs, get_agent_meta,
     get_agent_personalities, get_agent_registry,
     get_credential_cipher, get_current_user_id,
     get_email_bridge, get_executioner, get_llm_adapter,
     get_orchestrator, get_push_manager, get_scheduler_manager,
-    get_speech_engine, safe_error, safe_int,
+    get_speech_engine, get_tenant_agent_activity,
+    safe_error, safe_int, safe_url,
     update_agent_activity,
 )
 from core.auth import (
@@ -55,15 +56,6 @@ from mcp import AGENT_MCP_ROUTING
 logger = logging.getLogger(__name__)
 
 main_bp = Blueprint("main", __name__)
-
-
-# ── Lazy fallback for app.py globals ──
-# Route functions reference globals like llm_adapter, executioner,
-# agent_registry, orchestrator etc. defined in app.py.  This hook
-# resolves them at runtime, avoiding circular imports.
-def __getattr__(name):
-    import importlib
-    return getattr(importlib.import_module("app"), name)
 
 
 # ── Globals moved from app.py ──
@@ -107,7 +99,7 @@ def health():
         status["status"] = "degraded"
     # Check LLM adapter (lightweight model list call)
     try:
-        models = llm_adapter.get_available_models()
+        models = get_llm_adapter().get_available_models()
         status["llm"] = "ok" if models else "no_models"
     except Exception as e:
         status["llm"] = "unhealthy"
@@ -145,7 +137,7 @@ def api_contact():
     service_label = service_labels.get(service, service)
 
     try:
-        settings = executioner.get_settings()
+        settings = get_executioner().get_settings()
         smtp_host = settings.get("smtp_host", "smtp.gmail.com")
         smtp_port = int(settings.get("smtp_port", 587))
         smtp_user = settings.get("smtp_username", "")
@@ -298,13 +290,13 @@ def api_list_users():
                 cursor.execute(
                     "SELECT id, email, display_name, role, created_at, last_login "
                     "FROM users WHERE (id = ? OR tenant_id = ?) AND role = ? ORDER BY created_at DESC",
-                    (_safe_int(tenant_id), _safe_int(tenant_id), role_filter),
+                    (safe_int(tenant_id), safe_int(tenant_id), role_filter),
                 )
             else:
                 cursor.execute(
                     "SELECT id, email, display_name, role, created_at, last_login "
                     "FROM users WHERE id = ? OR tenant_id = ? ORDER BY created_at DESC",
-                    (_safe_int(tenant_id), _safe_int(tenant_id)),
+                    (safe_int(tenant_id), safe_int(tenant_id)),
                 )
         else:
             if role_filter in ("user", "affiliate"):
@@ -321,7 +313,7 @@ def api_list_users():
         users = [dict(row) for row in cursor.fetchall()]
         return api_success({"users": users})
     except Exception as e:
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/users", methods=["POST"])
 @admin_required
@@ -353,9 +345,9 @@ def api_add_user():
         result = add_user_to_tenant(email, password, role, display_name, tenant_id or "")
         return api_success(result, status_code=201)
     except ValueError as e:
-        return _safe_error(e, 400)
+        return safe_error(e, 400)
     except RuntimeError as e:
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/users/<int:user_id>", methods=["DELETE"])
 @admin_required
@@ -374,7 +366,7 @@ def api_delete_user(user_id):
         database.delete_user(user_id)
         return api_success({"message": "User deleted"})
     except Exception as e:
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/leads", methods=["GET", "POST"])
 def handle_leads():
@@ -404,7 +396,7 @@ def handle_leads():
     if current_user.is_authenticated and current_user.role == "admin":
         tenant_id = session.get("active_user_id")
         if tenant_id:
-            rows = conn.execute("SELECT * FROM leads WHERE user_id = ? ORDER BY created_at DESC LIMIT 100", (_safe_int(tenant_id),)).fetchall()
+            rows = conn.execute("SELECT * FROM leads WHERE user_id = ? ORDER BY created_at DESC LIMIT 100", (safe_int(tenant_id),)).fetchall()
         else:
             rows = conn.execute("SELECT * FROM leads ORDER BY created_at DESC LIMIT 100").fetchall()
     else:
@@ -464,7 +456,7 @@ def get_agent_stats(agent_id):
             conn = database._get_conn()
             row = conn.execute(
                 "SELECT task_count, success_count, failure_count FROM agent_configs WHERE agent_id = ? AND user_id = ?",
-                (agent_id, _safe_int(tenant_id)),
+                (agent_id, safe_int(tenant_id)),
             ).fetchone()
             if row:
                 stats.update(dict(row))
@@ -489,7 +481,7 @@ def toggle_agent(agent_id):
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE agent_configs SET enabled = ? WHERE agent_id = ? AND user_id = ?",
-                (int(agent.enabled), agent_id, _safe_int(tenant_id)),
+                (int(agent.enabled), agent_id, safe_int(tenant_id)),
             )
             conn.commit()
         except Exception as e:
@@ -542,13 +534,13 @@ def detect_models():
 @admin_required
 def get_executions():
     limit = request.args.get("limit", 50, type=int)
-    history = executioner.get_execution_history(limit)
+    history = get_executioner().get_execution_history(limit)
     return api_success({"executions": history})
 
 @main_bp.route("/api/speech/settings", methods=["GET"])
 @admin_required
 def get_speech_settings():
-    return api_success(speech_engine.get_public_settings())
+    return api_success(get_speech_engine().get_public_settings())
 
 @main_bp.route("/api/speech/settings", methods=["PUT"])
 @admin_required
@@ -556,8 +548,8 @@ def update_speech_settings():
     data = request.json
     if not data:
         return api_error("No data provided", 400)
-    speech_engine.update_settings(data)
-    return api_success(speech_engine.get_public_settings())
+    get_speech_engine().update_settings(data)
+    return api_success(get_speech_engine().get_public_settings())
 
 @main_bp.route("/api/speech/stt", methods=["POST"])
 @admin_required
@@ -569,11 +561,11 @@ def speech_to_text():
     language = request.form.get("language", "en")
 
     try:
-        text = speech_engine.transcribe(audio_file.read(), language)
+        text = get_speech_engine().transcribe(audio_file.read(), language)
         return api_success({"text": text, "language": language})
     except Exception as e:
         logger.error("Speech-to-text failed: %s", e)
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/speech/tts", methods=["POST"])
 @admin_required
@@ -586,20 +578,20 @@ def text_to_speech():
     language = data.get("language", "en")
 
     try:
-        audio_bytes = speech_engine.synthesize(text, language)
+        audio_bytes = get_speech_engine().synthesize(text, language)
         return (audio_bytes, 200, {"Content-Type": "audio/mpeg"})
     except Exception as e:
         logger.error("Text-to-speech failed: %s", e)
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/speech/voices", methods=["GET"])
 @admin_required
 def get_speech_voices():
-    provider = speech_engine.get_settings().get("tts_provider", "browser")
+    provider = get_speech_engine().get_settings().get("tts_provider", "browser")
     if provider == "openai":
         return api_success({"voices": ["alloy", "echo", "fable", "nova", "shimmer"]})
     elif provider == "elevenlabs":
-        api_key = speech_engine.get_settings().get("elevenlabs_api_key", "")
+        api_key = get_speech_engine().get_settings().get("elevenlabs_api_key", "")
         if not api_key:
             return api_success({"voices": []})
         try:
@@ -637,7 +629,7 @@ def submit_task():
             conn = database._get_conn()
             rows = conn.execute(
                 "SELECT agent_id, autonomy, confidence_threshold FROM agent_configs WHERE user_id = ?",
-                (_safe_int(user_id),),
+                (safe_int(user_id),),
             ).fetchall()
             autonomy_config = {
                 r["agent_id"]: {"autonomy": r["autonomy"], "confidence_threshold": r["confidence_threshold"]}
@@ -649,7 +641,7 @@ def submit_task():
         if user_id:
             cursor = conn.execute(
                 "SELECT agent_task, agent_draft FROM threads WHERE thread_id = ? AND user_id = ? AND status = 'chat' ORDER BY created_at ASC",
-                (thread_id, _safe_int(user_id)),
+                (thread_id, safe_int(user_id)),
             )
             for row in cursor.fetchall():
                 if row["agent_task"]:
@@ -661,7 +653,7 @@ def submit_task():
             user_request, thread_id,
             language=language or None,
             autonomy_config=autonomy_config,
-            user_id=_safe_int(user_id) if user_id else 0,
+            user_id=safe_int(user_id) if user_id else 0,
             conversation_history=conversation_history[-20:],
         )
 
@@ -785,7 +777,8 @@ def api_events_stats():
 @main_bp.route("/api/push/vapid-key", methods=["GET"])
 def api_push_vapid_key():
     """Return the VAPID public key for push subscription."""
-    return api_success({"public_key": push_manager.public_key, "enabled": push_manager.enabled})
+    pm = get_push_manager()
+    return api_success({"public_key": pm.public_key, "enabled": pm.enabled})
 
 @main_bp.route("/api/push/subscribe", methods=["POST"])
 def api_push_subscribe():
@@ -793,7 +786,7 @@ def api_push_subscribe():
     data = request.json
     if not data:
         return api_error("No subscription data", 400)
-    ok = push_manager.subscribe(data)
+    ok = get_push_manager().subscribe(data)
     return api_success({"success": ok})
 
 @main_bp.route("/api/push/unsubscribe", methods=["POST"])
@@ -803,7 +796,7 @@ def api_push_unsubscribe():
     endpoint = (data or {}).get("endpoint", "")
     if not endpoint:
         return api_error("No endpoint", 400)
-    ok = push_manager.unsubscribe(endpoint)
+    ok = get_push_manager().unsubscribe(endpoint)
     return api_success({"success": ok})
 
 @main_bp.route("/api/inbox", methods=["GET"])
@@ -855,7 +848,7 @@ def api_frankie_inspect():
         return api_success({"suggestions": [], "error": "No user"})
     try:
         conn = database._get_conn()
-        row = conn.execute("SELECT site_url, business_name, city, niche FROM client_details WHERE user_id = ? LIMIT 1", (_safe_int(user_id),)).fetchone()
+        row = conn.execute("SELECT site_url, business_name, city, niche FROM client_details WHERE user_id = ? LIMIT 1", (safe_int(user_id),)).fetchone()
     except Exception:
         logger.warning("Failed to query client_details for suggestions", exc_info=True)
         row = None
@@ -869,7 +862,7 @@ def api_frankie_inspect():
 
     suggestions = []
     try:
-        resp = _safe_url(site_url)
+        resp = safe_url(site_url)
         html = resp.text.lower()
         title = ""
         meta_desc = ""
@@ -936,7 +929,7 @@ def api_dashboard_ask():
             conn = database._get_conn()
             rows = conn.execute(
                 "SELECT agent_id, autonomy, confidence_threshold FROM agent_configs WHERE user_id = ?",
-                (_safe_int(user_id),),
+                (safe_int(user_id),),
             ).fetchall()
             autonomy_config = {
                 r["agent_id"]: {"autonomy": r["autonomy"], "confidence_threshold": r["confidence_threshold"]}
@@ -948,7 +941,7 @@ def api_dashboard_ask():
             thread_id="frankie-" + uuid.uuid4().hex[:8],
             language=lang if lang else None,
             autonomy_config=autonomy_config,
-            user_id=_safe_int(user_id) if user_id else 0,
+            user_id=safe_int(user_id) if user_id else 0,
             source="frankie",
         )
 
@@ -1007,7 +1000,7 @@ def api_onboarding_status():
 @admin_required
 def api_list_schedules():
     tenant_id = request.args.get("tenant_id", "")
-    schedules = scheduler_manager.get_schedules(user_id=_safe_int(tenant_id) if tenant_id else None)
+    schedules = scheduler_manager.get_schedules(user_id=safe_int(tenant_id) if tenant_id else None)
     return api_success({"schedules": schedules, "enabled": scheduler_manager.enabled})
 
 @main_bp.route("/api/schedules", methods=["POST"])
@@ -1023,7 +1016,7 @@ def api_create_schedule():
     lang = data.get("language", "en")
     if not all([tenant_id, agent_id, task, cron]):
         return api_error("tenant_id, agent_id, task, and cron are required", 400)
-    sid = scheduler_manager.create_schedule(_safe_int(tenant_id), agent_id, task, cron, lang)
+    sid = scheduler_manager.create_schedule(safe_int(tenant_id), agent_id, task, cron, lang)
     return api_success({"id": sid}, status_code=201)
 
 @main_bp.route("/api/schedules/<schedule_id>", methods=["DELETE"])
@@ -1122,7 +1115,7 @@ def api_skip_action(action_id):
         conn.commit()
         return api_success({"action_id": action_id})
     except Exception as e:
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/actions/bridge/email", methods=["POST"])
 def api_set_email_bridge():
@@ -1137,14 +1130,14 @@ def api_set_email_bridge():
         "imap_host": data.get("imap_host", "imap.gmail.com"),
         "imap_port": int(data.get("imap_port", 993)),
         "username": data.get("email", ""),
-        "password": _encrypt_credential(data.get("password", "")),
+        "password": encrypt_credential(data.get("password", "")),
     }
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE client_details SET email = ?, services = ? WHERE user_id = ?",
-            (settings["username"], json.dumps({"email_bridge": settings}), _safe_int(tenant_id)),
+            (settings["username"], json.dumps({"email_bridge": settings}), safe_int(tenant_id)),
         )
         conn.commit()
         decrypted_pw = _decrypt_credential(settings["password"])
@@ -1162,7 +1155,7 @@ def api_set_email_bridge():
             _set_email_bridge(bridge2)
         return api_success({"message": "Email bridge configured"})
     except Exception as e:
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/agents/<agent_id>/autonomy", methods=["GET", "PUT"])
 @admin_required
@@ -1172,7 +1165,7 @@ def api_agent_autonomy(agent_id):
         return api_error("No user selected", 400)
 
     conn = database._get_conn()
-    uid = _safe_int(user_id)
+    uid = safe_int(user_id)
 
     if request.method == "PUT":
         data = request.json
@@ -1209,7 +1202,7 @@ def api_all_agent_autonomy():
     conn = database._get_conn()
     rows = conn.execute(
         "SELECT agent_id, autonomy, confidence_threshold FROM agent_configs WHERE user_id = ?",
-        (_safe_int(user_id),),
+        (safe_int(user_id),),
     ).fetchall()
     configs = {r["agent_id"]: {"autonomy": r["autonomy"], "confidence_threshold": r["confidence_threshold"]} for r in rows}
     return api_success({"autonomy": configs})
@@ -1291,7 +1284,7 @@ def respond_approval(thread_id):
             # Fall back to old Executioner if MCP failed or no mapping
             if not exec_result:
                 try:
-                    exec_result = executioner.execute(agent_name, draft)
+                    exec_result = get_executioner().execute(agent_name, draft)
                 except Exception as exec_err:
                     exec_result = {"success": False, "error": str(exec_err)}
 
@@ -1306,7 +1299,7 @@ def respond_approval(thread_id):
             "execution": execution_result
         })
     except Exception as e:
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/agents/<agent_id>/invoke", methods=["POST"])
 @admin_required
@@ -1363,7 +1356,7 @@ def invoke_agent(agent_id):
                 )
             except Exception as e:
                 logger.debug("Silent exception in %s: %s", __name__, e)
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/agents/<agent_id>/chat", methods=["POST"])
 @admin_required
@@ -1397,7 +1390,7 @@ def agent_chat(agent_id):
     conversation_context = ""
     if tenant_id:
         try:
-            uid = _safe_int(tenant_id)
+            uid = safe_int(tenant_id)
             conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
@@ -1420,7 +1413,7 @@ def agent_chat(agent_id):
     def _store_draft(draft_text: str) -> None:
         if tenant_id:
             try:
-                uid = _safe_int(tenant_id)
+                uid = safe_int(tenant_id)
                 conn = database._get_conn()
                 conn.execute(
                     """INSERT INTO threads
@@ -1465,7 +1458,7 @@ def agent_chat(agent_id):
             })
     except Exception as e:
         logger.error("Agent chat failed for %s: %s", agent_id, e)
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/agents/<agent_id>/threads", methods=["GET"])
 def get_agent_threads(agent_id):
@@ -1491,7 +1484,7 @@ def get_agent_threads(agent_id):
                WHERE routed_agent = ? AND user_id = ? AND status = 'chat'
                GROUP BY thread_id
                ORDER BY started_at DESC LIMIT 30""",
-            (agent_id, _safe_int(tenant_id))
+            (agent_id, safe_int(tenant_id))
         )
         threads = []
         for row in cursor.fetchall():
@@ -1502,7 +1495,7 @@ def get_agent_threads(agent_id):
             })
         return api_success({"threads": threads})
     except Exception as e:
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/agents/<agent_id>/threads/<thread_id>", methods=["GET"])
 def get_agent_thread_history(agent_id, thread_id):
@@ -1525,7 +1518,7 @@ def get_agent_thread_history(agent_id, thread_id):
                FROM threads
                WHERE thread_id = ? AND user_id = ? AND routed_agent = ?
                ORDER BY created_at ASC""",
-            (thread_id, _safe_int(tenant_id), agent_id)
+            (thread_id, safe_int(tenant_id), agent_id)
         )
         messages = []
         for row in cursor.fetchall():
@@ -1541,7 +1534,7 @@ def get_agent_thread_history(agent_id, thread_id):
             })
         return api_success({"messages": messages, "thread_id": thread_id, "agent_id": agent_id})
     except Exception as e:
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/threads")
 def api_list_threads():
@@ -1562,12 +1555,12 @@ def api_list_threads():
                 ("SELECT thread_id, agent_task, created_at FROM threads "
                  "WHERE status = 'chat' AND routed_agent = ? AND user_id = ? "
                  "ORDER BY created_at DESC LIMIT 50"),
-                (agent_filter, _safe_int(tenant_id)),
+                (agent_filter, safe_int(tenant_id)),
             )
         else:
             cursor.execute(
                 "SELECT thread_id, agent_task, created_at FROM threads WHERE status = 'chat' AND user_id = ? ORDER BY created_at DESC LIMIT 50",
-                (_safe_int(tenant_id),)
+                (safe_int(tenant_id),)
             )
         rows = cursor.fetchall()
         return api_success({
@@ -1577,7 +1570,7 @@ def api_list_threads():
             ]
         })
     except Exception as e:
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/threads/<thread_id>/messages")
 def api_get_thread_messages(thread_id):
@@ -1594,7 +1587,7 @@ def api_get_thread_messages(thread_id):
         cursor = conn.cursor()
         cursor.execute(
             "SELECT agent_task, agent_draft, result FROM threads WHERE thread_id = ? AND user_id = ? AND status = 'chat' ORDER BY created_at ASC",
-            (thread_id, _safe_int(tenant_id)),
+            (thread_id, safe_int(tenant_id)),
         )
         rows = cursor.fetchall()
         messages = []
@@ -1603,7 +1596,7 @@ def api_get_thread_messages(thread_id):
             messages.append({"role": "agent", "content": r["agent_draft"], "thinking": None})
         return api_success({"messages": messages})
     except Exception as e:
-        return _safe_error(e, 500)
+        return safe_error(e, 500)
 
 @main_bp.route("/api/tenants", methods=["GET"])
 @admin_required
@@ -1705,7 +1698,7 @@ def _confirm_pending_action(tenant_id: str, action_id: str) -> Dict[str, Any]:
         # Execute via executioner
         from agents.executioner_agent import ExecutionerError
         try:
-            exec_result = executioner.execute(row["agent_name"], row["content"], tool_name=row["tool_name"])
+            exec_result = get_executioner().execute(row["agent_name"], row["content"], tool_name=row["tool_name"])
             cursor.execute(
                 "UPDATE pending_actions SET status = 'completed', completed_at = ? WHERE id = ? AND user_id = ?",
                 (datetime.now(timezone.utc).isoformat(), action_id, uid),

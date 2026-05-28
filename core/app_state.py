@@ -25,6 +25,9 @@ _current_user_id_fn = None
 _safe_int_fn = None
 _safe_error_fn = None
 _update_agent_activity_fn = None
+_safe_url_fn = None
+_encrypt_credential_fn = None
+_get_tenant_agent_activity_fn = None
 
 
 def _require(name: str, value: Any):
@@ -51,6 +54,9 @@ def init_current_user_id_fn(v): global _current_user_id_fn; _current_user_id_fn 
 def init_safe_int_fn(v): global _safe_int_fn; _safe_int_fn = v
 def init_safe_error_fn(v): global _safe_error_fn; _safe_error_fn = v
 def init_update_agent_activity_fn(v): global _update_agent_activity_fn; _update_agent_activity_fn = v
+def init_safe_url_fn(v): global _safe_url_fn; _safe_url_fn = v
+def init_encrypt_credential_fn(v): global _encrypt_credential_fn; _encrypt_credential_fn = v
+def init_get_tenant_agent_activity_fn(v): global _get_tenant_agent_activity_fn; _get_tenant_agent_activity_fn = v
 
 
 def get_agent_registry() -> dict:
@@ -123,3 +129,15 @@ def safe_error(e: Exception, status: int = 500):
 
 def update_agent_activity(user_id: str, agent_id: str, **kwargs) -> None:
     return _require("update_agent_activity_fn", _update_agent_activity_fn)(user_id, agent_id, **kwargs)
+
+
+def safe_url(url: str, timeout: int = 10):
+    return _require("safe_url_fn", _safe_url_fn)(url, timeout)
+
+
+def encrypt_credential(plaintext: str) -> str:
+    return _require("encrypt_credential_fn", _encrypt_credential_fn)(plaintext)
+
+
+def get_tenant_agent_activity(user_id: str) -> dict:
+    return _require("get_tenant_agent_activity_fn", _get_tenant_agent_activity_fn)(user_id)

@@ -297,12 +297,11 @@ def create_app(config_name: Optional[str] = None):
     @app.before_request
     def generate_request_id():
         g.request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        g.csp_nonce = secrets.token_urlsafe(16)
 
     @app.context_processor
     def inject_csp_nonce():
-        nonce = secrets.token_urlsafe(16)
-        g.csp_nonce = nonce
-        return dict(csp_nonce=nonce)
+        return dict(csp_nonce=getattr(g, "csp_nonce", ""))
 
     @app.after_request
     def add_security_headers(response):
@@ -896,21 +895,6 @@ def create_app(config_name: Optional[str] = None):
     scheduler_manager = SchedulerManager(get_orchestrator)
     scheduler_manager.start()
 
-    import blueprints.main_bp as _main_bp_mod
-    _main_bp_mod.llm_adapter = llm_adapter
-    _main_bp_mod.executioner = executioner
-    _main_bp_mod.speech_engine = speech_engine
-    _main_bp_mod.agent_registry = agent_registry
-    _main_bp_mod.push_manager = push_manager
-    _main_bp_mod.agent_memory = agent_memory
-    _main_bp_mod.AGENT_CONFIGS = AGENT_CONFIGS
-    _main_bp_mod._safe_int = _safe_int
-    _main_bp_mod._safe_error = _safe_error
-    _main_bp_mod._safe_url = _safe_url
-    _main_bp_mod._encrypt_credential = _encrypt_credential
-    _main_bp_mod.update_tenant_agent_activity = update_tenant_agent_activity
-    _main_bp_mod.get_tenant_agent_activity = get_tenant_agent_activity
-
     import core.app_state as _app_state
     _app_state.init_agent_registry(agent_registry)
     _app_state.init_llm_adapter(llm_adapter)
@@ -927,6 +911,9 @@ def create_app(config_name: Optional[str] = None):
     _app_state.init_current_user_id_fn(get_current_user_id)
     _app_state.init_safe_int_fn(_safe_int)
     _app_state.init_safe_error_fn(_safe_error)
+    _app_state.init_safe_url_fn(_safe_url)
+    _app_state.init_encrypt_credential_fn(_encrypt_credential)
+    _app_state.init_get_tenant_agent_activity_fn(get_tenant_agent_activity)
     _app_state.init_update_agent_activity_fn(update_tenant_agent_activity)
 
     return app
