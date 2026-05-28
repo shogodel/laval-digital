@@ -82,7 +82,12 @@ class TestSecurityHeaders:
         r = client.get("/")
         csp = r.headers.get("Content-Security-Policy", "")
         assert "default-src 'self'" in csp
-        assert "'unsafe-inline'" not in csp
+        for directive in csp.split(";"):
+            d = directive.strip()
+            if d.startswith("style-src") and not d.startswith("style-src-attr"):
+                assert "'unsafe-inline'" not in d
+            if d.startswith("script-src"):
+                assert "'unsafe-inline'" not in d
 
     def test_hsts_header(self, client):
         r = client.get("/")
