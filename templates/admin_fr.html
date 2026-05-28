@@ -762,7 +762,9 @@ function toggleSidebar() {
 
 /* ── Changement de client ── */
 function switchTenant(tenantId) {
+    const sel = document.getElementById('tenant-select');
     const el = document.getElementById('tenant-switch-result');
+    sel.disabled = true;
     el.textContent = 'Changement...';
     fetch('/api/tenants/switch', {
         method: 'POST',
@@ -776,7 +778,8 @@ function switchTenant(tenantId) {
         document.querySelector('.tenant-pill .dot').className = data.active_tenant ? 'dot active' : 'dot inactive';
         refreshAll();
     })
-    .catch(err => { el.textContent = 'Erreur: ' + err.message; });
+    .catch(err => { el.textContent = 'Erreur: ' + err.message; })
+    .finally(function() { sel.disabled = false; });
 }
 
 function refreshAll() {
@@ -947,7 +950,8 @@ function showRejectForm(threadId) {
     document.getElementById('reject-form-' + threadId).style.display = 'block';
 }
 
-function respondApproval(threadId, approved) {
+function respondApproval(threadId, approved, btn) {
+    btn.disabled = true;
     const card = document.querySelector(`.approval-card[data-thread-id="${threadId}"]`);
     const feedback = card ? (card.querySelector('.reject-feedback')?.value || '') : '';
     fetch('/api/approvals/' + threadId + '/respond', {
@@ -974,7 +978,8 @@ function respondApproval(threadId, approved) {
     })
     .catch(function(err) {
         toast('Erreur réseau: ' + err.message, 'error');
-    });
+    })
+    .finally(function() { btn.disabled = false; });
 }
 
 /* ── Confirmations en Attente ── */
@@ -1004,21 +1009,25 @@ function loadPendingExecutions() {
         });
 }
 
-function confirmPending(executionId) {
+function confirmPending(executionId, btn) {
+    btn.disabled = true;
     fetch('/api/executioner/confirm/' + executionId, { method: 'POST' })
         .then(r => r.json())
         .then(data => {
             if (data.success) { loadPendingExecutions(); loadAgents(); }
             else alert('Échec: ' + (data.error || 'inconnu'));
         })
-        .catch(err => alert('Erreur: ' + err.message));
+        .catch(err => alert('Erreur: ' + err.message))
+        .finally(function() { btn.disabled = false; });
 }
 
-function rejectPending(executionId) {
+function rejectPending(executionId, btn) {
+    btn.disabled = true;
     fetch('/api/executioner/reject/' + executionId, { method: 'POST' })
         .then(r => r.json())
         .then(() => { loadPendingExecutions(); })
-        .catch(err => alert('Erreur: ' + err.message));
+        .catch(err => alert('Erreur: ' + err.message))
+        .finally(function() { btn.disabled = false; });
 }
 
 /* ── Activité d'Exécution ── */
@@ -1199,6 +1208,8 @@ function loadExecutionerSettings() {
 }
 
 function saveExecutionerSettings() {
+    var btn = document.getElementById('save-settings-btn');
+    btn.disabled = true;
     const pw = document.getElementById('smtp-password').value;
     const settings = {
         smtp_host: document.getElementById('smtp-host').value,
@@ -1226,7 +1237,8 @@ function saveExecutionerSettings() {
         span.textContent = 'Erreur: ' + err.message;
         document.getElementById('executioner-settings-result').innerHTML = '';
         document.getElementById('executioner-settings-result').appendChild(span);
-    });
+    })
+    .finally(function() { btn.disabled = false; });
 }
 
 function testSmtp(event) {
@@ -1266,9 +1278,11 @@ function testSmtp(event) {
 }
 
 function validateSocialApiKey() {
+    var btn = document.getElementById('test-social-key-btn');
+    btn.disabled = true;
     const provider = document.getElementById('social-api-provider').value;
     const apiKey = document.getElementById('unified-social-api-key').value;
-    if (!apiKey) return alert('Veuillez entrer votre clé API unifiée.');
+    if (!apiKey) { btn.disabled = false; return alert('Veuillez entrer votre clé API unifiée.'); }
 
     const resultDiv = document.getElementById('social-key-validation-result');
     resultDiv.innerHTML = '<span style="color:var(--blue);">Test de connexion...</span>';
@@ -1296,7 +1310,8 @@ function validateSocialApiKey() {
             resultDiv.innerHTML = '';
             resultDiv.appendChild(span);
         }
-    });
+    })
+    .finally(function() { btn.disabled = false; });
 }
 
 /* ── Gestion des Utilisateurs ── */
@@ -1347,13 +1362,15 @@ function closeAddUser() {
 }
 
 function addUser() {
+    var btn = document.getElementById('create-user-btn');
+    btn.disabled = true;
     const email = document.getElementById('new-user-email').value.trim();
     const name = document.getElementById('new-user-name').value.trim();
     const password = document.getElementById('new-user-password').value;
     const role = document.getElementById('new-user-role').value;
     const errorEl = document.getElementById('add-user-error');
 
-    if (!email || !password) { errorEl.textContent = 'Le courriel et le mot de passe sont requis.'; return; }
+    if (!email || !password) { errorEl.textContent = 'Le courriel et le mot de passe sont requis.'; btn.disabled = false; return; }
 
     fetch('/api/users', {
         method: 'POST',
@@ -1366,11 +1383,13 @@ function addUser() {
         closeAddUser();
         loadUsers();
     })
-    .catch(err => { errorEl.textContent = 'Erreur: ' + err.message; });
+    .catch(err => { errorEl.textContent = 'Erreur: ' + err.message; })
+    .finally(function() { btn.disabled = false; });
 }
 
-function deleteUser(userId) {
+function deleteUser(userId, btn) {
     if (!confirm('Supprimer cet utilisateur?')) return;
+    btn.disabled = true;
     fetch('/api/users/' + userId, { method: 'DELETE' })
         .then(r => r.json())
         .then(data => {
@@ -1378,7 +1397,8 @@ function deleteUser(userId) {
             toast('Utilisateur supprimé.', 'success');
             loadUsers();
         })
-        .catch(err => { toast('Erreur: ' + err.message, 'error'); });
+        .catch(err => { toast('Erreur: ' + err.message, 'error'); })
+        .finally(function() { btn.disabled = false; });
 }
 
 
@@ -1390,8 +1410,10 @@ function showSimpleConnect(platform) {
 }
 
 function saveSimpleConnect(platform) {
+    var btn = document.getElementById('save-' + platform + '-btn');
+    if (btn) btn.disabled = true;
     const resultEl = document.getElementById('connect-' + platform + '-result');
-    if (!resultEl) return;
+    if (!resultEl) { if (btn) btn.disabled = false; return; }
 
     let serverName, credentials = {};
 
@@ -1412,6 +1434,7 @@ function saveSimpleConnect(platform) {
         };
     } else {
         resultEl.innerHTML = '<span style="color:var(--green);">✓ Instructions enregistrées ! Frankie vous guidera pour les prochaines étapes.</span>';
+        if (btn) btn.disabled = false;
         return;
     }
 
@@ -1430,7 +1453,8 @@ function saveSimpleConnect(platform) {
     })
     .catch(() => {
         resultEl.innerHTML = '<span style="color:var(--red);">Échec de la connexion. Veuillez réessayer.</span>';
-    });
+    })
+    .finally(function() { if (btn) btn.disabled = false; });
 }
 
 /* ── Toast ── */
@@ -1519,12 +1543,12 @@ window.addEventListener('load', function() {
         if (!card) return;
         var threadId = card.dataset.threadId;
         if (e.target.closest('.approve-btn')) {
-            respondApproval(threadId, true);
+            respondApproval(threadId, true, e.target.closest('.approve-btn'));
         } else if (e.target.closest('.show-reject-btn')) {
             var form = card.querySelector('.reject-form');
             if (form) form.style.display = 'block';
         } else if (e.target.closest('.confirm-reject-btn')) {
-            respondApproval(threadId, false);
+            respondApproval(threadId, false, e.target.closest('.confirm-reject-btn'));
         }
     });
 
@@ -1534,16 +1558,16 @@ window.addEventListener('load', function() {
         if (!card) return;
         var executionId = card.dataset.executionId;
         if (e.target.closest('.confirm-exec-btn')) {
-            confirmPending(executionId);
+            confirmPending(executionId, e.target.closest('.confirm-exec-btn'));
         } else if (e.target.closest('.reject-exec-btn')) {
-            rejectPending(executionId);
+            rejectPending(executionId, e.target.closest('.reject-exec-btn'));
         }
     });
 
     /* Event delegation for user delete buttons */
     document.getElementById('users-list').addEventListener('click', function(e) {
         var btn = e.target.closest('.delete-user-btn');
-        if (btn) deleteUser(btn.dataset.userId);
+        if (btn) deleteUser(btn.dataset.userId, btn);
     });
 
     if ('serviceWorker' in navigator) {

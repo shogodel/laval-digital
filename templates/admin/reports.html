@@ -100,6 +100,7 @@ function generateReport() {
         if (data.html) {
             lastReportHtml = data.html;
             const preview = document.getElementById('report-preview');
+            if (preview.src.startsWith('blob:')) URL.revokeObjectURL(preview.src);
             const blob = new Blob([data.html], { type: 'text/html' });
             preview.src = URL.createObjectURL(blob);
             document.getElementById('report-preview-card').style.display = 'block';
@@ -161,6 +162,7 @@ function downloadReport() {
     a.href = URL.createObjectURL(blob);
     a.download = 'frankie_report.html';
     a.click();
+    URL.revokeObjectURL(a.href);
 }
 
 function printReport() {
@@ -210,6 +212,7 @@ function viewHistoryReport(reportId) {
             if (data.html) {
                 lastReportHtml = data.html;
                 const preview = document.getElementById('report-preview');
+                if (preview.src.startsWith('blob:')) URL.revokeObjectURL(preview.src);
                 const blob = new Blob([data.html], { type: 'text/html' });
                 preview.src = URL.createObjectURL(blob);
                 document.getElementById('report-preview-card').style.display = 'block';
@@ -226,9 +229,11 @@ function downloadHistoryReport(reportId) {
             if (data.html) {
                 const blob = new Blob([data.html], { type: 'text/html' });
                 const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
+                const url = URL.createObjectURL(blob);
+                a.href = url;
                 a.download = 'frankie_report_' + reportId + '.html';
                 a.click();
+                URL.revokeObjectURL(url);
             }
         });
 }

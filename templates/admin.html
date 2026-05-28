@@ -790,7 +790,9 @@ function toggleSidebar() {
 
 /* ── Tenant switching ── */
 function switchTenant(tenantId) {
+    const sel = document.getElementById('tenant-select');
     const el = document.getElementById('tenant-switch-result');
+    sel.disabled = true;
     el.textContent = 'Switching...';
     fetch('/api/tenants/switch', {
         method: 'POST',
@@ -804,6 +806,7 @@ function switchTenant(tenantId) {
         document.querySelector('.tenant-pill .dot').className = data.active_tenant ? 'dot active' : 'dot inactive';
         refreshAll();
     })
+    .finally(function() { sel.disabled = false; });
     .catch(err => { el.textContent = 'Error: ' + err.message; });
 }
 
@@ -994,7 +997,8 @@ function showRejectForm(threadId) {
     }
 }
 
-function respondApproval(threadId, approved) {
+function respondApproval(threadId, approved, btn) {
+    btn.disabled = true;
     var feedback = '';
     var feedbackEl = document.querySelector('.reject-feedback[data-thread-id="' + threadId + '"]');
     if (feedbackEl) {
@@ -1032,7 +1036,8 @@ function respondApproval(threadId, approved) {
     })
     .catch(function(err) {
         toast('Network error: ' + err.message, 'error');
-    });
+    })
+    .finally(function() { btn.disabled = false; });
 }
 
 /* ── Pending Confirmations ── */
@@ -1063,21 +1068,25 @@ function loadPendingExecutions() {
         });
 }
 
-function confirmPending(executionId) {
+function confirmPending(executionId, btn) {
+    btn.disabled = true;
     fetch('/api/executioner/confirm/' + executionId, { method: 'POST' })
         .then(r => r.json())
         .then(data => {
             if (data.success) { loadPendingExecutions(); loadAgents(); toast('Execution confirmed!', 'success'); }
             else toast('Failed: ' + (data.error || 'unknown'), 'error');
         })
-        .catch(err => toast('Error: ' + err.message, 'error'));
+        .catch(err => toast('Error: ' + err.message, 'error'))
+        .finally(function() { btn.disabled = false; });
 }
 
-function rejectPending(executionId) {
+function rejectPending(executionId, btn) {
+    btn.disabled = true;
     fetch('/api/executioner/reject/' + executionId, { method: 'POST' })
         .then(r => r.json())
         .then(() => { loadPendingExecutions(); toast('Execution rejected.', 'success'); })
-        .catch(err => toast('Error: ' + err.message, 'error'));
+        .catch(err => toast('Error: ' + err.message, 'error'))
+        .finally(function() { btn.disabled = false; });
 }
 
 /* ── Execution Activity ── */
@@ -1152,13 +1161,15 @@ function closeAddUser() {
 }
 
 function addUser() {
-    const email = document.getElementById('new-user-email').value.trim();
-    const name = document.getElementById('new-user-name').value.trim();
+    var btn = document.getElementById('create-user-btn');
+    btn.disabled = true;
+    const email = document.getElementById('new-user-email').value;
+    const name = document.getElementById('new-user-name').value;
     const password = document.getElementById('new-user-password').value;
     const role = document.getElementById('new-user-role').value;
     const errorEl = document.getElementById('add-user-error');
 
-    if (!email || !password) { errorEl.textContent = 'Email and password are required.'; return; }
+    if (!email || !password) { errorEl.textContent = 'Email and password are required.'; btn.disabled = false; return; }
 
     fetch('/api/users', {
         method: 'POST',
@@ -1171,11 +1182,13 @@ function addUser() {
         closeAddUser();
         loadUsers();
     })
-    .catch(err => { errorEl.textContent = 'Error: ' + err.message; });
+    .catch(err => { errorEl.textContent = 'Error: ' + err.message; })
+    .finally(function() { btn.disabled = false; });
 }
 
-function deleteUser(userId) {
+function deleteUser(userId, btn) {
     if (!confirm('Delete this user?')) return;
+    btn.disabled = true;
     fetch('/api/users/' + userId, { method: 'DELETE' })
         .then(r => r.json())
         .then(data => {
@@ -1183,7 +1196,8 @@ function deleteUser(userId) {
             toast('User deleted.', 'success');
             loadUsers();
         })
-        .catch(err => { toast('Error: ' + err.message, 'error'); });
+        .catch(err => { toast('Error: ' + err.message, 'error'); })
+        .finally(function() { btn.disabled = false; });
 }
 
 /* ── Execution Settings ── */
@@ -1205,6 +1219,8 @@ function loadExecutionerSettings() {
 }
 
 function saveExecutionerSettings() {
+    var btn = document.getElementById('save-settings-btn');
+    btn.disabled = true;
     const pw = document.getElementById('smtp-password').value;
     const settings = {
         smtp_host: document.getElementById('smtp-host').value,
@@ -1232,7 +1248,8 @@ function saveExecutionerSettings() {
         span.textContent = 'Error: ' + err.message;
         document.getElementById('executioner-settings-result').innerHTML = '';
         document.getElementById('executioner-settings-result').appendChild(span);
-    });
+    })
+    .finally(function() { btn.disabled = false; });
 }
 
 function testSmtp(event) {
@@ -1272,9 +1289,11 @@ function testSmtp(event) {
 }
 
 function validateSocialApiKey() {
+    var btn = document.getElementById('test-social-key-btn');
+    btn.disabled = true;
     const provider = document.getElementById('social-api-provider').value;
     const apiKey = document.getElementById('unified-social-api-key').value;
-    if (!apiKey) return alert('Please enter your unified API key.');
+    if (!apiKey) { btn.disabled = false; return alert('Please enter your unified API key.'); }
 
     const resultDiv = document.getElementById('social-key-validation-result');
     resultDiv.innerHTML = '<span style="color:var(--blue);">Testing connection...</span>';
@@ -1302,7 +1321,8 @@ function validateSocialApiKey() {
             resultDiv.innerHTML = '';
             resultDiv.appendChild(span);
         }
-    });
+    })
+    .finally(function() { btn.disabled = false; });
 }
 
 function escapeHtml(t) {
@@ -1320,8 +1340,10 @@ function showSimpleConnect(platform) {
 }
 
 function saveSimpleConnect(platform) {
+    var btn = document.getElementById('save-' + platform + '-btn');
+    if (btn) btn.disabled = true;
     const resultEl = document.getElementById('connect-' + platform + '-result');
-    if (!resultEl) return;
+    if (!resultEl) { if (btn) btn.disabled = false; return; }
     
     let serverName, credentials = {};
     
@@ -1342,6 +1364,7 @@ function saveSimpleConnect(platform) {
         };
     } else {
         resultEl.innerHTML = '<span style="color:var(--green);">✓ Setup instructions saved! Frankie will guide you through the next steps.</span>';
+        if (btn) btn.disabled = false;
         return;
     }
     
@@ -1360,7 +1383,8 @@ function saveSimpleConnect(platform) {
     })
     .catch(() => {
         resultEl.innerHTML = '<span style="color:var(--red);">Connection failed. Please try again.</span>';
-    });
+    })
+    .finally(function() { if (btn) btn.disabled = false; });
 }
 
 /* ── MCP Servers ── */
@@ -1467,21 +1491,21 @@ document.getElementById('agent-list').addEventListener('click', function(e) {
 });
 document.getElementById('approvals-list').addEventListener('click', function(e) {
     var approveBtn = e.target.closest('.approve-btn');
-    if (approveBtn) { respondApproval(approveBtn.dataset.threadId, approveBtn.dataset.approved === 'true'); return; }
+    if (approveBtn) { respondApproval(approveBtn.dataset.threadId, approveBtn.dataset.approved === 'true', approveBtn); return; }
     var showBtn = e.target.closest('.reject-show-btn');
     if (showBtn) { showRejectForm(showBtn.dataset.threadId); return; }
     var confirmBtn = e.target.closest('.reject-confirm-btn');
-    if (confirmBtn) { respondApproval(confirmBtn.dataset.threadId, false); }
+    if (confirmBtn) { respondApproval(confirmBtn.dataset.threadId, false, confirmBtn); }
 });
 document.getElementById('pending-executions-list').addEventListener('click', function(e) {
     var confirmBtn = e.target.closest('.confirm-exec-btn');
-    if (confirmBtn) { confirmPending(confirmBtn.dataset.execId); return; }
+    if (confirmBtn) { confirmPending(confirmBtn.dataset.execId, confirmBtn); return; }
     var rejectBtn = e.target.closest('.reject-exec-btn');
-    if (rejectBtn) { rejectPending(rejectBtn.dataset.execId); }
+    if (rejectBtn) { rejectPending(rejectBtn.dataset.execId, rejectBtn); }
 });
 document.getElementById('users-list').addEventListener('click', function(e) {
     var deleteBtn = e.target.closest('.delete-user-btn');
-    if (deleteBtn) { deleteUser(parseInt(deleteBtn.dataset.userId)); }
+    if (deleteBtn) { deleteUser(parseInt(deleteBtn.dataset.userId), deleteBtn); }
 });
 </script>
 {% include 'admin/frankie.html' %}
