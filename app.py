@@ -286,6 +286,10 @@ def create_app(config_name: Optional[str] = None):
     from blueprints.main_bp import main_bp
     app.register_blueprint(main_bp)
 
+    for rule in app.url_map.iter_rules():
+        if rule.rule in _API_PUBLIC and rule.methods and not {'GET', 'HEAD', 'OPTIONS'}.issuperset(rule.methods):
+            csrf._exempt_views.add(rule.endpoint)
+
     @app.context_processor
     def inject_csrf_token():
         return dict(csrf_token=lambda: generate_csrf())
