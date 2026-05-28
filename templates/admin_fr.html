@@ -1579,6 +1579,21 @@ window.addEventListener('load', function() {
     document.getElementById('close-add-user-btn').addEventListener('click', closeAddUser);
     document.getElementById('add-user-btn').addEventListener('click', addUser);
 });
+
+function installApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+    } else {
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isSafari = /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
+        if (isIOS || isSafari) {
+            alert('Sur Safari : appuyez sur l\'icône Partager (📤) en bas de l\'écran, faites défiler et appuyez sur "Ajouter à l\'écran d\'accueil".');
+        } else {
+            alert('Ouvrez le menu Chrome/Edge (⋮ ou ⋯) et sélectionnez "Installer" ou "Ajouter à l\'écran d\'accueil".');
+        }
+    }
+}
 </script>
 {% include 'admin/frankie.html' %}
 </body>
