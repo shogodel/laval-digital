@@ -1399,7 +1399,7 @@ window.addEventListener('beforeinstallprompt', function(e) {
     deferredPrompt = e;
 });
 
-window.onload = function() {
+window.addEventListener('load', function() {
     loadPersonalities().then(function() { loadAgents(); });
     loadApprovals();
     loadPendingExecutions();
@@ -1414,7 +1414,7 @@ window.onload = function() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/static/sw.js').catch(function() {});
     }
-};
+});
 
 function installApp() {
     if (deferredPrompt) {
