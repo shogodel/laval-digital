@@ -21,7 +21,7 @@
 
 <div class="app">
 
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navigation principale">
         <div class="sidebar-brand">
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
             <span>Frankie Control Center</span>
@@ -46,7 +46,7 @@
         </div>
     </aside>
 
-    <main class="main">
+    <main class="main" role="main">
 
         <div class="topbar">
             <div style="display:flex;align-items:center;gap:12px;">
@@ -368,7 +368,7 @@
     </main>
 
     <!-- Modal Ajouter Utilisateur -->
-    <div id="user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+    <div id="user-modal" role="dialog" aria-modal="true" aria-label="Ajouter un utilisateur" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
         <div style="background:var(--white);border-radius:var(--radius-lg);padding:32px;max-width:440px;width:90%;box-shadow:var(--shadow-lg);">
             <h2 style="font-size:1.15rem;font-weight:700;margin-bottom:16px;color:var(--gray-900);">Ajouter un Utilisateur</h2>
             <div class="form-group">
@@ -953,13 +953,13 @@ function testSmtp(event) {
     })
     .then(r => r.json())
     .then(data => {
-        const msg = data.success ? '✅ Courriel test envoyé! Vérifiez votre boîte de réception.' : '❌ Échec: ' + data.error;
+        const msg = data.success ? '✅ Courriel test envoyé! Vérifiez votre boîte de réception.' : '❌ Échec: ' + escapeHtml(data.error || '');
         document.getElementById('executioner-settings-result').innerHTML =
             '<span style="color:' + (data.success ? 'var(--green)' : 'var(--red)') + ';">' + msg + '</span>';
     })
     .catch(err => {
         document.getElementById('executioner-settings-result').innerHTML =
-            '<span style="color:var(--red);">Erreur: ' + err.message + '</span>';
+            '<span style="color:var(--red);">Erreur: ' + escapeHtml(err.message) + '</span>';
     })
     .finally(() => {
         btn.disabled = false;
@@ -988,7 +988,7 @@ function validateSocialApiKey() {
             resultDiv.innerHTML = '<span style="color:var(--green);">✅ Connexion réussie!</span>';
             const accountsHtml = (data.accounts || []).map(acc =>
                 `<div class="agent-card enabled" style="padding:10px;margin:4px 0;">
-                    <span style="font-weight:700;">${acc.platform || acc.name}</span> — ${acc.account_name}
+                    <span style="font-weight:700;">${escapeHtml(acc.platform || acc.name)}</span> — ${escapeHtml(acc.account_name)}
                     <span class="badge badge-idle">Connecté</span>
                 </div>`
             ).join('');
@@ -1030,7 +1030,7 @@ function loadUsers() {
                             <td><span class="badge badge-${u.role === 'client' ? 'blue' : 'amber'}">${escapeHtml(u.role === 'client' ? 'Client' : 'Affilié')}</span></td>
                             <td>${escapeHtml(u.created_at ? u.created_at.slice(0,10) : '—')}</td>
                             <td>${escapeHtml(u.last_login ? u.last_login.slice(0,10) : '—')}</td>
-                            <td><button class="btn btn-gray btn-xs delete-user-btn" data-user-id="${u.id}">Supprimer</button></td>
+                             <td><button class="btn btn-gray btn-xs delete-user-btn" data-user-id="${escapeHtml(u.id)}">Supprimer</button></td>
                         </tr>`).join('')}
                     </tbody>
                 </table>
@@ -1040,16 +1040,35 @@ function loadUsers() {
 }
 
 function showAddUser() {
-    document.getElementById('user-modal').style.display = 'flex';
+    var modal = document.getElementById('user-modal');
+    modal.style.display = 'flex';
     document.getElementById('add-user-error').textContent = '';
     document.getElementById('new-user-email').value = '';
     document.getElementById('new-user-name').value = '';
     document.getElementById('new-user-password').value = '';
+    var firstInput = document.getElementById('new-user-email');
+    if (firstInput) firstInput.focus();
 }
 
 function closeAddUser() {
     document.getElementById('user-modal').style.display = 'none';
 }
+
+function trapModalFocus(e) {
+    var modal = document.getElementById('user-modal');
+    if (modal.style.display === 'none') return;
+    var focusable = modal.querySelectorAll('input, select, textarea, button, [tabindex]:not([tabindex="-1"])');
+    if (!focusable.length) return;
+    var first = focusable[0];
+    var last = focusable[focusable.length - 1];
+    if (e.shiftKey && e.target === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && e.target === last) { e.preventDefault(); first.focus(); }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeAddUser();
+    if (e.key === 'Tab') trapModalFocus(e);
+});
 
 function addUser() {
     var btn = document.getElementById('create-user-btn');
@@ -1139,7 +1158,7 @@ function saveSimpleConnect(platform) {
     .then(data => {
         resultEl.innerHTML = data.success
             ? '<span style="color:var(--green);">✓ Connecté ! Frankie peut maintenant publier sur votre plateforme.</span>'
-            : '<span style="color:var(--red);">Erreur : ' + (data.error || 'Veuillez réessayer.') + '</span>';
+            : '<span style="color:var(--red);">Erreur : ' + escapeHtml(data.error || 'Veuillez réessayer.') + '</span>';
     })
     .catch(() => {
         resultEl.innerHTML = '<span style="color:var(--red);">Échec de la connexion. Veuillez réessayer.</span>';
@@ -1181,8 +1200,8 @@ function loadMCPServers() {
                 var s = servers[k];
                 var icon = icons[k] || '🔌';
                 return '<div class="agent-card enabled" style="padding:16px;">'
-                    + '<strong>' + icon + ' ' + (s.description || k) + '</strong>'
-                    + '<p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">' + (s.description || '') + '</p>'
+                    + '<strong>' + icon + ' ' + escapeHtml(s.description || k) + '</strong>'
+                    + '<p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">' + escapeHtml(s.description || '') + '</p>'
                     + '<span class="badge badge-idle">' + (s.tools || 0) + ' outils</span>'
                     + '</div>';
             }).join('');

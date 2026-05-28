@@ -79,13 +79,9 @@ def get_mcp_credentials():
         cursor = conn.cursor()
         cursor.execute("SELECT server_name, platform, credential_key, credential_value FROM mcp_credentials WHERE user_id = ?", (int(tenant_id),))
         creds = {}
-        cipher = get_credential_cipher()
         for row in cursor.fetchall():
             key = f"{row['server_name']}.{row['platform']}.{row['credential_key']}"
-            try:
-                creds[key] = cipher.decrypt(row["credential_value"].encode()).decode()
-            except (ValueError, TypeError):
-                creds[key] = row["credential_value"]
+            creds[key] = "********"
         return api_success({"credentials": creds})
     except Exception as e:
         return safe_error(e, 500)
