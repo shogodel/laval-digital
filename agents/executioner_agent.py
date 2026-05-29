@@ -172,7 +172,6 @@ class ExecutionerAgent:
         self.register_tool("publish_blog_post", self._publish_blog_post)
         self.register_tool("update_gmb", self._update_gmb)
         self.register_tool("post_to_social", self._post_to_social)
-        self.register_tool("post_to_social_unified", self._post_to_social_unified)
         self.register_tool("send_email", self._send_email)
         self.register_tool("send_sms", self._send_sms)
         self.register_tool("save_content_calendar", self._save_content_calendar)
@@ -740,10 +739,6 @@ class ExecutionerAgent:
         except OSError as exc:
             logger.error("Social post queue failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to queue social post."}
-
-    def _post_to_social_unified(self, *args, **kwargs):
-        logger.warning("_post_to_social_unified is deprecated and always fails")
-        return {"success": False, "result": "", "error": "Unified posting not implemented"}
 
     def _send_email(self, draft: str) -> Dict[str, Any]:
         """Send an email via SMTP or queue to file.

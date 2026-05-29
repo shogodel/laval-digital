@@ -1,33 +1,25 @@
 """Main blueprint — all routes extracted from app.py."""
 
 # ── stdlib ────────────────────────────────────────────────
-import calendar
-import html
 import json
 import logging
 import os
 import re
 import secrets
 import smtplib
-import socket
-import ssl
 import threading
 import uuid
 from datetime import datetime, timedelta, timezone
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from functools import wraps
 from pathlib import Path
-from queue import Empty
 from typing import Any, Dict, Optional
 
 # ── Flask ─────────────────────────────────────────────────
 from flask import (
-    Blueprint, Response, current_app, flash, g,
-    jsonify, redirect, render_template, request,
+    Blueprint, Response,
+    jsonify, redirect, request,
     session, stream_with_context, url_for,
 )
-from flask_login import current_user, login_user, logout_user
+from flask_login import current_user, login_user
 from werkzeug.security import generate_password_hash
 
 # ── App modules ───────────────────────────────────────────
@@ -35,9 +27,9 @@ from core import database
 from core.api_helpers import api_error, api_success
 from core.app_state import (
     encrypt_credential, get_agent_configs, get_agent_meta,
-    get_agent_personalities, get_agent_registry,
-    get_credential_cipher, get_current_user_id,
-    get_email_bridge, get_executioner, get_llm_adapter,
+    get_agent_registry,
+    get_current_user_id,
+    get_executioner, get_llm_adapter,
     get_orchestrator, get_push_manager, get_scheduler_manager,
     get_speech_engine, get_tenant_agent_activity,
     safe_error, safe_int, safe_url,
@@ -49,9 +41,6 @@ from core.auth import (
     add_user_to_tenant,
 )
 from core.events import get_event_bus
-from core.llm_adapter import LLMAdapter
-from core.orchestrator import Orchestrator
-from mcp import AGENT_MCP_ROUTING
 
 logger = logging.getLogger(__name__)
 
@@ -416,7 +405,7 @@ def get_agents():
 
     if tenant_id:
         activity = get_tenant_agent_activity(tenant_id)
-        for agent_id, agent in agent_registry.items():
+        for agent_id, agent in get_agent_registry().items():
             act = activity.get(agent_id, {})
             agents_status.append({
                 "agent_id": agent_id,
@@ -431,7 +420,7 @@ def get_agents():
                 "last_draft_preview": act.get("last_draft_preview"),
             })
     else:
-        for agent_id, agent in agent_registry.items():
+        for agent_id, agent in get_agent_registry().items():
             agents_status.append({
                 "agent_id": agent_id,
                 "enabled": agent.enabled,
@@ -450,10 +439,10 @@ def get_agents():
 @main_bp.route("/api/agents/<agent_id>", methods=["GET"])
 def get_agent_stats(agent_id):
     """Get stats for a specific agent (for the agent chat panel)."""
-    if agent_id not in agent_registry:
+    if agent_id not in get_agent_registry():
         return api_error("Agent not found", 404)
     tenant_id = str(current_user.id) if not current_user.is_anonymous else None
-    stats = {"agent_id": agent_id, "task_count": 0, "success_count": 0, "failure_count": 0, "enabled": agent_registry[agent_id].enabled, "model": agent_registry[agent_id].model}
+    stats = {"agent_id": agent_id, "task_count": 0, "success_count": 0, "failure_count": 0, "enabled": get_agent_registry()[agent_id].enabled, "model": get_agent_registry()[agent_id].model}
     if tenant_id:
         try:
             conn = database._get_conn()
@@ -470,10 +459,10 @@ def get_agent_stats(agent_id):
 @main_bp.route("/api/agents/<agent_id>/toggle", methods=["POST"])
 @admin_required
 def toggle_agent(agent_id):
-    if agent_id not in agent_registry:
+    if agent_id not in get_agent_registry():
         return api_error("Agent not found", 404)
 
-    agent = agent_registry[agent_id]
+    agent = get_agent_registry()[agent_id]
     agent.enabled = not agent.enabled
 
     # Persist toggle to tenant database only if a tenant is selected
@@ -495,9 +484,9 @@ def toggle_agent(agent_id):
 @main_bp.route("/api/agents/<agent_id>/config", methods=["GET"])
 @admin_required
 def get_agent_config(agent_id):
-    if agent_id not in AGENT_CONFIGS:
+    if agent_id not in get_agent_configs():
         return api_error("Agent not found", 404)
-    config = AGENT_CONFIGS[agent_id]
+    config = get_agent_configs()[agent_id]
     api_key = config.get("credentials", {}).get("api_key", "")
     masked_key = ("****" + api_key[-4:]) if api_key and len(api_key) > 4 else ""
     return api_success({
@@ -1003,8 +992,8 @@ def api_onboarding_status():
 @admin_required
 def api_list_schedules():
     tenant_id = request.args.get("tenant_id", "")
-    schedules = scheduler_manager.get_schedules(user_id=safe_int(tenant_id) if tenant_id else None)
-    return api_success({"schedules": schedules, "enabled": scheduler_manager.enabled})
+    schedules = get_scheduler_manager().get_schedules(user_id=safe_int(tenant_id) if tenant_id else None)
+    return api_success({"schedules": schedules, "enabled": get_scheduler_manager().enabled})
 
 @main_bp.route("/api/schedules", methods=["POST"])
 @admin_required
@@ -1019,13 +1008,13 @@ def api_create_schedule():
     lang = data.get("language", "en")
     if not all([tenant_id, agent_id, task, cron]):
         return api_error("tenant_id, agent_id, task, and cron are required", 400)
-    sid = scheduler_manager.create_schedule(safe_int(tenant_id), agent_id, task, cron, lang)
+    sid = get_scheduler_manager().create_schedule(safe_int(tenant_id), agent_id, task, cron, lang)
     return api_success({"id": sid}, status_code=201)
 
 @main_bp.route("/api/schedules/<schedule_id>", methods=["DELETE"])
 @admin_required
 def api_delete_schedule(schedule_id):
-    ok = scheduler_manager.delete_schedule(schedule_id)
+    ok = get_scheduler_manager().delete_schedule(schedule_id)
     return api_success({"success": ok})
 
 @main_bp.route("/api/schedules/<schedule_id>/toggle", methods=["POST"])
@@ -1033,7 +1022,7 @@ def api_delete_schedule(schedule_id):
 def api_toggle_schedule(schedule_id):
     data = request.json
     enabled = (data or {}).get("enabled", True)
-    ok = scheduler_manager.toggle_schedule(schedule_id, enabled)
+    ok = get_scheduler_manager().toggle_schedule(schedule_id, enabled)
     return api_success({"success": ok})
 
 @main_bp.route("/api/actions/pending", methods=["GET"])
@@ -1262,7 +1251,7 @@ def respond_approval(thread_id):
         )
         conn.commit()
 
-        if approved and agent_name and agent_name in agent_registry:
+        if approved and agent_name and agent_name in get_agent_registry():
             # Try MCP execution first, fall back to Executioner
             exec_result = None
             mcp_mapping = AGENT_MCP_ROUTING
@@ -1307,10 +1296,10 @@ def respond_approval(thread_id):
 @main_bp.route("/api/agents/<agent_id>/invoke", methods=["POST"])
 @admin_required
 def invoke_agent(agent_id):
-    if agent_id not in agent_registry:
+    if agent_id not in get_agent_registry():
         return api_error("Agent not found", 404)
 
-    agent = agent_registry[agent_id]
+    agent = get_agent_registry()[agent_id]
 
     if not agent.enabled:
         return api_error("Agent is disabled", 403)
@@ -1327,7 +1316,7 @@ def invoke_agent(agent_id):
     try:
         if tenant_id:
             try:
-                update_tenant_agent_activity(
+                update_agent_activity(
                     tenant_id, agent_id, status="processing"
                 )
             except Exception as e:
@@ -1340,7 +1329,7 @@ def invoke_agent(agent_id):
 
         if tenant_id:
             try:
-                update_tenant_agent_activity(
+                update_agent_activity(
                     tenant_id,
                     agent_id,
                     status="idle",
@@ -1354,7 +1343,7 @@ def invoke_agent(agent_id):
     except Exception as e:
         if tenant_id:
             try:
-                update_tenant_agent_activity(
+                update_agent_activity(
                     tenant_id, agent_id, status="idle"
                 )
             except Exception as e:
@@ -1364,10 +1353,10 @@ def invoke_agent(agent_id):
 @main_bp.route("/api/agents/<agent_id>/chat", methods=["POST"])
 @admin_required
 def agent_chat(agent_id):
-    if agent_id not in agent_registry:
+    if agent_id not in get_agent_registry():
         return api_error(f"Agent '{agent_id}' not found", 404)
 
-    agent = agent_registry[agent_id]
+    agent = get_agent_registry()[agent_id]
     if not agent.enabled:
         return api_error("Agent is disabled", 403)
 
@@ -1425,7 +1414,7 @@ def agent_chat(agent_id):
                     (thread_id, agent_id, message, draft_text, now_iso, now_iso, uid),
                 )
                 conn.commit()
-                update_tenant_agent_activity(
+                update_agent_activity(
                     tenant_id, agent_id,
                     status="idle", last_invoked=now_iso,
                     last_draft_preview=(draft_text[:120] + "...") if len(draft_text) > 120 else draft_text,
@@ -1469,7 +1458,7 @@ def get_agent_threads(agent_id):
     Get all chat threads for a specific agent in the current tenant.
     Returns list of thread IDs with preview of the first message.
     """
-    if agent_id not in agent_registry:
+    if agent_id not in get_agent_registry():
         return api_error(f"Agent '{agent_id}' not found", 404)
 
     tenant_id = get_current_user_id()
@@ -1506,7 +1495,7 @@ def get_agent_thread_history(agent_id, thread_id):
     Get the full conversation history for a specific thread.
     Returns all messages in chronological order.
     """
-    if agent_id not in agent_registry:
+    if agent_id not in get_agent_registry():
         return api_error(f"Agent '{agent_id}' not found", 404)
 
     tenant_id = get_current_user_id()
@@ -1634,11 +1623,6 @@ def switch_tenant():
 
 
 
-def _reinitialize_agent(agent_id: str, config: dict) -> None:
-    cls = AGENT_CLASSES.get(agent_id)
-    if cls:
-        agent_registry[agent_id] = cls(agent_id, config)
-
 def _safe_tenant_id(tenant_id: str) -> Optional[int]:
     """Safely convert tenant_id to int, returning None if invalid."""
     if not tenant_id or not str(tenant_id).strip().isdigit():
@@ -1662,13 +1646,6 @@ def _get_pending_actions(tenant_id: str, status: str = "pending") -> list:
         logger.error("Failed to get pending actions for %s: %s", tenant_id, e)
         return []
 
-def _add_pending_action(
-    tenant_id: str, agent_name: str, tool_name: str,
-    content: str, provider: str = "web", subject: str = "",
-) -> str:
-    uid = _safe_tenant_id(tenant_id)
-    if uid is None:
-        return ""
     action_id = uuid.uuid4().hex[:12]
     try:
         conn = database._get_conn()
