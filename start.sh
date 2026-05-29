@@ -8,8 +8,8 @@ exec gunicorn \
     --worker-class gthread \
     --bind 127.0.0.1:5000 \
     --timeout 120 \
-    --graceful-timeout 30 \
-    --keep-alive 5 \
+    --graceful-timeout 120 \
+    --keep-alive 15 \
     --max-requests 10000 \
     --max-requests-jitter 2000 \
     --capture-output \

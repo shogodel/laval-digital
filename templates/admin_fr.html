@@ -399,934 +399,188 @@
 </div>
 
 <script nonce="{{ csp_nonce }}">
-/* ── CSRF: patch fetch to include X-CSRFToken on all non-GET requests ── */
-(function() {
-    var token = document.querySelector('meta[name="csrf-token"]');
-    if (!token) return;
-    var origFetch = window.fetch;
-    window.fetch = function(url, opts) {
-        opts = opts || {};
-        if (!opts.method || opts.method === 'GET' || opts.method === 'HEAD' || opts.method === 'OPTIONS') {
-            return origFetch.call(this, url, opts);
-        }
-        opts.headers = opts.headers || {};
-        if (opts.headers instanceof Headers) {
-            if (!opts.headers.has('X-CSRFToken')) {
-                opts.headers.append('X-CSRFToken', token.content);
-            }
-        } else {
-            opts.headers['X-CSRFToken'] = opts.headers['X-CSRFToken'] || token.content;
-        }
-        return origFetch.call(this, url, opts);
-    };
-})();
-
-/* ── Navigation par onglets ── */
-var defaultTab = "{{ default_tab|default('') }}";
-function switchTab(tab) {
-    document.querySelectorAll('.sidebar-nav a').forEach(function(a) { a.classList.remove('active'); a.setAttribute('aria-selected', 'false'); });
-    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
-    var link = document.querySelector('.sidebar-nav a[data-tab="' + tab + '"]');
-    if (link) { link.classList.add('active'); link.setAttribute('aria-selected', 'true'); document.getElementById('page-title').textContent = link.textContent.trim(); }
-    document.getElementById('tab-' + tab).classList.add('active');
-}
-document.querySelectorAll('.sidebar-nav a[data-tab]').forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
-        document.querySelectorAll('.sidebar-nav a').forEach(a => { a.classList.remove('active'); a.setAttribute('aria-selected', 'false'); });
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        this.setAttribute('aria-selected', 'true');
-        const tab = this.dataset.tab;
-        document.getElementById('tab-' + tab).classList.add('active');
-        document.getElementById('page-title').textContent = this.textContent.trim();
-        if (window.innerWidth <= 640) toggleSidebar();
-    });
-});
-if (defaultTab) switchTab(defaultTab);
-
-function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('overlay').classList.toggle('show');
-}
-
-/* ── Changement de client ── */
-function switchTenant(tenantId) {
-    const sel = document.getElementById('tenant-select');
-    const el = document.getElementById('tenant-switch-result');
-    sel.disabled = true;
-    el.textContent = 'Changement...';
-    fetch('/api/tenants/switch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant_id: tenantId })
-    })
-    .then(r => r.json())
-    .then(data => {
-        el.textContent = data.message || 'Client changé!';
-        document.getElementById('active-tenant-label').textContent = data.active_tenant || 'Aucun utilisateur sélectionné';
-        document.querySelector('.tenant-pill .dot').className = data.active_tenant ? 'dot active' : 'dot inactive';
-        refreshAll();
-    })
-    .catch(err => { el.textContent = 'Erreur: ' + err.message; })
-    .finally(function() { sel.disabled = false; });
-}
-
-function refreshAll() {
-    loadAgents(); loadApprovals(); loadPendingExecutions(); loadExecutions(); updateDashboard(); loadUsers();
-    if (typeof loadAnalytics === 'function') loadAnalytics();
-    if (typeof loadManagedClients === 'function') loadManagedClients();
-}
-
-/* ── Tableau de Bord ── */
-function updateDashboard() {
-    fetch('/api/agents').then(r => r.json()).then(data => {
-        const agents = data.agents || [];
-        document.getElementById('stat-agents').textContent = agents.length;
-        document.getElementById('stat-active').textContent = agents.filter(a => a.enabled).length;
-    });
-    fetch('/api/approvals').then(r => r.json()).then(data => {
-        document.getElementById('stat-pending').textContent = (data.approvals || []).length;
-    });
-    fetch('/api/executions').then(r => r.json()).then(data => {
-        document.getElementById('stat-executions').textContent = (data.executions || []).length;
-    });
-}
-
-/* ── Agents ── */
-const AGENT_META = {
-    local_seo: { name: 'SEO Local', desc: 'Optimisation du profil Google Business, citations locales, contenu de mots-clés locaux, gestion des avis' },
-    social_media: { name: 'Médias Sociaux', desc: 'Publications sur les réseaux sociaux, création de contenu, calendriers de contenu, stratégies d\'engagement' },
-    lead_conversion: { name: 'Conversion de Prospects', desc: 'Séquences de suivi des prospects, intégration CRM, optimisation des conversions, campagnes courriel' },
-    paid_ads: { name: 'Annonces Payantes', desc: 'Campagnes Google & Meta, création de contenu publicitaire, stratégie de mots-clés, allocation budgétaire, tests A/B, ciblage d\'audience' },
-    growth_hacker: { name: 'Growth Hacker', desc: 'Audits de croissance, boucles virales, optimisation du taux de conversion, stratégies de partenariat, expériences basées sur les données' },
-    reputation: { name: 'Réputation', desc: 'Surveillance des avis en ligne, génération de réponses aux avis, campagnes de sollicitation d\'avis, audits de réputation, gestion de crise' },
-    email_marketing: { name: 'Marketing Courriel', desc: 'Campagnes infolettres, courriels promotionnels, séquences de nurturing, campagnes de réactivation, suivis post-service' },
-    tiktok: { name: 'TikTok', desc: 'Contenu vidéo court pour TikTok, Instagram Reels, YouTube Shorts, calendriers de contenu, scripts vidéo, adaptation aux tendances' },
-    outreach: { name: 'Prospection', desc: 'Courriels de prospection, recherche de prospects, séquences de campagnes, automatisation de suivi, prospection personnalisée à grande échelle' },
-    backlinks: { name: 'Backlinks', desc: 'Création de liens, prospection d\'articles invités, création de citations, analyse des écarts de backlinks, récupération de liens brisés, soumissions d\'annuaires' },
-    content_strategy: { name: 'Stratégie de Contenu', desc: 'Calendriers éditoriaux, réutilisation multi-canal, briefs de contenu, clusters thématiques, planification saisonnière' },
-    technical_seo: { name: 'SEO Technique', desc: 'Balises schema, optimisation de vitesse, audits de crawl, sitemaps XML, Core Web Vitals, optimisation mobile' },
-    reporting: { name: 'Analytiques & Rapports', desc: 'Résumés de performance multi-canaux, analyse de tendances, calculs ROI, briefs exécutifs, rapports mensuels' },
-    cro: { name: 'CRO & Pages d\'Atterrissage', desc: 'Optimisation du taux de conversion, analyse de tests A/B, optimisation d\'entonnoir, stratégie CTA' },
-    video: { name: 'Production Vidéo', desc: 'Scripts YouTube, vidéos explicatives, scripts publicitaires, SEO vidéo, planification de séries' },
-    sms_marketing: { name: 'Marketing SMS', desc: 'Planification de campagnes SMS, conception de séquences, conformité CASL, rédaction concise, stratégie de timing' },
+window.ADMIN_CONFIG = {
+    defaultTab: "{{ default_tab|default('') }}",
+    locale: 'fr',
+    agentChatUrl: '{{ url_for('admin_fr.agent_chat_fr', agent_id='') }}',
 };
-let AGENT_PERSONALITIES = {};
+</script>
+<script src="{{ url_for('static', filename='admin.js') }}"></script>
+<script nonce="{{ csp_nonce }}">
+/* ── French template-specific functions (Agent Config, Task Submit) ── */
 
-function loadPersonalities() {
-    return fetch('/api/personalities')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            AGENT_PERSONALITIES = data.personalities || {};
-        })
-        .catch(function(e) { console.error(e); });
-}
-
-function loadAgents() {
-    return fetch('/api/agents')
-        .then(r => r.json())
-        .then(data => {
-            const agents = data.agents || [];
-            const html = agents.map(a => {
-                const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), desc: '' };
-                const p = AGENT_PERSONALITIES[a.agent_id] || {};
-                const emoji = p.emoji || '🤖';
-                const color = p.color || '#6b7280';
-                const status = a.enabled ? a.status : 'disabled';
-                const statusLabels = { processing:'En cours', pending_approval:'Approbation en attente', pending_confirmation:'Confirmation en attente', idle:'Inactif', disabled:'Désactivé' };
-                const label = statusLabels[status] || 'Inactif';
-                const lastInvoked = a.last_invoked ? new Date(a.last_invoked).toLocaleString('fr-CA') : '--';
-                return `
-                <div class="agent-card ${a.enabled ? 'enabled' : 'disabled'}" data-agent-id="${escapeHtml(a.agent_id)}">
-                    <div class="agent-name"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${color}20;font-size:0.8rem;margin-right:6px;">${emoji}</span>${escapeHtml(meta.name)}</div>
-                    <div class="agent-desc">${escapeHtml(meta.desc)}</div>
-                    <div class="row"><span class="label">Statut</span><span class="badge badge-${status}">${label}</span></div>
-                    <div class="row"><span class="label">Modèle</span><span class="value">${escapeHtml(a.model)}</span></div>
-                    <div class="row"><span class="label">Tâches</span><span class="value">${a.task_count} (${a.success_count} ok / ${a.failure_count} éch.)</span></div>
-                    <div class="row"><span class="label">Dernière</span><span class="value">${lastInvoked}</span></div>
-                    <div class="draft-preview">${escapeHtml(a.last_draft_preview || '—')}</div>
-                    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
-                        <button class="btn btn-gray btn-xs chat-btn">💬 Discuter</button>
-                        <button class="btn btn-${a.enabled ? 'gray' : 'green'} btn-xs toggle-btn">
-                            ${a.enabled ? 'Désactiver' : 'Activer'}
-                        </button>
-                    </div>
-                </div>`;
-            }).join('');
-            document.getElementById('agent-list').innerHTML = html || '<p class="empty">Aucun agent trouvé.</p>';
-            updateDashboard();
-        });
-}
-
-let togglePromise = Promise.resolve();
-
-function toggleAgent(agentId) {
-    togglePromise = togglePromise.then(() => {
-        const btn = document.querySelector(`[data-agent-id="${agentId}"] .toggle-btn`);
-        if (btn) btn.disabled = true;
-        return fetch(`/api/agents/${agentId}/toggle`, { method: 'POST' })
-            .then(r => r.json())
-            .then(() => loadAgents());
-    });
-}
-
-/* ── Tâches ── */
 function submitTask() {
-    const task = document.getElementById('task-input').value;
-    if (!task) return alert('Veuillez entrer une tâche');
-    const el = document.getElementById('task-result');
+    var task = document.getElementById('task-input');
+    if (!task || !task.value) return alert('Veuillez entrer une tâche');
+    var el = document.getElementById('task-result');
+    if (!el) return;
     el.innerHTML = '<span style="color:var(--blue);">Soumission...</span>';
     fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ request: task })
+        body: JSON.stringify({ request: task.value })
     })
-    .then(r => r.json())
-    .then(data => {
-        const status = data.status === 'completed' ? 'Terminée' : 'En attente';
-        el.innerHTML = `<span style="color:var(--green);">✓ ${status}</span>`;
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var status = data.status === 'completed' ? 'Terminée' : 'En attente';
+        el.innerHTML = '<span style="color:var(--green);">✓ ' + status + '</span>';
         setTimeout(loadApprovals, 2000);
     })
-    .catch(err => {
+    .catch(function(err) {
+        el.innerHTML = '';
         var span = document.createElement('span');
         span.style.color = 'var(--red)';
         span.textContent = 'Erreur: ' + err.message;
-        el.innerHTML = '';
         el.appendChild(span);
     });
 }
 
-function loadApprovals() {
-    fetch('/api/approvals')
-        .then(r => r.json())
-        .then(data => {
-            const approvals = data.approvals || [];
-            const list = document.getElementById('approvals-list');
-            if (!approvals.length) {
-                list.innerHTML = '<p class="empty">Aucune approbation en attente</p>';
-                updateDashboard();
-                return;
-            }
-            list.innerHTML = approvals.map(a => `
-                <div class="approval-card" data-thread-id="${escapeHtml(a.thread_id)}">
-                    <h3>Agent: ${escapeHtml(a.agent)}</h3>
-                    <p><strong>Tâche:</strong> ${escapeHtml(a.task)}</p>
-                    <p><strong>Brouillon:</strong></p>
-                    <pre>${escapeHtml(a.draft)}</pre>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-                        <button class="btn btn-green btn-sm approve-btn">✓ Approuver</button>
-                        <button class="btn btn-gray btn-sm show-reject-btn">✗ Rejeter</button>
-                    </div>
-                    <div class="reject-form" style="display:none;margin-top:8px;">
-                        <div style="display:flex;gap:8px;">
-                            <input type="text" class="reject-feedback" placeholder="Commentaires (optionnel)" style="flex:1;">
-                            <button class="btn btn-red btn-sm confirm-reject-btn">Confirmer</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-            updateDashboard();
-        });
-}
-
-function escapeHtml(t) {
-    const d = document.createElement('div');
-    d.textContent = t;
-    return d.innerHTML;
-}
-
-function showRejectForm(threadId) {
-    document.getElementById('reject-form-' + threadId).style.display = 'block';
-}
-
-function respondApproval(threadId, approved, btn) {
-    btn.disabled = true;
-    const card = document.querySelector(`.approval-card[data-thread-id="${threadId}"]`);
-    const feedback = card ? (card.querySelector('.reject-feedback')?.value || '') : '';
-    fetch('/api/approvals/' + threadId + '/respond', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approved, feedback })
-    })
-    .then(function(r) {
-        if (!r.ok) throw new Error('Server returned ' + r.status);
-        return r.json();
-    })
-    .then(function(data) {
-        if (data.status === 'completed') {
-            toast(approved ? 'Approuvé!' : 'Rejeté!', 'success');
-            loadApprovals();
-            loadAgents();
-            loadPendingExecutions();
-            updateDashboard();
-        } else if (data.error) {
-            toast('Erreur: ' + data.error, 'error');
-        } else {
-            toast('Réponse inattendue du serveur.', 'error');
-        }
-    })
-    .catch(function(err) {
-        toast('Erreur réseau: ' + err.message, 'error');
-    })
-    .finally(function() { btn.disabled = false; });
-}
-
-/* ── Confirmations en Attente ── */
-function loadPendingExecutions() {
-    fetch('/api/executioner/pending')
-        .then(r => r.json())
-        .then(data => {
-            const list = document.getElementById('pending-executions-list');
-            if (!data.pending || !data.pending.length) {
-                list.innerHTML = '<p class="empty">Aucune confirmation en attente</p>';
-                return;
-            }
-            list.innerHTML = data.pending.map(p => `
-                <div class="approval-card" style="background:var(--blue-bg);border-color:#bfdbfe;" data-execution-id="${escapeHtml(p.execution_id)}">
-                    <p><strong>Agent:</strong> ${escapeHtml(p.agent_name)} &middot; <strong>Outil:</strong> ${escapeHtml(p.tool_name)}</p>
-                    <p><small>${new Date(p.created_at).toLocaleString('fr-CA')}</small></p>
-                    <pre style="font-size:0.8em;">${escapeHtml(p.draft_preview)}</pre>
-                    <div style="display:flex;gap:8px;">
-                        <button class="btn btn-green btn-sm confirm-exec-btn">Confirmer</button>
-                        <button class="btn btn-red btn-sm reject-exec-btn">Rejeter</button>
-                    </div>
-                </div>
-            `).join('');
-        })
-        .catch(() => {
-            document.getElementById('pending-executions-list').innerHTML = '<p class="empty">Échec du chargement</p>';
-        });
-}
-
-function confirmPending(executionId, btn) {
-    btn.disabled = true;
-    fetch('/api/executioner/confirm/' + executionId, { method: 'POST' })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) { loadPendingExecutions(); loadAgents(); }
-            else alert('Échec: ' + (data.error || 'inconnu'));
-        })
-        .catch(err => alert('Erreur: ' + err.message))
-        .finally(function() { btn.disabled = false; });
-}
-
-function rejectPending(executionId, btn) {
-    btn.disabled = true;
-    fetch('/api/executioner/reject/' + executionId, { method: 'POST' })
-        .then(r => r.json())
-        .then(() => { loadPendingExecutions(); })
-        .catch(err => alert('Erreur: ' + err.message))
-        .finally(function() { btn.disabled = false; });
-}
-
-/* ── Activité d'Exécution ── */
-function loadExecutions() {
-    fetch('/api/executions')
-        .then(r => r.json())
-        .then(data => {
-            const list = document.getElementById('execution-list');
-            if (!data.executions || !data.executions.length) {
-                list.innerHTML = '<p class="empty">Aucune exécution</p>';
-                return;
-            }
-            list.innerHTML = data.executions.slice(0, 20).map(e => `
-                <div class="execution-card ${e.success ? 'success' : 'fail'}">
-                    <strong>${escapeHtml(e.agent_name)}</strong> &middot; ${escapeHtml(e.tool_name)} &middot; <small>${new Date(e.timestamp).toLocaleString('fr-CA')}</small>
-                    ${e.error ? '&middot; <span style="color:var(--red);">' + escapeHtml(e.error) + '</span>' : ''}
-                    <details style="margin-top:4px;"><summary style="cursor:pointer;font-size:0.8rem;color:var(--gray-500);">Aperçu du brouillon</summary><pre style="font-size:0.75rem;margin-top:4px;white-space:pre-wrap;">${escapeHtml(e.draft_preview)}</pre></details>
-                </div>
-            `).join('');
-            updateDashboard();
-        })
-        .catch(() => {
-            document.getElementById('execution-list').innerHTML = '<p class="empty">Échec du chargement</p>';
-        });
-}
-
-/* ── Configuration des Agents ── */
 function populateAgentSelect() {
     fetch('/api/agents')
-        .then(r => r.json())
-        .then(data => {
-            const select = document.getElementById('config-agent-select');
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var select = document.getElementById('config-agent-select');
+            if (!select) return;
             select.innerHTML = '<option value="">-- Choisir un agent --</option>';
-            const allOpt = document.createElement('option');
+            var allOpt = document.createElement('option');
             allOpt.value = 'all';
             allOpt.textContent = 'Tous les agents';
             allOpt.style.fontWeight = '700';
             allOpt.style.background = '#f3f4f6';
             select.appendChild(allOpt);
-            (data.agents || []).forEach(a => {
-                const meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) };
-                const opt = document.createElement('option');
-                opt.value = a.agent_id; opt.textContent = meta.name;
+            (data.agents || []).forEach(function(a) {
+                var meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }) };
+                var opt = document.createElement('option');
+                opt.value = a.agent_id;
+                opt.textContent = meta.name;
                 select.appendChild(opt);
             });
         });
 }
 
 function loadAgentConfig() {
-    const agentId = document.getElementById('config-agent-select').value;
-    if (!agentId) {
-        document.getElementById('agent-config-form').style.display = 'none';
-        return;
-    }
-    document.getElementById('agent-config-form').style.display = 'block';
+    var agentId = document.getElementById('config-agent-select').value;
+    var form = document.getElementById('agent-config-form');
+    if (!agentId) { if (form) form.style.display = 'none'; return; }
+    if (form) form.style.display = 'block';
     document.getElementById('config-model').innerHTML = '<option value="">-- Entrer une clé API et cliquer Détecter --</option>';
-    document.getElementById('detect-result').textContent = '';
+    var resultDiv = document.getElementById('detect-result');
+    if (resultDiv) resultDiv.textContent = '';
 
-    const badge = document.getElementById('config-badge');
     if (agentId === 'all') {
-        document.getElementById('config-api-key').value = '';
-        document.getElementById('config-api-base').value = '';
-        document.getElementById('detect-btn').disabled = true;
+        var keyEl = document.getElementById('config-api-key');
+        if (keyEl) keyEl.value = '';
+        var baseEl = document.getElementById('config-api-base');
+        if (baseEl) baseEl.value = '';
+        var detectBtn = document.getElementById('detect-btn');
+        if (detectBtn) detectBtn.disabled = true;
+        var badge = document.getElementById('config-badge');
         if (!badge) {
-            const b = document.createElement('span');
+            var b = document.createElement('span');
             b.id = 'config-badge';
             b.className = 'config-badge';
             b.textContent = 'appliqué à tous les agents';
-            const container = document.querySelector('.form-group label');
+            var container = document.querySelector('.form-group label');
             if (container) container.after(b);
         }
     } else {
+        var badge = document.getElementById('config-badge');
         if (badge) badge.remove();
         fetch('/api/agents/' + agentId + '/config')
-            .then(r => r.json())
-            .then(data => {
-                document.getElementById('config-api-key').value = data.api_key || '';
-                document.getElementById('config-api-base').value = data.api_base || '';
-                document.getElementById('detect-btn').disabled = !data.api_key;
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var keyEl = document.getElementById('config-api-key');
+                if (keyEl) keyEl.value = data.api_key || '';
+                var baseEl = document.getElementById('config-api-base');
+                if (baseEl) baseEl.value = data.api_base || '';
+                var detectBtn = document.getElementById('detect-btn');
+                if (detectBtn) detectBtn.disabled = !data.api_key;
             })
-            .catch(e => console.error(e));
+            .catch(function(e) { console.error(e); });
     }
 }
 
 function detectModels() {
-    const apiKey = document.getElementById('config-api-key').value.trim();
-    if (!apiKey) return;
-    const btn = document.getElementById('detect-btn');
-    const resultDiv = document.getElementById('detect-result');
-    btn.disabled = true; btn.textContent = 'Détection...';
-    resultDiv.textContent = '';
+    var apiKey = document.getElementById('config-api-key');
+    if (!apiKey || !apiKey.value.trim()) return;
+    var btn = document.getElementById('detect-btn');
+    var resultDiv = document.getElementById('detect-result');
+    if (btn) { btn.disabled = true; btn.textContent = 'Détection...'; }
+    if (resultDiv) resultDiv.textContent = '';
     fetch('/api/models/detect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ api_key: apiKey })
+        body: JSON.stringify({ api_key: apiKey.value.trim() })
     })
-    .then(r => r.json())
-    .then(data => {
-        const select = document.getElementById('config-model');
-        if (data.provider === 'unknown' || !data.models.length) {
-            select.innerHTML = '<option value="">-- Aucun modèle détecté --</option>';
-            resultDiv.textContent = 'Impossible de détecter le fournisseur. Vérifiez votre clé.';
-            resultDiv.style.color = 'var(--red)'; return;
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var select = document.getElementById('config-model');
+        if (data.provider === 'unknown' || !data.models || !data.models.length) {
+            if (select) select.innerHTML = '<option value="">-- Aucun modèle détecté --</option>';
+            if (resultDiv) { resultDiv.textContent = 'Impossible de détecter le fournisseur. Vérifiez votre clé.'; resultDiv.style.color = 'var(--red)'; }
+            return;
         }
-        select.innerHTML = '';
-        data.models.forEach(m => {
-            const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
-            select.appendChild(opt);
-        });
-        resultDiv.textContent = 'Fournisseur: ' + data.provider + ' (' + data.models.length + ' modèles)';
-        resultDiv.style.color = 'var(--green)';
+        if (select) {
+            select.innerHTML = '';
+            data.models.forEach(function(m) {
+                var opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m;
+                select.appendChild(opt);
+            });
+        }
+        if (resultDiv) { resultDiv.textContent = 'Fournisseur: ' + data.provider + ' (' + data.models.length + ' modèles)'; resultDiv.style.color = 'var(--green)'; }
     })
-    .catch(err => {
-        document.getElementById('config-model').innerHTML = '<option value="">-- Échec de la détection --</option>';
-        resultDiv.textContent = 'Erreur: ' + err.message;
-        resultDiv.style.color = 'var(--red)';
+    .catch(function(err) {
+        var select = document.getElementById('config-model');
+        if (select) select.innerHTML = '<option value="">-- Échec de la détection --</option>';
+        if (resultDiv) { resultDiv.textContent = 'Erreur: ' + err.message; resultDiv.style.color = 'var(--red)'; }
     })
-    .finally(() => { btn.disabled = false; btn.textContent = 'Détecter'; });
+    .finally(function() { if (btn) { btn.disabled = false; btn.textContent = 'Détecter'; } });
 }
 
 function saveAgentConfig() {
-    const agentId = document.getElementById('config-agent-select').value;
-    const model = document.getElementById('config-model').value;
-    const apiKey = document.getElementById('config-api-key').value;
-    const apiBase = document.getElementById('config-api-base').value;
-    const resultEl = document.getElementById('config-save-result');
+    var agentId = document.getElementById('config-agent-select').value;
+    var model = document.getElementById('config-model').value;
+    var apiKey = document.getElementById('config-api-key').value;
+    var apiBase = document.getElementById('config-api-base').value;
+    var resultEl = document.getElementById('config-save-result');
 
     if (agentId === 'all') {
-        const agentIds = Object.keys(AGENT_META);
-        resultEl.innerHTML = '<span style="color:var(--blue);">Sauvegarde vers tous les agents...</span>';
+        var agentIds = Object.keys(AGENT_META);
+        if (resultEl) resultEl.innerHTML = '<span style="color:var(--blue);">Sauvegarde vers tous les agents...</span>';
         fetch('/api/agents/bulk/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ agent_ids: agentIds, model, api_key: apiKey, api_base: apiBase })
+            body: JSON.stringify({ agent_ids: agentIds, model: model, api_key: apiKey, api_base: apiBase })
         })
-        .then(r => r.json())
-        .then(data => {
-            const msg = data.updated.length + ' agent(s) mis à jour' + (data.errors.length ? ', ' + data.errors.length + ' erreur(s)' : '');
-            resultEl.innerHTML = '<span style="color:var(--green);">' + msg + '</span>';
-            setTimeout(() => { resultEl.textContent = ''; }, 4000);
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var msg = data.updated.length + ' agent(s) mis à jour' + (data.errors.length ? ', ' + data.errors.length + ' erreur(s)' : '');
+            if (resultEl) { resultEl.innerHTML = '<span style="color:var(--green);">' + msg + '</span>'; setTimeout(function() { if (resultEl) resultEl.textContent = ''; }, 4000); }
         })
-        .catch(() => {
-            resultEl.innerHTML = '<span style="color:var(--red);">Erreur de sauvegarde</span>';
-        });
+        .catch(function() { if (resultEl) resultEl.innerHTML = '<span style="color:var(--red);">Erreur de sauvegarde</span>'; });
     } else {
         fetch('/api/agents/' + agentId + '/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model, api_key: apiKey, api_base: apiBase })
+            body: JSON.stringify({ model: model, api_key: apiKey, api_base: apiBase })
         })
-        .then(r => r.json())
-        .then(() => {
-            resultEl.innerHTML = '<span style="color:var(--green);">Sauvegardé!</span>';
-            setTimeout(() => { resultEl.textContent = ''; }, 3000);
-        })
-        .catch(() => {
-            resultEl.innerHTML = '<span style="color:var(--red);">Erreur de sauvegarde</span>';
-        });
-    }
-}
-
-/* ── Paramètres d'Exécution ── */
-function loadExecutionerSettings() {
-    fetch('/api/executioner/settings')
-        .then(r => r.json())
-        .then(s => {
-            document.getElementById('smtp-host').value = s.smtp_host || '';
-            document.getElementById('smtp-port').value = s.smtp_port || 587;
-            document.getElementById('smtp-username').value = s.smtp_username || '';
-            document.getElementById('smtp-password').value = '';
-            document.getElementById('smtp-password').placeholder = s.smtp_password ? '········' : '';
-            document.getElementById('smtp-from').value = s.smtp_from_email || '';
-            document.getElementById('smtp-tls').checked = s.smtp_use_tls !== false;
-            document.getElementById('social-api-provider').value = s.social_api_provider || 'socialapi';
-            document.getElementById('unified-social-api-key').value = s.social_api_key || '';
-        })
-        .catch(e => console.error(e));
-}
-
-function saveExecutionerSettings() {
-    var btn = document.getElementById('save-settings-btn');
-    btn.disabled = true;
-    const pw = document.getElementById('smtp-password').value;
-    const settings = {
-        smtp_host: document.getElementById('smtp-host').value,
-        smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
-        smtp_username: document.getElementById('smtp-username').value,
-        smtp_from_email: document.getElementById('smtp-from').value,
-        smtp_use_tls: document.getElementById('smtp-tls').checked,
-        social_api_provider: document.getElementById('social-api-provider').value,
-        unified_social_api_key: document.getElementById('unified-social-api-key').value,
-    };
-    if (pw) settings.smtp_password = pw;
-    fetch('/api/executioner/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
-    })
-    .then(r => r.json())
-    .then(() => {
-        document.getElementById('executioner-settings-result').innerHTML = '<span style="color:var(--green);">Sauvegardé!</span>';
-        setTimeout(() => { document.getElementById('executioner-settings-result').textContent = ''; }, 3000);
-    })
-    .catch(err => {
-        var span = document.createElement('span');
-        span.style.color = 'var(--red)';
-        span.textContent = 'Erreur: ' + err.message;
-        document.getElementById('executioner-settings-result').innerHTML = '';
-        document.getElementById('executioner-settings-result').appendChild(span);
-    })
-    .finally(function() { btn.disabled = false; });
-}
-
-function testSmtp(event) {
-    const testEmail = document.getElementById('smtp-test-email').value;
-    if (!testEmail) return alert('Veuillez entrer une adresse courriel de test.');
-    const btn = event.target;
-    btn.disabled = true;
-    btn.textContent = 'Envoi...';
-
-    fetch('/api/executioner/test-smtp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            to_email: testEmail,
-            smtp_host: document.getElementById('smtp-host').value,
-            smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
-            smtp_username: document.getElementById('smtp-username').value,
-            smtp_password: document.getElementById('smtp-password').value,
-            smtp_from_email: document.getElementById('smtp-from').value || document.getElementById('smtp-username').value,
-            smtp_use_tls: document.getElementById('smtp-tls').checked
-        })
-    })
-    .then(r => r.json())
-    .then(data => {
-        const msg = data.success ? '✅ Courriel test envoyé! Vérifiez votre boîte de réception.' : '❌ Échec: ' + escapeHtml(data.error || '');
-        document.getElementById('executioner-settings-result').innerHTML =
-            '<span style="color:' + (data.success ? 'var(--green)' : 'var(--red)') + ';">' + msg + '</span>';
-    })
-    .catch(err => {
-        document.getElementById('executioner-settings-result').innerHTML =
-            '<span style="color:var(--red);">Erreur: ' + escapeHtml(err.message) + '</span>';
-    })
-    .finally(() => {
-        btn.disabled = false;
-        btn.textContent = '📧 Envoyer un Courriel Test';
-    });
-}
-
-function validateSocialApiKey() {
-    var btn = document.getElementById('test-social-key-btn');
-    btn.disabled = true;
-    const provider = document.getElementById('social-api-provider').value;
-    const apiKey = document.getElementById('unified-social-api-key').value;
-    if (!apiKey) { btn.disabled = false; return alert('Veuillez entrer votre clé API unifiée.'); }
-
-    const resultDiv = document.getElementById('social-key-validation-result');
-    resultDiv.innerHTML = '<span style="color:var(--blue);">Test de connexion...</span>';
-
-    fetch('/api/executioner/validate-social-key', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, api_key: apiKey })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            resultDiv.innerHTML = '<span style="color:var(--green);">✅ Connexion réussie!</span>';
-            const accountsHtml = (data.accounts || []).map(acc =>
-                `<div class="agent-card enabled" style="padding:10px;margin:4px 0;">
-                    <span style="font-weight:700;">${escapeHtml(acc.platform || acc.name)}</span> — ${escapeHtml(acc.account_name)}
-                    <span class="badge badge-idle">Connecté</span>
-                </div>`
-            ).join('');
-            document.getElementById('connected-accounts-list').innerHTML = accountsHtml;
-        } else {
-            var span = document.createElement('span');
-            span.style.color = 'var(--red)';
-            span.textContent = 'Connexion échouée: ' + data.error;
-            resultDiv.innerHTML = '';
-            resultDiv.appendChild(span);
-        }
-    })
-    .finally(function() { btn.disabled = false; });
-}
-
-/* ── Gestion des Utilisateurs ── */
-function loadUsers() {
-    const roleFilter = document.getElementById('user-role-filter')?.value || '';
-    const list = document.getElementById('users-list');
-    if (!list) return;
-    list.innerHTML = '<p class="empty">Chargement des utilisateurs...</p>';
-    fetch('/api/users?role=' + encodeURIComponent(roleFilter))
-        .then(r => r.json())
-        .then(data => {
-            if (data.error) { list.innerHTML = '<p class="empty">' + escapeHtml(data.error) + '</p>'; return; }
-            const users = data.users || [];
-            if (!users.length) {
-                list.innerHTML = '<p class="empty">Aucun utilisateur trouvé pour ce client.</p>'; return;
-            }
-            list.innerHTML = `
-            <div style="overflow-x:auto;">
-                <table>
-                    <thead><tr><th>Courriel</th><th>Nom</th><th>Rôle</th><th>Créé</th><th>Dernière Connexion</th><th>Actions</th></tr></thead>
-                    <tbody>
-                        ${users.map(u => `
-                        <tr>
-                            <td>${escapeHtml(u.email)}</td>
-                            <td>${escapeHtml(u.display_name || '—')}</td>
-                            <td><span class="badge badge-${u.role === 'client' ? 'blue' : 'amber'}">${escapeHtml(u.role === 'client' ? 'Client' : 'Affilié')}</span></td>
-                            <td>${escapeHtml(u.created_at ? u.created_at.slice(0,10) : '—')}</td>
-                            <td>${escapeHtml(u.last_login ? u.last_login.slice(0,10) : '—')}</td>
-                             <td><button class="btn btn-gray btn-xs delete-user-btn" data-user-id="${escapeHtml(u.id)}">Supprimer</button></td>
-                        </tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>`;
-        })
-        .catch(() => { list.innerHTML = '<p class="empty">Échec du chargement des utilisateurs.</p>'; });
-}
-
-function showAddUser() {
-    var modal = document.getElementById('user-modal');
-    modal.style.display = 'flex';
-    document.getElementById('add-user-error').textContent = '';
-    document.getElementById('new-user-email').value = '';
-    document.getElementById('new-user-name').value = '';
-    document.getElementById('new-user-password').value = '';
-    var firstInput = document.getElementById('new-user-email');
-    if (firstInput) firstInput.focus();
-}
-
-function closeAddUser() {
-    document.getElementById('user-modal').style.display = 'none';
-}
-
-function trapModalFocus(e) {
-    var modal = document.getElementById('user-modal');
-    if (modal.style.display === 'none') return;
-    var focusable = modal.querySelectorAll('input, select, textarea, button, [tabindex]:not([tabindex="-1"])');
-    if (!focusable.length) return;
-    var first = focusable[0];
-    var last = focusable[focusable.length - 1];
-    if (e.shiftKey && e.target === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && e.target === last) { e.preventDefault(); first.focus(); }
-}
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeAddUser();
-    if (e.key === 'Tab') trapModalFocus(e);
-});
-
-function addUser() {
-    var btn = document.getElementById('create-user-btn');
-    btn.disabled = true;
-    const email = document.getElementById('new-user-email').value.trim();
-    const name = document.getElementById('new-user-name').value.trim();
-    const password = document.getElementById('new-user-password').value;
-    const role = document.getElementById('new-user-role').value;
-    const errorEl = document.getElementById('add-user-error');
-
-    if (!email || !password) { errorEl.textContent = 'Le courriel et le mot de passe sont requis.'; btn.disabled = false; return; }
-
-    fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, display_name: name, password, role })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.error) { errorEl.textContent = data.error; return; }
-        closeAddUser();
-        loadUsers();
-    })
-    .catch(err => { errorEl.textContent = 'Erreur: ' + err.message; })
-    .finally(function() { btn.disabled = false; });
-}
-
-function deleteUser(userId, btn) {
-    if (!confirm('Supprimer cet utilisateur?')) return;
-    btn.disabled = true;
-    fetch('/api/users/' + userId, { method: 'DELETE' })
-        .then(r => r.json())
-        .then(data => {
-            if (data.error) { toast(data.error, 'error'); return; }
-            toast('Utilisateur supprimé.', 'success');
-            loadUsers();
-        })
-        .catch(err => { toast('Erreur: ' + err.message, 'error'); })
-        .finally(function() { btn.disabled = false; });
-}
-
-
-
-/* ── Connexion des plateformes ── */
-function showSimpleConnect(platform) {
-    const el = document.getElementById('connect-' + platform);
-    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-
-function saveSimpleConnect(platform) {
-    var btn = document.getElementById('save-' + platform + '-btn');
-    if (btn) btn.disabled = true;
-    const resultEl = document.getElementById('connect-' + platform + '-result');
-    if (!resultEl) { if (btn) btn.disabled = false; return; }
-
-    let serverName, credentials = {};
-
-    if (platform === 'website') {
-        serverName = 'seo';
-        credentials = {
-            cms_type: document.getElementById('website-type')?.value || 'other',
-            site_url: document.getElementById('website-url')?.value || ''
-        };
-    } else if (platform === 'email') {
-        serverName = 'email';
-        credentials = {
-            provider: 'smtp',
-            smtp_host: 'smtp.gmail.com',
-            smtp_port: '587',
-            smtp_username: document.getElementById('email-address')?.value || '',
-            smtp_password: document.getElementById('email-password')?.value || ''
-        };
-    } else {
-        resultEl.innerHTML = '<span style="color:var(--green);">✓ Instructions enregistrées ! Frankie vous guidera pour les prochaines étapes.</span>';
-        if (btn) btn.disabled = false;
-        return;
-    }
-
-    resultEl.innerHTML = '<span style="color:var(--blue);">Enregistrement...</span>';
-
-    fetch('/api/mcp/credentials', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({server_name: serverName, platform: platform, credentials: credentials})
-    })
-    .then(r => r.json())
-    .then(data => {
-        resultEl.innerHTML = data.success
-            ? '<span style="color:var(--green);">✓ Connecté ! Frankie peut maintenant publier sur votre plateforme.</span>'
-            : '<span style="color:var(--red);">Erreur : ' + escapeHtml(data.error || 'Veuillez réessayer.') + '</span>';
-    })
-    .catch(() => {
-        resultEl.innerHTML = '<span style="color:var(--red);">Échec de la connexion. Veuillez réessayer.</span>';
-    })
-    .finally(function() { if (btn) btn.disabled = false; });
-}
-
-/* ── Toast ── */
-function toast(msg, type) {
-    var el = document.getElementById('toast');
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'toast';
-        el.style.cssText = 'display:none;position:fixed;bottom:24px;right:24px;z-index:9999;background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.2);max-width:360px;transition:opacity 0.3s;';
-        document.body.appendChild(el);
-    }
-    el.textContent = msg;
-    el.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#059669' : '#1f2937';
-    el.style.display = 'block';
-    el.style.opacity = '1';
-    clearTimeout(el._hide);
-    el._hide = setTimeout(function() { el.style.opacity = '0'; setTimeout(function() { el.style.display = 'none'; }, 300); }, 4000);
-}
-
-/* ── MCP Servers ── */
-function loadMCPServers() {
-    fetch('/api/mcp/servers')
         .then(function(r) { return r.json(); })
-        .then(function(data) {
-            var servers = data.servers || {};
-            var keys = Object.keys(servers);
-            var list = document.getElementById('mcp-server-list');
-            if (!keys.length) {
-                list.innerHTML = '<p class="empty">Aucun serveur MCP disponible.</p>';
-                return;
-            }
-            var icons = { seo: '🔍', social: '📱', email: '📧', gmb: '📍', ads: '💰', analytics: '📊', website: '🌐', ecommerce: '🛒' };
-            list.innerHTML = keys.map(function(k) {
-                var s = servers[k];
-                var icon = icons[k] || '🔌';
-                return '<div class="agent-card enabled" style="padding:16px;">'
-                    + '<strong>' + icon + ' ' + escapeHtml(s.description || k) + '</strong>'
-                    + '<p style="font-size:0.82rem;color:var(--gray-500);margin:4px 0;">' + escapeHtml(s.description || '') + '</p>'
-                    + '<span class="badge badge-idle">' + (s.tools || 0) + ' outils</span>'
-                    + '</div>';
-            }).join('');
-        })
-        .catch(function() {
-            var list = document.getElementById('mcp-server-list');
-            if (list) list.innerHTML = '<p class="empty">Échec du chargement des serveurs MCP.</p>';
+        .then(function() { if (resultEl) { resultEl.innerHTML = '<span style="color:var(--green);">Sauvegardé!</span>'; setTimeout(function() { if (resultEl) resultEl.textContent = ''; }, 3000); } })
+        .catch(function() { if (resultEl) resultEl.innerHTML = '<span style="color:var(--red);">Erreur de sauvegarde</span>'; });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var input = document.getElementById('config-api-key');
+    if (input) {
+        input.addEventListener('input', function() {
+            var btn = document.getElementById('detect-btn');
+            if (btn) btn.disabled = !this.value.trim();
         });
-}
-
-/* ── Init ── */
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    deferredPrompt = e;
-});
-
-window.addEventListener('load', function() {
-    loadPersonalities().then(function() { loadAgents(); });
-    loadApprovals();
-    loadPendingExecutions();
-    loadExecutions();
-    loadExecutionerSettings();
-    populateAgentSelect();
-    updateDashboard();
-    loadUsers();
-    loadMCPServers();
-    setInterval(updateDashboard, 15000);
-    document.getElementById('config-api-key').addEventListener('input', function() {
-        document.getElementById('detect-btn').disabled = !this.value.trim();
-    });
-
-    /* Event delegation for agent card buttons */
-    document.getElementById('agent-list').addEventListener('click', function(e) {
-        var card = e.target.closest('.agent-card');
-        if (!card) return;
-        var agentId = card.dataset.agentId;
-        if (e.target.closest('.chat-btn')) {
-            window.location.href = '{{ url_for('admin_fr.agent_chat_fr', agent_id='') }}' + encodeURIComponent(agentId);
-        } else if (e.target.closest('.toggle-btn')) {
-            toggleAgent(agentId);
-        }
-    });
-
-    /* Event delegation for approval buttons */
-    document.getElementById('approvals-list').addEventListener('click', function(e) {
-        var card = e.target.closest('.approval-card');
-        if (!card) return;
-        var threadId = card.dataset.threadId;
-        if (e.target.closest('.approve-btn')) {
-            respondApproval(threadId, true, e.target.closest('.approve-btn'));
-        } else if (e.target.closest('.show-reject-btn')) {
-            var form = card.querySelector('.reject-form');
-            if (form) form.style.display = 'block';
-        } else if (e.target.closest('.confirm-reject-btn')) {
-            respondApproval(threadId, false, e.target.closest('.confirm-reject-btn'));
-        }
-    });
-
-    /* Event delegation for pending execution buttons */
-    document.getElementById('pending-executions-list').addEventListener('click', function(e) {
-        var card = e.target.closest('.approval-card');
-        if (!card) return;
-        var executionId = card.dataset.executionId;
-        if (e.target.closest('.confirm-exec-btn')) {
-            confirmPending(executionId, e.target.closest('.confirm-exec-btn'));
-        } else if (e.target.closest('.reject-exec-btn')) {
-            rejectPending(executionId, e.target.closest('.reject-exec-btn'));
-        }
-    });
-
-    /* Event delegation for user delete buttons */
-    document.getElementById('users-list').addEventListener('click', function(e) {
-        var btn = e.target.closest('.delete-user-btn');
-        if (btn) deleteUser(btn.dataset.userId, btn);
-    });
-
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/sw.js').catch(e => console.error(e));
     }
-
-    document.getElementById('overlay').addEventListener('click', toggleSidebar);
-    document.getElementById('hamburger-btn').addEventListener('click', toggleSidebar);
-    document.getElementById('sidebar-install-btn').addEventListener('click', installApp);
-    document.getElementById('tenant-select').addEventListener('change', function() {
-        switchTenant(this.value);
-    });
-    document.getElementById('config-agent-select').addEventListener('change', loadAgentConfig);
-    document.getElementById('detect-btn').addEventListener('click', detectModels);
-    document.getElementById('save-config-btn').addEventListener('click', saveAgentConfig);
-    document.getElementById('submit-task-btn').addEventListener('click', submitTask);
-    document.getElementById('refresh-approvals-btn').addEventListener('click', loadApprovals);
-    document.getElementById('refresh-pending-btn').addEventListener('click', loadPendingExecutions);
-    document.getElementById('validate-social-btn').addEventListener('click', validateSocialApiKey);
-    document.getElementById('connect-website-btn').addEventListener('click', function() { showSimpleConnect('website'); });
-    document.getElementById('save-website-btn').addEventListener('click', function() { saveSimpleConnect('website'); });
-    document.getElementById('connect-facebook-btn').addEventListener('click', function() { showSimpleConnect('facebook'); });
-    document.getElementById('connect-fb-page-btn').addEventListener('click', function() { toast('La connexion Facebook ouvrira une popup. Autorisez les popups pour ce site.'); });
-    document.getElementById('connect-email-toggle-btn').addEventListener('click', function() { showSimpleConnect('email'); });
-    document.getElementById('save-email-btn').addEventListener('click', function() { saveSimpleConnect('email'); });
-    document.getElementById('connect-google-toggle-btn').addEventListener('click', function() { showSimpleConnect('google'); });
-    document.getElementById('connect-tiktok-toggle-btn').addEventListener('click', function() { showSimpleConnect('tiktok'); });
-    document.getElementById('reload-settings-btn').addEventListener('click', loadExecutionerSettings);
-    document.getElementById('save-settings-btn').addEventListener('click', saveExecutionerSettings);
-    document.getElementById('test-email-btn').addEventListener('click', function(e) { testSmtp(e); });
-    document.getElementById('user-role-filter').addEventListener('change', loadUsers);
-    document.getElementById('show-add-user-btn').addEventListener('click', showAddUser);
-    document.getElementById('close-add-user-btn').addEventListener('click', closeAddUser);
-    document.getElementById('add-user-btn').addEventListener('click', addUser);
 });
-
-function installApp() {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-    } else {
-        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        const isSafari = /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
-        if (isIOS || isSafari) {
-            alert('Sur Safari : appuyez sur l\'icône Partager (📤) en bas de l\'écran, faites défiler et appuyez sur "Ajouter à l\'écran d\'accueil".');
-        } else {
-            alert('Ouvrez le menu Chrome/Edge (⋮ ou ⋯) et sélectionnez "Installer" ou "Ajouter à l\'écran d\'accueil".');
-        }
-    }
-}
 </script>
 {% include 'admin/frankie.html' %}
 </body>

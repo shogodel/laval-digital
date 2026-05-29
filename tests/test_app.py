@@ -179,6 +179,21 @@ class TestApiAuth:
         assert r.status_code == 200
 
 
+class TestHealthApi:
+    def test_health_check(self, client):
+        r = client.get("/api/health")
+        assert r.status_code == 200
+        data = r.get_json()
+        assert data is not None
+        assert data["status"] == "healthy"
+        assert data["database"] == "ok"
+
+    def test_health_check_cors(self, client):
+        r = client.get("/api/health", headers={"Origin": "https://lavaldigital.ca"})
+        assert r.status_code == 200
+        assert r.headers.get("Access-Control-Allow-Origin") == "https://lavaldigital.ca"
+
+
 class TestContactApi:
     def test_contact_api_missing_data(self, client):
         r = client.post("/api/contact", json={})

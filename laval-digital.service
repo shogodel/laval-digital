@@ -9,7 +9,7 @@ Group=laval
 WorkingDirectory=/var/www/laval-digital
 Environment="PATH=/var/www/laval-digital/venv/bin"
 EnvironmentFile=/var/www/laval-digital/.env
-ExecStart=/var/www/laval-digital/venv/bin/gunicorn -w 1 --threads 8 --bind 127.0.0.1:5000 app:app
+ExecStart=/var/www/laval-digital/venv/bin/gunicorn -w 1 --threads 8 --bind 127.0.0.1:5000 --timeout 120 --graceful-timeout 120 --keep-alive 15 app:app
 Restart=on-failure
 RestartSec=5
 StartLimitIntervalSec=60

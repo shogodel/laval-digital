@@ -281,6 +281,8 @@ def api_list_users():
 
     tenant_id = session.get("active_user_id")
     role_filter = request.args.get("role", "").strip().lower()
+    limit = min(safe_int(request.args.get("limit", "100"), 100), 500)
+    offset = max(safe_int(request.args.get("offset", "0"), 0), 0)
 
     try:
         conn = database._get_conn()
@@ -289,29 +291,30 @@ def api_list_users():
             if role_filter in ("user", "affiliate"):
                 cursor.execute(
                     "SELECT id, email, display_name, role, created_at, last_login "
-                    "FROM users WHERE (id = ? OR tenant_id = ?) AND role = ? ORDER BY created_at DESC",
-                    (safe_int(tenant_id), safe_int(tenant_id), role_filter),
+                    "FROM users WHERE (id = ? OR tenant_id = ?) AND role = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                    (safe_int(tenant_id), safe_int(tenant_id), role_filter, limit, offset),
                 )
             else:
                 cursor.execute(
                     "SELECT id, email, display_name, role, created_at, last_login "
-                    "FROM users WHERE id = ? OR tenant_id = ? ORDER BY created_at DESC",
-                    (safe_int(tenant_id), safe_int(tenant_id)),
+                    "FROM users WHERE id = ? OR tenant_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                    (safe_int(tenant_id), safe_int(tenant_id), limit, offset),
                 )
         else:
             if role_filter in ("user", "affiliate"):
                 cursor.execute(
                     "SELECT id, email, display_name, role, created_at, last_login "
-                    "FROM users WHERE role = ? ORDER BY created_at DESC",
-                    (role_filter,),
+                    "FROM users WHERE role = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                    (role_filter, limit, offset),
                 )
             else:
                 cursor.execute(
                     "SELECT id, email, display_name, role, created_at, last_login "
-                    "FROM users ORDER BY created_at DESC",
+                    "FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                    (limit, offset),
                 )
         users = [dict(row) for row in cursor.fetchall()]
-        return api_success({"users": users})
+        return api_success({"users": users, "limit": limit, "offset": offset})
     except Exception as e:
         return safe_error(e, 500)
 
