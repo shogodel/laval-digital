@@ -113,10 +113,8 @@
 
     <script nonce="{{ csp_nonce }}">
         const params = new URLSearchParams(window.location.search);
-        const errorParam = params.get('error');
-        if (errorParam && /^[a-zA-Z0-9\s.\-_,!?']+$/.test(errorParam)) {
-            document.getElementById('error-msg').textContent = decodeURIComponent(errorParam);
-            document.getElementById('error-msg').classList.add('show');
+        if (params.get('error') !== null) {
+            history.replaceState(null, '', window.location.pathname);
         }
     </script>
 </body>
