@@ -959,6 +959,16 @@ window.addEventListener('load', function() {
     var el = byId('overlay'); if (el) el.addEventListener('click', toggleSidebar);
     el = byId('hamburger-btn'); if (el) el.addEventListener('click', toggleSidebar);
     el = byId('sidebar-install-btn'); if (el) el.addEventListener('click', installApp);
+    el = document.querySelector('.sidebar-nav');
+    if (el) {
+        el.addEventListener('click', function(e) {
+            var link = e.target.closest('a[data-tab]');
+            if (link) {
+                e.preventDefault();
+                switchTab(link.dataset.tab);
+            }
+        });
+    }
 
     // Tenant
     el = byId('tenant-select'); if (el) el.addEventListener('change', function() { switchTenant(this.value); });
