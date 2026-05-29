@@ -8,6 +8,26 @@ import json
 import logging
 import logging.handlers
 import socket
+
+_PII_PATTERNS = [
+    (re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'), '[EMAIL]'),
+    (re.compile(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b'), '[PHONE]'),
+    (re.compile(r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b'), '[CCARD]'),
+]
+
+
+class PIIRedactFilter(logging.Filter):
+    def filter(self, record):
+        if record.getMessage():
+            msg = record.getMessage()
+            for pattern, replacement in _PII_PATTERNS:
+                msg = pattern.sub(replacement, msg)
+            record.msg = msg
+            record.args = ()
+        if record.exc_text:
+            for pattern, replacement in _PII_PATTERNS:
+                record.exc_text = pattern.sub(replacement, record.exc_text)
+        return True
 import ssl
 import smtplib
 import threading
@@ -256,6 +276,7 @@ def create_app(config_name: Optional[str] = None):
         "[%(asctime)s] %(levelname)s in %(name)s: %(message)s"
     ))
     _log_handler.setLevel(logging.INFO)
+    _log_handler.addFilter(PIIRedactFilter())
     logging.getLogger().addHandler(_log_handler)
 
     _console_handler = logging.StreamHandler()
@@ -263,6 +284,7 @@ def create_app(config_name: Optional[str] = None):
         "[%(asctime)s] %(levelname)s %(name)s: %(message)s"
     ))
     _console_handler.setLevel(logging.WARNING)
+    _console_handler.addFilter(PIIRedactFilter())
     logging.getLogger().addHandler(_console_handler)
 
     logging.getLogger().setLevel(logging.INFO)

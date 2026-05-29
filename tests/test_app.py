@@ -1,6 +1,7 @@
 import os
 import pytest
 from app import app
+from core import database
 
 
 @pytest.fixture
@@ -138,6 +139,11 @@ class TestAdminRoutes:
 class TestAdminAuth:
     ADMIN_USER = os.environ.get("ADMIN_USERNAME", "laval")
     ADMIN_PASS = os.environ.get("ADMIN_PASSWORD", "digital2026!")
+
+    def setup_method(self):
+        conn = database._get_conn()
+        conn.execute("DELETE FROM login_attempts")
+        conn.commit()
 
     def test_login_success(self, client):
         r = client.post("/admin/login", data={
