@@ -310,8 +310,20 @@ def create_app(config_name: Optional[str] = None):
     app.register_blueprint(analytics_bp)
     from blueprints.managed_bp import managed_bp
     app.register_blueprint(managed_bp)
-    from blueprints.main_bp import main_bp
-    app.register_blueprint(main_bp)
+    from blueprints.public_bp import public_bp
+    app.register_blueprint(public_bp)
+    from blueprints.agents_bp import agents_bp
+    app.register_blueprint(agents_bp)
+    from blueprints.orchestrator_bp import orchestrator_bp
+    app.register_blueprint(orchestrator_bp)
+    from blueprints.speech_bp import speech_bp
+    app.register_blueprint(speech_bp)
+    from blueprints.schedules_bp import schedules_bp
+    app.register_blueprint(schedules_bp)
+    from blueprints.actions_bp import actions_bp
+    app.register_blueprint(actions_bp)
+    from blueprints.users_bp import users_bp
+    app.register_blueprint(users_bp)
 
     for rule in app.url_map.iter_rules():
         if rule.rule in _API_PUBLIC and rule.methods and not {'GET', 'HEAD', 'OPTIONS'}.issuperset(rule.methods):
@@ -746,7 +758,7 @@ def create_app(config_name: Optional[str] = None):
         if cls:
             agent_registry[agent_id] = cls(agent_id, config)
 
-    from blueprints.main_bp import _email_bridge_handler
+    from blueprints._shared import _email_bridge_handler
     if os.getenv("EMAIL_BRIDGE_USER") and os.getenv("EMAIL_BRIDGE_PASS"):
         tenant_for_bridge = os.getenv("EMAIL_BRIDGE_TENANT_ID", "")
         if not tenant_for_bridge:
