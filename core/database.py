@@ -443,11 +443,17 @@ def create_user(email: str, password_hash: str, role: str,
 
 def update_user(uid: int, **kwargs) -> None:
     conn = _get_conn()
-    _ALLOWED_USER_COLUMNS = {"email", "display_name", "role", "password_hash", "status", "trial_ends_at", "stripe_customer_id", "last_login", "tenant_id"}
+    _ALLOWED_USER_COLUMNS = {
+        "email", "display_name", "role", "password_hash", "status",
+        "trial_ends_at", "stripe_customer_id", "last_login", "tenant_id",
+    }
     for key, val in kwargs.items():
         if key not in _ALLOWED_USER_COLUMNS:
             raise ValueError(f"Unknown column: {key}")
-        conn.execute(f"UPDATE users SET {key} = ? WHERE id = ?", (val, uid))
+        conn.execute(
+            "UPDATE users SET {} = ? WHERE id = ?".format(key),
+            (val, uid),
+        )
     conn.commit()
 
 

@@ -9,6 +9,8 @@ VAPID keys are auto-generated on first startup and cached to
 ``data/vapid_keys.json`` — no environment configuration needed.
 """
 
+import base64
+import hashlib
 import json
 import logging
 import os
@@ -16,6 +18,7 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List
 
+from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 
@@ -33,8 +36,23 @@ except ImportError:
     logger.info("pywebpush not installed — push disabled. Install: pip install pywebpush")
 
 
+def _vapid_fernet() -> Fernet:
+    secret = os.getenv("FLASK_SECRET_KEY", "").encode()
+    salt = b"vapid-key-encryption-salt"
+    kdf = hashlib.pbkdf2_hmac("sha256", secret, salt, 100_000, dklen=32)
+    return Fernet(base64.urlsafe_b64encode(kdf))
+
+
+def _encrypt_vapid_keys(keys: Dict[str, str]) -> str:
+    return _vapid_fernet().encrypt(json.dumps(keys).encode()).decode()
+
+
+def _decrypt_vapid_keys(token: str) -> Dict[str, str]:
+    return json.loads(_vapid_fernet().decrypt(token.encode()))
+
+
 def _ensure_vapid_keys() -> Dict[str, str]:
-    """Load VAPID keys from env vars, cached file, or generate fresh."""
+    """Load VAPID keys from env vars, encrypted cache, or generate fresh."""
     pub = os.getenv("VAPID_PUBLIC_KEY", "")
     priv = os.getenv("VAPID_PRIVATE_KEY", "")
     if pub and priv:
@@ -42,9 +60,9 @@ def _ensure_vapid_keys() -> Dict[str, str]:
 
     if VAPID_KEYS_FILE.exists():
         try:
-            return json.loads(VAPID_KEYS_FILE.read_text())
+            return _decrypt_vapid_keys(VAPID_KEYS_FILE.read_text())
         except Exception as e:
-            logger.debug("Exception in %s: %s", __name__, e)
+            logger.debug("Failed to decrypt VAPID keys cache: %s", e)
 
     key = ec.generate_private_key(ec.SECP256R1())
     keys = {
@@ -60,7 +78,7 @@ def _ensure_vapid_keys() -> Dict[str, str]:
     }
     try:
         VAPID_KEYS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        VAPID_KEYS_FILE.write_text(json.dumps(keys))
+        VAPID_KEYS_FILE.write_text(_encrypt_vapid_keys(keys))
     except Exception as e:
         logger.warning("Failed to cache VAPID keys: %s", e)
     return keys

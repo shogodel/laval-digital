@@ -217,10 +217,25 @@ def create_app(config_name: Optional[str] = None):
             "Create a .env file with ADMIN_PASSWORD=your-secure-password"
         )
     pw = os.getenv("ADMIN_PASSWORD", "")
-    if len(pw) < 8 or not any(c.isdigit() for c in pw) or not any(c in "!@#$%^&*()_+-=[]{}|;':\",./<>?`~" for c in pw):
+    if len(pw) < 8:
         raise RuntimeError(
-            "ADMIN_PASSWORD must be at least 8 characters, include at least one "
-            "digit and one special character."
+            "ADMIN_PASSWORD must be at least 8 characters."
+        )
+    if not any(c.isupper() for c in pw):
+        raise RuntimeError(
+            "ADMIN_PASSWORD must include at least one uppercase letter."
+        )
+    if not any(c.islower() for c in pw):
+        raise RuntimeError(
+            "ADMIN_PASSWORD must include at least one lowercase letter."
+        )
+    if not any(c.isdigit() for c in pw):
+        raise RuntimeError(
+            "ADMIN_PASSWORD must include at least one digit."
+        )
+    if not any(c in "!@#$%^&*()_+-=[]{}|;':\",./<>?`~" for c in pw):
+        raise RuntimeError(
+            "ADMIN_PASSWORD must include at least one special character."
         )
     if not os.getenv("CREDENTIAL_SALT"):
         raise RuntimeError(
