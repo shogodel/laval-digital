@@ -99,7 +99,6 @@ laval-digital/
 
 2. **Configure environment** (create `.env`):
     ```
-    DEEPSEEK_API_KEY=<your-deepseek-key>
     FLASK_SECRET_KEY=<your-random-secret>
     ADMIN_USERNAME=<your-admin-username>
     ADMIN_PASSWORD=<generate-a-strong-password>

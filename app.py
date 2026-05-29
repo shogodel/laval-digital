@@ -196,11 +196,6 @@ def create_app(config_name: Optional[str] = None):
             profiles_sample_rate=0.1,
         )
 
-    if not os.getenv("DEEPSEEK_API_KEY"):
-        raise RuntimeError(
-            "DEEPSEEK_API_KEY environment variable is required. "
-            "Create a .env file with DEEPSEEK_API_KEY=your-key-here"
-        )
     if not os.getenv("FLASK_SECRET_KEY"):
         raise RuntimeError(
             "FLASK_SECRET_KEY environment variable is required. "
@@ -519,172 +514,35 @@ def create_app(config_name: Optional[str] = None):
                 _flash("Your free trial has ended. Subscribe to regain access.", "error")
                 return redirect(url_for("trial_expired"))
 
-    AGENT_CONFIGS = {
-        "local_seo": {
-            "agent_id": "local_seo",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/local_seo.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "social_media": {
-            "agent_id": "social_media",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/social_media.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "lead_conversion": {
-            "agent_id": "lead_conversion",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/lead_conversion.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "paid_ads": {
-            "agent_id": "paid_ads",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/paid_ads_v2.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "growth_hacker": {
-            "agent_id": "growth_hacker",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/growth_hacker.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "reputation": {
-            "agent_id": "reputation",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/reputation.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "email_marketing": {
-            "agent_id": "email_marketing",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/email_marketing.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "tiktok": {
-            "agent_id": "tiktok",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/tiktok_agent.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "outreach": {
-            "agent_id": "outreach",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/outreach.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "backlinks": {
-            "agent_id": "backlinks",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/backlinks.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "content_strategy": {
-            "agent_id": "content_strategy",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/content_strategy.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "technical_seo": {
-            "agent_id": "technical_seo",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/technical_seo.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "reporting": {
-            "agent_id": "reporting",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/reporting.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "cro": {
-            "agent_id": "cro",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/cro.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "video": {
-            "agent_id": "video",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/video.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
-        "sms_marketing": {
-            "agent_id": "sms_marketing",
-            "enabled": True,
-            "model": "deepseek-chat",
-            "system_prompt_file": "prompts/sms_marketing.md",
-            "credentials": {
-                "api_key": os.getenv("DEEPSEEK_API_KEY"),
-                "api_base": "https://api.deepseek.com/v1",
-            },
-        },
+    _AGENTS = [
+        ("local_seo", "local_seo.md", "Local SEO", "Google Business Profile optimization, local citations, local keyword content, review management"),
+        ("social_media", "social_media.md", "Social Media", "Social media posts, content creation, content calendars, engagement strategies"),
+        ("lead_conversion", "lead_conversion.md", "Lead Conversion", "Lead follow-up sequences, CRM integration, conversion optimization, email campaigns"),
+        ("paid_ads", "paid_ads_v2.md", "Paid Ads", "Google & Meta ad campaigns, ad copy creation, keyword strategy, budget allocation, A/B testing, audience targeting"),
+        ("growth_hacker", "growth_hacker.md", "Growth Hacker", "Growth audits, viral loops, conversion rate optimization, partnership strategies, data-driven experiments, creative low-cost tactics"),
+        ("reputation", "reputation.md", "Reputation", "Online review monitoring, review response generation, review generation campaigns, reputation audits, crisis response"),
+        ("email_marketing", "email_marketing.md", "Email Marketing", "Newsletter campaigns, promotional emails, lead nurture sequences, reactivation campaigns, post-service follow-ups"),
+        ("tiktok", "tiktok_agent.md", "TikTok", "Short-form video content for TikTok, Instagram Reels, YouTube Shorts, content calendars, video scripts, trend adaptation"),
+        ("outreach", "outreach.md", "Outreach", "Prospecting emails, lead finding, campaign sequences, follow-up automation, personalized outreach at scale"),
+        ("backlinks", "backlinks.md", "Backlinks", "Link building, guest post prospecting, citation building, backlink gap analysis, broken link building, directory submissions"),
+        ("content_strategy", "content_strategy.md", "Content Strategist", "Editorial calendars, multi-channel content repurposing, content briefs, topic clusters, seasonal planning, voice and tone guidelines"),
+        ("technical_seo", "technical_seo.md", "Technical SEO", "Schema markup, site speed optimization, crawl audits, XML sitemaps, core web vitals, mobile optimization, hreflang tags"),
+        ("reporting", "reporting.md", "Analytics & Reports", "Cross-channel performance summaries, trend analysis, ROI calculations, executive briefs, monthly client reports"),
+        ("cro", "cro.md", "CRO & Landing Pages", "Conversion rate optimization, A/B testing analysis, funnel optimization, landing page copy, heatmap interpretation, CTA strategy"),
+        ("video", "video.md", "Video Production", "YouTube scripts, explainer videos, ad video scripts, video SEO, content series planning, thumbnail strategy"),
+        ("sms_marketing", "sms_marketing.md", "SMS Marketing", "SMS campaign planning, sequence design, CASL compliance, concise copywriting, timing strategy, list segmentation"),
+    ]
+    _BASE_AGENT_CONFIG = {
+        "enabled": True,
+        "model": "deepseek-chat",
+        "credentials": {"api_key": "", "api_base": "https://api.deepseek.com/v1"},
     }
+    AGENT_CONFIGS = {aid: {**_BASE_AGENT_CONFIG, "agent_id": aid, "system_prompt_file": f"prompts/{pf}"} for aid, pf, _, _ in _AGENTS}
+    AGENT_META: Dict[str, Dict[str, str]] = {aid: {"name": nm, "desc": dc} for aid, _, nm, dc in _AGENTS}
 
     llm_adapter = LLMAdapter(
         model="deepseek-chat",
-        api_key=os.getenv("DEEPSEEK_API_KEY"),
+        api_key="",
         api_base="https://api.deepseek.com/v1",
     )
 
@@ -696,25 +554,6 @@ def create_app(config_name: Optional[str] = None):
 
     mcp_servers = init_mcp_servers()
     logger.info("MCP servers ready: %s", list(mcp_servers.keys()))
-
-    AGENT_META: Dict[str, Dict[str, str]] = {
-        "local_seo": {"name": "Local SEO", "desc": "Google Business Profile optimization, local citations, local keyword content, review management"},
-        "social_media": {"name": "Social Media", "desc": "Social media posts, content creation, content calendars, engagement strategies"},
-        "lead_conversion": {"name": "Lead Conversion", "desc": "Lead follow-up sequences, CRM integration, conversion optimization, email campaigns"},
-        "paid_ads": {"name": "Paid Ads", "desc": "Google & Meta ad campaigns, ad copy creation, keyword strategy, budget allocation, A/B testing, audience targeting"},
-        "growth_hacker": {"name": "Growth Hacker", "desc": "Growth audits, viral loops, conversion rate optimization, partnership strategies, data-driven experiments, creative low-cost tactics"},
-        "reputation": {"name": "Reputation", "desc": "Online review monitoring, review response generation, review generation campaigns, reputation audits, crisis response"},
-        "email_marketing": {"name": "Email Marketing", "desc": "Newsletter campaigns, promotional emails, lead nurture sequences, reactivation campaigns, post-service follow-ups"},
-        "tiktok": {"name": "TikTok", "desc": "Short-form video content for TikTok, Instagram Reels, YouTube Shorts, content calendars, video scripts, trend adaptation"},
-        "outreach": {"name": "Outreach", "desc": "Prospecting emails, lead finding, campaign sequences, follow-up automation, personalized outreach at scale"},
-        "backlinks": {"name": "Backlinks", "desc": "Link building, guest post prospecting, citation building, backlink gap analysis, broken link building, directory submissions"},
-        "content_strategy": {"name": "Content Strategist", "desc": "Editorial calendars, multi-channel content repurposing, content briefs, topic clusters, seasonal planning, voice and tone guidelines"},
-        "technical_seo": {"name": "Technical SEO", "desc": "Schema markup, site speed optimization, crawl audits, XML sitemaps, core web vitals, mobile optimization, hreflang tags"},
-        "reporting": {"name": "Analytics & Reports", "desc": "Cross-channel performance summaries, trend analysis, ROI calculations, executive briefs, monthly client reports"},
-        "cro": {"name": "CRO & Landing Pages", "desc": "Conversion rate optimization, A/B testing analysis, funnel optimization, landing page copy, heatmap interpretation, CTA strategy"},
-        "video": {"name": "Video Production", "desc": "YouTube scripts, explainer videos, ad video scripts, video SEO, content series planning, thumbnail strategy"},
-        "sms_marketing": {"name": "SMS Marketing", "desc": "SMS campaign planning, sequence design, CASL compliance, concise copywriting, timing strategy, list segmentation"},
-    }
 
     executioner = ExecutionerAgent({
         "execution_log_path": "logs/executions.jsonl",

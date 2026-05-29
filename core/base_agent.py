@@ -53,9 +53,6 @@ class BaseAgent(ABC):
                 f"Valid models: {BaseAgent._available_models}"
             )
 
-        if not self._config.get("credentials", {}).get("api_key"):
-            raise ValueError("Missing credentials.api_key in config")
-
     def _load_system_prompt(self) -> str:
         raw_path = Path(self._system_prompt_file)
         if raw_path.is_symlink():
@@ -93,10 +90,14 @@ class BaseAgent(ABC):
         return self._system_prompt
 
     def _get_llm_adapter(self) -> LLMAdapter:
-        """Return an LLMAdapter configured with this agent's credentials."""
+        api_key = self._credentials.get("api_key", "")
+        if not api_key:
+            raise ValueError(
+                "No API key configured. Go to Admin → Settings → Configuration to enter your LLM provider API key."
+            )
         return LLMAdapter(
             model=self._model,
-            api_key=self._credentials["api_key"],
+            api_key=api_key,
             api_base=self._credentials.get("api_base"),
             temperature=0.7,
         )
