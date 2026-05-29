@@ -1,4 +1,5 @@
 import logging
+import threading
 from typing import Any, Dict, List, Optional, Generator
 
 import requests
@@ -40,6 +41,9 @@ class LLMAdapterError(Exception):
 
 
 LLM_TIMEOUT = 120
+
+_MAX_CONCURRENT_LLM = 4
+_llm_semaphore = threading.BoundedSemaphore(_MAX_CONCURRENT_LLM)
 
 
 class LLMAdapter:
@@ -286,6 +290,11 @@ class LLMAdapter:
 
         prompt_tokens = count_tokens(system_prompt + user_message, self._model)
 
+        if not _llm_semaphore.acquire(timeout=30):
+            raise LLMAdapterError(
+                f"System at capacity ({_MAX_CONCURRENT_LLM} concurrent LLM calls). "
+                "Please retry later."
+            )
         try:
             llm = self._get_llm()
             messages = [
@@ -308,6 +317,8 @@ class LLMAdapter:
             error_msg = f"LLM invocation failed: {str(e)}"
             logger.error(error_msg, exc_info=True)
             raise LLMAdapterError(error_msg) from e
+        finally:
+            _llm_semaphore.release()
 
     def stream(self, system_prompt: str, user_message: str,
                user_id: int = 0, endpoint: str = "unknown",
@@ -337,6 +348,11 @@ class LLMAdapter:
         prompt_tokens = count_tokens(system_prompt + user_message, self._model)
         collected: list[str] = []
 
+        if not _llm_semaphore.acquire(timeout=30):
+            raise LLMAdapterError(
+                f"System at capacity ({_MAX_CONCURRENT_LLM} concurrent LLM calls). "
+                "Please retry later."
+            )
         try:
             llm = self._get_llm()
             messages = [
@@ -360,3 +376,5 @@ class LLMAdapter:
             error_msg = f"LLM streaming failed: {str(e)}"
             logger.error(error_msg, exc_info=True)
             raise LLMAdapterError(error_msg) from e
+        finally:
+            _llm_semaphore.release()

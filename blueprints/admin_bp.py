@@ -98,6 +98,7 @@ def panel():
         "admin.html",
         tenants=tenants,
         active_tenant=active_tenant,
+        locale="en",
     )
 
 
@@ -162,7 +163,7 @@ def analytics():
         "direct_clients": database.list_users(role='user'),
     }
     active_tenant = session.get("active_user_id")
-    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="analytics")
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="analytics", locale="en")
 
 
 @admin_bp.route("/reports")
@@ -175,7 +176,7 @@ def reports():
         "direct_clients": database.list_users(role='user'),
     }
     active_tenant = session.get("active_user_id")
-    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="reports")
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="reports", locale="en")
 
 
 @admin_bp.route("/managed")
@@ -188,7 +189,7 @@ def managed():
         "direct_clients": database.list_users(role='user'),
     }
     active_tenant = session.get("active_user_id")
-    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="managed")
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="managed", locale="en")
 
 
 # ---------------------------------------------------------------------------
@@ -236,9 +237,10 @@ def panel_redirect_fr():
     }
     active_tenant = session.get("active_user_id")
     return render_template(
-        "admin_fr.html",
+        "admin.html",
         tenants=tenants,
         active_tenant=active_tenant,
+        locale="fr",
     )
 
 
@@ -290,7 +292,7 @@ def analytics_fr():
     """Serve the analytics dashboard (French SPA)."""
     tenants = {"direct_clients": database.list_users(role='user')}
     active_tenant = session.get("active_user_id")
-    return render_template("admin_fr.html", tenants=tenants, active_tenant=active_tenant, default_tab="analytics")
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="analytics", locale="fr")
 
 
 @admin_fr_bp.route("/reports")
@@ -299,7 +301,7 @@ def reports_fr():
     """Serve the reports page (French SPA)."""
     tenants = {"direct_clients": database.list_users(role='user')}
     active_tenant = session.get("active_user_id")
-    return render_template("admin_fr.html", tenants=tenants, active_tenant=active_tenant, default_tab="reports")
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="reports", locale="fr")
 
 
 @admin_fr_bp.route("/managed")
@@ -308,7 +310,7 @@ def managed_fr():
     """Serve the managed clients page (French SPA)."""
     tenants = {"direct_clients": database.list_users(role='user')}
     active_tenant = session.get("active_user_id")
-    return render_template("admin_fr.html", tenants=tenants, active_tenant=active_tenant, default_tab="managed")
+    return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="managed", locale="fr")
 
 
 

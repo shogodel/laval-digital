@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ locale }}">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#D42B2B">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <title>Frankie Control Center</title>
+    <title>{% if locale == 'fr' %}Centre de Contrôle Frankie{% else %}Frankie Control Center{% endif %}</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,32 +15,132 @@
 </head>
 <body>
 
+<div id="toast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9999;background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.2);max-width:360px;transition:opacity 0.3s;"></div>
+
 <div class="overlay" id="overlay"></div>
 
-<div id="toast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9999;background:#1f2937;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.2);max-width:360px;transition:opacity 0.3s;"></div>
+{% set t = {
+    'nav_dashboard': 'Dashboard' if locale == 'en' else 'Tableau de Bord',
+    'nav_workers': "Frankie's Workers" if locale == 'en' else 'Agents',
+    'nav_tasks': 'Tasks &amp; Approvals' if locale == 'en' else 'Tâches &amp; Approbations',
+    'nav_settings': 'Settings' if locale == 'en' else 'Paramètres',
+    'nav_users': 'Users' if locale == 'en' else 'Utilisateurs',
+    'nav_analytics': 'Analytics' if locale == 'en' else 'Analytiques',
+    'nav_reports': 'Reports' if locale == 'en' else 'Rapports',
+    'nav_managed': 'Managed' if locale == 'en' else 'Gérés',
+    'nav_mcp': 'MCP Servers' if locale == 'en' else 'Serveurs MCP',
+    'sidebar_brand': 'Frankie Control Center',
+    'install_app': 'Install App' if locale == 'en' else "Installer l'App",
+    'sign_out': 'Sign out' if locale == 'en' else 'Déconnexion',
+    'page_title': 'Dashboard' if locale == 'en' else 'Tableau de Bord',
+    'no_user': 'No user selected' if locale == 'en' else 'Aucun utilisateur',
+    'select_user': 'Select a user\u2026' if locale == 'en' else 'S\u00e9lectionner un utilisateur\u2026',
+    'users_label': 'Users' if locale == 'en' else 'Utilisateurs',
+    'locale_switch': 'FR' if locale == 'en' else 'EN',
+    'locale_switch_url': url_for('admin_fr.panel_redirect_fr') if locale == 'en' else url_for('admin.panel'),
+    'logout_url': url_for('admin.logout') if locale == 'en' else url_for('admin_fr.logout_fr'),
+    'stat_agents': 'Agents',
+    'stat_active': 'Active' if locale == 'en' else 'Actifs',
+    'stat_processing': 'Processing' if locale == 'en' else 'En cours',
+    'stat_pending': 'Pending Approvals' if locale == 'en' else 'Approbations',
+    'stat_executions': 'Executions' if locale == 'en' else 'Ex\u00e9cutions',
+    'stat_success_rate': 'Success Rate' if locale == 'en' else 'Taux de succ\u00e8s',
+    'stat_failed': 'Failed' if locale == 'en' else '\u00c9chou\u00e9es',
+    'stat_system': 'System' if locale == 'en' else 'Syst\u00e8me',
+    'review_approvals': 'Review Approvals' if locale == 'en' else 'R\u00e9viser les approbations',
+    'analytics_btn': 'Analytics' if locale == 'en' else 'Analytiques',
+    'agent_health': 'Agent Health' if locale == 'en' else 'Sant\u00e9 des Agents',
+    'loading': 'Loading...' if locale == 'en' else 'Chargement...',
+    'exec_activity': 'Recent Execution Activity' if locale == 'en' else 'Ex\u00e9cutions R\u00e9centes',
+    'agent_status': 'Agent Status' if locale == 'en' else 'Statut des Agents',
+    'loading_agents': 'Loading agents...' if locale == 'en' else 'Chargement des agents...',
+    'agent_config': 'Agent Configuration' if locale == 'en' else 'Configuration des Agents',
+    'select_agent': 'Select an agent' if locale == 'en' else 'S\u00e9lectionner un agent',
+    'choose_agent': '-- Choose an agent --' if locale == 'en' else '-- Choisir un agent --',
+    'model': 'Model' if locale == 'en' else 'Mod\u00e8le',
+    'detect_or_enter': '-- Detect or enter API key --' if locale == 'en' else '-- D\u00e9tecter ou entrer une cl\u00e9 API --',
+    'api_base_url': 'API Base URL (optional)' if locale == 'en' else 'URL de Base API (optionnel)',
+    'api_key': 'API Key' if locale == 'en' else 'Cl\u00e9 API',
+    'detect': 'Detect' if locale == 'en' else 'D\u00e9tecter',
+    'save': 'Save' if locale == 'en' else 'Sauvegarder',
+    'talk_to_frankie': 'Frankie handles all tasks now. Click the Frankie bubble in the bottom-right corner to chat.' if locale == 'en' else 'Frankie g\u00e8re toutes les t\u00e2ches maintenant. Cliquez sur la bulle Frankie pour discuter.',
+    'talk_to_frankie_btn': 'Talk to Frankie' if locale == 'en' else 'Parler \u00e0 Frankie',
+    'submit_task': 'Submit a Task' if locale == 'en' else 'Soumettre une T\u00e2che',
+    'submit_task_desc': 'Send a request to the AI orchestrator' if locale == 'en' else 'Envoyer une requ\u00eate \u00e0 l\'orchestrateur IA',
+    'task_desc': 'Task description' if locale == 'en' else 'Description de la t\u00e2che',
+    'task_placeholder': 'e.g. I need more plumbing leads in Laval this week' if locale == 'en' else 'ex. Je veux plus de prospects de plomberie \u00e0 Laval cette semaine',
+    'submit': 'Submit' if locale == 'en' else 'Soumettre',
+    'pending_approvals': 'Pending Approvals' if locale == 'en' else 'Approbations en Attente',
+    'refresh': 'Refresh' if locale == 'en' else 'Actualiser',
+    'pending_confirmations': 'Pending Confirmations' if locale == 'en' else 'Confirmations en Attente',
+    'approve_final': 'Approve final execution after review' if locale == 'en' else 'Approuver l\'ex\u00e9cution finale apr\u00e8s r\u00e9vision',
+    'loading_approvals': 'Loading approvals...' if locale == 'en' else 'Chargement des approbations...',
+    'user_mgmt': 'User Management' if locale == 'en' else 'Gestion des Utilisateurs',
+    'user_mgmt_desc': 'Manage all users in the system' if locale == 'en' else 'G\u00e9rer les utilisateurs du syst\u00e8me',
+    'all_roles': 'All Roles' if locale == 'en' else 'Tous les r\u00f4les',
+    'add_user': '+ Add User' if locale == 'en' else '+ Ajouter',
+    'loading_users': 'Loading users...' if locale == 'en' else 'Chargement des utilisateurs...',
+    'conn_platforms': 'Connected Platforms' if locale == 'en' else 'Plateformes Connect\u00e9es',
+    'conn_platforms_desc': 'Connect your existing accounts so Frankie can publish directly' if locale == 'en' else 'Connectez vos comptes existants pour que Frankie puisse publier directement',
+    'conn_platforms_help': 'Click any platform below to connect it. Frankie will guide you through a simple setup \u2014 no technical knowledge required.' if locale == 'en' else 'Cliquez sur une plateforme ci-dessous pour la connecter. Frankie vous guidera \u00e0 travers une configuration simple \u2014 aucune connaissance technique requise.',
+    'exec_settings': 'Execution Settings' if locale == 'en' else 'Param\u00e8tres d\'Ex\u00e9cution',
+    'exec_settings_desc': 'SMTP credentials and social API key' if locale == 'en' else 'Identifiants SMTP et API des m\u00e9dias sociaux',
+    'mcp_title': 'MCP Servers' if locale == 'en' else 'Serveurs MCP',
+    'mcp_desc': 'Marketing Command Protocol servers and their tools' if locale == 'en' else 'Serveurs et outils du protocole Marketing Command',
+    'add_user_modal_title': 'Add User' if locale == 'en' else 'Ajouter un Utilisateur',
+    'email_label': 'Email' if locale == 'en' else 'Courriel',
+    'email_placeholder': 'user@example.com' if locale == 'en' else 'utilisateur@exemple.com',
+    'name_label': 'Display Name' if locale == 'en' else "Nom d'Affichage",
+    'name_placeholder': 'John Doe' if locale == 'en' else 'Jean Tremblay',
+    'password_label': 'Password' if locale == 'en' else 'Mot de Passe',
+    'password_placeholder': 'Min 8 chars, 1 number, 1 special' if locale == 'en' else 'Min 8 car., 1 chiffre, 1 sp\u00e9cial',
+    'role_label': 'Role' if locale == 'en' else 'R\u00f4le',
+    'cancel': 'Cancel' if locale == 'en' else 'Annuler',
+    'create_user': 'Create User' if locale == 'en' else 'Cr\u00e9er',
+    'smtp_host': 'Host' if locale == 'en' else 'H\u00f4te',
+    'smtp_port': 'Port' if locale == 'en' else 'Port',
+    'smtp_username': 'Username' if locale == 'en' else 'Utilisateur',
+    'smtp_password': 'Password' if locale == 'en' else 'Mot de passe',
+    'smtp_from': 'From Email' if locale == 'en' else 'Courriel d\'envoi',
+    'smtp_tls': 'Use TLS' if locale == 'en' else 'Utiliser TLS',
+    'social_api_title': 'Unified Social Media API' if locale == 'en' else 'API M\u00e9dias Sociaux Unifi\u00e9e',
+    'social_api_desc': 'Connect all your social platforms at once using a unified API key (e.g., SocialAPI, Buffer, or Hootsuite).\n                            This single key handles publishing to Facebook, Instagram, TikTok, YouTube, LinkedIn, and more.' if locale == 'en' else 'Connectez toutes vos plateformes sociales \u00e0 la fois en utilisant une cl\u00e9 API unifi\u00e9e (p. ex., SocialAPI, Buffer ou Hootsuite).\n                            Cette cl\u00e9 unique g\u00e8re la publication sur Facebook, Instagram, TikTok, YouTube, LinkedIn, et plus encore.',
+    'reload': 'Reload' if locale == 'en' else 'Recharger',
+    'test_email': 'Send Test Email' if locale == 'en' else 'Envoyer un Courriel Test',
+    'test_email_placeholder': 'Your email for testing' if locale == 'en' else 'Votre courriel pour le test',
+    'tenant_aria': 'Switch user' if locale == 'en' else "Changer d'utilisateur",
+    'connect': 'Connect' if locale == 'en' else 'Connecter',
+    'save_connect': 'Save & Connect' if locale == 'en' else 'Enregistrer & Connecter',
+    'detect_api_key': '-- Detect or enter API key --' if locale == 'en' else '-- D\u00e9tecter ou entrer une cl\u00e9 API --',
+} %}
 
 <div class="app">
 
     <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="{% if locale == 'fr' %}Navigation principale{% else %}Main navigation{% endif %}">
         <div class="sidebar-brand">
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital">
-            <span>Frankie Control Center</span>
+            <span>{{ t.sidebar_brand }}</span>
         </div>
         <nav class="sidebar-nav" role="tablist">
-            <a href="#" class="active" data-tab="dashboard" role="tab" aria-selected="true" aria-controls="tab-dashboard"><span class="icon">📊</span> Dashboard</a>
-            <a href="#" data-tab="agents" role="tab" aria-selected="false" aria-controls="tab-agents"><span class="icon"><img src="{{ url_for('static', filename='frankie.svg') }}" alt="" style="width:20px;height:20px;vertical-align:middle;"></span> Frankie's Workers</a>
-            <a href="#" data-tab="tasks" role="tab" aria-selected="false" aria-controls="tab-tasks"><span class="icon">📋</span> Tasks &amp; Approvals</a>
-            <a href="#" data-tab="settings" role="tab" aria-selected="false" aria-controls="tab-settings"><span class="icon">⚙️</span> Settings</a>
-            <a href="#" data-tab="users" role="tab" aria-selected="false" aria-controls="tab-users"><span class="icon">👤</span> Users</a>
-            <a href="#" data-tab="analytics" role="tab" aria-selected="false" aria-controls="tab-analytics"><span class="icon">📈</span> Analytics</a>
-            <a href="#" data-tab="reports" role="tab" aria-selected="false" aria-controls="tab-reports"><span class="icon">📄</span> Reports</a>
-            <a href="#" data-tab="managed" role="tab" aria-selected="false" aria-controls="tab-managed"><span class="icon">🤝</span> Managed</a>
-            <a href="#" data-tab="mcp" role="tab" aria-selected="false" aria-controls="tab-mcp"><span class="icon">🔌</span> MCP Servers</a>
+            <a href="#" class="active" data-tab="dashboard" role="tab" aria-selected="true" aria-controls="tab-dashboard"><span class="icon">📊</span> {{ t.nav_dashboard }}</a>
+            <a href="#" data-tab="agents" role="tab" aria-selected="false" aria-controls="tab-agents"><span class="icon"><img src="{{ url_for('static', filename='frankie.svg') }}" alt="" style="width:20px;height:20px;vertical-align:middle;"></span> {{ t.nav_workers }}</a>
+            <a href="#" data-tab="tasks" role="tab" aria-selected="false" aria-controls="tab-tasks"><span class="icon">📋</span> {{ t.nav_tasks }}</a>
+            <a href="#" data-tab="settings" role="tab" aria-selected="false" aria-controls="tab-settings"><span class="icon">⚙️</span> {{ t.nav_settings }}</a>
+            <a href="#" data-tab="users" role="tab" aria-selected="false" aria-controls="tab-users"><span class="icon">👤</span> {{ t.nav_users }}</a>
+            <a href="#" data-tab="analytics" role="tab" aria-selected="false" aria-controls="tab-analytics"><span class="icon">📈</span> {{ t.nav_analytics }}</a>
+            <a href="#" data-tab="reports" role="tab" aria-selected="false" aria-controls="tab-reports"><span class="icon">📄</span> {{ t.nav_reports }}</a>
+            <a href="#" data-tab="managed" role="tab" aria-selected="false" aria-controls="tab-managed"><span class="icon">🤝</span> {{ t.nav_managed }}</a>
+            <a href="#" data-tab="mcp" role="tab" aria-selected="false" aria-controls="tab-mcp"><span class="icon">🔌</span> {{ t.nav_mcp }}</a>
         </nav>
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
-            <button id="sidebar-install-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;width:100%;">📲 Install App</button>
-            <a href="{{ url_for('admin.logout') }}" style="font-size:0.75rem;color:rgba(255,255,255,0.35);text-decoration:none;text-align:center;padding:4px 0;transition:color 0.15s;">Sign out</a>
+            {% if locale == 'fr' %}
+            <a href="{{ url_for('admin.dashboard') }}" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:12px 16px;border-radius:10px;font-size:0.9rem;font-weight:700;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
+                <img src="{{ url_for('static', filename='frankie.svg') }}" alt="" style="width:20px;height:20px;vertical-align:middle;"> Ouvrir Frankie
+            </a>
+            {% endif %}
+            <button id="sidebar-install-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;width:100%;">📲 {{ t.install_app }}</button>
+            <a href="{{ t.logout_url }}" style="font-size:0.75rem;color:rgba(255,255,255,0.35);text-decoration:none;text-align:center;padding:4px 0;transition:color 0.15s;">{{ t.sign_out }}</a>
         </div>
     </aside>
 
@@ -51,26 +151,25 @@
         <div class="topbar">
             <div style="display:flex;align-items:center;gap:12px;">
                 <button class="hamburger" id="hamburger-btn" aria-label="Menu">☰</button>
-                <h1 id="page-title">Dashboard</h1>
+                <h1 id="page-title">{{ t.page_title }}</h1>
             </div>
             <div class="topbar-right">
                 <div class="tenant-pill">
                     <span class="dot {% if active_tenant %}active{% else %}inactive{% endif %}"></span>
-                    <span id="active-tenant-label">{% if active_tenant %}{{ active_tenant }}{% else %}No user selected{% endif %}</span>
+                    <span id="active-tenant-label">{% if active_tenant %}{{ active_tenant }}{% else %}{{ t.no_user }}{% endif %}</span>
                 </div>
-                <select id="tenant-select" aria-label="Switch user" style="width:auto;min-width:140px;padding:6px 10px;font-size:0.85rem;">
-                    <option value="">Select a user…</option>
+                <select id="tenant-select" aria-label="{{ t.tenant_aria }}" style="width:auto;min-width:140px;padding:6px 10px;font-size:0.85rem;">
+                    <option value="">{{ t.select_user }}</option>
                     {% if tenants.direct_clients %}
-                    <optgroup label="Users">
-                        {% for t in tenants.direct_clients %}
-                        <option value="{{ t.id }}"{% if active_tenant == t.id|string %} selected{% endif %}>{{ t.email }} ({{ t.display_name }})</option>
+                    <optgroup label="{{ t.users_label }}">
+                        {% for t_ in tenants.direct_clients %}
+                        <option value="{{ t_.id }}"{% if active_tenant == t_.id|string %} selected{% endif %}>{{ t_.email }} ({{ t_.display_name }})</option>
                         {% endfor %}
                     </optgroup>
                     {% endif %}
-
                 </select>
-                <a href="{{ url_for('admin_fr.panel_redirect_fr') }}" class="btn btn-gray btn-sm">FR</a>
-                <a href="{{ url_for('admin.logout') }}" class="btn btn-red btn-sm">Logout</a>
+                <a href="{{ t.locale_switch_url }}" class="btn btn-gray btn-sm">{{ t.locale_switch }}</a>
+                <a href="{{ t.logout_url }}" class="btn btn-red btn-sm">{{ t.sign_out }}</a>
             </div>
         </div>
 
@@ -86,128 +185,150 @@
         {% endif %}
         {% endwith %}
 
-        <!-- ================================================================ -->
-        <!-- TAB: Dashboard                                                    -->
-        <!-- ================================================================ -->
+        <!-- TAB: Dashboard -->
         <div class="tab-content active" id="tab-dashboard" role="tabpanel">
-            <div id="dashboard-alert" style="display:none;padding:12px 18px;border-radius:var(--radius);margin-bottom:16px;font-size:0.85rem;font-weight:600;"></div>
-
             <div class="stats-grid" id="stats-grid">
-                <div class="stat-card"><div class="stat-value" id="stat-agents">0</div><div class="stat-label">Agents</div></div>
-                <div class="stat-card"><div class="stat-value" id="stat-active">0</div><div class="stat-label">Active</div></div>
-                <div class="stat-card"><div class="stat-value" id="stat-processing">0</div><div class="stat-label">Processing</div></div>
-                <div class="stat-card"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending Approvals</div></div>
-                <div class="stat-card"><div class="stat-value" id="stat-executions">0</div><div class="stat-label">Executions</div></div>
-                <div class="stat-card"><div class="stat-value" id="stat-success-rate">0%</div><div class="stat-label">Success Rate</div></div>
-                <div class="stat-card"><div class="stat-value" id="stat-failed">0</div><div class="stat-label">Failed</div></div>
-                <div class="stat-card"><div class="stat-value" id="stat-health">?</div><div class="stat-label">System</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-agents">0</div><div class="stat-label">{{ t.stat_agents }}</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-active">0</div><div class="stat-label">{{ t.stat_active }}</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-processing">0</div><div class="stat-label">{{ t.stat_processing }}</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">{{ t.stat_pending }}</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-executions">0</div><div class="stat-label">{{ t.stat_executions }}</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-success-rate">0%</div><div class="stat-label">{{ t.stat_success_rate }}</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-failed">0</div><div class="stat-label">{{ t.stat_failed }}</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-health">?</div><div class="stat-label">{{ t.stat_system }}</div></div>
             </div>
 
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
-                <button id="switch-tasks-btn" class="btn btn-amber" style="display:inline-flex;align-items:center;gap:6px;">📋 Review Approvals</button>
-                <button id="switch-analytics-btn" class="btn btn-gray" style="display:inline-flex;align-items:center;gap:6px;">📈 Analytics</button>
+                <button id="switch-tasks-btn" class="btn btn-amber" style="display:inline-flex;align-items:center;gap:6px;">📋 {{ t.review_approvals }}</button>
+                <button id="switch-analytics-btn" class="btn btn-gray" style="display:inline-flex;align-items:center;gap:6px;">📈 {{ t.analytics_btn }}</button>
             </div>
 
             <div class="card">
-                <div class="card-header"><h2>Agent Health</h2></div>
-                <div id="dashboard-agent-health" style="display:flex;gap:12px;flex-wrap:wrap;"><p class="empty">Loading...</p></div>
+                <div class="card-header"><h2>{{ t.agent_health }}</h2></div>
+                <div id="dashboard-agent-health" style="display:flex;gap:12px;flex-wrap:wrap;"><p class="empty">{{ t.loading }}</p></div>
             </div>
 
             <div class="card">
-                <div class="card-header"><h2>Recent Execution Activity</h2></div>
-                <div id="execution-list"><p class="empty">Loading...</p></div>
+                <div class="card-header"><h2>{{ t.exec_activity }}</h2></div>
+                <div id="execution-list"><p class="empty">{{ t.loading }}</p></div>
             </div>
         </div>
 
-        <!-- ================================================================ -->
-        <!-- TAB: Frankie's Workers                                            -->
-        <!-- ================================================================ -->
+        <!-- TAB: Agents -->
         <div class="tab-content" id="tab-agents" role="tabpanel">
             <div class="card">
-                <div class="card-header"><h2>Agent Status</h2></div>
-                <div id="agent-list"><p class="empty">Loading agents...</p></div>
+                <div class="card-header"><h2>{{ t.agent_status }}</h2></div>
+                <div id="agent-list"><p class="empty">{{ t.loading_agents }}</p></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h2>{{ t.agent_config }}</h2></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="config-agent-select">{{ t.select_agent }}</label>
+                        <select id="config-agent-select">
+                            <option value="">{{ t.choose_agent }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="agent-config-form" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="config-model">{{ t.model }}</label>
+                            <select id="config-model">
+                                <option value="">{{ t.detect_or_enter }}</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="config-api-base">{{ t.api_base_url }}</label>
+                            <input type="text" id="config-api-base" placeholder="https://api.deepseek.com/v1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="config-api-key">{{ t.api_key }}</label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="password" id="config-api-key" placeholder="sk-..." style="flex:1;">
+                            <button id="detect-btn" class="btn btn-gray btn-sm" disabled style="white-space:nowrap;">{{ t.detect }}</button>
+                        </div>
+                        <div id="detect-result" style="font-size:0.85rem;margin-top:4px;"></div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+                        <button class="btn btn-red" id="save-config-btn">{{ t.save }}</button>
+                        <span id="config-save-result"></span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- ================================================================ -->
-        <!-- TAB: Tasks & Approvals                                            -->
-        <!-- ================================================================ -->
+        <!-- TAB: Tasks & Approvals -->
         <div class="tab-content" id="tab-tasks" role="tabpanel">
             <div class="card" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #a7f3d0;">
                 <div style="text-align:center;padding:8px;">
                     <div style="font-size:2rem;margin-bottom:4px;">🤖</div>
-                    <p style="font-size:0.9rem;color:#065f46;">Frankie handles all tasks now. Click the Frankie bubble in the bottom-right corner to chat.</p>
-                    <button id="talk-to-frankie-btn" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;">💬 Talk to Frankie</button>
+                    <p style="font-size:0.9rem;color:#065f46;">{{ t.talk_to_frankie }}</p>
+                    <button id="talk-to-frankie-btn" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:0.85rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;">💬 {{ t.talk_to_frankie_btn }}</button>
                 </div>
             </div>
             <div class="card">
-                <div class="card-header">
-                    <h2>Pending Approvals</h2>
-                    <button id="refresh-approvals-btn" class="btn btn-amber btn-sm">Refresh</button>
-                </div>
-                <div id="approvals-list"><p class="empty">Loading approvals...</p></div>
+                <div class="card-header"><h2>{{ t.pending_approvals }}</h2><button id="refresh-approvals-btn" class="btn btn-amber btn-sm">{{ t.refresh }}</button></div>
+                <div id="approvals-list"><p class="empty">{{ t.loading_approvals }}</p></div>
             </div>
             <div class="card">
                 <div class="card-header">
-                    <h2>Pending Confirmations</h2>
-                    <p>Approve final execution after review</p>
-                    <button id="refresh-pending-btn" class="btn btn-amber btn-sm">Refresh</button>
+                    <h2>{{ t.pending_confirmations }}</h2>
+                    <p>{{ t.approve_final }}</p>
+                    <button id="refresh-pending-btn" class="btn btn-amber btn-sm">{{ t.refresh }}</button>
                 </div>
-                <div id="pending-executions-list"><p class="empty">Loading...</p></div>
+                <div id="pending-executions-list"><p class="empty">{{ t.loading_approvals }}</p></div>
             </div>
         </div>
 
-        <!-- ================================================================ -->
-        <!-- TAB: Users                                                        -->
-        <!-- ================================================================ -->
+        <!-- TAB: Users -->
         <div class="tab-content" id="tab-users" role="tabpanel">
             <div class="card">
                 <div class="card-header">
-                    <h2>User Management</h2>
-                    <p>Manage all users in the system</p>
+                    <h2>{{ t.user_mgmt }}</h2>
+                    <p>{{ t.user_mgmt_desc }}</p>
                 </div>
                 <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
                     <select id="user-role-filter" aria-label="Filter by role" style="width:auto;min-width:120px;padding:6px 10px;font-size:0.85rem;">
-                        <option value="">All Roles</option>
+                        <option value="">{{ t.all_roles }}</option>
                         <option value="user">User</option>
                         <option value="affiliate">Affiliate</option>
                     </select>
-                    <button id="show-add-user-btn" class="btn btn-green btn-sm">+ Add User</button>
+                    <button id="show-add-user-btn" class="btn btn-green btn-sm">{{ t.add_user }}</button>
                 </div>
-                <div id="users-list"><p class="empty">Loading users...</p></div>
+                <div id="users-list"><p class="empty">{{ t.loading_users }}</p></div>
             </div>
         </div>
 
-        <!-- ================================================================ -->
-        <!-- TAB: Settings                                                     -->
-        <!-- ================================================================ -->
+        <!-- TAB: Settings -->
         <div class="tab-content" id="tab-settings" role="tabpanel">
             <div class="card">
-                <div class="card-header"><h2>Connected Platforms</h2><p>Connect your existing accounts so Frankie can publish directly</p></div>
-                <p style="font-size:0.85rem;color:var(--gray-500);margin-bottom:16px;">Click any platform below to connect it. Frankie will guide you through a simple setup — no technical knowledge required.</p>
+                <div class="card-header"><h2>{{ t.conn_platforms }}</h2><p>{{ t.conn_platforms_desc }}</p></div>
+                <p style="font-size:0.85rem;color:var(--gray-500);margin-bottom:16px;">{{ t.conn_platforms_help }}</p>
                 <div id="platform-connections">
                     <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
-                                <strong>🌐 Your Website</strong>
-                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">WordPress, Webflow, Shopify, Wix, Squarespace, or any site</p>
+                                <strong>🌐 {% if locale == 'fr' %}Votre Site Web{% else %}Your Website{% endif %}</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">WordPress, Webflow, Shopify, Wix, Squarespace{% if locale == 'fr' %}, ou tout site{% else %}, or any site{% endif %}</p>
                             </div>
-                            <button class="btn btn-gray btn-sm" id="connect-website-btn">Connect</button>
+                            <button class="btn btn-gray btn-sm" id="connect-website-btn">{{ t.connect }}</button>
                         </div>
                         <div id="connect-website" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
-                            <label for="website-type" style="font-size:0.85rem;margin-bottom:8px;display:block;">What kind of website do you have?</label>
+                            <label for="website-type" style="font-size:0.85rem;margin-bottom:8px;display:block;">{% if locale == 'fr' %}Quel type de site web avez-vous ?{% else %}What kind of website do you have?{% endif %}</label>
                             <select id="website-type" style="margin-bottom:8px;">
                                 <option value="wordpress">WordPress</option>
                                 <option value="webflow">Webflow</option>
                                 <option value="shopify">Shopify</option>
                                 <option value="wix">Wix</option>
                                 <option value="squarespace">Squarespace</option>
-                                <option value="other">Other / Custom</option>
+                                <option value="other">{% if locale == 'fr' %}Autre / Personnalis&eacute;{% else %}Other / Custom{% endif %}</option>
                             </select>
-                            <label for="website-url" style="font-size:0.85rem;margin-bottom:8px;display:block;">Your website URL</label>
-                            <input type="text" id="website-url" placeholder="https://yoursite.com" style="margin-bottom:8px;">
-                            <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:8px;">Frankie will analyze your site and optimize it. No password needed for basic features.</p>
-                            <button class="btn btn-green btn-sm" id="save-website-btn">Save & Connect</button>
+                            <label for="website-url" style="font-size:0.85rem;margin-bottom:8px;display:block;">{% if locale == 'fr' %}URL du site{% else %}Your website URL{% endif %}</label>
+                            <input type="text" id="website-url" placeholder="{% if locale == 'fr' %}https://votresite.com{% else %}https://yoursite.com{% endif %}" style="margin-bottom:8px;">
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:8px;">{% if locale == 'fr' %}Frankie analysera et optimisera votre site. Aucun mot de passe requis pour les fonctions de base.{% else %}Frankie will analyze your site and optimize it. No password needed for basic features.{% endif %}</p>
+                            <button class="btn btn-green btn-sm" id="save-website-btn">{{ t.save_connect }}</button>
                             <span id="connect-website-result"></span>
                         </div>
                     </div>
@@ -216,37 +337,36 @@
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
                                 <strong>📱 Facebook & Instagram</strong>
-                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Post directly to your Facebook Page and Instagram account</p>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">{% if locale == 'fr' %}Publiez directement sur votre Page Facebook et votre compte Instagram{% else %}Post directly to your Facebook Page and Instagram account{% endif %}</p>
                             </div>
-                            <button class="btn btn-gray btn-sm" id="connect-facebook-btn">Connect</button>
+                            <button class="btn btn-gray btn-sm" id="connect-facebook-btn">{{ t.connect }}</button>
                         </div>
                         <div id="connect-facebook" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
-                            <p style="font-size:0.85rem;margin-bottom:8px;">Click the button below to connect your Facebook Page. You'll be redirected to Facebook to authorize Frankie. It takes about 30 seconds.</p>
-                            <button class="btn btn-green btn-sm" id="connect-fb-page-btn">🔗 Connect Facebook Page</button>
-                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">Frankie will be able to: create posts, read engagement, and manage your page.</p>
+                            <p style="font-size:0.85rem;margin-bottom:8px;">{% if locale == 'fr' %}Cliquez sur le bouton ci-dessous pour connecter votre Page Facebook. Vous serez redirig&eacute; vers Facebook pour autoriser Frankie. Cela prend environ 30 secondes.{% else %}Click the button below to connect your Facebook Page. You'll be redirected to Facebook to authorize Frankie. It takes about 30 seconds.{% endif %}</p>
+                            <button class="btn btn-green btn-sm" id="connect-fb-page-btn">🔗 {% if locale == 'fr' %}Connecter la Page Facebook{% else %}Connect Facebook Page{% endif %}</button>
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">{% if locale == 'fr' %}Frankie pourra : cr&eacute;er des publications, lire l'engagement et g&eacute;rer votre page.{% else %}Frankie will be able to: create posts, read engagement, and manage your page.{% endif %}</p>
                         </div>
                     </div>
 
                     <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
-                                <strong>📧 Your Email</strong>
-                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Send newsletters and campaigns through your email account</p>
+                                <strong>📧 {% if locale == 'fr' %}Votre Courriel{% else %}Your Email{% endif %}</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">{% if locale == 'fr' %}Envoyez des infolettres et des campagnes via votre compte courriel{% else %}Send newsletters and campaigns through your email account{% endif %}</p>
                             </div>
-                            <button class="btn btn-gray btn-sm" id="connect-email-toggle-btn">Connect</button>
+                            <button class="btn btn-gray btn-sm" id="connect-email-toggle-btn">{{ t.connect }}</button>
                         </div>
                         <div id="connect-email" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
-                            <p style="font-size:0.85rem;margin-bottom:8px;">Enter your email credentials. For Gmail, you'll need an App Password (we'll show you how).</p>
-                            <label for="email-address" style="font-size:0.85rem;margin-bottom:8px;display:block;">Email address</label>
-                            <input type="email" id="email-address" placeholder="you@gmail.com" style="margin-bottom:8px;">
-                            <label for="email-password" style="font-size:0.85rem;margin-bottom:8px;display:block;">App Password</label>
-                            <input type="password" id="email-password" placeholder="App Password (not your regular password)" style="margin-bottom:8px;">
+                            <p style="font-size:0.85rem;margin-bottom:8px;">{% if locale == 'fr' %}Entrez vos identifiants courriel. Pour Gmail, vous aurez besoin d'un mot de passe d'application.{% else %}Enter your email credentials. For Gmail, you'll need an App Password (we'll show you how).{% endif %}</p>
+                            <label for="email-address" style="font-size:0.85rem;margin-bottom:8px;display:block;">{% if locale == 'fr' %}Adresse courriel{% else %}Email address{% endif %}</label>
+                            <input type="email" id="email-address" placeholder="{% if locale == 'fr' %}vous@gmail.com{% else %}you@gmail.com{% endif %}" style="margin-bottom:8px;">
+                            <label for="email-password" style="font-size:0.85rem;margin-bottom:8px;display:block;">{% if locale == 'fr' %}Mot de passe d'application{% else %}App Password{% endif %}</label>
+                            <input type="password" id="email-password" placeholder="{% if locale == 'fr' %}Mot de passe d'application{% else %}App Password (not your regular password){% endif %}" style="margin-bottom:8px;">
                             <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:8px;">
-                                <strong>Using Gmail?</strong> 
-                                <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--blue);">Create an App Password here</a> — it takes 30 seconds. 
-                                Select "Mail" and "Other", name it "Frankie", and paste the 16-character code above.
+                                <strong>{% if locale == 'fr' %}Vous utilisez Gmail ?{% else %}Using Gmail?{% endif %}</strong> 
+                                <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--blue);">{% if locale == 'fr' %}Cr&eacute;ez un mot de passe d'application ici{% else %}Create an App Password here{% endif %}</a> {% if locale == 'fr' %}&mdash; cela prend 30 secondes. S&eacute;lectionnez &laquo; Courriel &raquo; et &laquo; Autre &raquo;, nommez-le &laquo; Frankie &raquo;, et collez le code &agrave; 16 caract&egrave;res ci-dessus.{% else %}&mdash; it takes 30 seconds. Select "Mail" and "Other", name it "Frankie", and paste the 16-character code above.{% endif %}
                             </p>
-                            <button class="btn btn-green btn-sm" id="save-email-btn">Save & Connect</button>
+                            <button class="btn btn-green btn-sm" id="save-email-btn">{{ t.save_connect }}</button>
                             <span id="connect-email-result"></span>
                         </div>
                     </div>
@@ -255,19 +375,19 @@
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
                                 <strong>📍 Google Business Profile</strong>
-                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Post updates and respond to reviews on your Google listing</p>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">{% if locale == 'fr' %}Publiez des mises &agrave; jour et r&eacute;pondez aux avis sur votre fiche Google{% else %}Post updates and respond to reviews on your Google listing{% endif %}</p>
                             </div>
-                            <button class="btn btn-gray btn-sm" id="connect-google-toggle-btn">Connect</button>
+                            <button class="btn btn-gray btn-sm" id="connect-google-toggle-btn">{{ t.connect }}</button>
                         </div>
                         <div id="connect-google" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
-                            <p style="font-size:0.85rem;margin-bottom:8px;">To connect Google Business Profile, we need you to add Frankie as a manager.</p>
+                            <p style="font-size:0.85rem;margin-bottom:8px;">{% if locale == 'fr' %}Pour connecter Google Business Profile, nous avons besoin que vous ajoutiez Frankie comme gestionnaire.{% else %}To connect Google Business Profile, we need you to add Frankie as a manager.{% endif %}</p>
                             <ol style="font-size:0.82rem;color:var(--gray-600);padding-left:20px;line-height:1.8;">
-                                <li>Go to <a href="https://business.google.com" target="_blank" style="color:var(--blue);">business.google.com</a></li>
-                                <li>Click "Users" in the left menu</li>
-                                <li>Click "Add" and enter: <strong>{{ CONTACT_EMAIL }}</strong></li>
-                                <li>Select "Manager" role and click "Invite"</li>
+                                <li>{% if locale == 'fr' %}Allez sur{% else %}Go to{% endif %} <a href="https://business.google.com" target="_blank" style="color:var(--blue);">business.google.com</a></li>
+                                <li>{% if locale == 'fr' %}Cliquez sur &laquo; Utilisateurs &raquo; dans le menu de gauche{% else %}Click "Users" in the left menu{% endif %}</li>
+                                <li>{% if locale == 'fr' %}Cliquez sur &laquo; Ajouter &raquo; et entrez :{% else %}Click "Add" and enter:{% endif %} <strong>{{ CONTACT_EMAIL }}</strong></li>
+                                <li>{% if locale == 'fr' %}S&eacute;lectionnez le r&ocirc;le &laquo; Gestionnaire &raquo; et cliquez sur &laquo; Inviter &raquo;{% else %}Select "Manager" role and click "Invite"{% endif %}</li>
                             </ol>
-                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">Once you've sent the invite, Frankie can start managing your profile within 24 hours.</p>
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">{% if locale == 'fr' %}Une fois l'invitation envoy&eacute;e, Frankie pourra commencer &agrave; g&eacute;rer votre profil dans les 24 heures.{% else %}Once you've sent the invite, Frankie can start managing your profile within 24 hours.{% endif %}</p>
                         </div>
                     </div>
 
@@ -275,119 +395,103 @@
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
                                 <strong>📢 TikTok</strong>
-                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Create and schedule TikTok content</p>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">{% if locale == 'fr' %}Cr&eacute;ez et planifiez du contenu TikTok{% else %}Create and schedule TikTok content{% endif %}</p>
                             </div>
-                            <button class="btn btn-gray btn-sm" id="connect-tiktok-toggle-btn">Connect</button>
+                            <button class="btn btn-gray btn-sm" id="connect-tiktok-toggle-btn">{{ t.connect }}</button>
                         </div>
                         <div id="connect-tiktok" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
-                            <p style="font-size:0.85rem;margin-bottom:8px;">TikTok connection coming soon. For now, Frankie will draft your content and you can post it manually.</p>
+                            <p style="font-size:0.85rem;margin-bottom:8px;">{% if locale == 'fr' %}La connexion TikTok sera bient&ocirc;t disponible. Pour l'instant, Frankie r&eacute;digera votre contenu et vous pourrez le publier manuellement.{% else %}TikTok connection coming soon. For now, Frankie will draft your content and you can post it manually.{% endif %}</p>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="card">
-                <div class="card-header"><h2>Execution Settings</h2><p>SMTP credentials and social API key</p></div>
+                <div class="card-header"><h2>{{ t.exec_settings }}</h2><p>{{ t.exec_settings_desc }}</p></div>
                 <div class="settings-grid">
                     <div>
                         <h3>SMTP</h3>
-                        <div class="form-group"><label for="smtp-host">Host</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
-                        <div class="form-group"><label for="smtp-port">Port</label><input type="number" id="smtp-port" placeholder="587"></div>
-                        <div class="form-group"><label for="smtp-username">Username</label><input type="text" id="smtp-username" placeholder="user@gmail.com"></div>
-                        <div class="form-group"><label for="smtp-password">Password</label><input type="password" id="smtp-password" placeholder="App password"></div>
-                        <div class="form-group"><label for="smtp-from">From Email</label><input type="text" id="smtp-from" placeholder="info@yourdomain.com"></div>
-                        <div class="form-group"><label for="smtp-tls"><input type="checkbox" id="smtp-tls" checked> Use TLS</label></div>
+                        <div class="form-group"><label for="smtp-host">{{ t.smtp_host }}</label><input type="text" id="smtp-host" placeholder="smtp.gmail.com"></div>
+                        <div class="form-group"><label for="smtp-port">{{ t.smtp_port }}</label><input type="number" id="smtp-port" placeholder="587"></div>
+                        <div class="form-group"><label for="smtp-username">{{ t.smtp_username }}</label><input type="text" id="smtp-username" placeholder="user@gmail.com"></div>
+                        <div class="form-group"><label for="smtp-password">{{ t.smtp_password }}</label><input type="password" id="smtp-password" placeholder="{% if locale == 'fr' %}Mot de passe d'application{% else %}App password{% endif %}"></div>
+                        <div class="form-group"><label for="smtp-from">{{ t.smtp_from }}</label><input type="text" id="smtp-from" placeholder="{% if locale == 'fr' %}info@plomberielaval.com{% else %}info@yourdomain.com{% endif %}"></div>
+                        <div class="form-group"><label for="smtp-tls"><input type="checkbox" id="smtp-tls" checked> {{ t.smtp_tls }}</label></div>
                     </div>
                     <div>
-                        <h3>Unified Social Media API</h3>
-                        <p style="font-size:0.85em;color:var(--gray-500);margin-bottom:12px;">
-                            Connect all your social platforms at once using a unified API key (e.g., SocialAPI, Buffer, or Hootsuite).
-                            This single key handles publishing to Facebook, Instagram, TikTok, YouTube, LinkedIn, and more.
-                        </p>
+                        <h3>{{ t.social_api_title }}</h3>
+                        <p style="font-size:0.85em;color:var(--gray-500);margin-bottom:12px;">{{ t.social_api_desc }}</p>
                         <div class="form-group">
-                            <label for="social-api-provider">API Provider</label>
+                            <label for="social-api-provider">{% if locale == 'fr' %}Fournisseur API{% else %}API Provider{% endif %}</label>
                             <select id="social-api-provider">
-                                <option value="socialapi">SocialAPI (Recommended)</option>
+                                <option value="socialapi">SocialAPI ({% if locale == 'fr' %}Recommand&eacute;{% else %}Recommended{% endif %})</option>
                                 <option value="buffer">Buffer</option>
                                 <option value="hootsuite">Hootsuite</option>
-                                <option value="custom">Custom/Multi-Platform</option>
+                                <option value="custom">{% if locale == 'fr' %}Personnalis&eacute;/Multi-Plateforme{% else %}Custom/Multi-Platform{% endif %}</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="unified-social-api-key">Unified API Key</label>
+                            <label for="unified-social-api-key">{% if locale == 'fr' %}Cl&eacute; API Unifi&eacute;e{% else %}Unified API Key{% endif %}</label>
                             <div style="display:flex; gap:8px;">
-                                <input type="password" id="unified-social-api-key" placeholder="Paste your unified API key here">
-                                <button class="btn btn-gray btn-sm" id="test-social-key-btn">Test Connection</button>
+                                <input type="password" id="unified-social-api-key" placeholder="{% if locale == 'fr' %}Collez votre cl&eacute; API unifi&eacute;e ici{% else %}Paste your unified API key here{% endif %}">
+                                <button class="btn btn-gray btn-sm" id="test-social-key-btn">{% if locale == 'fr' %}Tester la Connexion{% else %}Test Connection{% endif %}</button>
                             </div>
                             <div id="social-key-validation-result"></div>
                         </div>
                         <div id="connected-accounts-list" style="margin-top:16px;">
-                            <p style="font-size:0.85em;color:var(--gray-500);">Connected accounts will appear here after a successful test.</p>
+                            <p style="font-size:0.85em;color:var(--gray-500);">{% if locale == 'fr' %}Les comptes connect&eacute;s appara&icirc;tront ici apr&egrave;s un test r&eacute;ussi.{% else %}Connected accounts will appear here after a successful test.{% endif %}</p>
                         </div>
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
-                    <button class="btn btn-gray" id="reload-settings-btn">Reload</button>
-                    <button class="btn btn-green" id="save-settings-btn">Save</button>
-                    <input type="email" id="smtp-test-email" aria-label="Test email address" placeholder="Your email for testing" style="width:auto;flex:1;min-width:160px;">
-                    <button class="btn btn-gray btn-sm" id="test-smtp-btn">📧 Send Test Email</button>
+                    <button class="btn btn-gray" id="reload-settings-btn">{{ t.reload }}</button>
+                    <button class="btn btn-green" id="save-settings-btn">{{ t.save }}</button>
+                    <input type="email" id="smtp-test-email" aria-label="{% if locale == 'fr' %}Adresse courriel de test{% else %}Test email address{% endif %}" placeholder="{{ t.test_email_placeholder }}" style="width:auto;flex:1;min-width:160px;">
+                    <button class="btn btn-gray btn-sm" id="test-smtp-btn">📧 {{ t.test_email }}</button>
                     <span id="executioner-settings-result"></span>
                 </div>
             </div>
         </div>
 
-        <!-- ================================================================ -->
-        <!-- TAB: Analytics                                                    -->
-        <!-- ================================================================ -->
         {% include 'admin/analytics.html' %}
-
-        <!-- ================================================================ -->
-        <!-- TAB: Reports                                                      -->
-        <!-- ================================================================ -->
         {% include 'admin/reports.html' %}
-
-        <!-- ================================================================ -->
-        <!-- TAB: Managed                                                      -->
-        <!-- ================================================================ -->
         {% include 'admin/managed.html' %}
 
-        <!-- ================================================================ -->
-        <!-- TAB: MCP Servers                                                  -->
-        <!-- ================================================================ -->
+        <!-- TAB: MCP Servers -->
         <div class="tab-content" id="tab-mcp" role="tabpanel">
             <div class="card">
-                <div class="card-header"><h2>MCP Servers</h2><p>Marketing Command Protocol servers and their tools</p></div>
-                <div id="mcp-server-list" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><p class="empty">Loading...</p></div>
+                <div class="card-header"><h2>{{ t.mcp_title }}</h2><p>{{ t.mcp_desc }}</p></div>
+                <div id="mcp-server-list" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><p class="empty">{{ t.loading }}</p></div>
             </div>
         </div>
 
     </main>
 
     <!-- Add User Modal -->
-    <div id="user-modal" role="dialog" aria-modal="true" aria-label="Add user" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+    <div id="user-modal" role="dialog" aria-modal="true" aria-label="{% if locale == 'fr' %}Ajouter un utilisateur{% else %}Add user{% endif %}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
         <div style="background:var(--white);border-radius:var(--radius-lg);padding:32px;max-width:440px;width:90%;box-shadow:var(--shadow-lg);">
-            <h2 style="font-size:1.15rem;font-weight:700;margin-bottom:16px;color:var(--gray-900);">Add User</h2>
+            <h2 style="font-size:1.15rem;font-weight:700;margin-bottom:16px;color:var(--gray-900);">{{ t.add_user_modal_title }}</h2>
             <div class="form-group">
-                <label for="new-user-email">Email</label>
-                <input type="email" id="new-user-email" placeholder="user@example.com">
+                <label for="new-user-email">{{ t.email_label }}</label>
+                <input type="email" id="new-user-email" placeholder="{{ t.email_placeholder }}">
             </div>
             <div class="form-group">
-                <label for="new-user-name">Display Name</label>
-                <input type="text" id="new-user-name" placeholder="John Doe">
+                <label for="new-user-name">{{ t.name_label }}</label>
+                <input type="text" id="new-user-name" placeholder="{{ t.name_placeholder }}">
             </div>
             <div class="form-group">
-                <label for="new-user-password">Password</label>
-                <input type="password" id="new-user-password" placeholder="Min 8 chars, 1 number, 1 special">
+                <label for="new-user-password">{{ t.password_label }}</label>
+                <input type="password" id="new-user-password" placeholder="{{ t.password_placeholder }}">
             </div>
             <div class="form-group">
-                <label for="new-user-role">Role</label>
+                <label for="new-user-role">{{ t.role_label }}</label>
                 <select id="new-user-role">
                     <option value="user">User</option>
                 </select>
             </div>
             <div id="add-user-error" style="color:var(--red);font-size:0.85rem;margin-bottom:8px;"></div>
             <div style="display:flex;gap:8px;justify-content:flex-end;">
-                <button class="btn btn-gray" id="cancel-add-user-btn">Cancel</button>
-                <button class="btn btn-red" id="create-user-btn">Create User</button>
+                <button class="btn btn-gray" id="cancel-add-user-btn">{{ t.cancel }}</button>
+                <button class="btn btn-red" id="create-user-btn">{{ t.create_user }}</button>
             </div>
         </div>
     </div>
@@ -396,11 +500,189 @@
 <script nonce="{{ csp_nonce }}">
 window.ADMIN_CONFIG = {
     defaultTab: "{{ default_tab|default('') }}",
-    locale: 'en',
-    agentChatUrl: '/admin/agent/',
+    locale: '{{ locale }}',
+    agentChatUrl: '{% if locale == 'fr' %}{{ url_for('admin_fr.agent_chat_fr', agent_id='') }}{% else %}/admin/agent/{% endif %}',
 };
 </script>
 <script src="{{ url_for('static', filename='admin.js') }}"></script>
+{% if locale == 'fr' %}
+<script nonce="{{ csp_nonce }}">
+/* ── French-specific functions (Agent Config, Task Submit) ── */
+
+function submitTask() {
+    var task = document.getElementById('task-input');
+    if (!task || !task.value) return alert('Veuillez entrer une t\u00e2che');
+    var el = document.getElementById('task-result');
+    if (!el) return;
+    el.innerHTML = '<span style="color:var(--blue);">Soumission...</span>';
+    fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request: task.value })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var status = data.status === 'completed' ? 'Termin\u00e9e' : 'En attente';
+        el.innerHTML = '<span style="color:var(--green);">\u2713 ' + status + '</span>';
+        setTimeout(loadApprovals, 2000);
+    })
+    .catch(function(err) {
+        el.innerHTML = '';
+        var span = document.createElement('span');
+        span.style.color = 'var(--red)';
+        span.textContent = 'Erreur: ' + err.message;
+        el.appendChild(span);
+    });
+}
+
+function populateAgentSelect() {
+    fetch('/api/agents')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var select = document.getElementById('config-agent-select');
+            if (!select) return;
+            select.innerHTML = '<option value="">-- Choisir un agent --</option>';
+            var allOpt = document.createElement('option');
+            allOpt.value = 'all';
+            allOpt.textContent = 'Tous les agents';
+            allOpt.style.fontWeight = '700';
+            allOpt.style.background = '#f3f4f6';
+            select.appendChild(allOpt);
+            (data.agents || []).forEach(function(a) {
+                var meta = AGENT_META[a.agent_id] || { name: a.agent_id.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }) };
+                var opt = document.createElement('option');
+                opt.value = a.agent_id;
+                opt.textContent = meta.name;
+                select.appendChild(opt);
+            });
+        });
+}
+
+function loadAgentConfig() {
+    var agentId = document.getElementById('config-agent-select').value;
+    var form = document.getElementById('agent-config-form');
+    if (!agentId) { if (form) form.style.display = 'none'; return; }
+    if (form) form.style.display = 'block';
+    document.getElementById('config-model').innerHTML = '<option value="">-- Entrer une cl\u00e9 API et cliquer D\u00e9tecter --</option>';
+    var resultDiv = document.getElementById('detect-result');
+    if (resultDiv) resultDiv.textContent = '';
+
+    if (agentId === 'all') {
+        var keyEl = document.getElementById('config-api-key');
+        if (keyEl) keyEl.value = '';
+        var baseEl = document.getElementById('config-api-base');
+        if (baseEl) baseEl.value = '';
+        var detectBtn = document.getElementById('detect-btn');
+        if (detectBtn) detectBtn.disabled = true;
+        var badge = document.getElementById('config-badge');
+        if (!badge) {
+            var b = document.createElement('span');
+            b.id = 'config-badge';
+            b.className = 'config-badge';
+            b.textContent = 'appliqu\u00e9 \u00e0 tous les agents';
+            var container = document.querySelector('.form-group label');
+            if (container) container.after(b);
+        }
+    } else {
+        var badge = document.getElementById('config-badge');
+        if (badge) badge.remove();
+        fetch('/api/agents/' + agentId + '/config')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var keyEl = document.getElementById('config-api-key');
+                if (keyEl) keyEl.value = data.api_key || '';
+                var baseEl = document.getElementById('config-api-base');
+                if (baseEl) baseEl.value = data.api_base || '';
+                var detectBtn = document.getElementById('detect-btn');
+                if (detectBtn) detectBtn.disabled = !data.api_key;
+            })
+            .catch(function(e) { console.error(e); });
+    }
+}
+
+function detectModels() {
+    var apiKey = document.getElementById('config-api-key');
+    if (!apiKey || !apiKey.value.trim()) return;
+    var btn = document.getElementById('detect-btn');
+    var resultDiv = document.getElementById('detect-result');
+    if (btn) { btn.disabled = true; btn.textContent = 'D\u00e9tection...'; }
+    if (resultDiv) resultDiv.textContent = '';
+    fetch('/api/models/detect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: apiKey.value.trim() })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var select = document.getElementById('config-model');
+        if (data.provider === 'unknown' || !data.models || !data.models.length) {
+            if (select) select.innerHTML = '<option value="">-- Aucun mod\u00e8le d\u00e9tect\u00e9 --</option>';
+            if (resultDiv) { resultDiv.textContent = 'Impossible de d\u00e9tecter le fournisseur. V\u00e9rifiez votre cl\u00e9.'; resultDiv.style.color = 'var(--red)'; }
+            return;
+        }
+        if (select) {
+            select.innerHTML = '';
+            data.models.forEach(function(m) {
+                var opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m;
+                select.appendChild(opt);
+            });
+        }
+        if (resultDiv) { resultDiv.textContent = 'Fournisseur: ' + data.provider + ' (' + data.models.length + ' mod\u00e8les)'; resultDiv.style.color = 'var(--green)'; }
+    })
+    .catch(function(err) {
+        var select = document.getElementById('config-model');
+        if (select) select.innerHTML = '<option value="">-- \u00c9chec de la d\u00e9tection --</option>';
+        if (resultDiv) { resultDiv.textContent = 'Erreur: ' + err.message; resultDiv.style.color = 'var(--red)'; }
+    })
+    .finally(function() { if (btn) { btn.disabled = false; btn.textContent = 'D\u00e9tecter'; } });
+}
+
+function saveAgentConfig() {
+    var agentId = document.getElementById('config-agent-select').value;
+    var model = document.getElementById('config-model').value;
+    var apiKey = document.getElementById('config-api-key').value;
+    var apiBase = document.getElementById('config-api-base').value;
+    var resultEl = document.getElementById('config-save-result');
+
+    if (agentId === 'all') {
+        var agentIds = Object.keys(AGENT_META);
+        if (resultEl) resultEl.innerHTML = '<span style="color:var(--blue);">Sauvegarde vers tous les agents...</span>';
+        fetch('/api/agents/bulk/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agent_ids: agentIds, model: model, api_key: apiKey, api_base: apiBase })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var msg = data.updated.length + ' agent(s) mis \u00e0 jour' + (data.errors.length ? ', ' + data.errors.length + ' erreur(s)' : '');
+            if (resultEl) { resultEl.innerHTML = '<span style="color:var(--green);">' + msg + '</span>'; setTimeout(function() { if (resultEl) resultEl.textContent = ''; }, 4000); }
+        })
+        .catch(function() { if (resultEl) resultEl.innerHTML = '<span style="color:var(--red);">Erreur de sauvegarde</span>'; });
+    } else {
+        fetch('/api/agents/' + agentId + '/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: model, api_key: apiKey, api_base: apiBase })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function() { if (resultEl) { resultEl.innerHTML = '<span style="color:var(--green);">Sauvegard\u00e9!</span>'; setTimeout(function() { if (resultEl) resultEl.textContent = ''; }, 3000); } })
+        .catch(function() { if (resultEl) resultEl.innerHTML = '<span style="color:var(--red);">Erreur de sauvegarde</span>'; });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var input = document.getElementById('config-api-key');
+    if (input) {
+        input.addEventListener('input', function() {
+            var btn = document.getElementById('detect-btn');
+            if (btn) btn.disabled = !this.value.trim();
+        });
+    }
+});
+</script>
+{% endif %}
 {% include 'admin/frankie.html' %}
 </body>
 </html>
