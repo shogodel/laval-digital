@@ -1,3 +1,4 @@
+import os
 import pytest
 from app import app
 
@@ -132,6 +133,55 @@ class TestAdminRoutes:
     def test_admin_dashboard_redirects_when_not_logged_in(self, client):
         r = client.get("/admin/dashboard")
         assert r.status_code == 302
+
+
+class TestAdminAuth:
+    ADMIN_USER = os.environ.get("ADMIN_USERNAME", "laval")
+    ADMIN_PASS = os.environ.get("ADMIN_PASSWORD", "digital2026!")
+
+    def test_login_success(self, client):
+        r = client.post("/admin/login", data={
+            "username": self.ADMIN_USER,
+            "password": self.ADMIN_PASS,
+        })
+        assert r.status_code == 302
+        assert r.headers["Location"].endswith("/admin")
+
+    def test_login_bad_password(self, client):
+        r = client.post("/admin/login", data={
+            "username": self.ADMIN_USER,
+            "password": "wrong",
+        })
+        assert r.status_code == 200
+        assert b"Invalid" in r.data
+
+    def test_login_bad_username(self, client):
+        r = client.post("/admin/login", data={
+            "username": "nonexistent",
+            "password": self.ADMIN_PASS,
+        })
+        assert r.status_code == 200
+        assert b"Invalid" in r.data
+
+    def test_authenticated_api_call(self, client):
+        client.post("/admin/login", data={
+            "username": self.ADMIN_USER,
+            "password": self.ADMIN_PASS,
+        })
+        r = client.get("/api/personalities")
+        assert r.status_code == 200
+        data = r.get_json()
+        assert data is not None
+        assert "personalities" in data
+
+    def test_authenticated_admin_panel(self, client):
+        client.post("/admin/login", data={
+            "username": self.ADMIN_USER,
+            "password": self.ADMIN_PASS,
+        })
+        r = client.get("/admin")
+        assert r.status_code == 200
+        assert b"Frankie" in r.data or b"Agents" in r.data
 
 
 class TestClientRoutes:
