@@ -144,7 +144,12 @@ def connector():
     if not tenant_id:
         flash("Select a client first to configure the connector.", "warning")
         return redirect(url_for("admin.panel"))
-    base_url = request.host_url.rstrip("/")
+    _allowed_hosts = {"lavaldigital.ca", "www.lavaldigital.ca", "127.0.0.1:5000", "localhost:5000"}
+    if request.host not in _allowed_hosts:
+        logger.warning("Blocked connector page access from untrusted host: %s", request.host)
+        flash("Cannot generate bookmarklet from this host.", "error")
+        return redirect(url_for("admin.panel"))
+    base_url = f"{request.scheme}://{request.host}"
     bookmarklet_code = (
         'javascript:(function(){var s=document.createElement("script");'
         f's.src="{base_url}/static/bookmarklet.js";'
@@ -277,7 +282,12 @@ def connector_fr():
     if not tenant_id:
         flash("Sélectionnez d'abord un client pour configurer le connecteur.", "warning")
         return redirect(url_for("admin_fr.panel_redirect_fr"))
-    base_url = request.host_url.rstrip("/")
+    _allowed_hosts = {"lavaldigital.ca", "www.lavaldigital.ca", "127.0.0.1:5000", "localhost:5000"}
+    if request.host not in _allowed_hosts:
+        logger.warning("Blocked FR connector page access from untrusted host: %s", request.host)
+        flash("Impossible de générer le bookmarklet depuis cet hôte.", "error")
+        return redirect(url_for("admin_fr.panel_redirect_fr"))
+    base_url = f"{request.scheme}://{request.host}"
     bookmarklet_code = (
         'javascript:(function(){var s=document.createElement("script");'
         f's.src="{base_url}/static/bookmarklet.js";'
