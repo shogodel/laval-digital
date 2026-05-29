@@ -11,6 +11,8 @@ from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+_LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
+
 from mcp import AGENT_MCP_ROUTING
 
 logger = logging.getLogger(__name__)
@@ -79,7 +81,13 @@ class ExecutionerAgent:
         """
         config = config or {}
         log_path = config.get("execution_log_path", "logs/executions.jsonl")
-        self._execution_log_path = Path(log_path).resolve()
+        resolved = Path(log_path).resolve()
+        try:
+            resolved.relative_to(_LOG_DIR)
+        except ValueError:
+            logger.warning("execution_log_path %s outside safe dir, falling back to default", resolved)
+            resolved = _LOG_DIR / "executions.jsonl"
+        self._execution_log_path = resolved
         self._execution_log_path.parent.mkdir(parents=True, exist_ok=True)
         self._max_retries = config.get("max_retries", 3)
         self._retry_delay = config.get("retry_delay", 5)
@@ -117,7 +125,6 @@ class ExecutionerAgent:
             "smtp_from_email", "smtp_use_tls",
             "social_api_provider", "social_api_key", "social_api_custom_url",
             "confirm_tools", "max_retries", "retry_delay",
-            "execution_log_path",
         }
         with self._settings_lock:
             for key, value in settings.items():
