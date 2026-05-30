@@ -110,6 +110,28 @@ class ExecutionerAgent:
     # Settings
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _encrypt(val: str) -> str:
+        if not val:
+            return ""
+        from core.app_state import get_credential_cipher
+        try:
+            return get_credential_cipher().encrypt(val.encode()).decode()
+        except Exception:
+            return val
+
+    @staticmethod
+    def _decrypt(val: str) -> str:
+        if not val or not val.startswith("gAAAAA"):
+            return val
+        from core.app_state import get_credential_cipher
+        try:
+            return get_credential_cipher().decrypt(val.encode()).decode()
+        except Exception:
+            return val
+
+    _SECRET_KEYS = frozenset({"smtp_password", "social_api_key"})
+
     def update_settings(self, settings: Dict[str, Any]) -> None:
         """Update runtime settings.
 
@@ -129,18 +151,22 @@ class ExecutionerAgent:
         with self._settings_lock:
             for key, value in settings.items():
                 if key in allowed_keys and value != "********":
-                    self._settings[key] = value
+                    self._settings[key] = self._encrypt(value) if key in self._SECRET_KEYS else value
         logger.debug("Settings updated: %s", [k for k in settings if k in allowed_keys])
 
     def get_settings(self) -> Dict[str, Any]:
-        """Return a copy of the current settings.
+        """Return a copy of the current settings with secrets decrypted.
 
         Returns:
-            Dict of all current settings including secrets.
+            Dict of all current settings.
             Intended for internal use only.
         """
         with self._settings_lock:
-            return dict(self._settings)
+            result = dict(self._settings)
+        for key in self._SECRET_KEYS:
+            if key in result:
+                result[key] = self._decrypt(result[key])
+        return result
 
     def get_public_settings(self) -> Dict[str, Any]:
         """Return settings safe for external API responses (secrets removed).

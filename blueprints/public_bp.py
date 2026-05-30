@@ -51,6 +51,9 @@ def health():
 
 @public_bp.route("/api/contact", methods=["POST"])
 def api_contact():
+    if not _check_rate_limit("contact"):
+        return api_error("Too many submissions. Please try again later.", 429)
+    _record_attempt(False, "contact")
     data = request.json
     if not data:
         return api_error("No data provided", 400)
