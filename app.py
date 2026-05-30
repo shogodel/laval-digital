@@ -357,6 +357,19 @@ def create_app(config_name: Optional[str] = None):
     def inject_csp_nonce():
         return dict(csp_nonce=getattr(g, "csp_nonce", ""))
 
+    @app.context_processor
+    def inject_static_versions():
+        import os as _os
+        _static_dir = _os.path.join(app.root_path, "static")
+        versions = {}
+        for _f in ("admin.js", "admin.css"):
+            _path = _os.path.join(_static_dir, _f)
+            try:
+                versions[_f] = int(_os.path.getmtime(_path))
+            except OSError:
+                versions[_f] = "0"
+        return dict(static_versions=versions)
+
     @app.after_request
     def add_security_headers(response):
         if response.content_type and response.content_type.startswith("application/json"):

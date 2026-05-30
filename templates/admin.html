@@ -504,7 +504,7 @@ window.ADMIN_CONFIG = {
     agentChatUrl: '{% if locale == 'fr' %}{{ url_for('admin_fr.agent_chat_fr', agent_id='') }}{% else %}/admin/agent/{% endif %}',
 };
 </script>
-<script src="{{ url_for('static', filename='admin.js') }}"></script>
+<script src="{{ url_for('static', filename='admin.js') }}?v={{ static_versions.get('admin.js', '0') }}"></script>
 {% if locale == 'fr' %}
 <script nonce="{{ csp_nonce }}">
 /* ── French-specific functions (Agent Config, Task Submit) ── */

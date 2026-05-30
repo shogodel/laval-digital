@@ -930,8 +930,17 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Tab') trapModalFocus(e);
 });
 
-/* ── Bootstrap ── */
-window.addEventListener('load', function() {
+/* ── Bootstrap (run immediately, DOM is ready since script loads at end of body) ── */
+
+(function() {
+
+    // ── Sidebar tab navigation ──
+    document.querySelectorAll('.sidebar-nav a[data-tab]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            switchTab(this.dataset.tab);
+        });
+    });
 
     // Initial data loads
     loadPersonalities().then(function() { loadAgents(); if (typeof populateAgentSelect === 'function') populateAgentSelect(); });
@@ -955,20 +964,10 @@ window.addEventListener('load', function() {
 
     var byId = function(id) { return document.getElementById(id); };
 
-    // Sidebar
+    // Sidebar (overlay, hamburger, install)
     var el = byId('overlay'); if (el) el.addEventListener('click', toggleSidebar);
     el = byId('hamburger-btn'); if (el) el.addEventListener('click', toggleSidebar);
     el = byId('sidebar-install-btn'); if (el) el.addEventListener('click', installApp);
-    el = document.querySelector('.sidebar-nav');
-    if (el) {
-        el.addEventListener('click', function(e) {
-            var link = e.target.closest('a[data-tab]');
-            if (link) {
-                e.preventDefault();
-                switchTab(link.dataset.tab);
-            }
-        });
-    }
 
     // Tenant
     el = byId('tenant-select'); if (el) el.addEventListener('change', function() { switchTenant(this.value); });
@@ -1071,4 +1070,4 @@ window.addEventListener('load', function() {
             if (btn) deleteUser(btn.dataset.userId, btn);
         });
     }
-});
+})();
