@@ -1,10 +1,13 @@
+import logging
 import threading
 import re
-from abc import ABC, abstractmethod
+
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from core.llm_adapter import LLMAdapter
+
+logger = logging.getLogger(__name__)
 
 FRENCH_KEYWORDS = [
     'bonjour', 'salut', 'bjr', 'allo',
@@ -20,7 +23,7 @@ FRENCH_KEYWORDS = [
 ]
 
 
-class BaseAgent(ABC):
+class BaseAgent:
     _available_models: Optional[List[str]] = None
     _models_lock = threading.Lock()
 
@@ -40,6 +43,8 @@ class BaseAgent(ABC):
         self._system_prompt_file = config["system_prompt_file"]
         self._credentials = config.get("credentials", {})
         self._system_prompt = self._load_system_prompt()
+        self._logger = logging.getLogger(self.__class__.__module__)
+        self._logger.info("%s initialized: %s", self.__class__.__name__, agent_id)
 
     def _validate_config(self) -> None:
         required_fields = ["agent_id", "model", "system_prompt_file"]
@@ -224,6 +229,4 @@ class BaseAgent(ABC):
         fp.write_text(content.strip(), encoding="utf-8")
         return str(fp)
 
-    @abstractmethod
-    def execute(self, draft_output: str) -> str:
-        pass
+

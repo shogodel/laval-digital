@@ -28,9 +28,25 @@ DEFAULT_AGENTS = [
 
 
 def _get_conn() -> sqlite3.Connection:
-    """Return the thread-local database connection, creating it if needed."""
+    """Return the thread-local database connection, creating it if needed.
+
+    Fork-safe: detects ``os.fork()`` (e.g. gunicorn worker spawn) and
+    discards connections inherited from the parent process.
+    """
     current_tid = threading.get_ident()
-    if not hasattr(_local, "conn") or _local.conn is None or getattr(_local, "tid", None) != current_tid:
+    current_pid = os.getpid()
+    stale = (
+        not hasattr(_local, "conn")
+        or _local.conn is None
+        or getattr(_local, "tid", None) != current_tid
+        or getattr(_local, "pid", None) != current_pid
+    )
+    if stale:
+        if hasattr(_local, "conn") and _local.conn is not None and getattr(_local, "pid", None) != current_pid:
+            try:
+                _local.conn.close()
+            except Exception:
+                pass
         db_path = _db_path()
         db_path.parent.mkdir(parents=True, exist_ok=True)
         _local.conn = sqlite3.connect(str(db_path), timeout=30)
@@ -39,6 +55,7 @@ def _get_conn() -> sqlite3.Connection:
         _local.conn.execute("PRAGMA journal_mode = WAL")
         _local.conn.execute("PRAGMA busy_timeout = 30000")
         _local.tid = current_tid
+        _local.pid = current_pid
     return _local.conn
 
 

@@ -123,34 +123,16 @@ from core.push import PushManager
 from core.memory import AgentMemory
 from core.monitor import monitor as proactive_monitor
 from core.email_bridge import EmailBridge
-from agents.local_seo_agent import LocalSEOAgent
-from agents.social_media_agent import SocialMediaAgent
-from agents.lead_conversion_agent import LeadConversionAgent
-from agents.paid_ads_agent import PaidAdsAgent
-from agents.growth_hacker_agent import GrowthHackerAgent
-from agents.reputation_agent import ReputationManagementAgent
-from agents.email_marketing_agent import EmailMarketingAgent
-from agents.tiktok_agent import TikTokAgent
-from agents.outreach_agent import OutreachAgent
-from agents.backlinks_agent import BacklinksAgent
-from agents.content_strategy_agent import ContentStrategyAgent
-from agents.technical_seo_agent import TechnicalSEOAgent
-from agents.reporting_agent import ReportingAgent
-from agents.cro_agent import CROAgent
-from agents.video_agent import VideoAgent
-from agents.sms_marketing_agent import SMSMarketingAgent
+from core.base_agent import BaseAgent
 from agents.executioner_agent import ExecutionerAgent
 
-AGENT_CLASSES = {
-    "local_seo": LocalSEOAgent, "social_media": SocialMediaAgent,
-    "lead_conversion": LeadConversionAgent, "paid_ads": PaidAdsAgent,
-    "growth_hacker": GrowthHackerAgent, "reputation": ReputationManagementAgent,
-    "email_marketing": EmailMarketingAgent, "tiktok": TikTokAgent,
-    "outreach": OutreachAgent, "backlinks": BacklinksAgent,
-    "content_strategy": ContentStrategyAgent, "technical_seo": TechnicalSEOAgent,
-    "reporting": ReportingAgent, "cro": CROAgent, "video": VideoAgent,
-    "sms_marketing": SMSMarketingAgent,
-}
+AGENT_CLASSES = dict.fromkeys(
+    ["local_seo", "social_media", "lead_conversion", "paid_ads",
+     "growth_hacker", "reputation", "email_marketing", "tiktok",
+     "outreach", "backlinks", "content_strategy", "technical_seo",
+     "reporting", "cro", "video", "sms_marketing"],
+    BaseAgent,
+)
 
 from core.auth import (
     init_auth, User, find_user_by_email, add_user_to_tenant,
