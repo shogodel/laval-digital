@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import re
 import smtplib
 import threading
@@ -14,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional
 _LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
 
 from mcp import AGENT_MCP_ROUTING
+from mcp._safe_url import is_safe_url, is_safe_host
 
 logger = logging.getLogger(__name__)
 
@@ -709,29 +709,8 @@ class ExecutionerAgent:
                     # Custom/Generic — user provides their own API endpoint via settings
                     custom_url = self._settings.get("social_api_custom_url", "")
                     if custom_url:
-                        # SSRF prevention: block private IPs
-                        try:
-                            from urllib.parse import urlparse as _urlparse
-                            import socket as _socket
-                            import ipaddress as _ipaddress
-                            parsed_url = _urlparse(custom_url)
-                            hostname = parsed_url.hostname or ""
-                            addrs = _socket.getaddrinfo(hostname, None)
-                            for _, _, _, _, sockaddr in addrs:
-                                cip = sockaddr[0]
-                                if ":" not in cip:
-                                    p = [int(x) for x in cip.split(".")]
-                                    if p[0] in (127, 10, 0) or (p[0] == 169 and p[1] == 254) or (p[0] == 192 and p[1] == 168) or (p[0] == 172 and 16 <= p[1] <= 31) or (p[0] == 100 and 64 <= p[1] <= 127):
-                                        return {"success": False, "result": "", "error": "Custom API resolves to a private IP"}
-                                else:
-                                    addr = _ipaddress.IPv6Address(cip)
-                                    if addr.is_loopback or addr.is_link_local or addr.is_multicast or cip.startswith("fc") or cip.startswith("fd") or addr in _ipaddress.IPv6Network("2001:db8::/32"):
-                                        return {"success": False, "result": "", "error": "Custom API resolves to a private/reserved IPv6"}
-                        except (_socket.gaierror, ValueError, _ipaddress.AddressValueError):
-                            return {"success": False, "result": "", "error": "Could not resolve custom API URL"}
-                        except Exception as exc:
-                            logger.warning("Unexpected error resolving custom API URL: %s", exc)
-                            return {"success": False, "result": "", "error": "Could not resolve custom API URL"}
+                        if not is_safe_url(custom_url):
+                            return {"success": False, "result": "", "error": "Custom API resolves to a private/reserved IP"}
                         resp = req.post(
                             custom_url,
                             headers={
@@ -847,25 +826,10 @@ class ExecutionerAgent:
                 "error": "No recipient email found. Add a 'To: email@example.com' line to the draft.",
             }
 
-        try:
-            # SSRF prevention: block private IPs for SMTP host
-            try:
-                import socket as _socket
-                import ipaddress as _ipaddress
-                addrs = _socket.getaddrinfo(smtp_host, None)
-                for _, _, _, _, sockaddr in addrs:
-                    cip = sockaddr[0]
-                    if ":" not in cip:
-                        p = [int(x) for x in cip.split(".")]
-                        if p[0] in (127, 10, 0) or (p[0] == 169 and p[1] == 254) or (p[0] == 192 and p[1] == 168) or (p[0] == 172 and 16 <= p[1] <= 31) or (p[0] == 100 and 64 <= p[1] <= 127):
-                            return {"success": False, "result": "", "error": "SMTP host resolves to a private IP"}
-                    else:
-                        addr = _ipaddress.IPv6Address(cip)
-                        if addr.is_loopback or addr.is_link_local or addr.is_multicast or cip.startswith("fc") or cip.startswith("fd") or addr in _ipaddress.IPv6Network("2001:db8::/32"):
-                            return {"success": False, "result": "", "error": "SMTP host resolves to a private/reserved IPv6"}
-            except (_socket.gaierror, ValueError, _ipaddress.AddressValueError):
-                return {"success": False, "result": "", "error": "Could not resolve SMTP host"}
+        if not is_safe_host(smtp_host):
+            return {"success": False, "result": "", "error": "SMTP host resolves to a private/reserved IP or could not be resolved"}
 
+        try:
             # Strip Subject:/To: header lines from draft body to avoid duplication
             body_lines = draft.split("\n")
             while body_lines and body_lines[0].strip().lower().startswith(("subject:", "to:")):

@@ -211,29 +211,11 @@ class LLMAdapter:
         # DeepSeek: use ChatOpenAI (OpenAI-compatible endpoint)
         if self._model.startswith("deepseek"):
             from langchain_openai import ChatOpenAI
-            from urllib.parse import urlparse
 
+            from mcp._safe_url import is_safe_url as _is_safe_url
             api_base = self._api_base or "https://api.deepseek.com/v1"
-            parsed = urlparse(api_base)
-            if parsed.hostname:
-                import socket
-                try:
-                    addrs = socket.getaddrinfo(parsed.hostname, None)
-                    for _, _, _, _, sockaddr in addrs:
-                        ip = sockaddr[0]
-                        ipv4 = ip.split(":")[-1] if ":" in ip else ip
-                        if "." in ipv4:
-                            parts = [int(x) for x in ipv4.split(".")]
-                            if parts[0] in (127, 10, 0) or (parts[0] == 169 and parts[1] == 254) or (parts[0] == 192 and parts[1] == 168) or (parts[0] == 172 and 16 <= parts[1] <= 31) or (parts[0] == 100 and 64 <= parts[1] <= 127):
-                                raise ValueError("api_base resolves to a private IP")
-                        elif ":" in ip:
-                            if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd") or ip.startswith("fe80") or ip.startswith("ff") or ip.startswith("2001:db8"):
-                                raise ValueError("api_base resolves to a private/reserved IPv6")
-                            import ipaddress
-                            if ipaddress.IPv6Address(ip).is_link_local:
-                                raise ValueError("api_base resolves to a link-local IPv6")
-                except (socket.gaierror, ValueError) as e:
-                    raise ValueError(f"Invalid api_base: {e}")
+            if not _is_safe_url(api_base):
+                raise ValueError("api_base resolves to a private/reserved IP")
 
             return ChatOpenAI(
                 model=self._model,

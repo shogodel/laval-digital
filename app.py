@@ -7,7 +7,6 @@ import warnings
 import json
 import logging
 import logging.handlers
-import socket
 
 _PII_PATTERNS = [
     (re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'), '[EMAIL]'),
@@ -29,7 +28,6 @@ class PIIRedactFilter(logging.Filter):
                 record.exc_text = pattern.sub(replacement, record.exc_text)
         return True
 import ssl
-import smtplib
 import threading
 import requests
 from functools import wraps
@@ -40,38 +38,15 @@ from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
-import ipaddress
+from mcp._safe_url import is_safe_url as _is_safe_url
 
 
 def _safe_url(url: str, timeout: int = 10) -> requests.Response:
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise ValueError(f"Blocked URL scheme: {parsed.scheme}")
-    hostname = parsed.hostname or ""
-    try:
-        addrs = socket.getaddrinfo(hostname, None)
-        for family, _, _, _, sockaddr in addrs:
-            ip = sockaddr[0]
-            ipv4 = ip.split(":")[-1] if ":" in ip else ip
-            if "." in ipv4:
-                parts = [int(x) for x in ipv4.split(".")]
-                if parts[0] == 127 or parts[0] == 10 or parts[0] == 0:
-                    raise ValueError(f"Blocked request to private IP: {ip}")
-                if parts[0] == 169 and parts[1] == 254:
-                    raise ValueError(f"Blocked request to link-local IP: {ip}")
-                if parts[0] == 192 and parts[1] == 168:
-                    raise ValueError(f"Blocked request to private IP: {ip}")
-                if parts[0] == 172 and 16 <= parts[1] <= 31:
-                    raise ValueError(f"Blocked request to private IP: {ip}")
-                if parts[0] == 100 and 64 <= parts[1] <= 127:
-                    raise ValueError(f"Blocked request to CGNAT IP: {ip}")
-            if ":" in ip:
-                if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd"):
-                    raise ValueError(f"Blocked request to private IPv6 IP: {ip}")
-                if ipaddress.IPv6Address(ip).is_link_local:
-                    raise ValueError(f"Blocked request to link-local IPv6: {ip}")
-    except socket.gaierror:
-        raise ValueError(f"Could not resolve hostname: {hostname}")
+    if not _is_safe_url(url):
+        raise ValueError(f"Blocked request to private/reserved IP: {parsed.hostname}")
     resp = requests.get(url, timeout=timeout, headers={"User-Agent": "LavalDigital/1.0 (Security Scanner)"}, allow_redirects=False)
     try:
         return resp
