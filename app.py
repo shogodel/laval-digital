@@ -112,6 +112,7 @@ from mcp import init_mcp_servers, get_all_mcp_servers, get_mcp_server, get_all_m
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import base64 as _b64
 
@@ -166,9 +167,12 @@ from core.analytics import AnalyticsEngine
 
 def _derive_fernet_key() -> Fernet:
     secret = os.getenv("FLASK_SECRET_KEY", "").encode()
-    salt_str = os.getenv("CREDENTIAL_SALT", "laval-digital-cred")
-    salt = salt_str.encode()[:16].ljust(16, b'\0')
-    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100_000)
+    salt_str = os.getenv("CREDENTIAL_SALT")
+    if salt_str:
+        salt = salt_str.encode()[:16].ljust(16, b'\0')
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100_000)
+    else:
+        kdf = HKDF(algorithm=hashes.SHA256(), length=32, info=b"laval-credential-encryption-v2", salt=None)
     key = _b64.urlsafe_b64encode(kdf.derive(secret))
     return Fernet(key)
 
@@ -238,9 +242,9 @@ def create_app(config_name: Optional[str] = None):
             "ADMIN_PASSWORD must include at least one special character."
         )
     if not os.getenv("CREDENTIAL_SALT"):
-        raise RuntimeError(
-            "CREDENTIAL_SALT environment variable is required. "
-            "Create a .env file with CREDENTIAL_SALT=$(python3 -c \"import secrets; print(secrets.token_hex(16))\")"
+        logger.warning(
+            "CREDENTIAL_SALT not set — using HKDF domain separation (recommended). "
+            "To use a legacy custom salt, set CREDENTIAL_SALT in .env."
         )
 
     sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
