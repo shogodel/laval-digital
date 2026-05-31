@@ -192,12 +192,12 @@ class WebsiteMCPServer(MCPServer):
         content = resp.text
         parsed = urlparse(url)
 
-        audit = {
+        audit: Dict[str, Any] = {
             "url": url,
-            "title": None, "title_length": 0, "title_ok": False,
-            "meta_description": None, "meta_length": 0, "meta_ok": False,
+            "title": "", "title_length": 0, "title_ok": False,
+            "meta_description": "", "meta_length": 0, "meta_ok": False,
             "h1_count": 0, "h1_ok": False,
-            "canonical": None, "canonical_ok": False,
+            "canonical": "", "canonical_ok": False,
             "images_without_alt": 0,
             "has_viewport": False,
             "has_https": parsed.scheme == "https",
@@ -324,32 +324,28 @@ class WebsiteMCPServer(MCPServer):
             return {"success": False, "error": "No domain provided"}
         domain = domain.replace("https://", "").replace("http://", "").rstrip('/').split('/')[0]
 
-        results = {}
+        results: Dict[str, list[str]] = {}
         try:
             if record_type in ("all", "a"):
-                results["a"] = socket.gethostbyname_ex(domain)[2]
+                results["a"] = list(socket.gethostbyname_ex(domain)[2])
         except Exception:
-            results["a"] = "Failed"
+            results["a"] = []
 
         try:
             if record_type in ("all", "mx"):
                 import dns.resolver
                 mx_records = dns.resolver.resolve(domain, 'MX')
                 results["mx"] = [str(r.exchange) for r in mx_records]
-        except ImportError:
-            results["mx"] = "Install dnspython for MX lookup"
-        except Exception:
-            results["mx"] = "No MX records"
+        except (ImportError, Exception):
+            results["mx"] = []
 
         try:
             if record_type in ("all", "ns"):
                 import dns.resolver
                 ns_records = dns.resolver.resolve(domain, 'NS')
                 results["ns"] = [str(r.target) for r in ns_records]
-        except ImportError:
-            results["ns"] = "Install dnspython for NS lookup"
-        except Exception:
-            results["ns"] = "No NS records"
+        except (ImportError, Exception):
+            results["ns"] = []
 
         return {"success": True, "result": f"DNS lookup for {domain}", "domain": domain, "records": results}
 
