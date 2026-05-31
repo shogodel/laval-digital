@@ -361,7 +361,7 @@ class Orchestrator:
         if not scores:
             logger.debug("No agent signature matched, falling back to generic prompt")
             return None, None
-        best = max(scores, key=scores.get)
+        best = max(scores, key=scores.get)  # type: ignore[arg-type]
         prompt = self._agent_prompts.get(best)
         if prompt:
             logger.debug("Selected agent prompt: %s (score %d)", best, scores[best])
