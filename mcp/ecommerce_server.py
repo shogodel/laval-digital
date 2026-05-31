@@ -113,9 +113,9 @@ class EcommerceMCPServer(MCPServer):
                 if store_url and api_key:
                     url = f"https://{store_url}/admin/api/2024-01/products.json"
                     headers = {"X-Shopify-Access-Token": api_key, "Content-Type": "application/json"}
-                    payload = {"product": {"title": product_name, "body_html": kwargs.get("description", ""),
-                                           "vendor": kwargs.get("vendor", ""), "product_type": kwargs.get("category", ""),
-                                           "status": "active" if action == "add" else None}}
+                    payload: Dict[str, Any] = {"product": {"title": product_name, "body_html": kwargs.get("description", ""),
+                                                              "vendor": kwargs.get("vendor", ""), "product_type": kwargs.get("category", ""),
+                                                              "status": "active" if action == "add" else None}}
                     resp = requests.post(url, headers=headers, json=payload, timeout=15)
                     if resp.status_code == 201:
                         product["platform_id"] = resp.json().get("product", {}).get("id")
@@ -135,9 +135,9 @@ class EcommerceMCPServer(MCPServer):
                         raise ValueError("WooCommerce API requires HTTPS")
                     url = f"{site_url.rstrip('/')}/wp-json/wc/v3/products"
                     auth = (consumer_key, consumer_secret)
-                    payload = {"name": product_name, "regular_price": str(price), "description": kwargs.get("description", ""),
-                               "status": "draft" if action == "add" else "publish"}
-                    resp = requests.post(url, auth=auth, json=payload, timeout=15)
+                    wc_payload: Dict[str, Any] = {"name": product_name, "regular_price": str(price), "description": kwargs.get("description", ""),
+                                                        "status": "draft" if action == "add" else "publish"}
+                    resp = requests.post(url, auth=auth, json=wc_payload, timeout=15)
                     if resp.status_code == 201:
                         product["platform_id"] = resp.json().get("id")
                         product["platform_status"] = "Created on WooCommerce"
@@ -394,7 +394,7 @@ Order now and experience the difference."""
         order_count = len(orders)
         aov = total_revenue / order_count if order_count > 0 else 0
 
-        customers = {}
+        customers: Dict[str, int] = {}
         for o in orders:
             email = o.get("email", "unknown")
             customers[email] = customers.get(email, 0) + 1
@@ -403,7 +403,7 @@ Order now and experience the difference."""
         repeat_customers = sum(1 for c in customers.values() if c > 1)
         repeat_rate = (repeat_customers / unique_customers * 100) if unique_customers > 0 else 0
 
-        products = {}
+        products: Dict[str, int] = {}
         for o in orders:
             for item in o.get("items", []):
                 name = item.get("name", "Unknown")
@@ -434,7 +434,7 @@ Order now and experience the difference."""
                                  "new": "Recent first purchase — nurture and onboard"}}
 
         now = datetime.now()
-        customers = {}
+        customers: Dict[str, Any] = {}
         for o in orders:
             email = o.get("email", "unknown")
             date = o.get("date", "")
@@ -449,7 +449,7 @@ Order now and experience the difference."""
             if order_date > customers[email]["last_order"]:
                 customers[email]["last_order"] = order_date
 
-        segments = {"champions": [], "loyal": [], "at_risk": [], "lost": [], "new": []}
+        segments: Dict[str, List[str]] = {"champions": [], "loyal": [], "at_risk": [], "lost": [], "new": []}
         for email, data in customers.items():
             days_since = (now - data["last_order"]).days
             if days_since <= 30 and data["orders"] >= 3: segments["champions"].append(email)
