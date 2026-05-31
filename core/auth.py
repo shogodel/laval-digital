@@ -182,9 +182,9 @@ def create_user(email: str, password: str, role: str = "user",
         return {"success": True, "user_id": uid}
     except Exception as e:
         if "UNIQUE" in str(e):
-            raise ValueError("A user with this email already exists.")
+            raise ValueError("A user with this email already exists.") from e
         logger.error("Failed to create user: %s", e, exc_info=True)
-        raise RuntimeError("Failed to create user.")
+        raise RuntimeError("Failed to create user.") from e
 
 
 def _validate_password(password: str) -> None:

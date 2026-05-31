@@ -172,8 +172,8 @@ class BaseAgent:
         try:
             future = executor.submit(_invoke)
             raw = future.result(timeout=120)
-        except FuturesTimeout:
-            raise RuntimeError("LLM invocation timed out after 120 seconds")
+        except FuturesTimeout as err:
+            raise RuntimeError("LLM invocation timed out after 120 seconds") from err
         finally:
             executor.shutdown(wait=False)
         return {
