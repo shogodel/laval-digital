@@ -231,7 +231,7 @@ class LLMAdapter:
                 "litellm is required for multi-LLM support. Install with: pip install litellm"
             )
 
-        llm_kwargs = {
+        llm_kwargs: Dict[str, Any] = {
             "model": self._model,
             "api_key": self._api_key,
             "temperature": self._temperature,
