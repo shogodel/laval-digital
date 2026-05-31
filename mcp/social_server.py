@@ -311,7 +311,7 @@ class SocialMCPServer(MCPServer):
             month_date = datetime.strptime(month, "%Y-%m") if month else datetime.now()
         except ValueError:
             month_date = datetime.now()
-        calendar = {"month": month_date.strftime("%B %Y"), "platforms": platform_list, "posts": []}
+        calendar: Dict[str, Any] = {"month": month_date.strftime("%B %Y"), "platforms": platform_list, "posts": []}
         content_types = ["Educational tip", "Behind the scenes", "Customer testimonial", "Service highlight", "Seasonal advice", "Before/after showcase", "FAQ answer", "Industry news"]
         days_in_month = 30
         for week in range(4):

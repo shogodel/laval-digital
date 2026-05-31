@@ -381,7 +381,7 @@ class SEOMCPServer(MCPServer):
         comp_list = [c.strip() for c in competitors.split('\n') if c.strip()] if competitors else []
         kw_list = [k.strip() for k in keywords.split(',') if k.strip()] if keywords else []
 
-        analysis = {
+        analysis: Dict[str, Any] = {
             "competitors_analyzed": len(comp_list),
             "keywords_checked": len(kw_list),
             "findings": [],
@@ -519,7 +519,7 @@ class SEOMCPServer(MCPServer):
         kw_list = [k.strip() for k in keywords.split('\n') if k.strip()] if keywords else []
         domain = domain or (api_credentials.get("site_url", "") if api_credentials else "")
 
-        tracker = {
+        tracker: Dict[str, Any] = {
             "domain": domain,
             "keywords_tracked": len(kw_list),
             "rankings": [],

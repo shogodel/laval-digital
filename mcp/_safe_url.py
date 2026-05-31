@@ -7,10 +7,12 @@ from urllib.parse import urlparse
 def resolve_host(hostname: str) -> list[Tuple[str, int]]:
     """Resolve a hostname to (ip, family) pairs, handling both IPv4 and IPv6."""
     try:
-        return [
-            (sockaddr[0], family)
-            for family, _, _, _, sockaddr in socket.getaddrinfo(hostname, None)
-        ]
+        result: list[Tuple[str, int]] = []
+        for family, _, _, _, sockaddr in socket.getaddrinfo(hostname, None):
+            ip = sockaddr[0]
+            if isinstance(ip, str):
+                result.append((ip, family))
+        return result
     except socket.gaierror:
         return []
 

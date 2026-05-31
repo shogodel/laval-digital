@@ -576,6 +576,8 @@ Order now and experience the difference."""
             try:
                 # SSRF protection: no redirect following to prevent DNS rebinding
                 resp = self._fetch_page(url) if hasattr(self, '_fetch_page') else requests.get(url, timeout=10, headers={'User-Agent': 'Frankie/1.0'}, allow_redirects=False)
+                if resp is None:
+                    raise ValueError("Empty response from store")
                 content = resp.text
                 if 'shopify' in content.lower(): checks.append({"category": "Platform", "check": "Platform detected", "detail": "Shopify", "priority": "info"})
                 if 'woocommerce' in content.lower(): checks.append({"category": "Platform", "check": "Platform detected", "detail": "WooCommerce", "priority": "info"})
