@@ -99,10 +99,7 @@ class TestSelectTool:
     def test_all_agents_have_mapped_tool(self, executioner):
         from mcp import AGENT_MCP_ROUTING
         for agent_name in AGENT_MCP_ROUTING:
-            try:
-                tool = executioner._select_tool(agent_name)
-            except ExecutionerError:
-                continue
+            tool = executioner._select_tool(agent_name)
             assert tool in executioner.tool_registry, f"{agent_name} → {tool} not registered"
 
 
@@ -229,8 +226,7 @@ class TestMCPMappingConsistency:
         from mcp import AGENT_MCP_ROUTING
         from agents.executioner_agent import MCP_TOOL_TO_LOCAL
         for agent_name, (_server, mcp_tool) in AGENT_MCP_ROUTING.items():
-            if mcp_tool not in MCP_TOOL_TO_LOCAL:
-                continue
+            assert mcp_tool in MCP_TOOL_TO_LOCAL, f"{agent_name} → MCP {mcp_tool} lacks local fallback"
             local_tool = MCP_TOOL_TO_LOCAL[mcp_tool]
             assert local_tool in executioner.tool_registry, f"Local tool '{local_tool}' not registered (for MCP {mcp_tool})"
 

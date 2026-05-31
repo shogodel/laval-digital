@@ -30,6 +30,7 @@ MCP_TOOL_TO_LOCAL: Dict[str, str] = {
     "run_site_audit": "save_technical_seo_report",
     "track_conversions": "save_cro_analysis",
     "generate_monthly_report": "save_report",
+    "create_google_ads_campaign": "save_report",
 }
 
 
