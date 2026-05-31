@@ -266,6 +266,8 @@ class WebsiteMCPServer(MCPServer):
             with socket.create_connection((domain, 443), timeout=10) as sock:
                 with ctx.wrap_socket(sock, server_hostname=domain) as ssock:
                     cert = ssock.getpeercert()
+                    if cert is None:
+                        return {"success": False, "error": "No certificate returned by server"}
                     expiry_date = parsedate_to_datetime(cert['notAfter'])
                     days_left = (expiry_date - datetime.now(timezone.utc)).days
                     issuer = dict(x[0] for x in cert.get('issuer', []))
