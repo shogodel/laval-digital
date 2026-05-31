@@ -188,7 +188,7 @@ class AdsMCPServer(MCPServer):
 
     def create_audience_targeting(self, audience_type: str = "custom", business_type: str = "", **kwargs) -> Dict[str, Any]:
         """Create audience targeting segments."""
-        audiences = {
+        audiences: Dict[str, Any] = {
             "custom": {"name": f"{business_type.title()} Custom Audience", "description": "People actively searching for your services",
                        "signals": ["Search keywords", "Website visitors", "Competitor page visitors"]},
             "lookalike": {"name": f"{business_type.title()} Lookalike", "description": "People similar to your best customers",
