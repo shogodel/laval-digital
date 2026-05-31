@@ -270,7 +270,7 @@ class WebsiteMCPServer(MCPServer):
                         return {"success": False, "error": "No certificate returned by server"}
                     expiry_date = parsedate_to_datetime(str(cert['notAfter']))
                     days_left = (expiry_date - datetime.now(timezone.utc)).days
-                    issuer = dict(x[0] for x in cert.get('issuer', []))
+                    issuer = dict(x[0] for x in cert.get('issuer', []))  # type: ignore[misc]
 
                     return {"success": True,
                             "result": f"SSL valid until {expiry_date.strftime('%B %d, %Y')} ({days_left} days left)",
