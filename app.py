@@ -756,7 +756,7 @@ def create_app(config_name: Optional[str] = None):
             _bridge = EmailBridge(
                 imap_host=os.getenv("EMAIL_BRIDGE_HOST", "imap.gmail.com"),
                 imap_port=int(os.getenv("EMAIL_BRIDGE_PORT", "993")),
-                username=os.getenv("EMAIL_BRIDGE_USER"),
+                username=os.getenv("EMAIL_BRIDGE_USER", ""),
                 password=_decrypt_credential(os.getenv("EMAIL_BRIDGE_PASS", "")),
             )
             _bridge.set_handler(lambda a, s, b: _email_bridge_handler(a, s, b, tenant_for_bridge))
