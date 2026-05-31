@@ -292,7 +292,7 @@ class SEOMCPServer(MCPServer):
         if not site_url:
             return {"success": False, "result": "", "error": "No URL provided"}
 
-        audit_results = {
+        audit_results: Dict[str, Any] = {
             "url": site_url,
             "checks": {
                 "ssl": {"status": "unknown", "recommendation": "Ensure your site uses HTTPS"},
