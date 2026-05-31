@@ -337,7 +337,7 @@ class WebsiteMCPServer(MCPServer):
             if record_type in ("all", "mx"):
                 import dns.resolver
                 mx_records = dns.resolver.resolve(domain, 'MX')
-                results["mx"] = [str(r.exchange) for r in mx_records]
+                results["mx"] = [str(r.exchange) for r in mx_records]  # type: ignore[attr-defined]
         except (ImportError, Exception):
             results["mx"] = []
 
@@ -345,7 +345,7 @@ class WebsiteMCPServer(MCPServer):
             if record_type in ("all", "ns"):
                 import dns.resolver
                 ns_records = dns.resolver.resolve(domain, 'NS')
-                results["ns"] = [str(r.target) for r in ns_records]
+                results["ns"] = [str(r.target) for r in ns_records]  # type: ignore[attr-defined]
         except (ImportError, Exception):
             results["ns"] = []
 
