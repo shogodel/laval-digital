@@ -195,6 +195,13 @@ class TestExecutionLog:
         assert record["success"] is True
         assert record["agent_name"] == "local_seo"
 
+    def test_mcp_execution_logged(self, executioner):
+        log_path = executioner._execution_log_path
+        executioner.execute("local_seo", "# Hello from MCP path")
+        assert log_path.exists()
+        lines = log_path.read_text().strip().split("\n")
+        assert len(lines) >= 1
+
     def test_execution_logged_on_failure(self, executioner):
         log_path = executioner._execution_log_path
         executioner.register_tool("fail", lambda d: {"success": False, "result": "", "error": "boom"})

@@ -265,24 +265,24 @@ class ExecutionerAgent:
             mapping = AGENT_MCP_ROUTING.get(agent_name)
             if mapping:
                 server_name, mcp_tool = mapping
+                execution_id = uuid.uuid4().hex
                 try:
                     from mcp import get_mcp_server
                     mcp_server = get_mcp_server(server_name)
                     if mcp_server:
                         result = mcp_server.call_tool(mcp_tool, content=approved_draft)
-                        if result.get("success"):
-                            return {
-                                "success": True,
-                                "result": result.get("result", "Done"),
-                                "error": None,
-                                "execution_id": f"mcp-{server_name}-{mcp_tool}",
-                                "execution_source": "mcp",
-                            }
+                        success = bool(result.get("success"))
+                        result_str = result.get("result", "Done") if success else ""
+                        error = None if success else f"MCP tool '{mcp_tool}' returned failure: {result.get('error', 'Unknown')}"
+                        self._log_execution(
+                            execution_id, agent_name, f"mcp:{mcp_tool}",
+                            approved_draft[:200], success, result_str, error,
+                        )
                         return {
-                            "success": False,
-                            "error": f"MCP tool '{mcp_tool}' returned failure: {result.get('error', 'Unknown')}",
-                            "result": "",
-                            "execution_id": f"mcp-{server_name}-{mcp_tool}",
+                            "success": success,
+                            "result": result_str or error or "",
+                            "error": error,
+                            "execution_id": execution_id,
                             "execution_source": "mcp",
                         }
                 except ImportError:
@@ -292,11 +292,15 @@ class ExecutionerAgent:
                         "MCP execution failed for %s/%s (agent=%s): %s",
                         server_name, mcp_tool, agent_name, e, exc_info=True,
                     )
+                    self._log_execution(
+                        execution_id, agent_name, f"mcp:{mcp_tool}",
+                        approved_draft[:200], False, "", str(e),
+                    )
                     return {
                         "success": False,
                         "error": f"MCP execution failed: {e}",
                         "result": "",
-                        "execution_id": f"mcp-{server_name}-{mcp_tool}",
+                        "execution_id": execution_id,
                         "execution_source": "mcp",
                     }
 
@@ -1041,7 +1045,7 @@ class ExecutionerAgent:
 
         from collections import deque
         records: List[Dict[str, Any]] = []
-        tail = deque(maxlen=limit * 2)
+        tail: deque = deque(maxlen=limit * 2)
         with self._io_lock:
             with open(self._execution_log_path, "r", encoding="utf-8") as f:
                 for line in f:
