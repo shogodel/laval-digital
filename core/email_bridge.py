@@ -97,7 +97,7 @@ class EmailBridge:
                     status, data = mail.fetch(num, "(RFC822)")
                     if status != "OK":
                         continue
-                    msg = email.message_from_bytes(data[0][1])
+                    msg = email.message_from_bytes(data[0][1])  # type: ignore[index,arg-type]
                     subject = self._decode_header(msg.get("Subject", ""))
                     body = self._get_body(msg)
 
