@@ -85,7 +85,7 @@ class WebsiteMCPServer(MCPServer):
     # Uptime
     # ------------------------------------------------------------------
 
-    def monitor_uptime(self, website_url: str = "", api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+    def monitor_uptime(self, website_url: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         url = website_url or (api_credentials.get("site_url", "") if api_credentials else "")
         if not url:
             return {"success": False, "error": "No URL provided"}
@@ -253,7 +253,7 @@ class WebsiteMCPServer(MCPServer):
     # SSL
     # ------------------------------------------------------------------
 
-    def manage_ssl(self, domain: str = "", api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+    def manage_ssl(self, domain: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         domain = domain or (api_credentials.get("site_url", "").replace("https://", "").replace("http://", "").rstrip('/') if api_credentials else "")
         if not domain:
             return {"success": False, "error": "No domain provided"}

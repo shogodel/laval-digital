@@ -58,7 +58,7 @@ class EcommerceMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def manage_products(self, product_name: str = "", action: str = "add", price: float = 0.0,
-                        platform: str = "shopify", api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+                        platform: str = "shopify", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Add or update a product on an e-commerce platform."""
         product = {
             "name": product_name or "New Product",

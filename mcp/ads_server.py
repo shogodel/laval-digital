@@ -61,7 +61,7 @@ class AdsMCPServer(MCPServer):
 
     def create_google_ads_campaign(self, campaign_name: str = "", campaign_type: str = "search",
                                    budget: float = 500.0, keywords: str = "", location: str = "",
-                                   api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+                                   api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Create a Google Ads campaign. Types: search, display, pmax, local, video."""
         kw_list = [k.strip() for k in keywords.split('\n') if k.strip()] if keywords else ["near me", "best near me", "top rated near me"]
         campaign_types = {
@@ -91,7 +91,7 @@ class AdsMCPServer(MCPServer):
 
     def create_meta_ads_campaign(self, campaign_name: str = "", objective: str = "leads",
                                  budget: float = 300.0, audiences: str = "", location: str = "",
-                                 api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+                                 api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Create a Facebook/Instagram campaign. Objectives: leads, traffic, engagement, awareness, sales."""
         objectives = {
             "leads": {"optimization": "Lead form submissions", "best_for": "Local services collecting contact info", "placements": ["Facebook Feed", "Instagram Feed", "Facebook Marketplace"]},
@@ -121,7 +121,7 @@ class AdsMCPServer(MCPServer):
 
     def create_tiktok_ads_campaign(self, campaign_name: str = "", objective: str = "traffic",
                                    budget: float = 200.0, location: str = "",
-                                   api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+                                   api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Create a TikTok Ads campaign. Types: spark, infeed, topview, hashtag."""
         objectives = {"traffic": "Drive website visits", "leads": "Collect lead forms", "awareness": "Maximum reach", "app_install": "App downloads"}
         campaign = {
@@ -141,7 +141,7 @@ class AdsMCPServer(MCPServer):
 
     def create_linkedin_ads_campaign(self, campaign_name: str = "", objective: str = "leads",
                                      budget: float = 400.0, location: str = "",
-                                     api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+                                     api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Create a LinkedIn Ads campaign. Best for B2B and high-ticket services."""
         campaign = {
             "name": campaign_name or f"Frankie LinkedIn Campaign",
@@ -409,12 +409,12 @@ class AdsMCPServer(MCPServer):
     # Simple stats & budget (backward compatible)
     # ------------------------------------------------------------------
 
-    def get_campaign_stats(self, campaign_id: str = "", api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+    def get_campaign_stats(self, campaign_id: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Get campaign performance stats with ROAS, CPA, CTR, Quality Score, impression share."""
         return {"success": True, "result": "Campaign stats framework ready. Connect ad platform APIs for live data.",
                 "metrics_available": ["impressions", "clicks", "CTR", "CPC", "conversions", "conversion_rate", "CPA", "ROAS", "Quality_Score", "impression_share"]}
 
-    def update_ad_budget(self, campaign_id: str = "", new_budget: float = 0.0, api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+    def update_ad_budget(self, campaign_id: str = "", new_budget: float = 0.0, api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Update campaign budget with automated bidding strategies."""
         return {"success": True, "result": f"Budget updated to ${new_budget}/mo for campaign {campaign_id}",
                 "tip": "Increase budget gradually (20% every 3-5 days) to maintain performance stability"}

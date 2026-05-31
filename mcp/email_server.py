@@ -94,7 +94,7 @@ class EmailMCPServer(MCPServer):
 
     def send_email(self, content: str, to_email: str = "", subject: str = "", html: bool = False,
                    cc: str = "", bcc: str = "", attachments: str = "",
-                   api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+                   api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Send a single email with HTML support, CC/BCC, and attachments."""
         subject_match = re.search(r"^(?:#\s*)?Subject\s*:\s*(.+)$", content, re.MULTILINE | re.IGNORECASE)
         if not subject:
@@ -108,7 +108,7 @@ class EmailMCPServer(MCPServer):
 
     def send_campaign(self, content: str, list_name: str = "", subject: str = "", html: bool = True,
                       segment: str = "", schedule_time: str = "",
-                      api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+                      api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Send a bulk email campaign to a subscriber list with optional segmentation and scheduling."""
         if schedule_time:
             try:
@@ -237,7 +237,7 @@ class EmailMCPServer(MCPServer):
     # Analytics & optimization
     # ------------------------------------------------------------------
 
-    def analyze_campaign(self, campaign_id: str = "", api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+    def analyze_campaign(self, campaign_id: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Analyze campaign performance metrics."""
         return {"success": True, "result": "Campaign analysis framework ready",
                 "metrics": ["open_rate", "click_rate", "bounce_rate", "unsubscribe_rate", "conversion_rate", "revenue_per_email", "forward_rate"],
@@ -307,7 +307,7 @@ class EmailMCPServer(MCPServer):
     # Connection
     # ------------------------------------------------------------------
 
-    def test_connection(self, api_credentials: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:
+    def test_connection(self, api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Test email configuration by sending a test email."""
         if not api_credentials or not api_credentials.get("smtp_host"):
             return {"success": False, "result": "", "error": "No SMTP credentials configured"}
