@@ -16,7 +16,7 @@ import logging
 import os
 import threading
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import serialization
@@ -181,7 +181,7 @@ class PushManager:
                 self._save_subscriptions()
         return success
 
-    def send_event(self, event_type: str, agent: str, data: Dict[str, Any] = None) -> None:
+    def send_event(self, event_type: str, agent: str, data: Optional[Dict[str, Any]] = None) -> None:
         data = data or {}
         lang = data.get("lang", "en")
         if lang == "fr":

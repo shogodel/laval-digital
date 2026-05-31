@@ -52,7 +52,7 @@ class BaseAgent:
             if field not in self._config:
                 raise ValueError(f"Missing required config field: '{field}'")
 
-        if self._config["model"] not in BaseAgent._available_models:
+        if self._config["model"] not in (BaseAgent._available_models or []):
             raise ValueError(
                 f"Invalid model '{self._config['model']}'. "
                 f"Valid models: {BaseAgent._available_models}"

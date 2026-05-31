@@ -13,10 +13,12 @@ try:
 except ImportError:
     ChatLiteLLM = None  # type: ignore
 
+model_list: Optional[list[Any]] = None
 try:
-    from litellm import model_list
+    from litellm import model_list as _litellm_model_list
+    model_list = _litellm_model_list
 except ImportError:
-    model_list = None
+    pass
 
 logger = logging.getLogger(__name__)
 

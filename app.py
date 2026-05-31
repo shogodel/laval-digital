@@ -127,7 +127,7 @@ def _derive_fernet_key() -> Fernet:
     salt_str = os.getenv("CREDENTIAL_SALT")
     if salt_str:
         salt = salt_str.encode()[:16].ljust(16, b'\0')
-        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100_000)
+        kdf: Any = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100_000)
     else:
         kdf = HKDF(algorithm=hashes.SHA256(), length=32, info=b"laval-credential-encryption-v2", salt=None)
     key = _b64.urlsafe_b64encode(kdf.derive(secret))
