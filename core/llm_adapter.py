@@ -219,9 +219,11 @@ class LLMAdapter:
             if not _is_safe_url(api_base):
                 raise ValueError("api_base resolves to a private/reserved IP")
 
+            from pydantic import SecretStr
+
             return ChatOpenAI(
                 model=self._model,
-                api_key=self._api_key,
+                api_key=SecretStr(self._api_key),
                 base_url=api_base,
                 temperature=self._temperature,
                 timeout=120,
