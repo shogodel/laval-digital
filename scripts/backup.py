@@ -193,22 +193,26 @@ def main():
         else:
             import subprocess
             import time
-            src = str(daily_dir) + "/"
-            max_attempts = 3
-            for attempt in range(1, max_attempts + 1):
-                try:
-                    rc = subprocess.run(["rsync", "-a", "--delete", src, offsite_dest],
-                                        timeout=120).returncode
-                    if rc == 0:
-                        print(f"Synced to offsite destination: {offsite_dest}")
-                        break
-                    print(f"Offsite sync failed (rsync exit code {rc}), attempt {attempt}/{max_attempts}")
-                except subprocess.TimeoutExpired:
-                    print(f"Offsite rsync timed out after 120s, attempt {attempt}/{max_attempts}")
-                if attempt < max_attempts:
-                    time.sleep(10 * attempt)
+            rsync_path = shutil.which("rsync")
+            if not rsync_path:
+                print("WARNING: rsync not found on PATH, skipping offsite sync")
             else:
-                print("ERROR: Offsite sync failed after all retries")
+                src = str(daily_dir) + "/"
+                max_attempts = 3
+                for attempt in range(1, max_attempts + 1):
+                    try:
+                        rc = subprocess.run([rsync_path, "-a", "--delete", src, offsite_dest],  # noqa: S603 — inputs validated above
+                                            timeout=120).returncode
+                        if rc == 0:
+                            print(f"Synced to offsite destination: {offsite_dest}")
+                            break
+                        print(f"Offsite sync failed (rsync exit code {rc}), attempt {attempt}/{max_attempts}")
+                    except subprocess.TimeoutExpired:
+                        print(f"Offsite rsync timed out after 120s, attempt {attempt}/{max_attempts}")
+                    if attempt < max_attempts:
+                        time.sleep(10 * attempt)
+                else:
+                    print("ERROR: Offsite sync failed after all retries")
 
 
 if __name__ == "__main__":
