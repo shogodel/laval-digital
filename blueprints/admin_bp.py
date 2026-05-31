@@ -1,4 +1,5 @@
 """Admin blueprint — login, logout, panel, dashboard, connector, analytics, reports, managed."""
+import logging
 import os
 import hmac
 import re
@@ -13,6 +14,7 @@ from core import database
 from core.auth import admin_required, admin_page_required, AdminUser, _check_rate_limit, _record_attempt
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+logger = logging.getLogger(__name__)
 admin_fr_bp = Blueprint("admin_fr", __name__, url_prefix="/fr/admin")
 
 
