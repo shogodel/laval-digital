@@ -284,7 +284,7 @@ class LLMAdapter:
                 HumanMessage(content=user_message),
             ]
             response = llm.invoke(messages)
-            completion = response.content
+            completion = response.content if isinstance(response.content, str) else ""
             logger.debug("LLM response received: %s...", completion[:100])
 
             completion_tokens = count_tokens(completion, self._model)
@@ -343,9 +343,10 @@ class LLMAdapter:
             ]
 
             for chunk in llm.stream(messages):
-                if chunk.content:
-                    collected.append(chunk.content)
-                    yield chunk.content
+                content_part = chunk.content if isinstance(chunk.content, str) else ""
+                if content_part:
+                    collected.append(content_part)
+                    yield content_part
 
             completion = "".join(collected)
             completion_tokens = count_tokens(completion, self._model)
