@@ -147,7 +147,6 @@ def api_analytics_summary():
         for uid in all_user_ids:
             e = AnalyticsEngine(int(uid))
             perf = e.get_performance_summary()
-            leads_m = e.get_lead_metrics(start_date, end_date)
             agents_m = e.get_agent_metrics(start_date, end_date)
             execs_m = e.get_execution_metrics(start_date, end_date)
             total_leads += perf.get("leads_this_month", 0)

@@ -99,6 +99,91 @@ class AnalyticsEngine:
         )
         return row["c"] if row else 0
 
+    def get_performance_summary(self) -> Dict[str, Any]:
+        total = self.total_executions()
+        success = self.successful_executions()
+        failed = self.failed_executions()
+        leads = self.total_leads()
+        rate = self.execution_success_rate()
+        return {
+            "leads_this_month": leads,
+            "tasks_this_month": total,
+            "success_count": success,
+            "fail_count": failed,
+            "success_rate": rate,
+            "active_agents": 0,
+            "total_agents": 0,
+        }
+
+    def get_lead_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, Any]:
+        total = self._fetchone(
+            "SELECT COUNT(*) AS c FROM leads WHERE user_id = ? AND (? IS NULL OR created_at >= ?) AND (? IS NULL OR created_at <= ?)",
+            (self.user_id, start_date, start_date, end_date, end_date),
+        )
+        by_status = self._fetchall(
+            "SELECT status, COUNT(*) AS count FROM leads WHERE user_id = ? AND (? IS NULL OR created_at >= ?) AND (? IS NULL OR created_at <= ?) GROUP BY status",
+            (self.user_id, start_date, start_date, end_date, end_date),
+        )
+        by_service = self._fetchall(
+            "SELECT service, COUNT(*) AS count FROM leads WHERE user_id = ? AND (? IS NULL OR created_at >= ?) AND (? IS NULL OR created_at <= ?) AND service IS NOT NULL AND service != '' GROUP BY service",
+            (self.user_id, start_date, start_date, end_date, end_date),
+        )
+        converted = self._fetchone(
+            "SELECT COUNT(*) AS c FROM leads WHERE user_id = ? AND (? IS NULL OR created_at >= ?) AND (? IS NULL OR created_at <= ?) AND status IN ('converted', 'closed')",
+            (self.user_id, start_date, start_date, end_date, end_date),
+        )
+        total_count = total["c"] if total else 0
+        converted_count = converted["c"] if converted else 0
+        conversion_rate = round(converted_count / total_count * 100, 1) if total_count else 0.0
+
+        return {
+            "total": total_count,
+            "by_status": {r["status"]: r["count"] for r in by_status},
+            "by_service": {r["service"]: r["count"] for r in by_service},
+            "conversion_rate": conversion_rate,
+            "converted": converted_count,
+        }
+
+    def get_agent_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, Any]:
+        tasks_per_agent = self._fetchall(
+            "SELECT agent_name, COUNT(*) AS total, SUM(success) AS success FROM execution_log WHERE user_id = ? AND (? IS NULL OR timestamp >= ?) AND (? IS NULL OR timestamp <= ?) GROUP BY agent_name ORDER BY total DESC",
+            (self.user_id, start_date, start_date, end_date, end_date),
+        )
+        return {
+            "tasks_per_agent": [
+                {
+                    "agent": r["agent_name"],
+                    "total": r["total"],
+                    "success": r["success"] or 0,
+                    "fail": r["total"] - (r["success"] or 0),
+                    "success_rate": round((r["success"] or 0) / r["total"] * 100, 1) if r["total"] else 0,
+                }
+                for r in tasks_per_agent
+            ],
+            "avg_response_time": 0,
+        }
+
+    def get_execution_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, Any]:
+        stats = self._fetchone(
+            "SELECT COUNT(*) AS total, SUM(success) AS success FROM execution_log WHERE user_id = ? AND (? IS NULL OR timestamp >= ?) AND (? IS NULL OR timestamp <= ?)",
+            (self.user_id, start_date, start_date, end_date, end_date),
+        )
+        failures_by_tool = self._fetchall(
+            "SELECT tool_name, COUNT(*) AS count FROM execution_log WHERE user_id = ? AND (? IS NULL OR timestamp >= ?) AND (? IS NULL OR timestamp <= ?) AND success = 0 AND tool_name IS NOT NULL AND tool_name != '' GROUP BY tool_name ORDER BY count DESC",
+            (self.user_id, start_date, start_date, end_date, end_date),
+        )
+        total_count = stats["total"] if stats else 0
+        success_count = stats["success"] if stats and stats["success"] else 0
+        fail_count = total_count - success_count
+
+        return {
+            "total": total_count,
+            "success_count": success_count,
+            "fail_count": fail_count,
+            "success_rate": round(success_count / total_count * 100, 1) if total_count else 0,
+            "failures_by_tool": {r["tool_name"]: r["count"] for r in failures_by_tool},
+        }
+
     def latest_executions(self, limit: int = 10) -> List[dict]:
         return self._fetchall(
             "SELECT * FROM execution_log WHERE user_id = ? ORDER BY timestamp DESC LIMIT ?",
