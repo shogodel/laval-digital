@@ -66,7 +66,7 @@ class GMBMCPServer(MCPServer):
             try:
                 url = f"https://mybusiness.googleapis.com/v4/accounts/{api_credentials['account_id']}/locations/{api_credentials['location_id']}/localPosts"
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
-                payload = {"summary": content[:1500], "topicType": "STANDARD", "callToAction": {"actionType": "LEARN_MORE"}}
+                payload: Dict[str, Any] = {"summary": content[:1500], "topicType": "STANDARD", "callToAction": {"actionType": "LEARN_MORE"}}
                 if post_type == "event" and event_start:
                     payload["topicType"] = "EVENT"
                     try:
