@@ -209,10 +209,10 @@ def create_app(config_name: Optional[str] = None):
     app = Flask(__name__)
     app.secret_key = os.getenv("FLASK_SECRET_KEY")
     app.permanent_session_lifetime = timedelta(hours=8)
-    app.session_cookie_httponly = True
-    app.session_cookie_samesite = "Strict"
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
     if os.getenv("DEV_MODE", "").lower() not in ("true", "1"):
-        app.session_cookie_secure = True
+        app.config["SESSION_COOKIE_SECURE"] = True
 
     app.config["CONTACT_PHONE"] = os.getenv("CONTACT_PHONE", "(514) 243-1580")
     app.config["CONTACT_EMAIL"] = os.getenv("CONTACT_EMAIL", "lavaldigital@gmail.com")
