@@ -455,6 +455,8 @@ def create_user(email: str, password_hash: str, role: str,
     conn.commit()
     uid = cur.lastrowid
     _seed_default_agents(conn)
+    if uid is None:
+        raise RuntimeError("Failed to create user — INSERT did not return a rowid")
     return uid
 
 
