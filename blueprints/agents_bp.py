@@ -255,8 +255,8 @@ def invoke_agent(agent_id):
         if tenant_id:
             try:
                 update_agent_activity(tenant_id, agent_id, status="idle")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Failed to reset agent activity for tenant %s agent %s: %s", tenant_id, agent_id, e)
         return safe_error(e, 500)
 
 
