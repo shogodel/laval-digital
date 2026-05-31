@@ -45,8 +45,8 @@ def _get_conn() -> sqlite3.Connection:
         if hasattr(_local, "conn") and _local.conn is not None and getattr(_local, "pid", None) != current_pid:
             try:
                 _local.conn.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Failed to close stale connection (pid %s): %s", current_pid, e)
         db_path = _db_path()
         db_path.parent.mkdir(parents=True, exist_ok=True)
         _local.conn = sqlite3.connect(str(db_path), timeout=30)
