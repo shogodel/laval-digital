@@ -5,6 +5,7 @@ import smtplib
 import ssl
 import threading
 import uuid
+from typing import Any
 from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 analytics_bp = Blueprint("analytics", __name__, url_prefix="")
 
-_report_history = []
+_report_history: list[dict[str, Any]] = []
 _report_history_lock = threading.Lock()
 
 
