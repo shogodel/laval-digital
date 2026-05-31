@@ -24,6 +24,8 @@ def _validate_smtp_host(host: str) -> bool:
         addrs = socket.getaddrinfo(host, None)
         for family, _, _, _, sockaddr in addrs:
             ip = sockaddr[0]
+            if not isinstance(ip, str):
+                return False
             if ":" in ip:
                 if ip.startswith("::1") or ip.startswith("fc") or ip.startswith("fd"):
                     return False
