@@ -268,7 +268,7 @@ class WebsiteMCPServer(MCPServer):
                     cert = ssock.getpeercert()
                     if cert is None:
                         return {"success": False, "error": "No certificate returned by server"}
-                    expiry_date = parsedate_to_datetime(cert['notAfter'])
+                    expiry_date = parsedate_to_datetime(str(cert['notAfter']))
                     days_left = (expiry_date - datetime.now(timezone.utc)).days
                     issuer = dict(x[0] for x in cert.get('issuer', []))
 
