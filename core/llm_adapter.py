@@ -143,7 +143,7 @@ class LLMAdapter:
             Dict with 'provider' (str) and 'models' (list of str).
             'provider' is 'unknown' if no provider accepts the key.
         """
-        providers = [
+        providers: List[Dict[str, Any]] = [
             {
                 "name": "anthropic",
                 "url": "https://api.anthropic.com/v1/models",
