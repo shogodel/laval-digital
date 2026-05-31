@@ -7,7 +7,7 @@ avoiding fragile call-time importlib.import_module() patterns.
 from typing import Any, Dict, Optional
 
 # Module-level state — set by app.py at boot time
-_agent_registry: dict = None
+_agent_registry: Optional[dict] = None
 _llm_adapter = None
 _orchestrator_fn = None  # factory function (lazy-built singleton)
 _executioner = None
@@ -16,9 +16,9 @@ _agent_memory = None
 _speech_engine = None
 _affiliate_manager = None
 _scheduler_manager = None
-_agent_meta: Dict[str, Dict[str, str]] = None
-_agent_configs: dict = None
-_agent_personalities: dict = None
+_agent_meta: Optional[Dict[str, Dict[str, str]]] = None
+_agent_configs: Optional[dict] = None
+_agent_personalities: Optional[dict] = None
 _email_bridge = None
 _credential_cipher = None
 _current_user_id_fn = None
