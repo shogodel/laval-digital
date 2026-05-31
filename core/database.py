@@ -460,19 +460,23 @@ def create_user(email: str, password_hash: str, role: str,
     return uid
 
 
+_ALLOWED_USER_COLUMNS = frozenset({
+    "email", "display_name", "role", "password_hash", "status",
+    "trial_ends_at", "stripe_customer_id", "last_login", "tenant_id",
+})
+_USER_UPDATE_SQL = {
+    col: f"UPDATE users SET {col} = ? WHERE id = ?"  # noqa: S608 — col is validated against hardcoded frozenset
+    for col in _ALLOWED_USER_COLUMNS
+}
+
+
 def update_user(uid: int, **kwargs) -> None:
     conn = _get_conn()
-    _ALLOWED_USER_COLUMNS = {
-        "email", "display_name", "role", "password_hash", "status",
-        "trial_ends_at", "stripe_customer_id", "last_login", "tenant_id",
-    }
     for key, val in kwargs.items():
-        if key not in _ALLOWED_USER_COLUMNS:
+        sql = _USER_UPDATE_SQL.get(key)
+        if sql is None:
             raise ValueError(f"Unknown column: {key}")
-        conn.execute(
-            "UPDATE users SET {} = ? WHERE id = ?".format(key),
-            (val, uid),
-        )
+        conn.execute(sql, (val, uid))
     conn.commit()
 
 
