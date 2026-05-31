@@ -218,7 +218,7 @@ def create_app(config_name: Optional[str] = None):
     app.config["CONTACT_EMAIL"] = os.getenv("CONTACT_EMAIL", "lavaldigital@gmail.com")
     app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)  # type: ignore[method-assign]
 
     _API_PUBLIC: set = {
         "/api/affiliate/status",
