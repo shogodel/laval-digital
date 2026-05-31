@@ -95,7 +95,7 @@ class SocialMCPServer(MCPServer):
             try:
                 token = api_credentials["access_token"]
                 url = f"https://graph.facebook.com/v19.0/{api_credentials['account_id']}/media"
-                data = {"caption": content}
+                data: Dict[str, Any] = {"caption": content}
                 if media_url:
                     data["image_url"] = media_url if post_type != "reels" else None
                     data["video_url"] = media_url if post_type == "reels" else None
@@ -178,7 +178,7 @@ class SocialMCPServer(MCPServer):
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
 
                 url = "https://api.twitter.com/2/tweets"
-                payload = {"text": content[:280]}
+                payload: Dict[str, Any] = {"text": content[:280]}
                 if media_url:
                     payload["media"] = {"media_ids": [media_url]}
                 resp = requests.post(url, headers=headers, json=payload, timeout=15)
@@ -336,7 +336,7 @@ class SocialMCPServer(MCPServer):
                                   api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Analyze competitor social media presence."""
         platform_list = [p.strip() for p in platforms.split(',')]
-        analysis = {"competitor": competitor_handle, "platforms": {}}
+        analysis: Dict[str, Any] = {"competitor": competitor_handle, "platforms": {}}
         for p in platform_list:
             analysis["platforms"][p] = {
                 "posting_frequency": "unknown",
