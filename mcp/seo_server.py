@@ -103,6 +103,44 @@ class SEOMCPServer(MCPServer):
         except Exception as e:
             return {"success": False, "result": "", "error": f"WordPress publish failed: {e}"}
 
+    def _publish_webflow(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
+        """Publish to Webflow CMS via API v2."""
+        try:
+            api_token = creds.get("api_token", "")
+            site_id = creds.get("site_id", "")
+            collection_id = creds.get("collection_id", "")
+            if not all([api_token, site_id, collection_id]):
+                return {"success": False, "result": "", "error": "Missing Webflow credentials (api_token, site_id, collection_id)"}
+            slug = re.sub(r'[^a-z0-9-]', '', title.lower().replace(" ", "-"))
+            url = f"https://api.webflow.com/v2/sites/{site_id}/collections/{collection_id}/items"
+            headers = {
+                "Authorization": f"Bearer {api_token}",
+                "accept": "application/json",
+                "content-type": "application/json",
+            }
+            payload = {
+                "isArchived": False,
+                "isDraft": False,
+                "fieldData": {
+                    "name": title,
+                    "slug": slug,
+                    "_archived": False,
+                    "_draft": False,
+                    "body": content,
+                },
+            }
+            resp = requests.post(url, headers=headers, json=payload, timeout=15)
+            if resp.status_code in (200, 201):
+                item = resp.json()
+                return {
+                    "success": True,
+                    "result": f"Published to Webflow: {item.get('body', {}).get('webflowUrl', 'Live')}",
+                    "error": None,
+                }
+            return {"success": False, "result": "", "error": f"Webflow API error: {resp.text}"}
+        except Exception as e:
+            return {"success": False, "result": "", "error": f"Webflow publish failed: {e}"}
+
     def _publish_netlify(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
         """Trigger Netlify deploy via build hook."""
         try:
