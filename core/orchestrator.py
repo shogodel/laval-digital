@@ -652,6 +652,10 @@ class Orchestrator:
 
             # Store draft for human approval (manual mode or low-confidence suggest)
             with self._pending_lock:
+                if thread_id in self._pending_drafts:
+                    logger.warning(
+                        "Overwriting pending draft for thread %s (agent=%s)", thread_id, agent_name
+                    )
                 self._pending_drafts[thread_id] = {
                     "agent": agent_name,
                     "draft": clean_draft,
