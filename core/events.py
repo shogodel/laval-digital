@@ -3,7 +3,7 @@ import threading
 import uuid
 from datetime import datetime, UTC
 from queue import Queue
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +20,15 @@ class EventBus:
     """
 
     def __init__(self) -> None:
-        self._subscribers: List[Queue] = []
-        self._history: List[Dict[str, Any]] = []
+        self._subscribers: list[Queue] = []
+        self._history: list[dict[str, Any]] = []
         self._lock = threading.Lock()
 
     def publish(
         self,
         event_type: str,
         agent: str,
-        data: Optional[Dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
     ) -> None:
         """Publish an event to all active subscribers.
 
@@ -38,7 +38,7 @@ class EventBus:
             agent: Agent identifier (e.g. ``local_seo``) or ``orchestrator``.
             data: Optional payload dict.
         """
-        event: Dict[str, Any] = {
+        event: dict[str, Any] = {
             "id": uuid.uuid4().hex[:12],
             "type": event_type,
             "agent": agent,
@@ -48,7 +48,7 @@ class EventBus:
         with self._lock:
             self._history.append(event)
             self._prune()
-            dead: List[Queue] = []
+            dead: list[Queue] = []
             for q in self._subscribers:
                 try:
                     q.put_nowait(event)
@@ -81,7 +81,7 @@ class EventBus:
         limit: int = 200,
         event_type: Optional[str] = None,
         agent: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return recent events, optionally filtered."""
         with self._lock:
             events = list(self._history)
@@ -91,11 +91,11 @@ class EventBus:
             events = [e for e in events if e["agent"] == agent]
         return events[-limit:]
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Return aggregate stats from recent history."""
         with self._lock:
             events = list(self._history[-500:])
-        by_agent: Dict[str, Dict[str, int]] = {}
+        by_agent: dict[str, dict[str, int]] = {}
         total_executed = 0
         total_failed = 0
         for e in events:

@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta, UTC
-from typing import Dict, Any
+from typing import Any
 
 from core import database
 from .base_server import MCPServer, _safe_error
@@ -36,7 +36,7 @@ class AnalyticsMCPServer(MCPServer):
         self.register_tool("get_chart_data", self.get_chart_data,
             "Get chart-ready data for any metric")
 
-    def generate_monthly_report(self, **kwargs) -> Dict[str, Any]:
+    def generate_monthly_report(self, **kwargs) -> dict[str, Any]:
         return {"success": True, "result": "Monthly report generated",
                 "report": {
                     "period": kwargs.get("period", ""),
@@ -51,7 +51,7 @@ class AnalyticsMCPServer(MCPServer):
                     ]
                 }}
 
-    def track_roi(self, user_id: int = 0, **kwargs) -> Dict[str, Any]:
+    def track_roi(self, user_id: int = 0, **kwargs) -> dict[str, Any]:
         conn = self._conn()
         try:
             cursor = conn.cursor()
@@ -96,7 +96,7 @@ class AnalyticsMCPServer(MCPServer):
         finally:
             conn.close()
 
-    def create_client_dashboard(self, **kwargs) -> Dict[str, Any]:
+    def create_client_dashboard(self, **kwargs) -> dict[str, Any]:
         dashboard = {
             "name": f"{kwargs.get('business_name', 'Your')} Marketing Dashboard",
             "refresh_interval": "5 minutes",
@@ -113,7 +113,7 @@ class AnalyticsMCPServer(MCPServer):
         }
         return {"success": True, "result": "Dashboard configuration created", "dashboard": dashboard}
 
-    def track_lead_sources(self, **kwargs) -> Dict[str, Any]:
+    def track_lead_sources(self, **kwargs) -> dict[str, Any]:
         attribution_models = {
             "first_touch": "Credits the first channel that brought the lead",
             "last_touch": "Credits the last channel before conversion",
@@ -126,7 +126,7 @@ class AnalyticsMCPServer(MCPServer):
                 "attribution_models": attribution_models, "tracked_sources": sources,
                 "recommendation": "Use UTM parameters on all links for accurate attribution"}
 
-    def analyze_trends(self, user_id: int = 0, **kwargs) -> Dict[str, Any]:
+    def analyze_trends(self, user_id: int = 0, **kwargs) -> dict[str, Any]:
         conn = self._conn()
         try:
             cursor = conn.cursor()
@@ -188,7 +188,7 @@ class AnalyticsMCPServer(MCPServer):
             insights.append(f"Most active agent: {top_agent} ({agent_activity[top_agent]} tasks)")
         return insights
 
-    def compare_periods(self, user_id: int = 0, **kwargs) -> Dict[str, Any]:
+    def compare_periods(self, user_id: int = 0, **kwargs) -> dict[str, Any]:
         conn = self._conn()
         period_a_days = kwargs.get("period_a_days", 30)
         period_b_days = kwargs.get("period_b_days", 30)
@@ -227,7 +227,7 @@ class AnalyticsMCPServer(MCPServer):
         finally:
             conn.close()
 
-    def get_executive_summary(self, user_id: int = 0, **kwargs) -> Dict[str, Any]:
+    def get_executive_summary(self, user_id: int = 0, **kwargs) -> dict[str, Any]:
         conn = self._conn()
         try:
             cursor = conn.cursor()
@@ -263,7 +263,7 @@ class AnalyticsMCPServer(MCPServer):
         finally:
             conn.close()
 
-    def get_chart_data(self, user_id: int = 0, **kwargs) -> Dict[str, Any]:
+    def get_chart_data(self, user_id: int = 0, **kwargs) -> dict[str, Any]:
         conn = self._conn()
         chart_type = kwargs.get("chart_type", "executions_by_day")
         days = kwargs.get("days", 30)

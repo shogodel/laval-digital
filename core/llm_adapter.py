@@ -1,6 +1,7 @@
 import logging
 import threading
-from typing import Any, Dict, List, Optional, Generator
+from typing import Any, Optional
+from collections.abc import Generator
 
 import requests
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -55,7 +56,7 @@ class LLMAdapter:
     management and dynamic model discovery through litellm.model_list.
     """
 
-    _available_models_cache: Optional[List[str]] = None
+    _available_models_cache: Optional[list[str]] = None
 
     def __init__(
         self,
@@ -96,7 +97,7 @@ class LLMAdapter:
         return self._model
 
     @classmethod
-    def get_available_models(cls) -> List[str]:
+    def get_available_models(cls) -> list[str]:
         """Return all available LLM model IDs via litellm.
 
         Results are cached on first call to avoid repeated lookups.
@@ -130,7 +131,7 @@ class LLMAdapter:
         return model in available
 
     @classmethod
-    def detect_models(cls, api_key: str) -> Dict[str, Any]:
+    def detect_models(cls, api_key: str) -> dict[str, Any]:
         """Detect provider from API key and return its available models.
 
         Uses key prefix heuristics to try the most likely provider first,
@@ -143,7 +144,7 @@ class LLMAdapter:
             Dict with 'provider' (str) and 'models' (list of str).
             'provider' is 'unknown' if no provider accepts the key.
         """
-        providers: List[Dict[str, Any]] = [
+        providers: list[dict[str, Any]] = [
             {
                 "name": "anthropic",
                 "url": "https://api.anthropic.com/v1/models",
@@ -235,7 +236,7 @@ class LLMAdapter:
                 "litellm is required for multi-LLM support. Install with: pip install litellm"
             )
 
-        llm_kwargs: Dict[str, Any] = {
+        llm_kwargs: dict[str, Any] = {
             "model": self._model,
             "api_key": self._api_key,
             "temperature": self._temperature,

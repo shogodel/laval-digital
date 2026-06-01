@@ -4,7 +4,7 @@ import re
 import json
 import requests
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any, Optional
 from .base_server import MCPServer, _safe_error
 from ._safe_url import _is_safe_url
 
@@ -57,7 +57,7 @@ class EcommerceMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def manage_products(self, product_name: str = "", action: str = "add", price: float = 0.0,
-                        platform: str = "shopify", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                        platform: str = "shopify", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Add or update a product on an e-commerce platform."""
         product = {
             "name": product_name or "New Product",
@@ -112,7 +112,7 @@ class EcommerceMCPServer(MCPServer):
                 if store_url and api_key:
                     url = f"https://{store_url}/admin/api/2024-01/products.json"
                     headers = {"X-Shopify-Access-Token": api_key, "Content-Type": "application/json"}
-                    payload: Dict[str, Any] = {"product": {"title": product_name, "body_html": kwargs.get("description", ""),
+                    payload: dict[str, Any] = {"product": {"title": product_name, "body_html": kwargs.get("description", ""),
                                                               "vendor": kwargs.get("vendor", ""), "product_type": kwargs.get("category", ""),
                                                               "status": "active" if action == "add" else None}}
                     resp = requests.post(url, headers=headers, json=payload, timeout=15)
@@ -134,7 +134,7 @@ class EcommerceMCPServer(MCPServer):
                         raise ValueError("WooCommerce API requires HTTPS")
                     url = f"{site_url.rstrip('/')}/wp-json/wc/v3/products"
                     auth = (consumer_key, consumer_secret)
-                    wc_payload: Dict[str, Any] = {"name": product_name, "regular_price": str(price), "description": kwargs.get("description", ""),
+                    wc_payload: dict[str, Any] = {"name": product_name, "regular_price": str(price), "description": kwargs.get("description", ""),
                                                         "status": "draft" if action == "add" else "publish"}
                     resp = requests.post(url, auth=auth, json=wc_payload, timeout=15)
                     if resp.status_code == 201:
@@ -149,7 +149,7 @@ class EcommerceMCPServer(MCPServer):
     # Inventory
     # ------------------------------------------------------------------
 
-    def track_inventory(self, products_json: str = "", low_stock_threshold: int = 10, **kwargs) -> Dict[str, Any]:
+    def track_inventory(self, products_json: str = "", low_stock_threshold: int = 10, **kwargs) -> dict[str, Any]:
         """Calculate inventory health metrics from product data."""
         try:
             products = json.loads(products_json) if products_json else []
@@ -196,7 +196,7 @@ class EcommerceMCPServer(MCPServer):
     # Product Page Optimization
     # ------------------------------------------------------------------
 
-    def optimize_product_pages(self, product_url: str = "", **kwargs) -> Dict[str, Any]:
+    def optimize_product_pages(self, product_url: str = "", **kwargs) -> dict[str, Any]:
         """Audit a live product page and score it on SEO and conversion factors."""
         url = product_url or kwargs.get("url", "")
         if not url:
@@ -298,7 +298,7 @@ class EcommerceMCPServer(MCPServer):
     # Abandoned Carts
     # ------------------------------------------------------------------
 
-    def manage_abandoned_carts(self, cart_value: float = 0.0, **kwargs) -> Dict[str, Any]:
+    def manage_abandoned_carts(self, cart_value: float = 0.0, **kwargs) -> dict[str, Any]:
         """Generate an abandoned cart recovery strategy."""
         if cart_value < 50:
             discount_tiers = [
@@ -330,7 +330,7 @@ class EcommerceMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def generate_product_descriptions(self, product_name: str = "", features: str = "",
-                                      benefits: str = "", target_audience: str = "", tone: str = "professional", **kwargs) -> Dict[str, Any]:
+                                      benefits: str = "", target_audience: str = "", tone: str = "professional", **kwargs) -> dict[str, Any]:
         """Generate optimized product content from features and benefits."""
         feature_list = [f.strip() for f in features.split(',') if f.strip()] if features else []
         benefit_list = [b.strip() for b in benefits.split(',') if b.strip()] if benefits else []
@@ -378,7 +378,7 @@ Order now and experience the difference."""
     # Sales Metrics
     # ------------------------------------------------------------------
 
-    def track_sales_metrics(self, orders_json: str = "", period: str = "monthly", **kwargs) -> Dict[str, Any]:
+    def track_sales_metrics(self, orders_json: str = "", period: str = "monthly", **kwargs) -> dict[str, Any]:
         """Calculate sales metrics from order data."""
         try:
             orders = json.loads(orders_json) if orders_json else []
@@ -393,7 +393,7 @@ Order now and experience the difference."""
         order_count = len(orders)
         aov = total_revenue / order_count if order_count > 0 else 0
 
-        customers: Dict[str, int] = {}
+        customers: dict[str, int] = {}
         for o in orders:
             email = o.get("email", "unknown")
             customers[email] = customers.get(email, 0) + 1
@@ -402,7 +402,7 @@ Order now and experience the difference."""
         repeat_customers = sum(1 for c in customers.values() if c > 1)
         repeat_rate = (repeat_customers / unique_customers * 100) if unique_customers > 0 else 0
 
-        products: Dict[str, int] = {}
+        products: dict[str, int] = {}
         for o in orders:
             for item in o.get("items", []):
                 name = item.get("name", "Unknown")
@@ -419,7 +419,7 @@ Order now and experience the difference."""
     # Customer Analysis (RFM)
     # ------------------------------------------------------------------
 
-    def analyze_customers(self, orders_json: str = "", **kwargs) -> Dict[str, Any]:
+    def analyze_customers(self, orders_json: str = "", **kwargs) -> dict[str, Any]:
         """RFM analysis: segment customers by Recency, Frequency, Monetary value."""
         try:
             orders = json.loads(orders_json) if orders_json else []
@@ -433,7 +433,7 @@ Order now and experience the difference."""
                                  "new": "Recent first purchase — nurture and onboard"}}
 
         now = datetime.now()
-        customers: Dict[str, Any] = {}
+        customers: dict[str, Any] = {}
         for o in orders:
             email = o.get("email", "unknown")
             date = o.get("date", "")
@@ -448,7 +448,7 @@ Order now and experience the difference."""
             if order_date > customers[email]["last_order"]:
                 customers[email]["last_order"] = order_date
 
-        segments: Dict[str, List[str]] = {"champions": [], "loyal": [], "at_risk": [], "lost": [], "new": []}
+        segments: dict[str, list[str]] = {"champions": [], "loyal": [], "at_risk": [], "lost": [], "new": []}
         for email, data in customers.items():
             days_since = (now - data["last_order"]).days
             if days_since <= 30 and data["orders"] >= 3: segments["champions"].append(email)
@@ -469,7 +469,7 @@ Order now and experience the difference."""
     # Pricing
     # ------------------------------------------------------------------
 
-    def optimize_pricing(self, cost: float = 0.0, current_price: float = 0.0, competitor_price: float = 0.0, **kwargs) -> Dict[str, Any]:
+    def optimize_pricing(self, cost: float = 0.0, current_price: float = 0.0, competitor_price: float = 0.0, **kwargs) -> dict[str, Any]:
         """Recommend optimal pricing based on cost, margin targets, and competitor data."""
         if cost <= 0:
             return {"success": False, "error": "Cost is required for pricing recommendations"}
@@ -499,7 +499,7 @@ Order now and experience the difference."""
     # Bundles
     # ------------------------------------------------------------------
 
-    def create_product_bundle(self, main_product: str = "", complementary_products: str = "", **kwargs) -> Dict[str, Any]:
+    def create_product_bundle(self, main_product: str = "", complementary_products: str = "", **kwargs) -> dict[str, Any]:
         comp_list = [c.strip() for c in complementary_products.split(',') if c.strip()] if complementary_products else []
         bundle = {"name": f"{main_product} Bundle", "main_product": main_product, "complementary": comp_list,
                   "suggested_discount": "10-15% off total individual prices", "marketing_angle": "Save X% when you buy together",
@@ -510,7 +510,7 @@ Order now and experience the difference."""
     # Seasonal Calendar
     # ------------------------------------------------------------------
 
-    def plan_seasonal_calendar(self, year: int = 2026, **kwargs) -> Dict[str, Any]:
+    def plan_seasonal_calendar(self, year: int = 2026, **kwargs) -> dict[str, Any]:
         seasons = {"January": ["New Year organization", "Winter clearance", "Fitness/wellness"], "February": ["Valentine's Day gifts", "Winter gear sale", "Super Bowl"],
                    "March": ["Spring preview", "St. Patrick's Day", "March Break"], "April": ["Spring collection", "Easter", "Earth Day"],
                    "May": ["Mother's Day", "Victoria Day", "Spring sale"], "June": ["Father's Day", "Summer launch", "End of school"],
@@ -523,7 +523,7 @@ Order now and experience the difference."""
     # Shipping
     # ------------------------------------------------------------------
 
-    def analyze_shipping(self, origin_province: str = "QC", **kwargs) -> Dict[str, Any]:
+    def analyze_shipping(self, origin_province: str = "QC", **kwargs) -> dict[str, Any]:
         carriers = {"Canada Post": {"best_for": "Small packages, rural delivery", "tracking": "Yes", "insurance": "Up to $100 included"},
                     "UPS": {"best_for": "Medium-large packages, US shipping", "tracking": "Yes", "insurance": "Up to $100 included"},
                     "FedEx": {"best_for": "Express, international", "tracking": "Yes", "insurance": "Up to $100 included"},
@@ -539,7 +539,7 @@ Order now and experience the difference."""
     # Taxes
     # ------------------------------------------------------------------
 
-    def configure_taxes(self, province: str = "QC", **kwargs) -> Dict[str, Any]:
+    def configure_taxes(self, province: str = "QC", **kwargs) -> dict[str, Any]:
         tax_rates = {"AB": {"gst": 5.0, "pst": 0.0, "hst": 0.0, "total": 5.0}, "BC": {"gst": 5.0, "pst": 7.0, "hst": 0.0, "total": 12.0},
                      "MB": {"gst": 5.0, "pst": 7.0, "hst": 0.0, "total": 12.0}, "NB": {"gst": 0.0, "pst": 0.0, "hst": 15.0, "total": 15.0},
                      "NL": {"gst": 0.0, "pst": 0.0, "hst": 15.0, "total": 15.0}, "NS": {"gst": 0.0, "pst": 0.0, "hst": 15.0, "total": 15.0},
@@ -553,7 +553,7 @@ Order now and experience the difference."""
     # Store Health Audit
     # ------------------------------------------------------------------
 
-    def audit_store_health(self, store_url: str = "", platform: str = "shopify", **kwargs) -> Dict[str, Any]:
+    def audit_store_health(self, store_url: str = "", platform: str = "shopify", **kwargs) -> dict[str, Any]:
         url = store_url or kwargs.get("url", "")
         checks = []
         score = 0
@@ -593,7 +593,7 @@ Order now and experience the difference."""
     # Simple tools (keep existing)
     # ------------------------------------------------------------------
 
-    def create_promotions(self, promotion_type: str = "discount", discount_pct: int = 15, **kwargs) -> Dict[str, Any]:
+    def create_promotions(self, promotion_type: str = "discount", discount_pct: int = 15, **kwargs) -> dict[str, Any]:
         types = {"discount": "Percentage or fixed amount off", "flash_sale": "Limited-time deep discount (24-48h) with countdown timer",
                  "bundle": "Buy X get Y at discount — increases AOV", "free_shipping": "Free shipping above order threshold — reduces abandonment",
                  "bogo": "Buy One Get One — clears inventory fast", "loyalty": "Points or rewards for repeat purchases",
@@ -602,7 +602,7 @@ Order now and experience the difference."""
                 "promotion": {"type": promotion_type, "discount": f"{discount_pct}%", "status": "draft"},
                 "available_types": types, "projected_uplift": f"Expect {15 if promotion_type == 'flash_sale' else 10}% conversion rate during promotion"}
 
-    def manage_reviews(self, action: str = "generate_request", **kwargs) -> Dict[str, Any]:
+    def manage_reviews(self, action: str = "generate_request", **kwargs) -> dict[str, Any]:
         return {"success": True, "result": "Review management strategy",
                 "strategy": {"timing": "Send review request 3-7 days after delivery",
                              "channel": "Email with direct review link + SMS for high-value customers",

@@ -9,7 +9,7 @@ import sqlite3
 import logging
 import threading
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime, UTC
 
 logger = logging.getLogger(__name__)
@@ -421,7 +421,7 @@ def _seed_default_agents(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def list_users(role: Optional[str] = None) -> List[dict]:
+def list_users(role: Optional[str] = None) -> list[dict]:
     """List all users, optionally filtered by role."""
     conn = _get_conn()
     if role:

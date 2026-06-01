@@ -10,7 +10,7 @@ from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 from .base_server import MCPServer, _safe_error
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ class EmailMCPServer(MCPServer):
 
     def send_email(self, content: str, to_email: str = "", subject: str = "", html: bool = False,
                    cc: str = "", bcc: str = "", attachments: str = "",
-                   api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                   api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Send a single email with HTML support, CC/BCC, and attachments."""
         subject_match = re.search(r"^(?:#\s*)?Subject\s*:\s*(.+)$", content, re.MULTILINE | re.IGNORECASE)
         if not subject:
@@ -108,7 +108,7 @@ class EmailMCPServer(MCPServer):
 
     def send_campaign(self, content: str, list_name: str = "", subject: str = "", html: bool = True,
                       segment: str = "", schedule_time: str = "",
-                      api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                      api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Send a bulk email campaign to a subscriber list with optional segmentation and scheduling."""
         if schedule_time:
             try:
@@ -137,7 +137,7 @@ class EmailMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def create_email_sequence(self, sequence_type: str = "welcome", emails: int = 3,
-                              business_name: str = "", **kwargs) -> Dict[str, Any]:
+                              business_name: str = "", **kwargs) -> dict[str, Any]:
         """Create a multi-email drip sequence."""
         sequences = {
             "welcome": [
@@ -170,7 +170,7 @@ class EmailMCPServer(MCPServer):
             "duration_days": selected[-1]["day"] if selected else 0
         }
 
-    def create_follow_up(self, trigger: str = "no_open", delay_hours: int = 48, **kwargs) -> Dict[str, Any]:
+    def create_follow_up(self, trigger: str = "no_open", delay_hours: int = 48, **kwargs) -> dict[str, Any]:
         """Create automated follow-up based on recipient behavior."""
         follow_ups = {
             "no_open": {"subject": "Did you see this?", "delay": f"{delay_hours}h after send", "strategy": "Resend with different subject line"},
@@ -182,7 +182,7 @@ class EmailMCPServer(MCPServer):
         return {"success": True, "result": f"Follow-up created for '{trigger}' trigger", "follow_up": fu}
 
     def setup_automation(self, automation_type: str = "welcome", trigger_event: str = "new_subscriber",
-                         **kwargs) -> Dict[str, Any]:
+                         **kwargs) -> dict[str, Any]:
         """Set up trigger-based email automation."""
         automations = {
             "welcome": {"trigger": "new_subscriber", "action": "send_welcome_sequence", "delay": "immediate"},
@@ -198,7 +198,7 @@ class EmailMCPServer(MCPServer):
     # Content creation
     # ------------------------------------------------------------------
 
-    def create_newsletter(self, sections: str = "", business_name: str = "", **kwargs) -> Dict[str, Any]:
+    def create_newsletter(self, sections: str = "", business_name: str = "", **kwargs) -> dict[str, Any]:
         """Create a designed newsletter with header, body sections, and footer."""
         section_list = [s.strip() for s in sections.split('||') if s.strip()] if sections else [
             "Featured Article: Industry update or tip", "Customer Spotlight: Success story or testimonial",
@@ -210,7 +210,7 @@ class EmailMCPServer(MCPServer):
         }
         return {"success": True, "result": f"Newsletter structure created with {len(newsletter['sections'])} sections", "newsletter": newsletter}
 
-    def create_email_template(self, template_name: str = "promotional", business_name: str = "", **kwargs) -> Dict[str, Any]:
+    def create_email_template(self, template_name: str = "promotional", business_name: str = "", **kwargs) -> dict[str, Any]:
         """Create a reusable HTML email template."""
         templates = {
             "promotional": {"name": "Promotional Offer", "sections": ["header_with_logo", "hero_image", "offer_details", "cta_button", "footer"]},
@@ -222,7 +222,7 @@ class EmailMCPServer(MCPServer):
         return {"success": True, "result": f"Template '{template['name']}' created", "template": template, "available_templates": list(templates.keys())}
 
     def generate_email_signature(self, name: str = "", title: str = "", business_name: str = "",
-                                 phone: str = "", email: str = "", website: str = "", **kwargs) -> Dict[str, Any]:
+                                 phone: str = "", email: str = "", website: str = "", **kwargs) -> dict[str, Any]:
         """Generate a professional HTML email signature."""
         signature_html = f"""<div style="font-family:Arial,sans-serif;border-left:3px solid #D42B2B;padding-left:12px;">
 <strong style="color:#0f2b45;">{name}</strong><br>
@@ -237,19 +237,19 @@ class EmailMCPServer(MCPServer):
     # Analytics & optimization
     # ------------------------------------------------------------------
 
-    def analyze_campaign(self, campaign_id: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def analyze_campaign(self, campaign_id: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Analyze campaign performance metrics."""
         return {"success": True, "result": "Campaign analysis framework ready",
                 "metrics": ["open_rate", "click_rate", "bounce_rate", "unsubscribe_rate", "conversion_rate", "revenue_per_email", "forward_rate"],
                 "benchmarks": {"open_rate": "20-25% (good)", "click_rate": "2-5% (good)", "bounce_rate": "< 2% (healthy)"}}
 
-    def ab_test_subject(self, subject_a: str = "", subject_b: str = "", test_size: int = 20, **kwargs) -> Dict[str, Any]:
+    def ab_test_subject(self, subject_a: str = "", subject_b: str = "", test_size: int = 20, **kwargs) -> dict[str, Any]:
         """Set up A/B test for email subject lines."""
         return {"success": True, "result": f"A/B test configured: {test_size}% of list each",
                 "variant_a": subject_a, "variant_b": subject_b,
                 "winner_determination": "Best open rate after 4 hours gets sent to remaining 60%"}
 
-    def optimize_send_time(self, industry: str = "local_services", **kwargs) -> Dict[str, Any]:
+    def optimize_send_time(self, industry: str = "local_services", **kwargs) -> dict[str, Any]:
         """Get best send times by industry."""
         best_times = {
             "local_services": {"best_days": ["Tuesday", "Wednesday", "Thursday"], "best_hours": ["8:00 AM", "2:00 PM", "7:00 PM"]},
@@ -259,7 +259,7 @@ class EmailMCPServer(MCPServer):
         timing = best_times.get(industry, best_times["local_services"])
         return {"success": True, "result": f"Best send times for {industry}: {', '.join(timing['best_days'])} at {', '.join(timing['best_hours'])}", "timing": timing}
 
-    def check_spam_score(self, subject: str = "", content: str = "", **kwargs) -> Dict[str, Any]:
+    def check_spam_score(self, subject: str = "", content: str = "", **kwargs) -> dict[str, Any]:
         """Predict email deliverability by checking spam triggers."""
         spam_triggers = []
         if subject and len(subject) > 60:
@@ -279,7 +279,7 @@ class EmailMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def manage_subscribers(self, action: str = "add", email_address: str = "", list_name: str = "default",
-                           tags: str = "", **kwargs) -> Dict[str, Any]:
+                           tags: str = "", **kwargs) -> dict[str, Any]:
         """Add, remove, or segment subscribers."""
         tag_list = [t.strip() for t in tags.split(',') if t.strip()] if tags else []
         actions = {"add": "Subscriber added", "remove": "Subscriber removed", "unsubscribe": "Subscriber unsubscribed",
@@ -287,13 +287,13 @@ class EmailMCPServer(MCPServer):
         return {"success": True, "result": f"{actions.get(action, 'Action completed')}: {email_address}",
                 "subscriber": {"email": email_address, "list": list_name, "tags": tag_list, "action": action}}
 
-    def clean_email_list(self, list_name: str = "default", **kwargs) -> Dict[str, Any]:
+    def clean_email_list(self, list_name: str = "default", **kwargs) -> dict[str, Any]:
         """Remove invalid, bounced, or duplicate email addresses."""
         return {"success": True, "result": f"List '{list_name}' cleaned",
                 "removed": {"invalid_format": 0, "duplicates": 0, "hard_bounces": 0, "unsubscribed": 0},
                 "recommendation": "Connect to your email provider for automatic list cleaning"}
 
-    def segment_by_behavior(self, segment_type: str = "engaged", **kwargs) -> Dict[str, Any]:
+    def segment_by_behavior(self, segment_type: str = "engaged", **kwargs) -> dict[str, Any]:
         """Segment subscribers by behavior patterns."""
         segments = {
             "engaged": "Opened or clicked in last 30 days", "inactive": "No opens in 90+ days",
@@ -307,7 +307,7 @@ class EmailMCPServer(MCPServer):
     # Connection
     # ------------------------------------------------------------------
 
-    def test_connection(self, api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def test_connection(self, api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Test email configuration by sending a test email."""
         if not api_credentials or not api_credentials.get("smtp_host"):
             return {"success": False, "result": "", "error": "No SMTP credentials configured"}
@@ -321,8 +321,8 @@ class EmailMCPServer(MCPServer):
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _send_smtp(self, content: str, subject: str, to: str, creds: Dict, html: bool = False,
-                   cc: str = "", bcc: str = "", attachments: str = "") -> Dict[str, Any]:
+    def _send_smtp(self, content: str, subject: str, to: str, creds: dict, html: bool = False,
+                   cc: str = "", bcc: str = "", attachments: str = "") -> dict[str, Any]:
         smtp_host = creds.get("smtp_host", "")
         if not _validate_smtp_host(smtp_host):
             return {"success": False, "result": "", "error": "SMTP host rejected: resolves to private/reserved IP"}
@@ -358,7 +358,7 @@ class EmailMCPServer(MCPServer):
             logger.error("SMTP send failed: %s", e)
             return {"success": False, "result": "", "error": "SMTP failed"}
 
-    def _queue_email(self, content: str, subject: str, to: str, email_type: str = "single") -> Dict[str, Any]:
+    def _queue_email(self, content: str, subject: str, to: str, email_type: str = "single") -> dict[str, Any]:
         try:
             email_dir = Path("content/emails")
             email_dir.mkdir(parents=True, exist_ok=True)

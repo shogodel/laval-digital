@@ -4,7 +4,7 @@ All getters reference module-level variables set once during startup,
 avoiding fragile call-time importlib.import_module() patterns.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 # Module-level state — set by app.py at boot time
 _agent_registry: Optional[dict] = None
@@ -16,7 +16,7 @@ _agent_memory = None
 _speech_engine = None
 _affiliate_manager = None
 _scheduler_manager = None
-_agent_meta: Optional[Dict[str, Dict[str, str]]] = None
+_agent_meta: Optional[dict[str, dict[str, str]]] = None
 _agent_configs: Optional[dict] = None
 _agent_personalities: Optional[dict] = None
 _email_bridge = None
@@ -95,7 +95,7 @@ def get_scheduler_manager():
     return _require("scheduler_manager", _scheduler_manager)
 
 
-def get_agent_meta() -> Dict[str, Dict[str, str]]:
+def get_agent_meta() -> dict[str, dict[str, str]]:
     return _require("agent_meta", _agent_meta)
 
 

@@ -3,7 +3,8 @@ Base class for all Frankie MCP servers.
 Each server exposes tools that Frankie can call to execute marketing tasks.
 """
 import logging
-from typing import Dict, Any, Callable, List
+from typing import Any
+from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +36,8 @@ class MCPServer:
     def __init__(self, name: str, description: str):
         self.name = name
         self.description = description
-        self.tools: Dict[str, Callable] = {}
-        self.tool_descriptions: Dict[str, str] = {}
+        self.tools: dict[str, Callable] = {}
+        self.tool_descriptions: dict[str, str] = {}
         self._register_tools()
 
     def _register_tools(self) -> None:
@@ -55,7 +56,7 @@ class MCPServer:
         self.tool_descriptions[name] = description or (func.__doc__ or "No description")
         logger.info(f"[{self.name}] Registered tool: {name}")
 
-    def call_tool(self, tool_name: str, **kwargs) -> Dict[str, Any]:
+    def call_tool(self, tool_name: str, **kwargs) -> dict[str, Any]:
         """Call a registered tool by name.
 
         Args:
@@ -78,14 +79,14 @@ class MCPServer:
             logger.error(f"[{self.name}] Tool '{tool_name}' failed: {e}")
             return {"success": False, "result": "", "error": _safe_error(e)}
 
-    def list_tools(self) -> List[Dict[str, str]]:
+    def list_tools(self) -> list[dict[str, str]]:
         """Return all registered tools with descriptions."""
         return [
             {"name": name, "description": self.tool_descriptions.get(name, "No description")}
             for name in self.tools
         ]
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Return server status. Override in subclasses to check API connectivity."""
         return {
             "server": self.name,

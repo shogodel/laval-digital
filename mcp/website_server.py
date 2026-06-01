@@ -8,7 +8,7 @@ import requests
 from urllib.parse import urlparse, urljoin
 from datetime import datetime, UTC
 from email.utils import parsedate_to_datetime
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 from .base_server import MCPServer, _safe_error
 from ._safe_url import _is_safe_url
 
@@ -85,7 +85,7 @@ class WebsiteMCPServer(MCPServer):
     # Uptime
     # ------------------------------------------------------------------
 
-    def monitor_uptime(self, website_url: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def monitor_uptime(self, website_url: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         url = website_url or (api_credentials.get("site_url", "") if api_credentials else "")
         if not url:
             return {"success": False, "error": "No URL provided"}
@@ -105,7 +105,7 @@ class WebsiteMCPServer(MCPServer):
     # Page Speed
     # ------------------------------------------------------------------
 
-    def check_page_speed(self, url: str = "", **kwargs) -> Dict[str, Any]:
+    def check_page_speed(self, url: str = "", **kwargs) -> dict[str, Any]:
         url = url or kwargs.get("website_url", "")
         if not url:
             return {"success": False, "error": "No URL provided"}
@@ -142,7 +142,7 @@ class WebsiteMCPServer(MCPServer):
     # Broken Links
     # ------------------------------------------------------------------
 
-    def scan_broken_links(self, url: str = "", **kwargs) -> Dict[str, Any]:
+    def scan_broken_links(self, url: str = "", **kwargs) -> dict[str, Any]:
         url = url or kwargs.get("website_url", "")
         if not url:
             return {"success": False, "error": "No URL provided"}
@@ -180,7 +180,7 @@ class WebsiteMCPServer(MCPServer):
     # SEO Health
     # ------------------------------------------------------------------
 
-    def audit_seo_health(self, url: str = "", **kwargs) -> Dict[str, Any]:
+    def audit_seo_health(self, url: str = "", **kwargs) -> dict[str, Any]:
         url = url or kwargs.get("website_url", "")
         if not url:
             return {"success": False, "error": "No URL provided"}
@@ -192,7 +192,7 @@ class WebsiteMCPServer(MCPServer):
         content = resp.text
         parsed = urlparse(url)
 
-        audit: Dict[str, Any] = {
+        audit: dict[str, Any] = {
             "url": url,
             "title": "", "title_length": 0, "title_ok": False,
             "meta_description": "", "meta_length": 0, "meta_ok": False,
@@ -253,7 +253,7 @@ class WebsiteMCPServer(MCPServer):
     # SSL
     # ------------------------------------------------------------------
 
-    def manage_ssl(self, domain: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def manage_ssl(self, domain: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         domain = domain or (api_credentials.get("site_url", "").replace("https://", "").replace("http://", "").rstrip('/') if api_credentials else "")
         if not domain:
             return {"success": False, "error": "No domain provided"}
@@ -285,7 +285,7 @@ class WebsiteMCPServer(MCPServer):
     # Security Headers
     # ------------------------------------------------------------------
 
-    def security_scan(self, url: str = "", **kwargs) -> Dict[str, Any]:
+    def security_scan(self, url: str = "", **kwargs) -> dict[str, Any]:
         url = url or kwargs.get("website_url", "")
         if not url:
             return {"success": False, "error": "No URL provided"}
@@ -320,13 +320,13 @@ class WebsiteMCPServer(MCPServer):
     # DNS
     # ------------------------------------------------------------------
 
-    def dns_lookup(self, domain: str = "", record_type: str = "all", **kwargs) -> Dict[str, Any]:
+    def dns_lookup(self, domain: str = "", record_type: str = "all", **kwargs) -> dict[str, Any]:
         domain = domain or kwargs.get("domain", "")
         if not domain:
             return {"success": False, "error": "No domain provided"}
         domain = domain.replace("https://", "").replace("http://", "").rstrip('/').split('/')[0]
 
-        results: Dict[str, list[str]] = {}
+        results: dict[str, list[str]] = {}
         try:
             if record_type in ("all", "a"):
                 results["a"] = list(socket.gethostbyname_ex(domain)[2])
@@ -355,7 +355,7 @@ class WebsiteMCPServer(MCPServer):
     # Sitemap
     # ------------------------------------------------------------------
 
-    def validate_sitemap(self, sitemap_url: str = "", website_url: str = "", **kwargs) -> Dict[str, Any]:
+    def validate_sitemap(self, sitemap_url: str = "", website_url: str = "", **kwargs) -> dict[str, Any]:
         url = sitemap_url or (website_url.rstrip('/') + '/sitemap.xml' if website_url else "")
         if not url:
             return {"success": False, "error": "No sitemap URL provided"}
@@ -372,7 +372,7 @@ class WebsiteMCPServer(MCPServer):
     # robots.txt
     # ------------------------------------------------------------------
 
-    def check_robots_txt(self, website_url: str = "", **kwargs) -> Dict[str, Any]:
+    def check_robots_txt(self, website_url: str = "", **kwargs) -> dict[str, Any]:
         url = website_url.rstrip('/') + '/robots.txt' if website_url else ""
         if not url:
             return {"success": False, "error": "No website URL provided"}
@@ -392,7 +392,7 @@ class WebsiteMCPServer(MCPServer):
     # Schema
     # ------------------------------------------------------------------
 
-    def validate_schema(self, url: str = "", **kwargs) -> Dict[str, Any]:
+    def validate_schema(self, url: str = "", **kwargs) -> dict[str, Any]:
         url = url or kwargs.get("website_url", "")
         if not url:
             return {"success": False, "error": "No URL provided"}
@@ -423,7 +423,7 @@ class WebsiteMCPServer(MCPServer):
     # Redirects
     # ------------------------------------------------------------------
 
-    def manage_redirects(self, url: str = "", action: str = "trace", **kwargs) -> Dict[str, Any]:
+    def manage_redirects(self, url: str = "", action: str = "trace", **kwargs) -> dict[str, Any]:
         url = url or kwargs.get("website_url", "")
         if not url:
             return {"success": False, "error": "No URL provided"}
@@ -459,7 +459,7 @@ class WebsiteMCPServer(MCPServer):
     # Domain Expiry
     # ------------------------------------------------------------------
 
-    def check_domain_expiry(self, domain: str = "", **kwargs) -> Dict[str, Any]:
+    def check_domain_expiry(self, domain: str = "", **kwargs) -> dict[str, Any]:
         domain = domain or kwargs.get("domain", "")
         if not domain:
             return {"success": False, "error": "No domain provided"}
@@ -485,7 +485,7 @@ class WebsiteMCPServer(MCPServer):
     # Competitor Comparison
     # ------------------------------------------------------------------
 
-    def compare_websites(self, url_a: str = "", url_b: str = "", **kwargs) -> Dict[str, Any]:
+    def compare_websites(self, url_a: str = "", url_b: str = "", **kwargs) -> dict[str, Any]:
         if not url_a or not url_b:
             return {"success": False, "error": "Both url_a and url_b are required"}
 

@@ -1,6 +1,6 @@
 """Standardized JSON response helpers for consistent API envelope."""
 from flask import jsonify, g
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 
 def api_response(
@@ -14,7 +14,7 @@ def api_response(
 
     Envelope: {"success": bool, "data": ..., "error": ..., "message": ..., "request_id": "..."}
     """
-    body: Dict[str, Any] = {
+    body: dict[str, Any] = {
         "success": success,
         "request_id": getattr(g, "request_id", ""),
     }

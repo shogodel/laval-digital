@@ -1,11 +1,11 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import requests
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SPEECH_SETTINGS: Dict[str, Any] = {
+DEFAULT_SPEECH_SETTINGS: dict[str, Any] = {
     "speech_enabled": False,
     "stt_provider": "browser",
     "tts_provider": "browser",
@@ -33,7 +33,7 @@ LANG_TO_ELEVENLABS_VOICE = {
 
 
 class SpeechEngine:
-    def __init__(self, settings: Optional[Dict[str, Any]] = None):
+    def __init__(self, settings: Optional[dict[str, Any]] = None):
         self._settings = dict(DEFAULT_SPEECH_SETTINGS)
         if settings:
             self._settings.update(settings)
@@ -42,14 +42,14 @@ class SpeechEngine:
     def enabled(self) -> bool:
         return self._settings.get("speech_enabled", False)
 
-    def update_settings(self, updates: Dict[str, Any]) -> None:
+    def update_settings(self, updates: dict[str, Any]) -> None:
         self._settings.update(updates)
         logger.debug("Speech settings updated: %s", list(updates))
 
-    def get_settings(self) -> Dict[str, Any]:
+    def get_settings(self) -> dict[str, Any]:
         return dict(self._settings)
 
-    def get_public_settings(self) -> Dict[str, Any]:
+    def get_public_settings(self) -> dict[str, Any]:
         public = dict(self._settings)
         public.pop("openai_api_key", None)
         public.pop("elevenlabs_api_key", None)

@@ -30,7 +30,7 @@ import threading
 import requests
 from urllib.parse import urlparse
 from datetime import datetime, timedelta, UTC
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -529,7 +529,7 @@ def create_app(config_name: Optional[str] = None):
         "credentials": {"api_key": "", "api_base": "https://api.deepseek.com/v1"},
     }
     AGENT_CONFIGS = {aid: {**_BASE_AGENT_CONFIG, "agent_id": aid, "system_prompt_file": f"prompts/{pf}"} for aid, pf, _, _ in _AGENTS}
-    AGENT_META: Dict[str, Dict[str, str]] = {aid: {"name": nm, "desc": dc} for aid, _, nm, dc in _AGENTS}
+    AGENT_META: dict[str, dict[str, str]] = {aid: {"name": nm, "desc": dc} for aid, _, nm, dc in _AGENTS}
 
     llm_adapter = LLMAdapter(
         model="deepseek-chat",

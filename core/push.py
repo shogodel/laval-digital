@@ -16,7 +16,7 @@ import logging
 import os
 import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import serialization
@@ -43,15 +43,15 @@ def _vapid_fernet() -> Fernet:
     return Fernet(base64.urlsafe_b64encode(kdf))
 
 
-def _encrypt_vapid_keys(keys: Dict[str, str]) -> str:
+def _encrypt_vapid_keys(keys: dict[str, str]) -> str:
     return _vapid_fernet().encrypt(json.dumps(keys).encode()).decode()
 
 
-def _decrypt_vapid_keys(token: str) -> Dict[str, str]:
+def _decrypt_vapid_keys(token: str) -> dict[str, str]:
     return json.loads(_vapid_fernet().decrypt(token.encode()))
 
 
-def _ensure_vapid_keys() -> Dict[str, str]:
+def _ensure_vapid_keys() -> dict[str, str]:
     """Load VAPID keys from env vars, encrypted cache, or generate fresh."""
     pub = os.getenv("VAPID_PUBLIC_KEY", "")
     priv = os.getenv("VAPID_PRIVATE_KEY", "")
@@ -92,7 +92,7 @@ class PushManager:
 
     def __init__(self) -> None:
         self._lock = threading.RLock()
-        self._subscriptions: List[Dict[str, Any]] = []
+        self._subscriptions: list[dict[str, Any]] = []
         self._vapid = _ensure_vapid_keys()
         vapid_sub = os.getenv("VAPID_SUBSCRIPTION", "mailto:admin@lavaldigital.ca")
         self._vapid_claims = {"sub": vapid_sub}
@@ -132,7 +132,7 @@ class PushManager:
         except Exception as e:
             logger.warning("Failed to save push subscriptions: %s", e)
 
-    def subscribe(self, subscription: Dict[str, Any]) -> bool:
+    def subscribe(self, subscription: dict[str, Any]) -> bool:
         endpoint = subscription.get("endpoint", "")
         if not endpoint:
             return False
@@ -181,7 +181,7 @@ class PushManager:
                 self._save_subscriptions()
         return success
 
-    def send_event(self, event_type: str, agent: str, data: Optional[Dict[str, Any]] = None) -> None:
+    def send_event(self, event_type: str, agent: str, data: Optional[dict[str, Any]] = None) -> None:
         data = data or {}
         lang = data.get("lang", "en")
         if lang == "fr":

@@ -8,7 +8,8 @@ import uuid
 from datetime import datetime, UTC
 from email.mime.text import MIMEText
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Optional
+from collections.abc import Callable
 
 _LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
 
@@ -17,7 +18,7 @@ from mcp._safe_url import is_safe_url, is_safe_host
 
 logger = logging.getLogger(__name__)
 
-MCP_TOOL_TO_LOCAL: Dict[str, str] = {
+MCP_TOOL_TO_LOCAL: dict[str, str] = {
     "publish_blog_post": "publish_blog_post",
     "post_to_facebook": "post_to_social",
     "post_to_tiktok": "post_to_social",
@@ -54,7 +55,7 @@ class ExecutionerAgent:
     via the admin panel.
     """
 
-    DEFAULT_SETTINGS: Dict[str, Any] = {
+    DEFAULT_SETTINGS: dict[str, Any] = {
         "smtp_host": "",
         "smtp_port": 587,
         "smtp_username": "",
@@ -70,7 +71,7 @@ class ExecutionerAgent:
         ],
     }
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, config: Optional[dict[str, Any]] = None) -> None:
         """Initialize the ExecutionerAgent.
 
         Args:
@@ -92,9 +93,9 @@ class ExecutionerAgent:
         self._execution_log_path.parent.mkdir(parents=True, exist_ok=True)
         self._max_retries = config.get("max_retries", 3)
         self._retry_delay = config.get("retry_delay", 5)
-        self.tool_registry: Dict[str, Callable] = {}
-        self._settings: Dict[str, Any] = dict(self.DEFAULT_SETTINGS)
-        self._pending: Dict[str, Dict[str, Any]] = {}
+        self.tool_registry: dict[str, Callable] = {}
+        self._settings: dict[str, Any] = dict(self.DEFAULT_SETTINGS)
+        self._pending: dict[str, dict[str, Any]] = {}
         self._io_lock = threading.Lock()
         self._pending_lock = threading.Lock()
         self._tool_registry_lock = threading.Lock()
@@ -133,7 +134,7 @@ class ExecutionerAgent:
 
     _SECRET_KEYS = frozenset({"smtp_password", "social_api_key"})
 
-    def update_settings(self, settings: Dict[str, Any]) -> None:
+    def update_settings(self, settings: dict[str, Any]) -> None:
         """Update runtime settings.
 
         Only supplied keys are changed; missing keys keep existing values.
@@ -155,7 +156,7 @@ class ExecutionerAgent:
                     self._settings[key] = self._encrypt(value) if key in self._SECRET_KEYS else value
         logger.debug("Settings updated: %s", [k for k in settings if k in allowed_keys])
 
-    def get_settings(self) -> Dict[str, Any]:
+    def get_settings(self) -> dict[str, Any]:
         """Return a copy of the current settings with secrets decrypted.
 
         Returns:
@@ -169,7 +170,7 @@ class ExecutionerAgent:
                 result[key] = self._decrypt(result[key])
         return result
 
-    def get_public_settings(self) -> Dict[str, Any]:
+    def get_public_settings(self) -> dict[str, Any]:
         """Return settings safe for external API responses (secrets removed).
 
         Returns:
@@ -226,7 +227,7 @@ class ExecutionerAgent:
         approved_draft: str,
         tool_name: Optional[str] = None,
         force: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute an approved draft through a registered tool.
 
         Uses a deterministic execution path:
@@ -358,7 +359,7 @@ class ExecutionerAgent:
         agent_name: str,
         tool_name: str,
         approved_draft: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run a tool with retry logic and log the outcome.
 
         Args:
@@ -439,7 +440,7 @@ class ExecutionerAgent:
             "execution_id": execution_id,
         }
 
-    def confirm_execution(self, execution_id: str) -> Dict[str, Any]:
+    def confirm_execution(self, execution_id: str) -> dict[str, Any]:
         """Confirm and execute a previously queued execution.
 
         Removes the execution from the pending queue and runs the tool.
@@ -471,7 +472,7 @@ class ExecutionerAgent:
             approved_draft=pending["approved_draft"],
         )
 
-    def reject_execution(self, execution_id: str) -> Dict[str, Any]:
+    def reject_execution(self, execution_id: str) -> dict[str, Any]:
         """Reject a queued execution without running it.
 
         Args:
@@ -506,7 +507,7 @@ class ExecutionerAgent:
             "execution_id": execution_id,
         }
 
-    def get_pending_executions(self) -> List[Dict[str, Any]]:
+    def get_pending_executions(self) -> list[dict[str, Any]]:
         """Return all executions waiting for confirmation.
 
         Returns:
@@ -584,7 +585,7 @@ class ExecutionerAgent:
         text = re.sub(r"-+", "-", text)
         return text.strip("-")
 
-    def _publish_blog_post(self, draft: str) -> Dict[str, Any]:
+    def _publish_blog_post(self, draft: str) -> dict[str, Any]:
         """Write an approved blog post as a Markdown file.
 
         The file is saved to ``content/blog/<slug>-<timestamp>.md``.
@@ -615,7 +616,7 @@ class ExecutionerAgent:
             logger.error("Blog post write failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to write blog post."}
 
-    def _update_gmb(self, draft: str) -> Dict[str, Any]:
+    def _update_gmb(self, draft: str) -> dict[str, Any]:
         """Record a Google Business Profile update to a JSONL audit log.
 
         Args:
@@ -644,7 +645,7 @@ class ExecutionerAgent:
             logger.error("GMB update failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to record GMB update."}
 
-    def _post_to_social(self, draft: str) -> Dict[str, Any]:
+    def _post_to_social(self, draft: str) -> dict[str, Any]:
         """Post content to all connected social platforms via unified API.
 
         Uses the configured ``social_api_key`` with the chosen provider
@@ -757,7 +758,7 @@ class ExecutionerAgent:
             logger.error("Social post queue failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to queue social post."}
 
-    def _send_email(self, draft: str) -> Dict[str, Any]:
+    def _send_email(self, draft: str) -> dict[str, Any]:
         """Send an email via SMTP or queue to file.
 
         When SMTP credentials are configured (``smtp_host`` is set), sends
@@ -799,7 +800,7 @@ class ExecutionerAgent:
 
         return self._queue_email(draft, subject, recipients)
 
-    def _send_email_smtp(self, draft: str, subject: str, recipients: List[str]) -> Dict[str, Any]:
+    def _send_email_smtp(self, draft: str, subject: str, recipients: list[str]) -> dict[str, Any]:
         """Send email via SMTP using configured credentials.
 
         Args:
@@ -866,7 +867,7 @@ class ExecutionerAgent:
             logger.error("SMTP send failed: %s", exc)
             return {"success": False, "result": "", "error": f"SMTP send failed: {exc}"}
 
-    def _queue_email(self, draft: str, subject: str, recipients: List[str]) -> Dict[str, Any]:
+    def _queue_email(self, draft: str, subject: str, recipients: list[str]) -> dict[str, Any]:
         """Queue an email to the sent-mail JSONL log.
 
         Args:
@@ -900,7 +901,7 @@ class ExecutionerAgent:
             logger.error("Email queue failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to queue email."}
 
-    def _send_sms(self, draft: str) -> Dict[str, Any]:
+    def _send_sms(self, draft: str) -> dict[str, Any]:
         """Queue an SMS to the SMS log.
 
         Args:
@@ -929,7 +930,7 @@ class ExecutionerAgent:
             logger.error("SMS queue failed: %s", exc)
             return {"success": False, "result": "", "error": "Failed to queue SMS."}
 
-    def _save_content_calendar(self, draft: str) -> Dict[str, Any]:
+    def _save_content_calendar(self, draft: str) -> dict[str, Any]:
         try:
             cal_dir = Path("content/strategy")
             cal_dir.mkdir(parents=True, exist_ok=True)
@@ -947,7 +948,7 @@ class ExecutionerAgent:
             return {"success": False, "result": "", "error": "Failed to save content calendar."}
 
     def _save_file(self, base_dir: str, prefix: str, extension: str, draft: str,
-                   error_label: str) -> Dict[str, Any]:
+                   error_label: str) -> dict[str, Any]:
         """Shared helper to save draft content to a file.
 
         Args:
@@ -973,22 +974,22 @@ class ExecutionerAgent:
             logger.error("%s save failed: %s", error_label, exc)
             return {"success": False, "result": "", "error": f"Failed to save {error_label.lower()}."}
 
-    def _save_technical_seo_report(self, draft: str) -> Dict[str, Any]:
+    def _save_technical_seo_report(self, draft: str) -> dict[str, Any]:
         return self._save_file("technical_seo", "audit", "md", draft, "Tech SEO report")
 
-    def _generate_schema_json(self, draft: str) -> Dict[str, Any]:
+    def _generate_schema_json(self, draft: str) -> dict[str, Any]:
         return self._save_file("technical_seo", "schema", "json", draft, "Schema markup")
 
-    def _save_report(self, draft: str) -> Dict[str, Any]:
+    def _save_report(self, draft: str) -> dict[str, Any]:
         return self._save_file("reports", "report", "html", draft, "Report")
 
-    def _save_cro_analysis(self, draft: str) -> Dict[str, Any]:
+    def _save_cro_analysis(self, draft: str) -> dict[str, Any]:
         return self._save_file("cro", "cro", "md", draft, "CRO analysis")
 
-    def _save_video_script(self, draft: str) -> Dict[str, Any]:
+    def _save_video_script(self, draft: str) -> dict[str, Any]:
         return self._save_file("video", "video", "md", draft, "Video script")
 
-    def _save_sms_campaign(self, draft: str) -> Dict[str, Any]:
+    def _save_sms_campaign(self, draft: str) -> dict[str, Any]:
         return self._save_file("sms_campaigns", "sms", "md", draft, "SMS campaign")
 
     # ------------------------------------------------------------------
@@ -1030,7 +1031,7 @@ class ExecutionerAgent:
             with open(self._execution_log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(record) + "\n")
 
-    def get_execution_history(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_execution_history(self, limit: int = 50) -> list[dict[str, Any]]:
         """Read recent execution records from the JSONL log.
 
         Args:
@@ -1044,7 +1045,7 @@ class ExecutionerAgent:
             return []
 
         from collections import deque
-        records: List[Dict[str, Any]] = []
+        records: list[dict[str, Any]] = []
         tail: deque = deque(maxlen=limit * 2)
         with self._io_lock:
             with open(self._execution_log_path, "r", encoding="utf-8") as f:
@@ -1060,7 +1061,7 @@ class ExecutionerAgent:
         records.reverse()
         return records[:limit]
 
-    def get_execution_by_id(self, execution_id: str) -> Optional[Dict[str, Any]]:
+    def get_execution_by_id(self, execution_id: str) -> Optional[dict[str, Any]]:
         """Find a specific execution by its ID.
 
         Args:

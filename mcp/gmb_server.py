@@ -5,7 +5,7 @@ import re
 import requests
 from datetime import datetime, UTC
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 from .base_server import MCPServer, _safe_error
 from ._safe_url import _is_safe_url
 
@@ -60,13 +60,13 @@ class GMBMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def create_gmb_post(self, content: str, post_type: str = "standard", event_start: str = "", event_end: str = "",
-                        coupon_code: str = "", offer_url: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                        coupon_code: str = "", offer_url: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Create a GMB post. Types: standard, event, offer, covid, video."""
         if api_credentials and api_credentials.get("account_id") and api_credentials.get("location_id") and api_credentials.get("access_token"):
             try:
                 url = f"https://mybusiness.googleapis.com/v4/accounts/{api_credentials['account_id']}/locations/{api_credentials['location_id']}/localPosts"
                 headers = {"Authorization": f"Bearer {api_credentials['access_token']}", "Content-Type": "application/json"}
-                payload: Dict[str, Any] = {"summary": content[:1500], "topicType": "STANDARD", "callToAction": {"actionType": "LEARN_MORE"}}
+                payload: dict[str, Any] = {"summary": content[:1500], "topicType": "STANDARD", "callToAction": {"actionType": "LEARN_MORE"}}
                 if post_type == "event" and event_start:
                     payload["topicType"] = "EVENT"
                     try:
@@ -92,7 +92,7 @@ class GMBMCPServer(MCPServer):
 
     def respond_to_review(self, review_id: str = "", response_text: str = "", review_text: str = "",
                           tone: str = "professional", bulk: bool = False,
-                          api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                          api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Respond to a review. If review_text is provided, generates an appropriate response based on sentiment."""
         if review_text and not response_text:
             sentiment = self._analyze_sentiment(review_text)
@@ -132,7 +132,7 @@ class GMBMCPServer(MCPServer):
     # Business Info
     # ------------------------------------------------------------------
 
-    def update_business_info(self, api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def update_business_info(self, api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Update GMB business information: hours, description, categories, service areas, attributes, holiday hours."""
         updateable_fields = {
             "description": "Business description (750 char max) — include keywords naturally",
@@ -158,7 +158,7 @@ class GMBMCPServer(MCPServer):
                 "updateable_fields": updateable_fields, "fields_to_update": list(kwargs.keys())}
 
     def upload_photo(self, photo_url: str = "", photo_type: str = "additional",
-                     api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                     api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Upload a photo to GMB. Types: logo, cover, interior, exterior, team, at_work, additional."""
         photo_types = {"logo": "LOGO", "cover": "COVER", "interior": "INTERIOR", "exterior": "EXTERIOR",
                        "team": "TEAM", "at_work": "AT_WORK", "additional": "ADDITIONAL"}
@@ -181,7 +181,7 @@ class GMBMCPServer(MCPServer):
     # Insights
     # ------------------------------------------------------------------
 
-    def get_insights(self, api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def get_insights(self, api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Get GMB performance insights."""
         insights_guide = {
             "search_queries": "Keywords customers used to find your business — identifies top opportunities",
@@ -204,7 +204,7 @@ class GMBMCPServer(MCPServer):
     # Optimization
     # ------------------------------------------------------------------
 
-    def optimize_gmb_profile(self, business_name: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def optimize_gmb_profile(self, business_name: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Full GMB profile optimization audit."""
         checklist = [
             {"task": "Claim and verify your GMB profile", "priority": "critical", "impact": "Without this, nothing else matters"},
@@ -232,7 +232,7 @@ class GMBMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def manage_q_and_a(self, action: str = "seed_questions", questions: str = "",
-                       api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                       api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Manage GMB Questions & Answers. Seed common questions and their answers."""
         seed_questions = [
             {"q": "Do you offer free estimates?", "a": "Yes! We provide free, no-obligation estimates for all services. Call us or request one through our website."},
@@ -253,7 +253,7 @@ class GMBMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def create_gmb_product(self, product_name: str = "", product_description: str = "", price: str = "",
-                           category: str = "service", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                           category: str = "service", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Add a product or service to the GMB product catalog."""
         product = {"name": product_name or "New Service", "description": product_description or "", "price": price or "Contact for pricing",
                    "category": category, "status": "pending_review"}
@@ -264,7 +264,7 @@ class GMBMCPServer(MCPServer):
     # Rankings
     # ------------------------------------------------------------------
 
-    def track_local_rankings(self, keywords: str = "", location: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def track_local_rankings(self, keywords: str = "", location: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Track GMB ranking position for target keywords."""
         kw_list = [k.strip() for k in keywords.split('\n') if k.strip()] if keywords else ["plumber near me", "emergency plumber", "plumbing services"]
         loc = location or (api_credentials.get("city", "your area") if api_credentials else "your area")
@@ -279,7 +279,7 @@ class GMBMCPServer(MCPServer):
     # Messages
     # ------------------------------------------------------------------
 
-    def manage_gmb_messages(self, action: str = "setup", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def manage_gmb_messages(self, action: str = "setup", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Set up and manage GMB messaging."""
         templates = {
             "welcome": "Hi! Thanks for contacting {business_name}. We typically respond within 15 minutes. How can we help you today?",
@@ -294,7 +294,7 @@ class GMBMCPServer(MCPServer):
     # Reporting
     # ------------------------------------------------------------------
 
-    def generate_gmb_report(self, month: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def generate_gmb_report(self, month: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Generate a monthly GMB performance report."""
         try:
             report_month = datetime.strptime(month, "%Y-%m") if month else datetime.now()
@@ -314,7 +314,7 @@ class GMBMCPServer(MCPServer):
     # Competitor
     # ------------------------------------------------------------------
 
-    def audit_competitor_gmb(self, competitor_name: str = "", competitor_url: str = "", **kwargs) -> Dict[str, Any]:
+    def audit_competitor_gmb(self, competitor_name: str = "", competitor_url: str = "", **kwargs) -> dict[str, Any]:
         """Analyze a competitor's GMB profile."""
         audit = {
             "competitor": competitor_name,
@@ -339,7 +339,7 @@ class GMBMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def bulk_update_locations(self, locations: str = "", update_field: str = "description",
-                              update_value: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                              update_value: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Bulk update across multiple GMB locations."""
         loc_list = [l.strip() for l in locations.split('\n') if l.strip()] if locations else []
         return {"success": True, "result": f"Bulk update prepared for {len(loc_list)} locations",
@@ -350,7 +350,7 @@ class GMBMCPServer(MCPServer):
     # Voice Search
     # ------------------------------------------------------------------
 
-    def optimize_for_voice_search(self, business_type: str = "", location: str = "", **kwargs) -> Dict[str, Any]:
+    def optimize_for_voice_search(self, business_type: str = "", location: str = "", **kwargs) -> dict[str, Any]:
         """Voice search optimization for local queries."""
         tips = [
             "Target conversational, long-tail keywords: 'who is the best plumber near me' vs 'plumber Laval'",
@@ -370,7 +370,7 @@ class GMBMCPServer(MCPServer):
     # Booking & Campaigns
     # ------------------------------------------------------------------
 
-    def setup_appointment_booking(self, booking_url: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def setup_appointment_booking(self, booking_url: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Integrate appointment booking with GMB."""
         return {"success": True, "result": "Appointment booking setup ready",
                 "options": ["Google Reserve (via supported partners)", "Third-party: Calendly, Booksy, Setmore", "Custom booking URL"],
@@ -378,7 +378,7 @@ class GMBMCPServer(MCPServer):
                 "tip": "Add a booking button to reduce friction — customers book directly from search results"}
 
     def create_local_campaign(self, campaign_name: str = "", budget: float = 100.0, keywords: str = "",
-                              api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                              api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Create a local Google Ads campaign linked to GMB location."""
         kw_list = [k.strip() for k in keywords.split('\n') if k.strip()] if keywords else ["near me", "best near me", "top rated near me"]
         return {"success": True, "result": f"Local campaign '{campaign_name}' created with ${budget}/day budget",
@@ -389,7 +389,7 @@ class GMBMCPServer(MCPServer):
     # Helpers
     # ------------------------------------------------------------------
 
-    def _queue_gmb_action(self, action_type: str, content: str, detail: str = "") -> Dict[str, Any]:
+    def _queue_gmb_action(self, action_type: str, content: str, detail: str = "") -> dict[str, Any]:
         try:
             gmb_dir = Path("content/gmb")
             gmb_dir.mkdir(parents=True, exist_ok=True)

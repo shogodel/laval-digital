@@ -1,7 +1,7 @@
 import logging
 import threading
 from datetime import datetime, timedelta, UTC
-from typing import Dict, Any, Optional, List
+from typing import Any, Optional
 
 from core import database
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class AnalyticsEngine:
     def __init__(self, user_id: int):
         self.user_id = user_id
-        self._cache: Dict[str, tuple] = {}
+        self._cache: dict[str, tuple] = {}
         self._cache_ttl = timedelta(hours=1)
         self._lock = threading.Lock()
 
@@ -44,7 +44,7 @@ class AnalyticsEngine:
             database.reset_conn()
             return database._get_conn()
 
-    def _fetchall(self, sql: str, params: tuple = ()) -> List[dict]:
+    def _fetchall(self, sql: str, params: tuple = ()) -> list[dict]:
         try:
             cursor = self._conn().cursor()
             cursor.execute(sql, params)
@@ -99,7 +99,7 @@ class AnalyticsEngine:
         )
         return row["c"] if row else 0
 
-    def get_performance_summary(self) -> Dict[str, Any]:
+    def get_performance_summary(self) -> dict[str, Any]:
         total = self.total_executions()
         success = self.successful_executions()
         failed = self.failed_executions()
@@ -115,7 +115,7 @@ class AnalyticsEngine:
             "total_agents": 0,
         }
 
-    def get_lead_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, Any]:
+    def get_lead_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> dict[str, Any]:
         total = self._fetchone(
             "SELECT COUNT(*) AS c FROM leads WHERE user_id = ? AND (? IS NULL OR created_at >= ?) AND (? IS NULL OR created_at <= ?)",
             (self.user_id, start_date, start_date, end_date, end_date),
@@ -144,7 +144,7 @@ class AnalyticsEngine:
             "converted": converted_count,
         }
 
-    def get_agent_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, Any]:
+    def get_agent_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> dict[str, Any]:
         tasks_per_agent = self._fetchall(
             "SELECT agent_name, COUNT(*) AS total, SUM(success) AS success FROM execution_log WHERE user_id = ? AND (? IS NULL OR timestamp >= ?) AND (? IS NULL OR timestamp <= ?) GROUP BY agent_name ORDER BY total DESC",
             (self.user_id, start_date, start_date, end_date, end_date),
@@ -163,7 +163,7 @@ class AnalyticsEngine:
             "avg_response_time": 0,
         }
 
-    def get_execution_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, Any]:
+    def get_execution_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> dict[str, Any]:
         stats = self._fetchone(
             "SELECT COUNT(*) AS total, SUM(success) AS success FROM execution_log WHERE user_id = ? AND (? IS NULL OR timestamp >= ?) AND (? IS NULL OR timestamp <= ?)",
             (self.user_id, start_date, start_date, end_date, end_date),
@@ -184,13 +184,13 @@ class AnalyticsEngine:
             "failures_by_tool": {r["tool_name"]: r["count"] for r in failures_by_tool},
         }
 
-    def latest_executions(self, limit: int = 10) -> List[dict]:
+    def latest_executions(self, limit: int = 10) -> list[dict]:
         return self._fetchall(
             "SELECT * FROM execution_log WHERE user_id = ? ORDER BY timestamp DESC LIMIT ?",
             (self.user_id, limit),
         )
 
-    def execution_count_by_day(self, days: int = 30) -> List[dict]:
+    def execution_count_by_day(self, days: int = 30) -> list[dict]:
         cutoff = (datetime.now(UTC) - timedelta(days=days)).isoformat()
         return self._fetchall(
             """SELECT DATE(timestamp) AS day, COUNT(*) AS count
@@ -203,7 +203,7 @@ class AnalyticsEngine:
     # ── Reporting ───────────────────────────────────────────────────
 
     def generate_monthly_report(self, year: Optional[int] = None,
-                                 month: Optional[int] = None) -> Dict[str, Any]:
+                                 month: Optional[int] = None) -> dict[str, Any]:
         now = datetime.now(UTC)
         year = year or now.year
         month = month or now.month

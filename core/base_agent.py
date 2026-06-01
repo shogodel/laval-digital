@@ -3,7 +3,7 @@ import threading
 import re
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from core.llm_adapter import LLMAdapter
 
@@ -24,10 +24,10 @@ FRENCH_KEYWORDS = [
 
 
 class BaseAgent:
-    _available_models: Optional[List[str]] = None
+    _available_models: Optional[list[str]] = None
     _models_lock = threading.Lock()
 
-    def __init__(self, agent_id: str, config: Dict[str, Any]):
+    def __init__(self, agent_id: str, config: dict[str, Any]):
         with BaseAgent._models_lock:
             if BaseAgent._available_models is None:
                 BaseAgent._available_models = LLMAdapter.get_available_models()
@@ -157,7 +157,7 @@ class BaseAgent:
             f"{confidence_instruction}"
         )
 
-    def _invoke_llm(self, task: str, user_id: int = 0) -> Dict[str, Any]:
+    def _invoke_llm(self, task: str, user_id: int = 0) -> dict[str, Any]:
         adapter = self._get_llm_adapter()
         system_content = self._build_system_content(task)
 

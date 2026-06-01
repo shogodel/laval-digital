@@ -1,7 +1,7 @@
 import re
 from datetime import datetime, timedelta, UTC
 from functools import wraps
-from typing import Optional, Tuple
+from typing import Optional
 
 from flask import request, flash, redirect, url_for, jsonify
 from flask_login import LoginManager, UserMixin, current_user
@@ -195,7 +195,7 @@ def _validate_password(password: str) -> None:
         raise ValueError("Password must contain at least one special character.")
 
 
-def validate_password(password: str) -> Tuple[bool, str]:
+def validate_password(password: str) -> tuple[bool, str]:
     """Validate password strength. Returns (is_valid, error_message)."""
     try:
         _validate_password(password)

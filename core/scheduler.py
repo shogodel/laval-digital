@@ -1,7 +1,7 @@
 import logging
 import uuid
 from datetime import datetime, UTC
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from core import database
 
@@ -103,7 +103,7 @@ class SchedulerManager:
                 logger.warning("Failed to add job to scheduler: %s", e)
         return schedule_id
 
-    def get_schedules(self, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
+    def get_schedules(self, user_id: Optional[int] = None) -> list[dict[str, Any]]:
         conn = self._conn()
         if user_id is not None:
             rows = conn.execute(

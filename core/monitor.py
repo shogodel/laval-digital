@@ -9,7 +9,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from datetime import datetime, UTC
-from typing import Dict, Optional
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class _Monitor:
         self._thread: Optional[threading.Thread] = None
         self._orchestrator_getter = None
         self._push_getter = None
-        self._last_alert: Dict[str, float] = {}
+        self._last_alert: dict[str, float] = {}
         self._alert_cooldown = 300  # 5 minutes
 
     def start(self, get_orchestrator, get_push) -> None:

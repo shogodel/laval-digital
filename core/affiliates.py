@@ -3,13 +3,13 @@ import threading
 import time
 import uuid
 from datetime import datetime, UTC
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 from core import database
 
 logger = logging.getLogger(__name__)
 
-_cache: Set[str] = set()
+_cache: set[str] = set()
 _cache_ts: float = 0
 _CACHE_TTL = 60
 _cache_lock = threading.Lock()
@@ -24,7 +24,7 @@ class AffiliateManager:
 
     # ── Code validation (cached) ───────────────────────────────────────
 
-    def get_valid_codes(self) -> Set[str]:
+    def get_valid_codes(self) -> set[str]:
         global _cache, _cache_ts
         now = time.time()
         with _cache_lock:
@@ -35,7 +35,7 @@ class AffiliateManager:
             _cache_ts = now
             return set(_cache)
 
-    def _fetch_all_codes(self) -> List[str]:
+    def _fetch_all_codes(self) -> list[str]:
         try:
             conn = self._conn()
             rows = conn.execute(
@@ -57,7 +57,7 @@ class AffiliateManager:
     # ── Affiliate CRUD ─────────────────────────────────────────────────
 
     def create_affiliate(self, name: str, email: str, phone: str = "",
-                         code: Optional[str] = None) -> Dict[str, Any]:
+                         code: Optional[str] = None) -> dict[str, Any]:
         if not code:
             code = "REF" + uuid.uuid4().hex[:6].upper()
         now = datetime.now(UTC).isoformat()
@@ -75,7 +75,7 @@ class AffiliateManager:
             logger.error("Failed to create affiliate %s: %s", email, e)
             raise
 
-    def get_affiliate(self, code: str) -> Optional[Dict[str, Any]]:
+    def get_affiliate(self, code: str) -> Optional[dict[str, Any]]:
         try:
             conn = self._conn()
             row = conn.execute(
@@ -119,7 +119,7 @@ class AffiliateManager:
             logger.error("Failed to add commission: %s", e)
             return None
 
-    def get_commissions(self, affiliate_code: str, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_commissions(self, affiliate_code: str, limit: int = 50) -> list[dict[str, Any]]:
         try:
             conn = self._conn()
             rows = conn.execute(
@@ -132,7 +132,7 @@ class AffiliateManager:
             logger.error("Failed to get commissions: %s", e)
             return []
 
-    def get_all_commissions(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_all_commissions(self, limit: int = 100) -> list[dict[str, Any]]:
         try:
             conn = self._conn()
             rows = conn.execute(
@@ -189,7 +189,7 @@ class AffiliateManager:
             return False
 
     def get_payouts(self, affiliate_code: Optional[str] = None,
-                    limit: int = 50) -> List[Dict[str, Any]]:
+                    limit: int = 50) -> list[dict[str, Any]]:
         try:
             conn = self._conn()
             if affiliate_code:
@@ -229,7 +229,7 @@ class AffiliateManager:
         except Exception as e:
             logger.warning("Failed to track lead for %s: %s", ref_code, e)
 
-    def get_leads(self, affiliate_code: str, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_leads(self, affiliate_code: str, limit: int = 50) -> list[dict[str, Any]]:
         try:
             conn = self._conn()
             rows = conn.execute(
@@ -242,7 +242,7 @@ class AffiliateManager:
             logger.error("Failed to get leads: %s", e)
             return []
 
-    def get_all_affiliates(self) -> List[Dict[str, Any]]:
+    def get_all_affiliates(self) -> list[dict[str, Any]]:
         try:
             conn = self._conn()
             rows = conn.execute(

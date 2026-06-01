@@ -1,7 +1,7 @@
 import logging
 import uuid
 from datetime import datetime, timedelta, UTC
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from core import database
 
@@ -30,7 +30,7 @@ class AgentMemory:
         conn.commit()
 
     def get_feedback(self, user_id: int, agent_id: str,
-                     limit: int = 20) -> List[Dict[str, Any]]:
+                     limit: int = 20) -> list[dict[str, Any]]:
         conn = self._conn()
         rows = conn.execute(
             "SELECT * FROM agent_feedback WHERE user_id = ? AND agent_id = ? ORDER BY created_at DESC LIMIT ?",
@@ -62,7 +62,7 @@ class AgentMemory:
         )
         conn.commit()
 
-    def get_preferences(self, user_id: int, agent_id: str) -> Dict[str, str]:
+    def get_preferences(self, user_id: int, agent_id: str) -> dict[str, str]:
         conn = self._conn()
         rows = conn.execute(
             "SELECT pref_key, pref_value FROM agent_preferences WHERE user_id = ? AND agent_id = ?",
@@ -92,7 +92,7 @@ class AgentMemory:
         conn.commit()
 
     def get_findings(self, user_id: int,
-                     finding_type: Optional[str] = None) -> List[Dict[str, Any]]:
+                     finding_type: Optional[str] = None) -> list[dict[str, Any]]:
         conn = self._conn()
         now = datetime.now(UTC).isoformat()
         if finding_type:

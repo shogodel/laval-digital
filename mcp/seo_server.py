@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 from datetime import datetime
 import requests
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 from .base_server import MCPServer
 from ._safe_url import _is_safe_url
 
@@ -54,7 +54,7 @@ class SEOMCPServer(MCPServer):
             "Audit NAP consistency across major directories and citation sites")
 
     def publish_blog_post(self, content: str, title: str = "", cms_type: str = "file",
-                          api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                          api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Publish a blog post to the configured CMS."""
         if not title:
             lines = content.strip().split('\n')
@@ -79,7 +79,7 @@ class SEOMCPServer(MCPServer):
 
         return self._publish_to_file(title, content)
 
-    def _publish_wordpress(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
+    def _publish_wordpress(self, title: str, content: str, creds: dict) -> dict[str, Any]:
         """Publish to WordPress REST API."""
         try:
             site_url = creds.get("site_url", "")
@@ -103,7 +103,7 @@ class SEOMCPServer(MCPServer):
         except Exception as e:
             return {"success": False, "result": "", "error": f"WordPress publish failed: {e}"}
 
-    def _publish_webflow(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
+    def _publish_webflow(self, title: str, content: str, creds: dict) -> dict[str, Any]:
         """Publish to Webflow CMS via API v2."""
         try:
             api_token = creds.get("api_token", "")
@@ -141,7 +141,7 @@ class SEOMCPServer(MCPServer):
         except Exception as e:
             return {"success": False, "result": "", "error": f"Webflow publish failed: {e}"}
 
-    def _publish_netlify(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
+    def _publish_netlify(self, title: str, content: str, creds: dict) -> dict[str, Any]:
         """Trigger Netlify deploy via build hook."""
         try:
             hook_url = creds.get("build_hook_url", "")
@@ -156,7 +156,7 @@ class SEOMCPServer(MCPServer):
         except Exception as e:
             return {"success": False, "result": "", "error": f"Netlify deploy failed: {e}"}
 
-    def _publish_shopify(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
+    def _publish_shopify(self, title: str, content: str, creds: dict) -> dict[str, Any]:
         """Publish to Shopify blog via Admin API."""
         try:
             store_url = creds.get('store_url', '')
@@ -172,7 +172,7 @@ class SEOMCPServer(MCPServer):
         except Exception as e:
             return {"success": False, "result": "", "error": f"Shopify publish failed: {e}"}
 
-    def _publish_wix(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
+    def _publish_wix(self, title: str, content: str, creds: dict) -> dict[str, Any]:
         """Publish to Wix blog via API."""
         try:
             url = "https://www.wixapis.com/blog/v3/posts"
@@ -185,7 +185,7 @@ class SEOMCPServer(MCPServer):
         except Exception as e:
             return {"success": False, "result": "", "error": f"Wix publish failed: {e}"}
 
-    def _publish_squarespace(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
+    def _publish_squarespace(self, title: str, content: str, creds: dict) -> dict[str, Any]:
         """Publish to Squarespace via API."""
         try:
             headers = {"Authorization": f"Bearer {creds.get('api_key', '')}", "Content-Type": "application/json"}
@@ -196,7 +196,7 @@ class SEOMCPServer(MCPServer):
         except Exception as e:
             return {"success": False, "result": "", "error": f"Squarespace publish failed: {e}"}
 
-    def _publish_ghost(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
+    def _publish_ghost(self, title: str, content: str, creds: dict) -> dict[str, Any]:
         """Publish to Ghost CMS via Admin API."""
         try:
             site_url = creds.get('site_url', '')
@@ -212,7 +212,7 @@ class SEOMCPServer(MCPServer):
         except Exception as e:
             return {"success": False, "result": "", "error": f"Ghost publish failed: {e}"}
 
-    def _publish_contentful(self, title: str, content: str, creds: Dict) -> Dict[str, Any]:
+    def _publish_contentful(self, title: str, content: str, creds: dict) -> dict[str, Any]:
         """Publish to Contentful via Management API."""
         try:
             space_id = creds.get("space_id", "")
@@ -229,7 +229,7 @@ class SEOMCPServer(MCPServer):
         except Exception as e:
             return {"success": False, "result": "", "error": f"Contentful publish failed: {e}"}
 
-    def _publish_to_file(self, title: str, content: str) -> Dict[str, Any]:
+    def _publish_to_file(self, title: str, content: str) -> dict[str, Any]:
         """Save blog post as a Markdown file (fallback)."""
         try:
             blog_dir = Path("content/blog")
@@ -246,7 +246,7 @@ class SEOMCPServer(MCPServer):
             return {"success": False, "result": "", "error": f"File write failed: {e}"}
 
     def update_meta_tags(self, url: str, title: str, description: str,
-                         api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                         api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Update meta tags for a given URL. Returns the suggested HTML."""
         safe_title = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
         safe_desc = description.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
@@ -257,7 +257,7 @@ class SEOMCPServer(MCPServer):
             "error": None
         }
 
-    def get_site_info(self, api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def get_site_info(self, api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Get information about the connected website."""
         cms_type = api_credentials.get("cms_type", "unknown") if api_credentials else "unknown"
         site_url = api_credentials.get("site_url", "not configured") if api_credentials else "not configured"
@@ -268,7 +268,7 @@ class SEOMCPServer(MCPServer):
             "site_url": site_url
         }
 
-    def optimize_content(self, content: str, keywords: str = "", **kwargs) -> Dict[str, Any]:
+    def optimize_content(self, content: str, keywords: str = "", **kwargs) -> dict[str, Any]:
         """Analyze content and return SEO optimization suggestions."""
         suggestions = []
         word_count = len(content.split())
@@ -288,13 +288,13 @@ class SEOMCPServer(MCPServer):
             "suggestions": suggestions
         }
 
-    def run_site_audit(self, url: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def run_site_audit(self, url: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Run a comprehensive technical SEO audit."""
         site_url = api_credentials.get("site_url", url) if api_credentials else url
         if not site_url:
             return {"success": False, "result": "", "error": "No URL provided"}
 
-        audit_results: Dict[str, Any] = {
+        audit_results: dict[str, Any] = {
             "url": site_url,
             "checks": {
                 "ssl": {"status": "unknown", "recommendation": "Ensure your site uses HTTPS"},
@@ -326,7 +326,7 @@ class SEOMCPServer(MCPServer):
             "audit": audit_results
         }
 
-    def generate_sitemap(self, urls: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def generate_sitemap(self, urls: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Generate an XML sitemap from a list of URLs."""
         url_list = [u.strip() for u in urls.split('\n') if u.strip()] if urls else []
         if not url_list:
@@ -353,7 +353,7 @@ class SEOMCPServer(MCPServer):
             "urls": len(url_list)
         }
 
-    def submit_to_search_console(self, url: str = "", sitemap: bool = False, api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def submit_to_search_console(self, url: str = "", sitemap: bool = False, api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Submit a URL or sitemap to Google Search Console."""
         if api_credentials and api_credentials.get("access_token"):
             try:
@@ -378,12 +378,12 @@ class SEOMCPServer(MCPServer):
             "instructions": "To auto-submit, add your Google Search Console API credentials in Settings."
         }
 
-    def analyze_competitors(self, competitors: str = "", keywords: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def analyze_competitors(self, competitors: str = "", keywords: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Analyze competitor websites."""
         comp_list = [c.strip() for c in competitors.split('\n') if c.strip()] if competitors else []
         kw_list = [k.strip() for k in keywords.split(',') if k.strip()] if keywords else []
 
-        analysis: Dict[str, Any] = {
+        analysis: dict[str, Any] = {
             "competitors_analyzed": len(comp_list),
             "keywords_checked": len(kw_list),
             "findings": [],
@@ -402,7 +402,7 @@ class SEOMCPServer(MCPServer):
             "analysis": analysis
         }
 
-    def find_backlink_opportunities(self, niche: str = "", location: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def find_backlink_opportunities(self, niche: str = "", location: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Find backlink opportunities for a local business."""
         niche = niche or api_credentials.get("business_type", "local business") if api_credentials else "local business"
         location = location or api_credentials.get("city", "your area") if api_credentials else "your area"
@@ -423,7 +423,7 @@ class SEOMCPServer(MCPServer):
             "opportunities": opportunities
         }
 
-    def optimize_images(self, image_urls: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def optimize_images(self, image_urls: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Generate alt text and optimization recommendations for images."""
         url_list = [u.strip() for u in image_urls.split('\n') if u.strip()] if image_urls else []
         if not url_list:
@@ -451,7 +451,7 @@ class SEOMCPServer(MCPServer):
             ]
         }
 
-    def generate_schema_markup(self, schema_type: str = "LocalBusiness", business_data: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def generate_schema_markup(self, schema_type: str = "LocalBusiness", business_data: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Generate JSON-LD schema markup."""
         data = business_data or {}
 
@@ -516,12 +516,12 @@ class SEOMCPServer(MCPServer):
             "file": str(filepath)
         }
 
-    def track_keyword_rankings(self, keywords: str = "", domain: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def track_keyword_rankings(self, keywords: str = "", domain: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Track keyword rankings for a domain."""
         kw_list = [k.strip() for k in keywords.split('\n') if k.strip()] if keywords else []
         domain = domain or (api_credentials.get("site_url", "") if api_credentials else "")
 
-        tracker: Dict[str, Any] = {
+        tracker: dict[str, Any] = {
             "domain": domain,
             "keywords_tracked": len(kw_list),
             "rankings": [],
@@ -545,7 +545,7 @@ class SEOMCPServer(MCPServer):
             "tracker": tracker
         }
 
-    def audit_local_citations(self, business_name: str = "", address: str = "", phone: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def audit_local_citations(self, business_name: str = "", address: str = "", phone: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Audit NAP consistency across major directories."""
         name = business_name or (api_credentials.get("business_name", "") if api_credentials else "")
         addr = address or (api_credentials.get("address", "") if api_credentials else "")

@@ -2,7 +2,6 @@ import csv
 import os
 import logging
 from pathlib import Path
-from typing import Dict, List
 
 import requests
 
@@ -13,7 +12,7 @@ def scrape_google_maps(
     business_type: str,
     city: str,
     max_results: int = 20,
-) -> List[Dict]:
+) -> list[dict]:
     """
     Search Google Maps Places API for local businesses.
 
@@ -44,9 +43,9 @@ def _maps_api_request(
     city: str,
     max_results: int,
     api_key: str,
-) -> List[Dict]:
+) -> list[dict]:
     """Call the Google Maps Places API and parse results."""
-    results: List[Dict] = []
+    results: list[dict] = []
     query = f"{business_type} in {city}"
 
     params = {
@@ -92,7 +91,7 @@ def _maps_api_request(
     return results
 
 
-def _get_place_details(place_id: str, api_key: str) -> Dict:
+def _get_place_details(place_id: str, api_key: str) -> dict:
     """Fetch phone number and website for a place."""
     url = "https://maps.googleapis.com/maps/api/place/details/json"
     params = {
@@ -114,7 +113,7 @@ def _get_place_details(place_id: str, api_key: str) -> Dict:
         return {"phone": "", "website": ""}
 
 
-def _sample_businesses(business_type: str, city: str) -> List[Dict]:
+def _sample_businesses(business_type: str, city: str) -> list[dict]:
     """Return hardcoded sample data for testing when no API key is available."""
     samples = [
         {
@@ -172,7 +171,7 @@ def find_best_prospects(
     min_rating: float = 3.0,
     max_rating: float = 4.5,
     no_website_only: bool = True,
-) -> List[Dict]:
+) -> list[dict]:
     """
     Find the best prospect businesses for outreach.
 
@@ -205,7 +204,7 @@ def find_best_prospects(
     return prospects
 
 
-def export_to_csv(prospects: List[Dict], filename: str) -> str:
+def export_to_csv(prospects: list[dict], filename: str) -> str:
     """
     Export a list of prospect dicts to a CSV file.
 

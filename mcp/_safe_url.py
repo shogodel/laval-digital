@@ -1,13 +1,12 @@
 import ipaddress
 import socket
-from typing import Tuple
 from urllib.parse import urlparse
 
 
-def resolve_host(hostname: str) -> list[Tuple[str, int]]:
+def resolve_host(hostname: str) -> list[tuple[str, int]]:
     """Resolve a hostname to (ip, family) pairs, handling both IPv4 and IPv6."""
     try:
-        result: list[Tuple[str, int]] = []
+        result: list[tuple[str, int]] = []
         for family, _, _, _, sockaddr in socket.getaddrinfo(hostname, None):
             ip = sockaddr[0]
             if isinstance(ip, str):

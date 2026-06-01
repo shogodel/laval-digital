@@ -1,7 +1,7 @@
 """Ads MCP Server for Frankie — Multi-platform ad campaign management."""
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 from .base_server import MCPServer
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ class AdsMCPServer(MCPServer):
 
     def create_google_ads_campaign(self, campaign_name: str = "", campaign_type: str = "search",
                                    budget: float = 500.0, keywords: str = "", location: str = "",
-                                   api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                                   api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Create a Google Ads campaign. Types: search, display, pmax, local, video."""
         kw_list = [k.strip() for k in keywords.split('\n') if k.strip()] if keywords else ["near me", "best near me", "top rated near me"]
         campaign_types = {
@@ -90,7 +90,7 @@ class AdsMCPServer(MCPServer):
 
     def create_meta_ads_campaign(self, campaign_name: str = "", objective: str = "leads",
                                  budget: float = 300.0, audiences: str = "", location: str = "",
-                                 api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                                 api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Create a Facebook/Instagram campaign. Objectives: leads, traffic, engagement, awareness, sales."""
         objectives = {
             "leads": {"optimization": "Lead form submissions", "best_for": "Local services collecting contact info", "placements": ["Facebook Feed", "Instagram Feed", "Facebook Marketplace"]},
@@ -120,7 +120,7 @@ class AdsMCPServer(MCPServer):
 
     def create_tiktok_ads_campaign(self, campaign_name: str = "", objective: str = "traffic",
                                    budget: float = 200.0, location: str = "",
-                                   api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                                   api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Create a TikTok Ads campaign. Types: spark, infeed, topview, hashtag."""
         objectives = {"traffic": "Drive website visits", "leads": "Collect lead forms", "awareness": "Maximum reach", "app_install": "App downloads"}
         campaign = {
@@ -140,7 +140,7 @@ class AdsMCPServer(MCPServer):
 
     def create_linkedin_ads_campaign(self, campaign_name: str = "", objective: str = "leads",
                                      budget: float = 400.0, location: str = "",
-                                     api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+                                     api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Create a LinkedIn Ads campaign. Best for B2B and high-ticket services."""
         campaign = {
             "name": campaign_name or "Frankie LinkedIn Campaign",
@@ -163,7 +163,7 @@ class AdsMCPServer(MCPServer):
     # Keyword Research
     # ------------------------------------------------------------------
 
-    def keyword_research_ads(self, business_type: str = "", location: str = "", **kwargs) -> Dict[str, Any]:
+    def keyword_research_ads(self, business_type: str = "", location: str = "", **kwargs) -> dict[str, Any]:
         """Research keywords for Google Ads with volume, competition, and CPC estimates."""
         sample_keywords = [
             {"keyword": f"emergency {business_type} near me", "volume": "1K-10K", "competition": "High", "cpc_estimate": "$8-15"},
@@ -185,9 +185,9 @@ class AdsMCPServer(MCPServer):
     # Audience Targeting
     # ------------------------------------------------------------------
 
-    def create_audience_targeting(self, audience_type: str = "custom", business_type: str = "", **kwargs) -> Dict[str, Any]:
+    def create_audience_targeting(self, audience_type: str = "custom", business_type: str = "", **kwargs) -> dict[str, Any]:
         """Create audience targeting segments."""
-        audiences: Dict[str, Any] = {
+        audiences: dict[str, Any] = {
             "custom": {"name": f"{business_type.title()} Custom Audience", "description": "People actively searching for your services",
                        "signals": ["Search keywords", "Website visitors", "Competitor page visitors"]},
             "lookalike": {"name": f"{business_type.title()} Lookalike", "description": "People similar to your best customers",
@@ -208,7 +208,7 @@ class AdsMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def create_ad_copy(self, business_name: str = "", business_type: str = "", location: str = "",
-                       platform: str = "google", **kwargs) -> Dict[str, Any]:
+                       platform: str = "google", **kwargs) -> dict[str, Any]:
         """Generate ad copy variants for different platforms."""
         templates = {
             "google_rsa": {
@@ -250,7 +250,7 @@ class AdsMCPServer(MCPServer):
     # Optimization
     # ------------------------------------------------------------------
 
-    def optimize_campaign(self, campaign_id: str = "", platform: str = "google", **kwargs) -> Dict[str, Any]:
+    def optimize_campaign(self, campaign_id: str = "", platform: str = "google", **kwargs) -> dict[str, Any]:
         """AI-powered campaign optimization suggestions."""
         optimizations = {
             "google": [
@@ -275,7 +275,7 @@ class AdsMCPServer(MCPServer):
         opt = optimizations.get(platform, optimizations["google"])
         return {"success": True, "result": f"Generated {len(opt)} optimization suggestions for {platform}", "suggestions": opt}
 
-    def ab_test_ad(self, test_name: str = "", platform: str = "google", **kwargs) -> Dict[str, Any]:
+    def ab_test_ad(self, test_name: str = "", platform: str = "google", **kwargs) -> dict[str, Any]:
         """Set up A/B test for ad variations."""
         return {"success": True, "result": f"A/B test '{test_name}' configured for {platform}",
                 "setup": {"variation_a": "Control (current ad)", "variation_b": "Variant (new ad)", "split": "50/50",
@@ -287,7 +287,7 @@ class AdsMCPServer(MCPServer):
     # Reporting
     # ------------------------------------------------------------------
 
-    def generate_ad_report(self, month: str = "", platforms: str = "google,meta", **kwargs) -> Dict[str, Any]:
+    def generate_ad_report(self, month: str = "", platforms: str = "google,meta", **kwargs) -> dict[str, Any]:
         """Generate a multi-platform ad performance report."""
         try:
             report_month = datetime.strptime(month, "%Y-%m") if month else datetime.now()
@@ -308,7 +308,7 @@ class AdsMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def manage_ad_extensions(self, action: str = "list", business_name: str = "", phone: str = "",
-                             website: str = "", **kwargs) -> Dict[str, Any]:
+                             website: str = "", **kwargs) -> dict[str, Any]:
         """Manage Google Ads extensions."""
         extensions = {
             "sitelinks": [{"text": "Free Estimate", "url": f"{website}/free-estimate"}, {"text": "Our Services", "url": f"{website}/services"},
@@ -327,7 +327,7 @@ class AdsMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def create_retargeting_campaign(self, campaign_name: str = "", platform: str = "meta",
-                                    budget: float = 100.0, **kwargs) -> Dict[str, Any]:
+                                    budget: float = 100.0, **kwargs) -> dict[str, Any]:
         """Create retargeting campaigns across platforms."""
         retargeting_strategies = {
             "meta": ["Website visitors (30 days) — offer discount", "Video viewers (50%+) — show testimonial", "Page engagers — promote special offer"],
@@ -342,7 +342,7 @@ class AdsMCPServer(MCPServer):
     # Budget
     # ------------------------------------------------------------------
 
-    def calculate_ad_budget(self, industry: str = "local_services", goal: str = "leads", **kwargs) -> Dict[str, Any]:
+    def calculate_ad_budget(self, industry: str = "local_services", goal: str = "leads", **kwargs) -> dict[str, Any]:
         """Calculate recommended ad budget with ROAS projections."""
         benchmarks = {
             "local_services": {"avg_cpc": "$4-8", "conversion_rate": "5-10%", "cost_per_lead": "$20-50", "recommended_budget": "$500-2,000/mo"},
@@ -357,7 +357,7 @@ class AdsMCPServer(MCPServer):
     # Competitor
     # ------------------------------------------------------------------
 
-    def analyze_competitor_ads(self, competitor_name: str = "", platform: str = "google", **kwargs) -> Dict[str, Any]:
+    def analyze_competitor_ads(self, competitor_name: str = "", platform: str = "google", **kwargs) -> dict[str, Any]:
         """Analyze competitor ad strategy."""
         analysis = {
             "competitor": competitor_name,
@@ -373,7 +373,7 @@ class AdsMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def create_local_service_ads(self, business_type: str = "", business_name: str = "", phone: str = "",
-                                 location: str = "", **kwargs) -> Dict[str, Any]:
+                                 location: str = "", **kwargs) -> dict[str, Any]:
         """Set up Google Local Services Ads for SMBs."""
         eligible_types = ["plumber", "electrician", "roofer", "hvac", "locksmith", "cleaner", "landscaper", "painter", "handyman"]
         is_eligible = business_type.lower() in eligible_types
@@ -387,7 +387,7 @@ class AdsMCPServer(MCPServer):
     # Landing Page
     # ------------------------------------------------------------------
 
-    def optimize_landing_page_for_ads(self, landing_page_url: str = "", **kwargs) -> Dict[str, Any]:
+    def optimize_landing_page_for_ads(self, landing_page_url: str = "", **kwargs) -> dict[str, Any]:
         """Landing page optimization checklist for higher Quality Scores."""
         checklist = [
             {"check": "Headline matches ad copy exactly", "importance": "critical", "impact": "Quality Score, conversion rate"},
@@ -408,12 +408,12 @@ class AdsMCPServer(MCPServer):
     # Simple stats & budget (backward compatible)
     # ------------------------------------------------------------------
 
-    def get_campaign_stats(self, campaign_id: str = "", api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def get_campaign_stats(self, campaign_id: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Get campaign performance stats with ROAS, CPA, CTR, Quality Score, impression share."""
         return {"success": True, "result": "Campaign stats framework ready. Connect ad platform APIs for live data.",
                 "metrics_available": ["impressions", "clicks", "CTR", "CPC", "conversions", "conversion_rate", "CPA", "ROAS", "Quality_Score", "impression_share"]}
 
-    def update_ad_budget(self, campaign_id: str = "", new_budget: float = 0.0, api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
+    def update_ad_budget(self, campaign_id: str = "", new_budget: float = 0.0, api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
         """Update campaign budget with automated bidding strategies."""
         return {"success": True, "result": f"Budget updated to ${new_budget}/mo for campaign {campaign_id}",
                 "tip": "Increase budget gradually (20% every 3-5 days) to maintain performance stability"}

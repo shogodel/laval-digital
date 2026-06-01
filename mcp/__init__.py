@@ -6,7 +6,7 @@ import json
 import logging
 import threading
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Optional
 from .base_server import MCPServer
 from .seo_server import SEOMCPServer
 from .social_server import SocialMCPServer
@@ -20,11 +20,11 @@ from .ecommerce_server import EcommerceMCPServer
 logger = logging.getLogger(__name__)
 
 # Registry of all active MCP servers
-_mcp_servers: Dict[str, MCPServer] = {}
+_mcp_servers: dict[str, MCPServer] = {}
 _mcp_servers_lock = threading.Lock()
 
 # ── Single source of truth: agent → MCP server/tool routing ──────
-AGENT_MCP_ROUTING: Dict[str, Tuple[str, str]] = {
+AGENT_MCP_ROUTING: dict[str, tuple[str, str]] = {
     "local_seo": ("seo", "publish_blog_post"),
     "social_media": ("social", "post_to_facebook"),
     "lead_conversion": ("email", "send_email"),
@@ -44,7 +44,7 @@ AGENT_MCP_ROUTING: Dict[str, Tuple[str, str]] = {
 }
 
 
-def _load_mcp_config() -> Dict[str, dict]:
+def _load_mcp_config() -> dict[str, dict]:
     """Load MCP server config from config.json if it exists."""
     config_path = Path(__file__).parent / "config.json"
     if config_path.exists():
@@ -55,7 +55,7 @@ def _load_mcp_config() -> Dict[str, dict]:
     return {}
 
 
-def init_mcp_servers() -> Dict[str, MCPServer]:
+def init_mcp_servers() -> dict[str, MCPServer]:
     """Initialize all MCP servers. Called once at Flask startup."""
     global _mcp_servers
     mcp_config = _load_mcp_config()
@@ -83,13 +83,13 @@ def get_mcp_server(name: str) -> Optional[MCPServer]:
         return _mcp_servers.get(name)
 
 
-def get_all_mcp_servers() -> Dict[str, MCPServer]:
+def get_all_mcp_servers() -> dict[str, MCPServer]:
     """Get all registered MCP servers."""
     with _mcp_servers_lock:
         return dict(_mcp_servers)
 
 
-def get_all_mcp_tools() -> Dict[str, list]:
+def get_all_mcp_tools() -> dict[str, list]:
     """Get all tools from all MCP servers."""
     with _mcp_servers_lock:
         return {name: server.list_tools() for name, server in _mcp_servers.items()}

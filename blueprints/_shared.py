@@ -2,7 +2,7 @@ import logging
 import os
 import threading
 from datetime import datetime, UTC
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from core import database
 from core.app_state import (
@@ -67,7 +67,7 @@ def _get_pending_actions(tenant_id: str, status: str = "pending") -> list:
         return []
 
 
-def _confirm_pending_action(tenant_id: str, action_id: str) -> Dict[str, Any]:
+def _confirm_pending_action(tenant_id: str, action_id: str) -> dict[str, Any]:
     uid = _safe_tenant_id(tenant_id)
     if uid is None:
         return {"success": False, "error": "Invalid tenant"}

@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, UTC
 from pathlib import Path
 from threading import Lock
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from core.llm_adapter import LLMAdapter
 from core.base_agent import BaseAgent, FRENCH_KEYWORDS
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 VALID_AUTONOMY_LEVELS = ("manual", "suggest", "auto", "silent")
 
-AGENT_SIGNATURES: Dict[str, List[str]] = {
+AGENT_SIGNATURES: dict[str, list[str]] = {
     "local_seo": ["seo", "google business", "gbp", "local ranking", "local search", "citation",
                   "google my business", "gmb", "maps", "near me", "local seo"],
     "social_media": ["social media", "facebook", "instagram", "content calendar", "engagement",
@@ -198,22 +198,22 @@ Respond in {language}."""
 
 
 class Orchestrator:
-    def __init__(self, llm_adapter: LLMAdapter, agent_registry: Dict[str, BaseAgent], executioner=None, push_manager=None, memory=None):
+    def __init__(self, llm_adapter: LLMAdapter, agent_registry: dict[str, BaseAgent], executioner=None, push_manager=None, memory=None):
         self._llm_adapter = llm_adapter
         self._agent_registry = agent_registry
         self._executioner = executioner
         self._push_manager = push_manager
         self._memory = memory
-        self._pending_drafts: Dict[str, Dict[str, Any]] = {}
+        self._pending_drafts: dict[str, dict[str, Any]] = {}
         self._pending_lock = Lock()
-        self._activity_feed: List[Dict[str, Any]] = []
+        self._activity_feed: list[dict[str, Any]] = []
         self._activity_lock = Lock()
         self._panicked = False
         self._panic_lock = Lock()
-        self._last_execution: Optional[Dict[str, Any]] = None
-        self._findings_board: Dict[str, List[Dict[str, Any]]] = {}
+        self._last_execution: Optional[dict[str, Any]] = None
+        self._findings_board: dict[str, list[dict[str, Any]]] = {}
         self._findings_lock = Lock()
-        self._agent_prompts: Dict[str, str] = {}
+        self._agent_prompts: dict[str, str] = {}
         for agent_id, agent in agent_registry.items():
             try:
                 self._agent_prompts[agent_id] = agent.system_prompt
@@ -250,16 +250,16 @@ class Orchestrator:
     # Activity feed
     # ------------------------------------------------------------------
 
-    def _push_activity(self, entry: Dict[str, Any]) -> None:
+    def _push_activity(self, entry: dict[str, Any]) -> None:
         with self._activity_lock:
             self._activity_feed.insert(0, entry)
             self._activity_feed[:] = self._activity_feed[:200]
 
-    def get_activity_feed(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_activity_feed(self, limit: int = 50) -> list[dict[str, Any]]:
         with self._activity_lock:
             return self._activity_feed[:limit]
 
-    def get_pending_drafts(self, user_id: Optional[int] = None) -> Dict[str, Dict[str, Any]]:
+    def get_pending_drafts(self, user_id: Optional[int] = None) -> dict[str, dict[str, Any]]:
         """Return all pending approval drafts, optionally filtered by user_id."""
         with self._pending_lock:
             if user_id is None:
@@ -270,7 +270,7 @@ class Orchestrator:
     # Welcome / Suggestions
     # ------------------------------------------------------------------
 
-    def get_welcome(self, language: str = "en", user_id: int = 0) -> Dict[str, Any]:
+    def get_welcome(self, language: str = "en", user_id: int = 0) -> dict[str, Any]:
         lang_label = "français" if language == "fr" else "english"
         try:
             response = self._llm_adapter.invoke(
@@ -286,7 +286,7 @@ class Orchestrator:
             fallback_fr = "Bonjour ! Je suis votre équipe marketing IA. J'ai 16 agents spécialisés prêts à vous aider avec le SEO, les réseaux sociaux, les annonces, les courriels et plus encore. Parlez-moi de votre entreprise et de ce que vous aimeriez améliorer."
             return {"response": fallback_fr if language == "fr" else fallback_en, "agent": "orchestrator", "status": "welcome"}
 
-    def undo_last(self) -> Optional[Dict[str, Any]]:
+    def undo_last(self) -> Optional[dict[str, Any]]:
         if not self._last_execution:
             return None
         last = self._last_execution
@@ -319,14 +319,14 @@ class Orchestrator:
         with self._findings_lock:
             self._findings_board.setdefault(agent_id, []).append({"summary": summary, "ts": datetime.now(UTC).isoformat()})
 
-    def _send_push(self, event_type: str, agent: str, data: Dict[str, Any]) -> None:
+    def _send_push(self, event_type: str, agent: str, data: dict[str, Any]) -> None:
         if self._push_manager and hasattr(self._push_manager, "send_event"):
             try:
                 self._push_manager.send_event(event_type, agent, data)
             except Exception as e:
                 logger.debug("Exception in %s: %s", __name__, e)
 
-    def get_suggestions(self, language: str = "en", user_id: int = 0) -> Dict[str, Any]:
+    def get_suggestions(self, language: str = "en", user_id: int = 0) -> dict[str, Any]:
         lang_label = "français" if language == "fr" else "english"
         try:
             response = self._llm_adapter.invoke(
@@ -352,7 +352,7 @@ class Orchestrator:
         if source == "frankie":
             return None, None
         message_lower = message.lower()
-        scores: Dict[str, int] = {}
+        scores: dict[str, int] = {}
         for agent, keywords in AGENT_SIGNATURES.items():
             score = sum(1 for kw in keywords if kw in message_lower)
             if score > 0:
@@ -368,7 +368,7 @@ class Orchestrator:
         return None, None
 
     @staticmethod
-    def _format_history(conversation_history: Optional[List[Dict[str, str]]]) -> str:
+    def _format_history(conversation_history: Optional[list[dict[str, str]]]) -> str:
         """Format previous conversation turns into a compact context block."""
         if not conversation_history:
             return ""
@@ -385,11 +385,11 @@ class Orchestrator:
         user_message: str,
         thread_id: str,
         language: Optional[str] = None,
-        autonomy_config: Optional[Dict[str, Dict[str, Any]]] = None,
+        autonomy_config: Optional[dict[str, dict[str, Any]]] = None,
         user_id: int = 0,
         source: str = "chat",
-        conversation_history: Optional[List[Dict[str, str]]] = None,
-    ) -> Dict[str, Any]:
+        conversation_history: Optional[list[dict[str, str]]] = None,
+    ) -> dict[str, Any]:
         """Process a user message from the chat interface.
 
         This is the single entry point for all message processing.
@@ -438,11 +438,11 @@ class Orchestrator:
         user_message: str,
         thread_id: str,
         language: str,
-        autonomy_config: Optional[Dict[str, Dict[str, Any]]] = None,
+        autonomy_config: Optional[dict[str, dict[str, Any]]] = None,
         user_id: int = 0,
         source: str = "chat",
-        conversation_history: Optional[List[Dict[str, str]]] = None,
-    ) -> Dict[str, Any]:
+        conversation_history: Optional[list[dict[str, str]]] = None,
+    ) -> dict[str, Any]:
         lang_label = "français" if language == "fr" else "english"
         try:
             sanitized_message = re.sub(r'<\|.*?\|>|<\|.*$', '', user_message)[:2000]
@@ -645,7 +645,7 @@ class Orchestrator:
                     "created_at": now_iso,
                 }
 
-            result: Dict[str, Any] = {
+            result: dict[str, Any] = {
                 "response": clean_draft,
                 "agent": agent_name,
                 "status": "pending_approval",
@@ -672,7 +672,7 @@ class Orchestrator:
                 "pending_approval": False,
             }
 
-    def _handle_approval(self, thread_id: str, approved: bool, user_id: int = 0) -> Dict[str, Any]:
+    def _handle_approval(self, thread_id: str, approved: bool, user_id: int = 0) -> dict[str, Any]:
         with self._pending_lock:
             if thread_id not in self._pending_drafts:
                 return {
@@ -786,7 +786,7 @@ class Orchestrator:
             "pending_approval": False,
         }
 
-    def handle_approval(self, thread_id: str, approved: bool, user_id: int = 0) -> Dict[str, Any]:
+    def handle_approval(self, thread_id: str, approved: bool, user_id: int = 0) -> dict[str, Any]:
         """Public wrapper for responding to approval requests."""
         return self._handle_approval(thread_id, approved, user_id)
 
