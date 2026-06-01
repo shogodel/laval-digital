@@ -4,8 +4,47 @@ import os
 import re
 import secrets
 import sys
+import threading
 import uuid
 import warnings
+from datetime import UTC, datetime, timedelta
+from typing import Any
+from urllib.parse import urlparse
+
+import requests
+
+import base64 as _b64
+
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from dotenv import load_dotenv
+from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
+from flask_login import current_user, logout_user
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+from mcp._safe_url import is_safe_url as _is_safe_url
+
+from agents.executioner_agent import ExecutionerAgent
+from core import database
+from core.affiliates import AffiliateManager
+from core.api_helpers import api_error, api_success
+from core.auth import SESSION_TIMEOUT, admin_required, init_auth
+from core.base_agent import BaseAgent
+from core.blog_articles import ARTICLES_BY_SLUG_EN, ARTICLES_BY_SLUG_FR, ARTICLES_EN, ARTICLES_FR
+from core.email_bridge import EmailBridge
+from core.llm_adapter import LLMAdapter
+from core.memory import AgentMemory
+from core.monitor import monitor as proactive_monitor
+from core.orchestrator import Orchestrator
+from core.push import PushManager
+from core.scheduler import SchedulerManager
+from core.speech import SpeechEngine
+from mcp import init_mcp_servers
+
+logger = logging.getLogger(__name__)
 
 _PII_PATTERNS = [
     (re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'), '[EMAIL]'),
@@ -26,16 +65,6 @@ class PIIRedactFilter(logging.Filter):
             for pattern, replacement in _PII_PATTERNS:
                 record.exc_text = pattern.sub(replacement, record.exc_text)
         return True
-import threading
-from datetime import UTC, datetime, timedelta
-from typing import Any
-from urllib.parse import urlparse
-
-import requests
-
-logger = logging.getLogger(__name__)
-
-from mcp._safe_url import is_safe_url as _is_safe_url
 
 
 def _safe_url(url: str, timeout: int = 10) -> requests.Response:
@@ -68,31 +97,6 @@ def _safe_int(val, default=0):
 warnings.filterwarnings("ignore", module="langgraph")
 warnings.filterwarnings("ignore", module="langchain")
 
-import base64 as _b64
-
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from dotenv import load_dotenv
-from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
-from flask_login import current_user, logout_user
-from flask_wtf.csrf import CSRFProtect, generate_csrf
-from werkzeug.middleware.proxy_fix import ProxyFix
-
-from agents.executioner_agent import ExecutionerAgent
-from core.api_helpers import api_error, api_success
-from core.auth import admin_required
-from core.base_agent import BaseAgent
-from core.blog_articles import ARTICLES_BY_SLUG_EN, ARTICLES_BY_SLUG_FR, ARTICLES_EN, ARTICLES_FR
-from core.email_bridge import EmailBridge
-from core.llm_adapter import LLMAdapter
-from core.memory import AgentMemory
-from core.monitor import monitor as proactive_monitor
-from core.orchestrator import Orchestrator
-from core.push import PushManager
-from mcp import init_mcp_servers
-
 AGENT_CLASSES = dict.fromkeys(
     ["local_seo", "social_media", "lead_conversion", "paid_ads",
      "growth_hacker", "reputation", "email_marketing", "tiktok",
@@ -100,15 +104,6 @@ AGENT_CLASSES = dict.fromkeys(
      "reporting", "cro", "video", "sms_marketing"],
     BaseAgent,
 )
-
-from core import database
-from core.affiliates import AffiliateManager
-from core.auth import (
-    SESSION_TIMEOUT,
-    init_auth,
-)
-from core.scheduler import SchedulerManager
-from core.speech import SpeechEngine
 
 
 def _derive_fernet_key() -> Fernet:
