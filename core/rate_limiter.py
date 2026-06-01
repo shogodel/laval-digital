@@ -101,7 +101,7 @@ def get_or_create_quota(user_id: int) -> dict:
     return dict(row) if row else dict(DEFAULT_QUOTAS, blocked=0)
 
 
-class RateLimitExceeded(Exception):
+class RateLimitExceededError(Exception):
     def __init__(self, message: str, limit_type: str = "rate"):
         self.limit_type = limit_type
         super().__init__(message)
@@ -113,7 +113,7 @@ def check_rate_limits(user_id: int) -> None:
     conn = database._get_conn()
     quota = get_or_create_quota(user_id)
     if quota.get("blocked"):
-        raise RateLimitExceeded(
+        raise RateLimitExceededError(
             "Your LLM access has been blocked. Contact your administrator.",
             limit_type="blocked",
         )
@@ -129,7 +129,7 @@ def check_rate_limits(user_id: int) -> None:
         (user_id, hour_ago),
     ).fetchone()
     if row and row["cnt"] >= quota["requests_per_hour"]:
-        raise RateLimitExceeded(
+        raise RateLimitExceededError(
             f"Rate limit exceeded: {quota['requests_per_hour']} requests per hour.",
             limit_type="hourly_rate",
         )
@@ -140,7 +140,7 @@ def check_rate_limits(user_id: int) -> None:
         (user_id, day_ago),
     ).fetchone()
     if row and row["cnt"] >= quota["requests_per_day"]:
-        raise RateLimitExceeded(
+        raise RateLimitExceededError(
             f"Rate limit exceeded: {quota['requests_per_day']} requests per day.",
             limit_type="daily_rate",
         )
@@ -151,7 +151,7 @@ def check_rate_limits(user_id: int) -> None:
         (user_id, day_ago),
     ).fetchone()
     if row and row["total"] >= quota["tokens_per_day"]:
-        raise RateLimitExceeded(
+        raise RateLimitExceededError(
             f"Token limit exceeded: {quota['tokens_per_day']} tokens per day.",
             limit_type="daily_tokens",
         )
@@ -162,7 +162,7 @@ def check_rate_limits(user_id: int) -> None:
         (user_id, day_ago),
     ).fetchone()
     if row and row["total"] >= quota["cost_per_day"]:
-        raise RateLimitExceeded(
+        raise RateLimitExceededError(
             f"Cost limit exceeded: ${quota['cost_per_day']:.2f} per day.",
             limit_type="daily_cost",
         )
@@ -173,7 +173,7 @@ def check_rate_limits(user_id: int) -> None:
         (user_id, month_start),
     ).fetchone()
     if row and row["total"] >= quota["cost_per_month"]:
-        raise RateLimitExceeded(
+        raise RateLimitExceededError(
             f"Cost limit exceeded: ${quota['cost_per_month']:.2f} per month.",
             limit_type="monthly_cost",
         )

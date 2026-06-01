@@ -7,7 +7,7 @@ import requests
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.language_models import BaseChatModel
 
-from core.rate_limiter import check_rate_limits, count_tokens, log_usage, RateLimitExceeded
+from core.rate_limiter import check_rate_limits, count_tokens, log_usage, RateLimitExceededError
 
 try:
     from langchain_litellm import ChatLiteLLM
@@ -268,7 +268,7 @@ class LLMAdapter:
 
         Raises:
             LLMAdapterError: If LLM invocation fails for any reason.
-            RateLimitExceeded: If user has exceeded rate or cost limits.
+            RateLimitExceededError: If user has exceeded rate or cost limits.
         """
         logger.debug("Invoking LLM %s with task: %s...", self._model, user_message[:50])
 
@@ -298,7 +298,7 @@ class LLMAdapter:
                           endpoint=endpoint, agent_id=agent_id, thread_id=thread_id)
 
             return completion
-        except RateLimitExceeded:
+        except RateLimitExceededError:
             raise
         except Exception as e:
             error_msg = f"LLM invocation failed: {str(e)}"
@@ -325,7 +325,7 @@ class LLMAdapter:
 
         Raises:
             LLMAdapterError: If LLM streaming fails for any reason.
-            RateLimitExceeded: If user has exceeded rate or cost limits.
+            RateLimitExceededError: If user has exceeded rate or cost limits.
         """
         logger.debug("Streaming LLM %s with task: %s...", self._model, user_message[:50])
 
@@ -358,7 +358,7 @@ class LLMAdapter:
             if user_id > 0:
                 log_usage(user_id, self._model, prompt_tokens, completion_tokens,
                           endpoint=endpoint, agent_id=agent_id, thread_id=thread_id)
-        except RateLimitExceeded:
+        except RateLimitExceededError:
             raise
         except Exception as e:
             error_msg = f"LLM streaming failed: {str(e)}"

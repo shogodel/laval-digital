@@ -12,7 +12,7 @@ from core.rate_limiter import (
     get_or_create_quota,
     log_usage,
     check_rate_limits,
-    RateLimitExceeded,
+    RateLimitExceededError,
     MODEL_PRICING,
 )
 from core.database import init_db, create_user, _get_conn, reset_conn
@@ -105,7 +105,7 @@ class TestCheckRateLimits:
             "UPDATE user_llm_quotas SET requests_per_hour = 0 WHERE user_id = 1"
         )
         conn.commit()
-        with pytest.raises(RateLimitExceeded, match="Rate limit exceeded"):
+        with pytest.raises(RateLimitExceededError, match="Rate limit exceeded"):
             check_rate_limits(1)
         conn.execute(
             "UPDATE user_llm_quotas SET requests_per_hour = 60 WHERE user_id = 1"
