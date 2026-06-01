@@ -111,14 +111,14 @@ def agent_chat(agent_id):
         return auth_check
     from core.app_state import get_agent_meta, get_agent_registry
     agent_registry = get_agent_registry()
-    AGENT_META = get_agent_meta()
+    agent_meta = get_agent_meta()
     if agent_id not in agent_registry:
         return "Agent not found", 404
     return render_template(
         "admin/agent_chat.html",
         agent_id=agent_id,
         agent=agent_registry[agent_id],
-        agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),
+        agent_name=agent_meta.get(agent_id, {}).get("name", agent_id),
     )
 
 
@@ -256,14 +256,14 @@ def agent_chat_fr(agent_id):
     """Serve the French admin agent chat interface."""
     from core.app_state import get_agent_meta, get_agent_registry
     agent_registry = get_agent_registry()
-    AGENT_META = get_agent_meta()
+    agent_meta = get_agent_meta()
     if agent_id not in agent_registry:
         return "Agent introuvable", 404
     return render_template(
         "admin/agent_chat_fr.html",
         agent_id=agent_id,
         agent=agent_registry[agent_id],
-        agent_name=AGENT_META.get(agent_id, {}).get("name", agent_id),
+        agent_name=agent_meta.get(agent_id, {}).get("name", agent_id),
     )
 
 

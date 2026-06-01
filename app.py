@@ -209,7 +209,7 @@ def create_app(config_name: str | None = None):
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)  # type: ignore[method-assign]
 
-    _API_PUBLIC: set = {
+    _api_public: set = {
         "/api/affiliate/status",
         "/api/affiliate/signup",
         "/api/contact",
@@ -291,7 +291,7 @@ def create_app(config_name: str | None = None):
     app.register_blueprint(users_bp)
 
     for rule in app.url_map.iter_rules():
-        if rule.rule in _API_PUBLIC and rule.methods and not {'GET', 'HEAD', 'OPTIONS'}.issuperset(rule.methods):
+        if rule.rule in _api_public and rule.methods and not {'GET', 'HEAD', 'OPTIONS'}.issuperset(rule.methods):
             csrf._exempt_views.add(rule.endpoint)
 
     @app.context_processor
@@ -345,9 +345,9 @@ def create_app(config_name: str | None = None):
             "object-src 'none'; "
             "upgrade-insecure-requests"
         )
-        ALLOWED_ORIGINS = {"https://lavaldigital.ca", "https://www.lavaldigital.ca", "http://127.0.0.1:5000", "http://localhost:5000"}
+        allowed_origins = {"https://lavaldigital.ca", "https://www.lavaldigital.ca", "http://127.0.0.1:5000", "http://localhost:5000"}
         origin = request.headers.get("Origin")
-        if origin in ALLOWED_ORIGINS:
+        if origin in allowed_origins:
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
             response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-CSRFToken, Authorization"
@@ -385,7 +385,7 @@ def create_app(config_name: str | None = None):
     def require_api_auth():
         if not request.path.startswith("/api/"):
             return
-        if request.path in _API_PUBLIC:
+        if request.path in _api_public:
             return
         if current_user.is_authenticated and current_user.role == "admin":
             return
@@ -415,7 +415,7 @@ def create_app(config_name: str | None = None):
     def update_tenant_agent_activity(
         user_id: str, agent_id: str, **kwargs
     ) -> None:
-        _COLUMN_UPDATES = {
+        _column_updates = {
             "status": "UPDATE agent_configs SET status = ? WHERE agent_id = ? AND user_id = ?",
             "last_invoked": "UPDATE agent_configs SET last_invoked = ? WHERE agent_id = ? AND user_id = ?",
             "task_count": "UPDATE agent_configs SET task_count = ? WHERE agent_id = ? AND user_id = ?",
@@ -432,7 +432,7 @@ def create_app(config_name: str | None = None):
             conn = database._get_conn()
             cursor = conn.cursor()
             for key, value in kwargs.items():
-                sql = _COLUMN_UPDATES.get(key)
+                sql = _column_updates.get(key)
                 if sql is None:
                     raise ValueError(f"Invalid column name: {key}")
                 cursor.execute(sql, (value, agent_id, uid))
@@ -504,7 +504,7 @@ def create_app(config_name: str | None = None):
                 _flash("Your free trial has ended. Subscribe to regain access.", "error")
                 return redirect(url_for("trial_expired"))
 
-    _AGENTS = [
+    _agents = [
         ("local_seo", "local_seo.md", "Local SEO", "Google Business Profile optimization, local citations, local keyword content, review management"),
         ("social_media", "social_media.md", "Social Media", "Social media posts, content creation, content calendars, engagement strategies"),
         ("lead_conversion", "lead_conversion.md", "Lead Conversion", "Lead follow-up sequences, CRM integration, conversion optimization, email campaigns"),
@@ -522,13 +522,13 @@ def create_app(config_name: str | None = None):
         ("video", "video.md", "Video Production", "YouTube scripts, explainer videos, ad video scripts, video SEO, content series planning, thumbnail strategy"),
         ("sms_marketing", "sms_marketing.md", "SMS Marketing", "SMS campaign planning, sequence design, CASL compliance, concise copywriting, timing strategy, list segmentation"),
     ]
-    _BASE_AGENT_CONFIG = {
+    _base_agent_config = {
         "enabled": True,
         "model": "deepseek-chat",
         "credentials": {"api_key": "", "api_base": "https://api.deepseek.com/v1"},
     }
-    AGENT_CONFIGS = {aid: {**_BASE_AGENT_CONFIG, "agent_id": aid, "system_prompt_file": f"prompts/{pf}"} for aid, pf, _, _ in _AGENTS}
-    AGENT_META: dict[str, dict[str, str]] = {aid: {"name": nm, "desc": dc} for aid, _, nm, dc in _AGENTS}
+    agent_configs = {aid: {**_base_agent_config, "agent_id": aid, "system_prompt_file": f"prompts/{pf}"} for aid, pf, _, _ in _agents}
+    agent_meta: dict[str, dict[str, str]] = {aid: {"name": nm, "desc": dc} for aid, _, nm, dc in _agents}
 
     llm_adapter = LLMAdapter(
         model="deepseek-chat",
@@ -537,7 +537,7 @@ def create_app(config_name: str | None = None):
     )
 
     agent_registry = {}
-    for agent_id, config in AGENT_CONFIGS.items():
+    for agent_id, config in agent_configs.items():
         cls = AGENT_CLASSES.get(agent_id)
         if cls:
             agent_registry[agent_id] = cls(agent_id, config)
@@ -664,10 +664,10 @@ def create_app(config_name: str | None = None):
     @admin_required
     def update_agent_config(agent_id):
         nonlocal orchestrator
-        if agent_id not in AGENT_CONFIGS:
+        if agent_id not in agent_configs:
             return api_error("Agent not found", 404)
         data = request.json
-        config = AGENT_CONFIGS[agent_id]
+        config = agent_configs[agent_id]
         if "model" in data and data["model"]:
             if not LLMAdapter.is_valid_model(data["model"]):
                 return api_error(f"Invalid model '{data['model']}'", 400)
@@ -696,7 +696,7 @@ def create_app(config_name: str | None = None):
         api_key = data.get("api_key")
         api_base = data.get("api_base")
         updated_count = 0
-        for agent_id, config in AGENT_CONFIGS.items():
+        for agent_id, config in agent_configs.items():
             changed = False
             if model and model != "__keep__":
                 if LLMAdapter.is_valid_model(model):
@@ -766,8 +766,8 @@ def create_app(config_name: str | None = None):
     _app_state.init_speech_engine(speech_engine)
     _app_state.init_affiliate_manager(affiliate_manager)
     _app_state.init_scheduler_manager(scheduler_manager)
-    _app_state.init_agent_meta(AGENT_META)
-    _app_state.init_agent_configs(AGENT_CONFIGS)
+    _app_state.init_agent_meta(agent_meta)
+    _app_state.init_agent_configs(agent_configs)
     _app_state.init_credential_cipher(_derive_fernet_key())
     _app_state.init_current_user_id_fn(get_current_user_id)
     _app_state.init_safe_int_fn(_safe_int)
