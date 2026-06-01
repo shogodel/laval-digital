@@ -260,6 +260,14 @@ class Orchestrator:
         for k in stale:
             del self._recent_cache[k]
 
+        _MAX_CACHE_ENTRIES = 500
+        if len(self._recent_cache) > _MAX_CACHE_ENTRIES:
+            excess = len(self._recent_cache) - _MAX_CACHE_ENTRIES
+            evict = sorted(self._recent_cache.items(), key=lambda kv: kv[1][0])[:excess]
+            for k, _ in evict:
+                del self._recent_cache[k]
+            logger.info("Evicted %d oldest cache entries (size cap)", excess)
+
     # ------------------------------------------------------------------
     # Activity feed
     # ------------------------------------------------------------------
@@ -447,6 +455,7 @@ class Orchestrator:
 
         key = (thread_id, message_lower)
         with self._cache_lock:
+            self._evict_stale_cache()
             cached = self._recent_cache.get(key)
             if cached is not None:
                 ts, result = cached

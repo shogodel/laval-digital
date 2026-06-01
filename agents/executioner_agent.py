@@ -16,6 +16,7 @@ from mcp._safe_url import is_safe_host, is_safe_url
 
 _LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
 _CONTENT_DIR = Path(__file__).resolve().parent.parent / "content"
+_EXECUTION_LOG_MAX_BYTES = 5 * 1024 * 1024  # 5 MB before rotation
 
 logger = logging.getLogger(__name__)
 
@@ -1072,6 +1073,10 @@ class ExecutionerAgent:
     ) -> None:
         """Append an execution record to the JSONL log file.
 
+        Rotates the log file when it exceeds ``_EXECUTION_LOG_MAX_BYTES``
+        (5 MB) to prevent unbounded growth. Keeps a single backup
+        (``execution_log.1.jsonl``).
+
         Args:
             execution_id: Unique execution identifier.
             agent_name: Source agent name.
@@ -1091,8 +1096,18 @@ class ExecutionerAgent:
             "result": result,
             "error": error,
         }
-        with self._io_lock, open(self._execution_log_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(record) + "\n")
+        with self._io_lock:
+            try:
+                log_path = self._execution_log_path
+                if log_path.exists() and log_path.stat().st_size >= _EXECUTION_LOG_MAX_BYTES:
+                    backup = log_path.with_suffix(".1.jsonl")
+                    backup.unlink(missing_ok=True)
+                    log_path.rename(backup)
+                    logger.info("Rotated execution log to %s", backup.name)
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(record) + "\n")
+            except Exception as exc:
+                logger.error("Failed to write execution log: %s", exc)
 
     def get_execution_history(self, limit: int = 50) -> list[dict[str, Any]]:
         """Read recent execution records from the JSONL log.

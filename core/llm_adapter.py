@@ -48,6 +48,62 @@ LLM_TIMEOUT = 120
 _MAX_CONCURRENT_LLM = 4
 _llm_semaphore = threading.BoundedSemaphore(_MAX_CONCURRENT_LLM)
 
+# Circuit breaker — trip after C consecutive failures per model
+_CB_THRESHOLD = 3
+_CB_RECOVERY_TIMEOUT = 60.0
+_CB_STATE: dict[str, dict[str, Any]] = {}
+_CB_LOCK = threading.Lock()
+
+
+def _circuit_allowed(model: str) -> bool:
+    """Check if requests to *model* are allowed right now.
+
+    Returns ``True`` when the circuit is closed or half-open (one trial
+    request permitted).  Returns ``False`` when the circuit is open and
+    the recovery window has not yet elapsed.
+    """
+    with _CB_LOCK:
+        state = _CB_STATE.get(model)
+        if state is None:
+            return True
+        if state["state"] == "closed":
+            return True
+        if state["state"] == "open":
+            if time.monotonic() - state["last_failure_ts"] >= _CB_RECOVERY_TIMEOUT:
+                state["state"] = "half-open"
+                return True
+            return False
+        # half-open: one trial allowed
+        return True
+
+
+def _circuit_record_success(model: str) -> None:
+    with _CB_LOCK:
+        state = _CB_STATE.get(model)
+        if state is None:
+            return
+        state["state"] = "closed"
+        state["consecutive_failures"] = 0
+        state["last_failure_ts"] = 0.0
+
+
+def _circuit_record_failure(model: str) -> None:
+    with _CB_LOCK:
+        now = time.monotonic()
+        state = _CB_STATE.setdefault(model, {
+            "state": "closed",
+            "consecutive_failures": 0,
+            "last_failure_ts": 0.0,
+        })
+        state["consecutive_failures"] += 1
+        state["last_failure_ts"] = now
+        if state["consecutive_failures"] >= _CB_THRESHOLD:
+            state["state"] = "open"
+            logger.warning(
+                "Circuit breaker OPEN for model %s after %s consecutive failures",
+                model, _CB_THRESHOLD,
+            )
+
 
 class LLMAdapter:
     """Production-grade multi-LLM adapter for LangGraph agents.
@@ -275,6 +331,12 @@ class LLMAdapter:
         if user_id > 0:
             check_rate_limits(user_id)
 
+        if not _circuit_allowed(self._model):
+            raise LLMAdapterError(
+                f"Model {self._model} is temporarily unavailable (circuit breaker open). "
+                "Please retry later."
+            )
+
         prompt_tokens = count_tokens(system_prompt + user_message, self._model)
 
         if not _llm_semaphore.acquire(timeout=30):
@@ -297,12 +359,14 @@ class LLMAdapter:
                 log_usage(user_id, self._model, prompt_tokens, completion_tokens,
                           endpoint=endpoint, agent_id=agent_id, thread_id=thread_id)
 
+            _circuit_record_success(self._model)
             return completion
         except RateLimitExceededError:
             raise
         except Exception as e:
             error_msg = f"LLM invocation failed: {str(e)}"
             logger.error(error_msg, exc_info=True)
+            _circuit_record_failure(self._model)
             raise LLMAdapterError(error_msg) from e
         finally:
             _llm_semaphore.release()
@@ -332,6 +396,12 @@ class LLMAdapter:
         if user_id > 0:
             check_rate_limits(user_id)
 
+        if not _circuit_allowed(self._model):
+            raise LLMAdapterError(
+                f"Model {self._model} is temporarily unavailable (circuit breaker open). "
+                "Please retry later."
+            )
+
         prompt_tokens = count_tokens(system_prompt + user_message, self._model)
         collected: list[str] = []
 
@@ -358,11 +428,14 @@ class LLMAdapter:
             if user_id > 0:
                 log_usage(user_id, self._model, prompt_tokens, completion_tokens,
                           endpoint=endpoint, agent_id=agent_id, thread_id=thread_id)
+
+            _circuit_record_success(self._model)
         except RateLimitExceededError:
             raise
         except Exception as e:
             error_msg = f"LLM streaming failed: {str(e)}"
             logger.error(error_msg, exc_info=True)
+            _circuit_record_failure(self._model)
             raise LLMAdapterError(error_msg) from e
         finally:
             _llm_semaphore.release()

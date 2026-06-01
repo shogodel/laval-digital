@@ -1,3 +1,4 @@
+import base64 as _b64
 import logging
 import logging.handlers
 import os
@@ -12,9 +13,6 @@ from typing import Any
 from urllib.parse import urlparse
 
 import requests
-
-import base64 as _b64
-
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -24,8 +22,6 @@ from flask import Flask, abort, flash, g, jsonify, redirect, render_template, re
 from flask_login import current_user, logout_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from werkzeug.middleware.proxy_fix import ProxyFix
-
-from mcp._safe_url import is_safe_url as _is_safe_url
 
 from agents.executioner_agent import ExecutionerAgent
 from core import database
@@ -43,6 +39,7 @@ from core.push import PushManager
 from core.scheduler import SchedulerManager
 from core.speech import SpeechEngine
 from mcp import init_mcp_servers
+from mcp._safe_url import is_safe_url as _is_safe_url
 
 logger = logging.getLogger(__name__)
 
