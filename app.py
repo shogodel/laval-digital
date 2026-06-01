@@ -698,10 +698,9 @@ def create_app(config_name: str | None = None):
         updated_count = 0
         for agent_id, config in agent_configs.items():
             changed = False
-            if model and model != "__keep__":
-                if LLMAdapter.is_valid_model(model):
-                    config["model"] = model
-                    changed = True
+            if model and model != "__keep__" and LLMAdapter.is_valid_model(model):
+                config["model"] = model
+                changed = True
             if api_key:
                 config["credentials"]["api_key"] = api_key
                 changed = True

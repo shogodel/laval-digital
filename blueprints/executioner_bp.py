@@ -60,8 +60,7 @@ def test_smtp():
                         ip_parts[0] == 192 and ip_parts[1] == 168 or
                         ip_parts[0] == 172 and 16 <= ip_parts[1] <= 31):
                         return api_error("SMTP host resolves to a private IP address", 400)
-                if ":" in smtp_ip:
-                    if smtp_ip.startswith("::1") or smtp_ip.startswith("fc") or smtp_ip.startswith("fd") or smtp_ip.startswith("fe80"):
+                if ":" in smtp_ip and (smtp_ip.startswith("::1") or smtp_ip.startswith("fc") or smtp_ip.startswith("fd") or smtp_ip.startswith("fe80")):
                         return api_error("SMTP host resolves to a private IPv6 address", 400)
         except socket.gaierror:
             return api_error(f"Could not resolve SMTP host: {smtp_host}", 400)
