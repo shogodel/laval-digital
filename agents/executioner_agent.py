@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 _LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
+_CONTENT_DIR = Path(__file__).resolve().parent.parent / "content"
 
 from mcp import AGENT_MCP_ROUTING
 from mcp._safe_url import is_safe_host, is_safe_url
@@ -174,12 +175,14 @@ class ExecutionerAgent:
         self._save_settings()
         logger.debug("Settings updated: %s", [k for k in settings if k in allowed_keys])
 
-    def get_settings(self) -> dict[str, Any]:
+    def _get_settings(self) -> dict[str, Any]:
         """Return a copy of the current settings with secrets decrypted.
+
+        Internal use only. External callers should use ``get_smtp_config()``,
+        ``get_public_settings()``, or other targeted accessors.
 
         Returns:
             Dict of all current settings.
-            Intended for internal use only.
         """
         with self._settings_lock:
             result = dict(self._settings)
@@ -187,6 +190,24 @@ class ExecutionerAgent:
             if key in result:
                 result[key] = self._decrypt(result[key])
         return result
+
+    def get_smtp_config(self) -> dict[str, Any]:
+        """Return SMTP configuration with decrypted password.
+
+        Returns:
+            Dict with keys: smtp_host, smtp_port, smtp_username, smtp_password,
+            smtp_from_email, smtp_use_tls.
+        """
+        with self._settings_lock:
+            raw = dict(self._settings)
+        return {
+            "smtp_host": raw.get("smtp_host", ""),
+            "smtp_port": raw.get("smtp_port", 587),
+            "smtp_username": raw.get("smtp_username", ""),
+            "smtp_password": self._decrypt(raw.get("smtp_password", "")),
+            "smtp_from_email": raw.get("smtp_from_email", ""),
+            "smtp_use_tls": raw.get("smtp_use_tls", True),
+        }
 
     def get_public_settings(self) -> dict[str, Any]:
         """Return settings safe for external API responses (secrets removed).
@@ -628,7 +649,7 @@ class ExecutionerAgent:
             Result dict with ``success``, ``result`` (file path), ``error``.
         """
         try:
-            blog_dir = Path("content/blog")
+            blog_dir = _CONTENT_DIR / "blog"
             blog_dir.mkdir(parents=True, exist_ok=True)
 
             first_line = draft.strip().split("\n")[0][:80]
@@ -657,7 +678,7 @@ class ExecutionerAgent:
             Result dict.
         """
         try:
-            gmb_dir = Path("content/social")
+            gmb_dir = _CONTENT_DIR / "social"
             gmb_dir.mkdir(parents=True, exist_ok=True)
             gmb_file = gmb_dir / "gmb_updates.jsonl"
 
@@ -768,7 +789,7 @@ class ExecutionerAgent:
 
         # Fallback: queue to JSONL file for manual review
         try:
-            social_dir = Path("content/social")
+            social_dir = _CONTENT_DIR / "social"
             social_dir.mkdir(parents=True, exist_ok=True)
             social_file = social_dir / "social_posts.jsonl"
 
@@ -908,7 +929,7 @@ class ExecutionerAgent:
             Result dict.
         """
         try:
-            email_dir = Path("content/emails")
+            email_dir = _CONTENT_DIR / "emails"
             email_dir.mkdir(parents=True, exist_ok=True)
             email_file = email_dir / "sent.jsonl"
 
@@ -939,7 +960,7 @@ class ExecutionerAgent:
             Result dict.
         """
         try:
-            sms_dir = Path("content/sms")
+            sms_dir = _CONTENT_DIR / "sms"
             sms_dir.mkdir(parents=True, exist_ok=True)
             sms_file = sms_dir / "sms.jsonl"
 
@@ -959,7 +980,7 @@ class ExecutionerAgent:
 
     def _save_content_calendar(self, draft: str) -> dict[str, Any]:
         try:
-            cal_dir = Path("content/strategy")
+            cal_dir = _CONTENT_DIR / "strategy"
             cal_dir.mkdir(parents=True, exist_ok=True)
             slug = self._slugify(draft.strip().split("\n")[0][:60])
             ts = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -988,7 +1009,7 @@ class ExecutionerAgent:
             Result dict with success, result path, and error.
         """
         try:
-            target_dir = Path("content") / base_dir
+            target_dir = _CONTENT_DIR / base_dir
             target_dir.mkdir(parents=True, exist_ok=True)
             slug = self._slugify(draft.strip().split("\n")[0][:60])
             ts = datetime.now().strftime("%Y%m%d%H%M%S")

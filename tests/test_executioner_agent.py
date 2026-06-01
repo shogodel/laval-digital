@@ -9,6 +9,7 @@ import pytest
 from agents.executioner_agent import ExecutionerAgent, ExecutionerError
 
 _log_dir = Path(__file__).resolve().parent.parent / "logs"
+_content_dir = Path(__file__).resolve().parent.parent / "content"
 
 
 @pytest.fixture
@@ -22,7 +23,7 @@ def executioner():
     yield instance
     log_path.unlink(missing_ok=True)
     for d in ("test_dir", "a", "blog"):
-        p = Path("content") / d
+        p = _content_dir / d
         if p.exists():
             shutil.rmtree(p)
 
@@ -52,7 +53,7 @@ class TestSaveFile:
 
     def test_returns_file_path(self, executioner):
         saved = executioner._save_file("test_dir", "pre", "md", "# Title\nBody", "Test")
-        assert saved["result"].startswith("content/test_dir/pre-")
+        assert saved["result"].startswith(str(_content_dir / "test_dir" / "pre-"))
 
     def test_nested_directory_created(self, executioner):
         saved = executioner._save_file("a/b/c", "x", "json", "{}", "Nested")

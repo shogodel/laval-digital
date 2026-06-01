@@ -239,8 +239,7 @@ def invoke_agent(agent_id):
             except Exception as e:
                 logger.error("Silent exception in invoke_agent: %s", e)
 
-        result = agent._invoke_llm(task)
-
+        result = agent.invoke_llm(task)
         draft = result.get("draft_output", "")
         draft_preview = (draft[:120] + "...") if len(draft) > 120 else draft
 
@@ -338,7 +337,7 @@ def agent_chat(agent_id):
         if stream:
             def generate():
                 collected: list[str] = []
-                for item in agent._stream_llm(full_task):
+                for item in agent.stream_llm(full_task):
                     if isinstance(item, str):
                         collected.append(item)
                         yield f"data: {json.dumps({'type': 'token', 'content': item})}\n\n"
@@ -349,7 +348,7 @@ def agent_chat(agent_id):
                         yield f"data: {json.dumps({'type': 'done', 'response': draft, 'thread_id': thread_id, 'language': language, 'thinking': thinking, 'model': agent.model})}\n\n"
             return Response(stream_with_context(generate()), mimetype='text/event-stream')
         else:
-            result = agent._invoke_llm(full_task)
+            result = agent.invoke_llm(full_task)
             draft = result.get("draft_output", "")
             _store_draft(draft)
             return api_success({

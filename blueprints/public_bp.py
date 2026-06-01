@@ -83,7 +83,7 @@ def api_contact():
     service_label = service_labels.get(service, service)
 
     try:
-        settings = get_executioner().get_settings()
+        settings = get_executioner().get_smtp_config()
         smtp_host = settings.get("smtp_host", "smtp.gmail.com")
         smtp_port = int(settings.get("smtp_port", 587))
         smtp_user = settings.get("smtp_username", "")

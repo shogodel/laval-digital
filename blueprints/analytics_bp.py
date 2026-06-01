@@ -66,7 +66,7 @@ def _send_report_email(html: str, user_id: str):
         client_email = biz_row["email"] if biz_row else None
         if not client_email:
             return api_error("No client email found", 400)
-        settings = get_executioner().get_settings()
+        settings = get_executioner().get_smtp_config()
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"Monthly Performance Report — {business_name}"
         msg["From"] = settings.get("smtp_from_email", "reports@lavaldigital.ca")

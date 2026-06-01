@@ -6,6 +6,8 @@ from typing import Any
 
 from core.llm_adapter import LLMAdapter
 
+_CONTENT_DIR = Path(__file__).resolve().parent.parent / "content"
+
 logger = logging.getLogger(__name__)
 
 FRENCH_KEYWORDS = [
@@ -207,6 +209,12 @@ class BaseAgent:
             "confidence": self._parse_confidence(raw),
         }
 
+    def invoke_llm(self, task: str, user_id: int = 0) -> dict[str, Any]:
+        return self._invoke_llm(task, user_id)
+
+    def stream_llm(self, task: str, user_id: int = 0):
+        return self._stream_llm(task, user_id)
+
     @staticmethod
     def _slugify(text: str) -> str:
         import re
@@ -220,7 +228,7 @@ class BaseAgent:
     def _save_output(subdir: str, prefix: str, content: str, ext: str = "md") -> str:
         from datetime import datetime
         from pathlib import Path
-        target_dir = Path("content") / subdir
+        target_dir = _CONTENT_DIR / subdir
         target_dir.mkdir(parents=True, exist_ok=True)
         first_line = content.strip().split("\n")[0][:60] if content else "output"
         slug = BaseAgent._slugify(first_line) or "output"
