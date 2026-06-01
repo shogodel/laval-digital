@@ -69,9 +69,8 @@ class EventBus:
 
     def unsubscribe(self, q: Queue) -> None:
         """Remove a subscriber queue."""
-        with self._lock:
-            with contextlib.suppress(ValueError):
-                self._subscribers.remove(q)
+        with self._lock, contextlib.suppress(ValueError):
+            self._subscribers.remove(q)
 
     def get_history(
         self,

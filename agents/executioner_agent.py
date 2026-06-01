@@ -636,9 +636,8 @@ class ExecutionerAgent:
                 "status": "pending_review",
             }
 
-            with self._io_lock:
-                with open(gmb_file, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(record) + "\n")
+            with self._io_lock, open(gmb_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
 
             return {"success": True, "result": "GMB update recorded", "error": None}
         except OSError as exc:
@@ -749,9 +748,8 @@ class ExecutionerAgent:
                 "status": "pending_review",
             }
 
-            with self._io_lock:
-                with open(social_file, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(record) + "\n")
+            with self._io_lock, open(social_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
 
             return {"success": True, "result": "Social post queued to file", "error": None}
         except OSError as exc:
@@ -892,9 +890,8 @@ class ExecutionerAgent:
                 "status": "queued",
             }
 
-            with self._io_lock:
-                with open(email_file, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(record) + "\n")
+            with self._io_lock, open(email_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
 
             return {"success": True, "result": f"Email queued: {subject}", "error": None}
         except OSError as exc:
@@ -921,9 +918,8 @@ class ExecutionerAgent:
                 "status": "queued",
             }
 
-            with self._io_lock:
-                with open(sms_file, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(record) + "\n")
+            with self._io_lock, open(sms_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
 
             return {"success": True, "result": "SMS queued", "error": None}
         except OSError as exc:
@@ -938,9 +934,8 @@ class ExecutionerAgent:
             ts = datetime.now().strftime("%Y%m%d%H%M%S")
             fp = cal_dir / f"calendar-{slug}-{ts}.jsonl"
             record = {"id": uuid.uuid4().hex[:12], "type": "content_calendar", "content": draft, "created_at": datetime.now(UTC).isoformat()}
-            with self._io_lock:
-                with open(fp, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(record) + "\n")
+            with self._io_lock, open(fp, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record) + "\n")
             logger.info("Calendar saved: %s", fp)
             return {"success": True, "result": str(fp), "error": None}
         except OSError as exc:
@@ -1027,9 +1022,8 @@ class ExecutionerAgent:
             "result": result,
             "error": error,
         }
-        with self._io_lock:
-            with open(self._execution_log_path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(record) + "\n")
+        with self._io_lock, open(self._execution_log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")
 
     def get_execution_history(self, limit: int = 50) -> list[dict[str, Any]]:
         """Read recent execution records from the JSONL log.
@@ -1047,15 +1041,14 @@ class ExecutionerAgent:
         from collections import deque
         records: list[dict[str, Any]] = []
         tail: deque = deque(maxlen=limit * 2)
-        with self._io_lock:
-            with open(self._execution_log_path, encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        try:
-                            tail.append(json.loads(line))
-                        except json.JSONDecodeError:
-                            logger.warning("Skipping malformed log line")
+        with self._io_lock, open(self._execution_log_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        tail.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        logger.warning("Skipping malformed log line")
 
         records = list(tail)
         records.reverse()
@@ -1073,15 +1066,14 @@ class ExecutionerAgent:
         if not self._execution_log_path.exists():
             return None
 
-        with self._io_lock:
-            with open(self._execution_log_path, encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        try:
-                            record = json.loads(line)
-                            if record.get("execution_id") == execution_id:
-                                return record
-                        except json.JSONDecodeError:
-                            continue
+        with self._io_lock, open(self._execution_log_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        record = json.loads(line)
+                        if record.get("execution_id") == execution_id:
+                            return record
+                    except json.JSONDecodeError:
+                        continue
         return None

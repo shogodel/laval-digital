@@ -10,9 +10,8 @@ from core import database
 def client():
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False
-    with app.test_client() as c:
-        with app.app_context():
-            yield c
+    with app.test_client() as c, app.app_context():
+        yield c
 
 
 class TestPublicRoutes:

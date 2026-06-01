@@ -265,21 +265,20 @@ class WebsiteMCPServer(MCPServer):
             return {"success": False, "result": "", "error": "Blocked domain"}
         try:
             ctx = ssl.create_default_context()
-            with socket.create_connection((domain, 443), timeout=10) as sock:
-                with ctx.wrap_socket(sock, server_hostname=domain) as ssock:
-                    cert = ssock.getpeercert()
-                    if cert is None:
-                        return {"success": False, "error": "No certificate returned by server"}
-                    expiry_date = parsedate_to_datetime(str(cert['notAfter']))
-                    days_left = (expiry_date - datetime.now(UTC)).days
-                    issuer = dict(x[0] for x in cert.get('issuer', []))  # type: ignore[misc]
+            with socket.create_connection((domain, 443), timeout=10) as sock, ctx.wrap_socket(sock, server_hostname=domain) as ssock:
+                cert = ssock.getpeercert()
+                if cert is None:
+                    return {"success": False, "error": "No certificate returned by server"}
+                expiry_date = parsedate_to_datetime(str(cert['notAfter']))
+                days_left = (expiry_date - datetime.now(UTC)).days
+                issuer = dict(x[0] for x in cert.get('issuer', []))  # type: ignore[misc]
 
-                    return {"success": True,
-                            "result": f"SSL valid until {expiry_date.strftime('%B %d, %Y')} ({days_left} days left)",
-                            "domain": domain, "issuer": issuer.get('organizationName', 'Unknown'),
-                            "expires": expiry_date.isoformat(), "days_left": days_left,
-                            "valid": days_left > 0,
-                            "warning": "Renew soon!" if days_left < 30 else None}
+                return {"success": True,
+                        "result": f"SSL valid until {expiry_date.strftime('%B %d, %Y')} ({days_left} days left)",
+                        "domain": domain, "issuer": issuer.get('organizationName', 'Unknown'),
+                        "expires": expiry_date.isoformat(), "days_left": days_left,
+                        "valid": days_left > 0,
+                        "warning": "Renew soon!" if days_left < 30 else None}
         except Exception as e:
             return {"success": False, "error": f"SSL check failed: {_safe_error(e)}"}
 
