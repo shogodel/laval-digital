@@ -584,8 +584,8 @@ Order now and experience the difference."""
                 if 'application/ld+json' in content:
                     score += 15
                     checks.append({"category": "SEO", "check": "Schema markup", "status": "pass", "priority": "high"})
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Store health audit URL fetch failed: %s", e)
 
         return {"success": True, "result": f"Store health audit: {len(checks)} checks across 5 categories",
                 "checks": checks, "categories": ["Products", "Trust", "Conversion", "Marketing", "SEO"]}

@@ -190,6 +190,8 @@ class SEOMCPServer(MCPServer):
         try:
             headers = {"Authorization": f"Bearer {creds.get('api_key', '')}", "Content-Type": "application/json"}
             resp = requests.get("https://api.squarespace.com/1.0/pages", headers=headers, timeout=15)
+            if resp.status_code != 200:
+                return {"success": False, "result": "", "error": f"Squarespace returned HTTP {resp.status_code}"}
             return {"success": True, "result": "Squarespace connection verified. Full publishing coming soon.", "error": None}
         except Exception as e:
             return {"success": False, "result": "", "error": f"Squarespace publish failed: {e}"}
