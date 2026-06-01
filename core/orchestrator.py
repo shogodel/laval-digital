@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -8,7 +9,7 @@ from typing import Any
 
 from core.base_agent import BaseAgent
 from core.events import get_event_bus
-from core.llm_adapter import LLMAdapter
+from core.llm_adapter import LLMAdapter, LLMAdapterError, RateLimitExceededError
 
 logger = logging.getLogger(__name__)
 
@@ -490,14 +491,31 @@ class Orchestrator:
                     f"\n\n{history_block}\n\n{formatted_prompt}"
                 )
                 user_prompt = "<user_input>" + sanitized_message + "</user_input>"
-            response = self._llm_adapter.invoke(
-                system_prompt=system_role,
-                user_message=user_prompt,
-                user_id=user_id,
-                endpoint="orchestrator",
-                agent_id=selected_agent,
-                thread_id=thread_id,
-            )
+            _last_error = None
+            for attempt in range(3):
+                try:
+                    response = self._llm_adapter.invoke(
+                        system_prompt=system_role,
+                        user_message=user_prompt,
+                        user_id=user_id,
+                        endpoint="orchestrator",
+                        agent_id=selected_agent,
+                        thread_id=thread_id,
+                    )
+                    break
+                except RateLimitExceededError:
+                    raise
+                except LLMAdapterError as e:
+                    _last_error = e
+                    if attempt < 2:
+                        logger.warning(
+                            "LLM call attempt %s/3 failed: %s", attempt + 1, e
+                        )
+                        time.sleep(2 ** attempt)
+            else:
+                raise LLMAdapterError(
+                    f"LLM call failed after 3 attempts: {_last_error}"
+                ) from _last_error
 
             agent_name = self._extract_agent_from_response(response)
             now_iso = datetime.now(UTC).isoformat()
