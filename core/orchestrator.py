@@ -213,6 +213,8 @@ class Orchestrator:
         self._panicked = False
         self._panic_lock = Lock()
         self._last_executions: deque[dict[str, Any]] = deque(maxlen=20)
+        self._recent_cache: dict[tuple[str, str], tuple[float, dict[str, Any]]] = {}
+        self._cache_lock = Lock()
         self._findings_board: dict[str, list[dict[str, Any]]] = {}
         self._findings_lock = Lock()
         self._agent_prompts: dict[str, str] = {}
@@ -247,6 +249,16 @@ class Orchestrator:
     def is_panicked(self) -> bool:
         with self._panic_lock:
             return self._panicked
+
+    # ------------------------------------------------------------------
+    # Response cache (idempotency)
+    # ------------------------------------------------------------------
+
+    def _evict_stale_cache(self) -> None:
+        cutoff = time.monotonic() - 10
+        stale = [k for k, (ts, _) in self._recent_cache.items() if ts < cutoff]
+        for k in stale:
+            del self._recent_cache[k]
 
     # ------------------------------------------------------------------
     # Activity feed
@@ -433,7 +445,22 @@ class Orchestrator:
         elif message_words & reject_words:
             return self._handle_approval(thread_id, approved=False, user_id=user_id)
 
-        return self._route_and_respond(user_message, thread_id, language, autonomy_config, user_id, source, conversation_history)
+        key = (thread_id, message_lower)
+        with self._cache_lock:
+            cached = self._recent_cache.get(key)
+            if cached is not None:
+                ts, result = cached
+                if time.monotonic() - ts < 10:
+                    logger.debug("Returning cached response for duplicate message in thread %s", thread_id)
+                    return dict(result, cached=True)
+
+        result = self._route_and_respond(user_message, thread_id, language, autonomy_config, user_id, source, conversation_history)
+
+        with self._cache_lock:
+            self._recent_cache[key] = (time.monotonic(), result)
+            self._evict_stale_cache()
+
+        return result
 
     def _route_and_respond(
         self,
