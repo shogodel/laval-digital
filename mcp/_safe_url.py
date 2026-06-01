@@ -26,9 +26,7 @@ def _ipv4_is_private(ip: str) -> bool:
         return True
     if parts[0] == 172 and 16 <= parts[1] <= 31:
         return True
-    if parts[0] == 100 and 64 <= parts[1] <= 127:
-        return True
-    return False
+    return parts[0] == 100 and 64 <= parts[1] <= 127
 
 
 def _ipv6_is_private(ip: str) -> bool:
