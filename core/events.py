@@ -1,7 +1,7 @@
 import logging
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from queue import Queue
 from typing import Any, Dict, List, Optional
 
@@ -43,7 +43,7 @@ class EventBus:
             "type": event_type,
             "agent": agent,
             "data": data or {},
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         with self._lock:
             self._history.append(event)
@@ -117,7 +117,7 @@ class EventBus:
         }
 
     def _prune(self) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         self._history = [
             e for e in self._history
             if (now - _parse_ts(e["timestamp"])).total_seconds() < MAX_EVENT_AGE_SECONDS
@@ -128,11 +128,11 @@ def _parse_ts(ts: str) -> datetime:
     try:
         dt = datetime.fromisoformat(ts)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         return dt
     except Exception as e:
         logger.debug("Timestamp parse failed for '%s': %s", ts[:50], e)
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
 
 # Module-level singleton accessor

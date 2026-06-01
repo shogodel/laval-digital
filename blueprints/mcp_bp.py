@@ -1,7 +1,7 @@
 """MCP blueprint — MCP server management API routes."""
 import logging
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from flask import Blueprint, request
 from mcp import get_all_mcp_servers, get_mcp_server, AGENT_MCP_ROUTING
 from core import database
@@ -107,7 +107,7 @@ def save_mcp_credentials():
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         cipher = get_credential_cipher()
 
         for key, value in credentials.items():

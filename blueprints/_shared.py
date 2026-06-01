@@ -1,7 +1,7 @@
 import logging
 import os
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import Any, Dict, Optional
 
 from core import database
@@ -86,7 +86,7 @@ def _confirm_pending_action(tenant_id: str, action_id: str) -> Dict[str, Any]:
             exec_result = get_executioner().execute(row["agent_name"], row["content"], tool_name=row["tool_name"])
             cursor.execute(
                 "UPDATE pending_actions SET status = 'completed', completed_at = ? WHERE id = ? AND user_id = ?",
-                (datetime.now(timezone.utc).isoformat(), action_id, uid),
+                (datetime.now(UTC).isoformat(), action_id, uid),
             )
             conn.commit()
             return {"success": True, "result": exec_result.get("result", "Done"), "action_id": action_id}
@@ -111,7 +111,7 @@ def _email_bridge_handler(action: str, subject: str, body: str, tenant_id: str) 
                 cursor = conn.cursor()
                 cursor.execute(
                     "UPDATE pending_actions SET status = 'skipped', completed_at = ? WHERE id = ?",
-                    (datetime.now(timezone.utc).isoformat(), actions[0]["id"]),
+                    (datetime.now(UTC).isoformat(), actions[0]["id"]),
                 )
                 conn.commit()
             except Exception as e:

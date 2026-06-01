@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import Any, Dict, List, Optional
 
 from core import database
@@ -69,7 +69,7 @@ class SchedulerManager:
                 language=language,
                 user_id=user_id,
             )
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             conn = self._conn()
             conn.execute(
                 "UPDATE agent_schedules SET last_run = ? WHERE id = ?",
@@ -82,7 +82,7 @@ class SchedulerManager:
     def create_schedule(self, user_id: int, agent_id: str, task_template: str,
                         cron_expr: str, language: str = "en") -> str:
         schedule_id = uuid.uuid4().hex[:12]
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         conn = self._conn()
         conn.execute(
             """INSERT INTO agent_schedules (id, user_id, agent_id, task_template, cron_expr, enabled, language, created_at)

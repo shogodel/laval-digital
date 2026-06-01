@@ -1,7 +1,7 @@
 import logging
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, List, Optional
@@ -317,7 +317,7 @@ class Orchestrator:
         if self._memory and user_id:
             self._memory.publish_finding(user_id, agent_id, "agent_output", summary)
         with self._findings_lock:
-            self._findings_board.setdefault(agent_id, []).append({"summary": summary, "ts": datetime.now(timezone.utc).isoformat()})
+            self._findings_board.setdefault(agent_id, []).append({"summary": summary, "ts": datetime.now(UTC).isoformat()})
 
     def _send_push(self, event_type: str, agent: str, data: Dict[str, Any]) -> None:
         if self._push_manager and hasattr(self._push_manager, "send_event"):
@@ -500,7 +500,7 @@ class Orchestrator:
             )
 
             agent_name = self._extract_agent_from_response(response)
-            now_iso = datetime.now(timezone.utc).isoformat()
+            now_iso = datetime.now(UTC).isoformat()
 
             event_data_processing = {"task": sanitized_message[:200], "language": language}
             get_event_bus().publish("agent_processing", agent_name, event_data_processing)
@@ -689,7 +689,7 @@ class Orchestrator:
             execution_result = None
             agent_name = draft_info["agent"]
             draft = draft_info["draft"]
-            now_iso = datetime.now(timezone.utc).isoformat()
+            now_iso = datetime.now(UTC).isoformat()
 
             if self._executioner:
                 try:

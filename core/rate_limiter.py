@@ -1,6 +1,6 @@
 import logging
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import Optional
 
 from core import database
@@ -118,7 +118,7 @@ def check_rate_limits(user_id: int) -> None:
             "Your LLM access has been blocked. Contact your administrator.",
             limit_type="blocked",
         )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     from datetime import timedelta
     hour_ago = (now - timedelta(hours=1)).isoformat()
     day_ago = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
@@ -199,7 +199,7 @@ def log_usage(
             """INSERT INTO llm_usage_log
                (user_id, timestamp, model, prompt_tokens, completion_tokens, total_tokens, cost, endpoint, agent_id, thread_id)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (user_id, datetime.now(timezone.utc).isoformat(), model,
+            (user_id, datetime.now(UTC).isoformat(), model,
              prompt_tokens, completion_tokens, total_tokens, cost,
              endpoint, agent_id, thread_id),
         )

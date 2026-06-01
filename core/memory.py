@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from typing import Any, Dict, List, Optional
 
 from core import database
@@ -25,7 +25,7 @@ class AgentMemory:
                VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (uuid.uuid4().hex, user_id, agent_id, feedback_type, content,
              int(approved) if approved is not None else None,
-             datetime.now(timezone.utc).isoformat()),
+             datetime.now(UTC).isoformat()),
         )
         conn.commit()
 
@@ -52,7 +52,7 @@ class AgentMemory:
 
     def set_preference(self, user_id: int, agent_id: str, key: str, value: str) -> None:
         conn = self._conn()
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         pref_id = f"{user_id}|{agent_id}|{key}"
         conn.execute(
             """INSERT INTO agent_preferences (id, user_id, agent_id, pref_key, pref_value, updated_at)
@@ -81,8 +81,8 @@ class AgentMemory:
 
     def publish_finding(self, user_id: int, source_agent: str, finding_type: str,
                         summary: str, detail: str = "") -> None:
-        now = datetime.now(timezone.utc).isoformat()
-        expires = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        now = datetime.now(UTC).isoformat()
+        expires = (datetime.now(UTC) + timedelta(days=30)).isoformat()
         conn = self._conn()
         conn.execute(
             """INSERT INTO agent_findings (id, user_id, source_agent, finding_type, summary, detail, created_at, expires_at)
@@ -94,7 +94,7 @@ class AgentMemory:
     def get_findings(self, user_id: int,
                      finding_type: Optional[str] = None) -> List[Dict[str, Any]]:
         conn = self._conn()
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         if finding_type:
             rows = conn.execute(
                 "SELECT * FROM agent_findings WHERE user_id = ? AND finding_type = ? AND expires_at > ? ORDER BY created_at DESC",

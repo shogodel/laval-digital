@@ -6,7 +6,7 @@ import ssl
 import threading
 import uuid
 from typing import Any
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -281,7 +281,7 @@ def api_analytics_save_report():
         "month": data.get("month"),
         "year": data.get("year"),
         "html": data.get("html", ""),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
     }
     with _report_history_lock:
         _report_history.insert(0, entry)

@@ -5,7 +5,7 @@ import smtplib
 import threading
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -326,7 +326,7 @@ class ExecutionerAgent:
                     "agent_name": agent_name,
                     "tool_name": resolved_tool,
                     "approved_draft": approved_draft,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
                     "status": "pending_confirmation",
                 }
             logger.info(
@@ -630,7 +630,7 @@ class ExecutionerAgent:
             gmb_file = gmb_dir / "gmb_updates.jsonl"
 
             record = {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "content": draft,
                 "status": "pending_review",
             }
@@ -742,7 +742,7 @@ class ExecutionerAgent:
             social_file = social_dir / "social_posts.jsonl"
 
             record = {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "content": draft,
                 "provider": provider,
                 "status": "pending_review",
@@ -884,7 +884,7 @@ class ExecutionerAgent:
 
             recipient_str = ", ".join(recipients)
             record = {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "subject": subject,
                 "to": recipient_str,
                 "body": draft,
@@ -915,7 +915,7 @@ class ExecutionerAgent:
             sms_file = sms_dir / "sms.jsonl"
 
             record = {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "content": draft,
                 "status": "queued",
             }
@@ -936,7 +936,7 @@ class ExecutionerAgent:
             slug = self._slugify(draft.strip().split("\n")[0][:60])
             ts = datetime.now().strftime("%Y%m%d%H%M%S")
             fp = cal_dir / f"calendar-{slug}-{ts}.jsonl"
-            record = {"id": uuid.uuid4().hex[:12], "type": "content_calendar", "content": draft, "created_at": datetime.now(timezone.utc).isoformat()}
+            record = {"id": uuid.uuid4().hex[:12], "type": "content_calendar", "content": draft, "created_at": datetime.now(UTC).isoformat()}
             with self._io_lock:
                 with open(fp, "a", encoding="utf-8") as f:
                     f.write(json.dumps(record) + "\n")
@@ -1018,7 +1018,7 @@ class ExecutionerAgent:
         """
         record = {
             "execution_id": execution_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "agent_name": agent_name,
             "tool_name": tool_name,
             "draft_preview": draft_preview,

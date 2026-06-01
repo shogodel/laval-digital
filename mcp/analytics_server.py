@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from typing import Dict, Any
 
 from core import database
@@ -194,7 +194,7 @@ class AnalyticsMCPServer(MCPServer):
         period_b_days = kwargs.get("period_b_days", 30)
         offset_days = kwargs.get("offset_days", period_a_days)
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             a_start = (now - timedelta(days=period_a_days)).isoformat()
             a_end = now.isoformat()
             b_start = (now - timedelta(days=period_a_days + period_b_days)).isoformat()

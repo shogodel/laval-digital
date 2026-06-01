@@ -3,7 +3,7 @@ import logging
 import json
 import re
 import requests
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Dict, Any, Optional
 from .base_server import MCPServer, _safe_error
@@ -394,7 +394,7 @@ class GMBMCPServer(MCPServer):
             gmb_dir = Path("content/gmb")
             gmb_dir.mkdir(parents=True, exist_ok=True)
             record = {"action": action_type, "detail": detail, "content": content,
-                      "timestamp": datetime.now(timezone.utc).isoformat(), "status": "pending"}
+                      "timestamp": datetime.now(UTC).isoformat(), "status": "pending"}
             with open(gmb_dir / "queue.jsonl", "a", encoding="utf-8") as f:
                 f.write(json.dumps(record) + "\n")
             return {"success": True, "result": f"GMB {action_type} queued", "error": None}

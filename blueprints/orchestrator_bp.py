@@ -2,7 +2,7 @@
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from flask import Blueprint, request, session
 from flask_login import current_user
@@ -106,7 +106,7 @@ def respond_approval(thread_id):
         return api_error("Authentication required", 401)
     data = request.json
     approved = data.get("approved", False)
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(UTC).isoformat()
 
     orch = get_orchestrator()
 
@@ -336,7 +336,7 @@ def api_events_stream():
                     event = q.get(timeout=10)
                     yield f"event: {event['type']}\ndata: {json.dumps(event)}\n\n"
                 except _QueueEmpty:
-                    yield f"event: heartbeat\ndata: {{\"ts\": \"{datetime.now(timezone.utc).isoformat()}\"}}\n\n"
+                    yield f"event: heartbeat\ndata: {{\"ts\": \"{datetime.now(UTC).isoformat()}\"}}\n\n"
         except GeneratorExit:
             event_bus.unsubscribe(q)
 

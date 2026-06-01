@@ -2,7 +2,7 @@
 import logging
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from flask import Blueprint, request
 from flask_login import current_user
@@ -33,7 +33,7 @@ def _safe_int(val, default=0):
 def api_managed_upgrade():
     """Upgrade the current client to managed services."""
     tenant_id = current_user.tenant_id
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(UTC).isoformat()
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
@@ -67,7 +67,7 @@ def api_managed_upgrade():
 def api_managed_cancel():
     """Request cancellation of managed services (30-day notice)."""
     tenant_id = current_user.tenant_id
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(UTC).isoformat()
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
@@ -211,7 +211,7 @@ def api_managed_resume():
     tenant_id = data.get("tenant_id")
     if not tenant_id:
         return api_error("tenant_id required", 400)
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(UTC).isoformat()
     try:
         conn = database._get_conn()
         cursor = conn.cursor()
@@ -243,7 +243,7 @@ def api_managed_bulk_approve():
         )
         pending = cursor.fetchall()
         approved_count = 0
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = datetime.now(UTC).isoformat()
         agent_registry = get_agent_registry()
         executioner = get_executioner()
 

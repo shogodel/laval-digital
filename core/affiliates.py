@@ -2,7 +2,7 @@ import logging
 import threading
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import Any, Dict, List, Optional, Set
 
 from core import database
@@ -60,7 +60,7 @@ class AffiliateManager:
                          code: Optional[str] = None) -> Dict[str, Any]:
         if not code:
             code = "REF" + uuid.uuid4().hex[:6].upper()
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         try:
             conn = self._conn()
             conn.execute(
@@ -103,7 +103,7 @@ class AffiliateManager:
     def add_commission(self, affiliate_code: str, client_email: str,
                        client_name: str, amount: float) -> Optional[str]:
         commission_id = uuid.uuid4().hex[:12]
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         try:
             conn = self._conn()
             conn.execute(
@@ -150,7 +150,7 @@ class AffiliateManager:
 
     def create_payout(self, affiliate_code: str, amount: float) -> Optional[str]:
         payout_id = uuid.uuid4().hex[:12]
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         try:
             conn = self._conn()
             conn.execute(
@@ -165,7 +165,7 @@ class AffiliateManager:
             return None
 
     def process_payout(self, payout_id: str) -> bool:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         try:
             conn = self._conn()
             row = conn.execute(
@@ -223,7 +223,7 @@ class AffiliateManager:
                    (ref_code, lead_email, lead_name, status, created_at)
                    VALUES (?, ?, ?, 'lead', ?)""",
                 (ref_code, f"lead@{safe_ip}", f"Lead from {safe_page}",
-                 datetime.now(timezone.utc).isoformat()),
+                 datetime.now(UTC).isoformat()),
             )
             conn.commit()
         except Exception as e:

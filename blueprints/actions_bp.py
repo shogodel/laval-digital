@@ -1,7 +1,7 @@
 """Blueprint for pending actions, SMS actions, and email bridge configuration."""
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 
 from flask import Blueprint, request, session
@@ -102,7 +102,7 @@ def api_skip_action(action_id):
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE pending_actions SET status = 'skipped', completed_at = ? WHERE id = ? AND user_id = ? AND status = 'pending'",
-            (datetime.now(timezone.utc).isoformat(), action_id, uid),
+            (datetime.now(UTC).isoformat(), action_id, uid),
         )
         conn.commit()
         return api_success({"action_id": action_id})

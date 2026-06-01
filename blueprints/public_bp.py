@@ -3,7 +3,7 @@ import logging
 import re
 import smtplib
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from html import escape
@@ -30,7 +30,7 @@ public_bp = Blueprint("public", __name__)
 
 @public_bp.route("/health")
 def health():
-    status = {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+    status = {"status": "ok", "timestamp": datetime.now(UTC).isoformat()}
     try:
         conn = database._get_conn()
         conn.execute("SELECT 1")
@@ -88,7 +88,7 @@ def api_contact():
             logger.warning("Contact form: SMTP credentials not configured, storing as lead")
             conn = database._get_conn()
             lead_id = str(uuid.uuid4())
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             conn.execute(
                 "INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (lead_id, None, name, phone, service, "", now),
@@ -138,7 +138,7 @@ Message:
 
         conn = database._get_conn()
         lead_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         conn.execute(
             "INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (lead_id, None, name, phone, service, "", now),
@@ -171,7 +171,7 @@ def api_signup():
         return api_error(err_msg, 400)
 
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         trial_ends = (now + timedelta(days=7)).isoformat()
         uid = database.create_user(
             email=email,
@@ -194,7 +194,7 @@ def api_signup():
             status="trial", trial_ends_at=trial_ends,
         )
         login_user(temp_user)
-        session["last_active"] = datetime.now(timezone.utc).isoformat()
+        session["last_active"] = datetime.now(UTC).isoformat()
 
         logger.info("New trial user created: %s (id=%s)", email, uid)
         _record_attempt(True)
@@ -227,7 +227,7 @@ def handle_leads():
         if not name or not phone:
             return api_error("Name and phone are required", 400)
         lead_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         user_id = None
         if not current_user.is_anonymous:
             user_id = int(current_user.id)

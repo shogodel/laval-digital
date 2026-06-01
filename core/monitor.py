@@ -8,7 +8,7 @@ import logging
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ class _Monitor:
             if last_activity:
                 try:
                     last_dt = datetime.fromisoformat(last_activity)
-                    hours_idle = (datetime.now(timezone.utc) - last_dt).total_seconds() / 3600
+                    hours_idle = (datetime.now(UTC) - last_dt).total_seconds() / 3600
                     if hours_idle > 4 and self._can_alert("idle", now):
                         try:
                             push.send(

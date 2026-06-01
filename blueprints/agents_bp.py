@@ -2,7 +2,7 @@
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from flask import Blueprint, Response, request, stream_with_context
 from flask_login import current_user
@@ -226,7 +226,7 @@ def invoke_agent(agent_id):
         return api_error("No task provided", 400)
 
     tenant_id = get_current_user_id()
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(UTC).isoformat()
 
     try:
         if tenant_id:
@@ -286,7 +286,7 @@ def agent_chat(agent_id):
         language = BaseAgent._detect_language(message)
 
     tenant_id = str(current_user.id) if not current_user.is_anonymous else None
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(UTC).isoformat()
 
     conversation_context = ""
     if tenant_id:

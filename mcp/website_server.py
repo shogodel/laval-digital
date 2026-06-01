@@ -6,7 +6,7 @@ import ssl
 import re
 import requests
 from urllib.parse import urlparse, urljoin
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from email.utils import parsedate_to_datetime
 from typing import Dict, Any, Optional
 from .base_server import MCPServer, _safe_error
@@ -93,13 +93,13 @@ class WebsiteMCPServer(MCPServer):
         resp = self._fetch_page(url)
         if resp is None:
             return {"success": True, "result": f"❌ {url} appears to be DOWN or unreachable",
-                    "status": "down", "url": url, "checked_at": datetime.now(timezone.utc).isoformat()}
+                    "status": "down", "url": url, "checked_at": datetime.now(UTC).isoformat()}
 
         return {"success": True, "result": f"✅ {url} is UP — HTTP {resp.status_code} ({len(resp.content)} bytes)",
                 "status": "up", "url": url, "http_status": resp.status_code,
                 "response_time_ms": round(resp.elapsed.total_seconds() * 1000),
                 "server": resp.headers.get("Server", "Unknown"),
-                "checked_at": datetime.now(timezone.utc).isoformat()}
+                "checked_at": datetime.now(UTC).isoformat()}
 
     # ------------------------------------------------------------------
     # Page Speed
@@ -269,7 +269,7 @@ class WebsiteMCPServer(MCPServer):
                     if cert is None:
                         return {"success": False, "error": "No certificate returned by server"}
                     expiry_date = parsedate_to_datetime(str(cert['notAfter']))
-                    days_left = (expiry_date - datetime.now(timezone.utc)).days
+                    days_left = (expiry_date - datetime.now(UTC)).days
                     issuer = dict(x[0] for x in cert.get('issuer', []))  # type: ignore[misc]
 
                     return {"success": True,

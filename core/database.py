@@ -10,7 +10,7 @@ import logging
 import threading
 from pathlib import Path
 from typing import Optional, List
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 logger = logging.getLogger(__name__)
 
@@ -323,7 +323,7 @@ def _get_schema_version(conn: sqlite3.Connection) -> int:
 def _set_schema_version(conn: sqlite3.Connection, version: int) -> None:
     conn.execute(
         "INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES (?, ?)",
-        (version, datetime.now(timezone.utc).isoformat()),
+        (version, datetime.now(UTC).isoformat()),
     )
 
 
@@ -405,7 +405,7 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
 def _seed_default_agents(conn: sqlite3.Connection) -> None:
     """Insert default agent_config rows for every agent."""
     rows = conn.execute("SELECT id FROM users WHERE role IN ('user', 'admin')").fetchall()
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     for row in rows:
         uid = row["id"]
         for agent_id in DEFAULT_AGENTS:
@@ -446,7 +446,7 @@ def get_user_by_id(uid: int) -> Optional[dict]:
 def create_user(email: str, password_hash: str, role: str,
                 display_name: str = "", tenant_id: Optional[int] = None) -> int:
     conn = _get_conn()
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     cur = conn.execute(
         """INSERT INTO users (email, password_hash, role, display_name, created_at, tenant_id)
            VALUES (?, ?, ?, ?, ?, ?)""",

@@ -29,7 +29,7 @@ class PIIRedactFilter(logging.Filter):
 import threading
 import requests
 from urllib.parse import urlparse
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -478,8 +478,8 @@ def create_app(config_name: Optional[str] = None):
             try:
                 last = datetime.fromisoformat(last_active)
                 if last.tzinfo is None:
-                    last = last.replace(tzinfo=timezone.utc)
-                if datetime.now(timezone.utc) - last > SESSION_TIMEOUT:
+                    last = last.replace(tzinfo=UTC)
+                if datetime.now(UTC) - last > SESSION_TIMEOUT:
                     session.clear()
                     flash("Session expired. Please log in again.", "error")
                     if current_user.is_authenticated:
@@ -493,7 +493,7 @@ def create_app(config_name: Optional[str] = None):
                             return redirect(url_for("admin.login"))
             except Exception as e:
                 logger.debug("Session timeout check failed: %s", e)
-        session["last_active"] = datetime.now(timezone.utc).isoformat()
+        session["last_active"] = datetime.now(UTC).isoformat()
 
     @app.before_request
     def check_trial_expiry():

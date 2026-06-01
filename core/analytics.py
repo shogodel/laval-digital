@@ -1,6 +1,6 @@
 import logging
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from typing import Dict, Any, Optional, List
 
 from core import database
@@ -16,7 +16,7 @@ class AnalyticsEngine:
         self._lock = threading.Lock()
 
     def _cached(self, key: str, fn, *args, **kwargs):
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with self._lock:
             if key in self._cache:
                 val, ts = self._cache[key]
@@ -191,7 +191,7 @@ class AnalyticsEngine:
         )
 
     def execution_count_by_day(self, days: int = 30) -> List[dict]:
-        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        cutoff = (datetime.now(UTC) - timedelta(days=days)).isoformat()
         return self._fetchall(
             """SELECT DATE(timestamp) AS day, COUNT(*) AS count
                FROM execution_log
@@ -204,8 +204,7 @@ class AnalyticsEngine:
 
     def generate_monthly_report(self, year: Optional[int] = None,
                                  month: Optional[int] = None) -> Dict[str, Any]:
-        from datetime import timezone as dt_timezone
-        now = datetime.now(dt_timezone.utc)
+        now = datetime.now(UTC)
         year = year or now.year
         month = month or now.month
 

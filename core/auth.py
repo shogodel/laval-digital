@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from functools import wraps
 from typing import Optional, Tuple
 
@@ -56,12 +56,12 @@ class User(UserMixin):
         if self.status == "expired":
             return False
         if self.status == "trial" and self.trial_ends_at:
-            from datetime import datetime, timezone
-            now = datetime.now(timezone.utc)
+            from datetime import datetime
+            now = datetime.now(UTC)
             try:
                 trial_end = datetime.fromisoformat(self.trial_ends_at)
                 if trial_end.tzinfo is None:
-                    trial_end = trial_end.replace(tzinfo=timezone.utc)
+                    trial_end = trial_end.replace(tzinfo=UTC)
                 if now > trial_end:
                     return False
             except (ValueError, TypeError):
@@ -72,12 +72,12 @@ class User(UserMixin):
     def is_trial_expired(self) -> bool:
         if self.status != "trial" or not self.trial_ends_at:
             return False
-        from datetime import datetime, timezone
-        now = datetime.now(timezone.utc)
+        from datetime import datetime
+        now = datetime.now(UTC)
         try:
             trial_end = datetime.fromisoformat(self.trial_ends_at)
             if trial_end.tzinfo is None:
-                trial_end = trial_end.replace(tzinfo=timezone.utc)
+                trial_end = trial_end.replace(tzinfo=UTC)
             return now > trial_end
         except (ValueError, TypeError):
             return True
@@ -135,7 +135,7 @@ class AdminUser(UserMixin):
 def _check_rate_limit(prefix: str = "admin") -> bool:
     ip = f"{prefix}:{_get_client_ip()}"
     conn = database._get_conn()
-    cutoff = (datetime.now(timezone.utc) - LOGIN_WINDOW).isoformat()
+    cutoff = (datetime.now(UTC) - LOGIN_WINDOW).isoformat()
     row = conn.execute(
         "SELECT COUNT(*) as cnt FROM login_attempts WHERE ip = ? AND success = 0 AND attempted_at > ?",
         [ip, cutoff]
@@ -148,7 +148,7 @@ def _record_attempt(success: bool = True, prefix: str = "admin") -> None:
     conn = database._get_conn()
     conn.execute(
         "INSERT INTO login_attempts (ip, success, attempted_at) VALUES (?, ?, ?)",
-        [ip, 1 if success else 0, datetime.now(timezone.utc).isoformat()]
+        [ip, 1 if success else 0, datetime.now(UTC).isoformat()]
     )
     conn.commit()
 
