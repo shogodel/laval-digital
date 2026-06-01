@@ -211,8 +211,8 @@ class AnalyticsMCPServer(MCPServer):
                     "SELECT COUNT(*) as total FROM leads WHERE user_id = ? AND created_at >= ? AND created_at < ?",
                     (user_id, start, end),
                 )
-                l = cursor.fetchone()
-                return {"executions": e["total"] or 0, "successful": e["successful"] or 0, "leads": l["total"] or 0}
+                row = cursor.fetchone()
+                return {"executions": e["total"] or 0, "successful": e["successful"] or 0, "leads": row["total"] or 0}
 
             period_a = _stats(a_start, a_end)
             period_b = _stats(b_start, b_end)

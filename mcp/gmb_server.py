@@ -341,7 +341,7 @@ class GMBMCPServer(MCPServer):
     def bulk_update_locations(self, locations: str = "", update_field: str = "description",
                               update_value: str = "", api_credentials: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
         """Bulk update across multiple GMB locations."""
-        loc_list = [l.strip() for l in locations.split('\n') if l.strip()] if locations else []
+        loc_list = [loc.strip() for loc in locations.split('\n') if loc.strip()] if locations else []
         return {"success": True, "result": f"Bulk update prepared for {len(loc_list)} locations",
                 "field": update_field, "value": update_value, "locations": len(loc_list),
                 "tip": "Use consistent NAP (Name, Address, Phone) across all locations"}

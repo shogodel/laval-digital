@@ -137,8 +137,8 @@ class BaseAgent:
     def _strip_confidence_metadata(draft: str) -> str:
         """Remove CONFIDENCE and REASONING metadata lines from the end of a draft."""
         lines = draft.rstrip().split("\n")
-        cleaned = [l for l in lines if not re.match(
-            r'^\s*(CONFIDENCE|REASONING)\s*:', l
+        cleaned = [line for line in lines if not re.match(
+            r'^\s*(CONFIDENCE|REASONING)\s*:', line
         )]
         return "\n".join(cleaned).strip()
 
