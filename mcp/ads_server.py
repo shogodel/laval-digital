@@ -125,7 +125,7 @@ class AdsMCPServer(MCPServer):
         """Create a TikTok Ads campaign. Types: spark, infeed, topview, hashtag."""
         objectives = {"traffic": "Drive website visits", "leads": "Collect lead forms", "awareness": "Maximum reach", "app_install": "App downloads"}
         campaign = {
-            "name": campaign_name or f"Frankie TikTok Campaign",
+            "name": campaign_name or "Frankie TikTok Campaign",
             "platform": "tiktok",
             "objective": objective,
             "budget_daily": budget / 30,
@@ -144,7 +144,7 @@ class AdsMCPServer(MCPServer):
                                      api_credentials: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         """Create a LinkedIn Ads campaign. Best for B2B and high-ticket services."""
         campaign = {
-            "name": campaign_name or f"Frankie LinkedIn Campaign",
+            "name": campaign_name or "Frankie LinkedIn Campaign",
             "platform": "linkedin",
             "objective": objective,
             "budget_daily": budget / 30,
@@ -216,14 +216,14 @@ class AdsMCPServer(MCPServer):
                 "headlines": [
                     f"Top {business_type.title()} in {location}",
                     f"Emergency {business_type.title()} — 24/7",
-                    f"Call Now for a Free Estimate",
+                    "Call Now for a Free Estimate",
                     f"Licensed & Insured {business_type.title()}",
                     f"Same-Day {business_type.title()} Service",
                     f"Trusted {business_type.title()} Since [Year]",
                     f"5-Star Rated {business_type.title()}",
                     f"Affordable {business_type.title()} Services",
                     f"Your Local {business_type.title()} Experts",
-                    f"Book Online — Fast Response"
+                    "Book Online — Fast Response"
                 ],
                 "descriptions": [
                     f"Looking for a reliable {business_type} in {location}? We offer 24/7 emergency service, free estimates, and 5-star quality. Call now!",

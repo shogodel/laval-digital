@@ -349,7 +349,7 @@ class EcommerceMCPServer(MCPServer):
 
         bullets = []
         for i, feature in enumerate(feature_list[:6]):
-            benefit = benefit_list[i] if i < len(benefit_list) else f"Enhances your experience"
+            benefit = benefit_list[i] if i < len(benefit_list) else "Enhances your experience"
             bullets.append(f"✨ {feature} — {benefit}")
 
         audience_text = f"Perfect for {target_audience}" if target_audience else "Designed for discerning customers"
