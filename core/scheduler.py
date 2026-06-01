@@ -64,7 +64,7 @@ class SchedulerManager:
                   task: str, language: str):
         try:
             orch = self._get_orch()
-            result = orch.process_message(
+            orch.process_message(
                 user_message=task,
                 thread_id=f"sched-{agent_id}-{schedule_id}-{uuid.uuid4().hex[:8]}",
                 language=language,
