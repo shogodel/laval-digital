@@ -2,7 +2,7 @@ import logging
 import os
 import threading
 from datetime import datetime, UTC
-from typing import Any, Optional
+from typing import Any
 
 from core import database
 from core.app_state import (
@@ -43,7 +43,7 @@ def _decrypt_credential(ciphertext: str) -> str:
     return get_credential_cipher().decrypt(ciphertext.encode()).decode()
 
 
-def _safe_tenant_id(tenant_id: str) -> Optional[int]:
+def _safe_tenant_id(tenant_id: str) -> int | None:
     if not tenant_id or not str(tenant_id).strip().isdigit():
         return None
     return int(tenant_id)

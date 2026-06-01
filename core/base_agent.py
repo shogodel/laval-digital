@@ -3,7 +3,7 @@ import threading
 import re
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from core.llm_adapter import LLMAdapter
 
@@ -24,7 +24,7 @@ FRENCH_KEYWORDS = [
 
 
 class BaseAgent:
-    _available_models: Optional[list[str]] = None
+    _available_models: list[str] | None = None
     _models_lock = threading.Lock()
 
     def __init__(self, agent_id: str, config: dict[str, Any]):

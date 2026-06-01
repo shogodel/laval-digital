@@ -3,7 +3,7 @@ import threading
 import uuid
 from datetime import datetime, UTC
 from queue import Queue
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class EventBus:
         self,
         event_type: str,
         agent: str,
-        data: Optional[dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
     ) -> None:
         """Publish an event to all active subscribers.
 
@@ -79,8 +79,8 @@ class EventBus:
     def get_history(
         self,
         limit: int = 200,
-        event_type: Optional[str] = None,
-        agent: Optional[str] = None,
+        event_type: str | None = None,
+        agent: str | None = None,
     ) -> list[dict[str, Any]]:
         """Return recent events, optionally filtered."""
         with self._lock:
@@ -136,7 +136,7 @@ def _parse_ts(ts: str) -> datetime:
 
 
 # Module-level singleton accessor
-_bus: Optional[EventBus] = None
+_bus: EventBus | None = None
 _bus_lock = threading.Lock()
 
 

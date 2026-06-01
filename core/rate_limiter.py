@@ -1,7 +1,6 @@
 import logging
 import threading
 from datetime import datetime, UTC
-from typing import Optional
 
 from core import database
 
@@ -186,8 +185,8 @@ def log_usage(
     prompt_tokens: int,
     completion_tokens: int,
     endpoint: str = "unknown",
-    agent_id: Optional[str] = None,
-    thread_id: Optional[str] = None,
+    agent_id: str | None = None,
+    thread_id: str | None = None,
 ) -> None:
     if user_id <= 0:
         return

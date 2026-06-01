@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, UTC
 from pathlib import Path
 from threading import Lock
-from typing import Any, Optional
+from typing import Any
 
 from core.llm_adapter import LLMAdapter
 from core.base_agent import BaseAgent, FRENCH_KEYWORDS
@@ -210,7 +210,7 @@ class Orchestrator:
         self._activity_lock = Lock()
         self._panicked = False
         self._panic_lock = Lock()
-        self._last_execution: Optional[dict[str, Any]] = None
+        self._last_execution: dict[str, Any] | None = None
         self._findings_board: dict[str, list[dict[str, Any]]] = {}
         self._findings_lock = Lock()
         self._agent_prompts: dict[str, str] = {}
@@ -259,7 +259,7 @@ class Orchestrator:
         with self._activity_lock:
             return self._activity_feed[:limit]
 
-    def get_pending_drafts(self, user_id: Optional[int] = None) -> dict[str, dict[str, Any]]:
+    def get_pending_drafts(self, user_id: int | None = None) -> dict[str, dict[str, Any]]:
         """Return all pending approval drafts, optionally filtered by user_id."""
         with self._pending_lock:
             if user_id is None:
@@ -286,7 +286,7 @@ class Orchestrator:
             fallback_fr = "Bonjour ! Je suis votre équipe marketing IA. J'ai 16 agents spécialisés prêts à vous aider avec le SEO, les réseaux sociaux, les annonces, les courriels et plus encore. Parlez-moi de votre entreprise et de ce que vous aimeriez améliorer."
             return {"response": fallback_fr if language == "fr" else fallback_en, "agent": "orchestrator", "status": "welcome"}
 
-    def undo_last(self) -> Optional[dict[str, Any]]:
+    def undo_last(self) -> dict[str, Any] | None:
         if not self._last_execution:
             return None
         last = self._last_execution
@@ -340,7 +340,7 @@ class Orchestrator:
             logger.error("Suggestions failed: %s", e)
             return {"response": "", "agent": "orchestrator", "status": "suggestions"}
 
-    def _select_agent_prompt(self, message: str, source: str) -> tuple[Optional[str], Optional[str]]:
+    def _select_agent_prompt(self, message: str, source: str) -> tuple[str | None, str | None]:
         """Pre-classify a user message to select the most relevant agent prompt.
 
         Returns (prompt_text, agent_name) if a confident match is found,
@@ -368,7 +368,7 @@ class Orchestrator:
         return None, None
 
     @staticmethod
-    def _format_history(conversation_history: Optional[list[dict[str, str]]]) -> str:
+    def _format_history(conversation_history: list[dict[str, str]] | None) -> str:
         """Format previous conversation turns into a compact context block."""
         if not conversation_history:
             return ""
@@ -384,11 +384,11 @@ class Orchestrator:
         self,
         user_message: str,
         thread_id: str,
-        language: Optional[str] = None,
-        autonomy_config: Optional[dict[str, dict[str, Any]]] = None,
+        language: str | None = None,
+        autonomy_config: dict[str, dict[str, Any]] | None = None,
         user_id: int = 0,
         source: str = "chat",
-        conversation_history: Optional[list[dict[str, str]]] = None,
+        conversation_history: list[dict[str, str]] | None = None,
     ) -> dict[str, Any]:
         """Process a user message from the chat interface.
 
@@ -438,10 +438,10 @@ class Orchestrator:
         user_message: str,
         thread_id: str,
         language: str,
-        autonomy_config: Optional[dict[str, dict[str, Any]]] = None,
+        autonomy_config: dict[str, dict[str, Any]] | None = None,
         user_id: int = 0,
         source: str = "chat",
-        conversation_history: Optional[list[dict[str, str]]] = None,
+        conversation_history: list[dict[str, str]] | None = None,
     ) -> dict[str, Any]:
         lang_label = "français" if language == "fr" else "english"
         try:

@@ -6,7 +6,7 @@ import json
 import logging
 import threading
 from pathlib import Path
-from typing import Optional
+
 from .base_server import MCPServer
 from .seo_server import SEOMCPServer
 from .social_server import SocialMCPServer
@@ -77,7 +77,7 @@ def init_mcp_servers() -> dict[str, MCPServer]:
         return _mcp_servers
 
 
-def get_mcp_server(name: str) -> Optional[MCPServer]:
+def get_mcp_server(name: str) -> MCPServer | None:
     """Get an MCP server by name."""
     with _mcp_servers_lock:
         return _mcp_servers.get(name)

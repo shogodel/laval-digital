@@ -1,13 +1,13 @@
 """Standardized JSON response helpers for consistent API envelope."""
 from flask import jsonify, g
-from typing import Any, Optional
+from typing import Any
 
 
 def api_response(
     success: bool = True,
-    data: Optional[Any] = None,
-    error: Optional[str] = None,
-    message: Optional[str] = None,
+    data: Any | None = None,
+    error: str | None = None,
+    message: str | None = None,
     status_code: int = 200,
 ) -> tuple:
     """Return a standardized JSON API response.
@@ -31,7 +31,7 @@ def api_response(
     return jsonify(body), status_code
 
 
-def api_success(data: Any = None, message: Optional[str] = None, status_code: int = 200) -> tuple:
+def api_success(data: Any = None, message: str | None = None, status_code: int = 200) -> tuple:
     """Return a success response."""
     return api_response(success=True, data=data, message=message, status_code=status_code)
 

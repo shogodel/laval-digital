@@ -4,10 +4,10 @@ All getters reference module-level variables set once during startup,
 avoiding fragile call-time importlib.import_module() patterns.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 # Module-level state — set by app.py at boot time
-_agent_registry: Optional[dict] = None
+_agent_registry: dict | None = None
 _llm_adapter = None
 _orchestrator_fn = None  # factory function (lazy-built singleton)
 _executioner = None
@@ -16,9 +16,9 @@ _agent_memory = None
 _speech_engine = None
 _affiliate_manager = None
 _scheduler_manager = None
-_agent_meta: Optional[dict[str, dict[str, str]]] = None
-_agent_configs: Optional[dict] = None
-_agent_personalities: Optional[dict] = None
+_agent_meta: dict[str, dict[str, str]] | None = None
+_agent_configs: dict | None = None
+_agent_personalities: dict | None = None
 _email_bridge = None
 _credential_cipher = None
 _current_user_id_fn = None
@@ -115,7 +115,7 @@ def get_credential_cipher():
     return _require("credential_cipher", _credential_cipher)
 
 
-def get_current_user_id() -> Optional[str]:
+def get_current_user_id() -> str | None:
     return _require("current_user_id_fn", _current_user_id_fn)()
 
 

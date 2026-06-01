@@ -1,7 +1,6 @@
 import re
 from datetime import datetime, timedelta, UTC
 from functools import wraps
-from typing import Optional
 
 from flask import request, flash, redirect, url_for, jsonify
 from flask_login import LoginManager, UserMixin, current_user
@@ -30,7 +29,7 @@ def _get_client_ip() -> str:
 class User(UserMixin):
     def __init__(self, row_id: int, email: str, password_hash: str,
                  role: str, display_name: str, status: str = "active",
-                 trial_ends_at: Optional[str] = None, tenant_id: Optional[int] = None):
+                 trial_ends_at: str | None = None, tenant_id: int | None = None):
         self.id = row_id
         self.email = email
         self.password_hash = password_hash
@@ -83,7 +82,7 @@ class User(UserMixin):
             return True
 
     @property
-    def tenant_id(self) -> Optional[str]:
+    def tenant_id(self) -> str | None:
         """Return the parent tenant ID from the DB column, or own ID if no parent."""
         if self._tenant_id:
             return str(self._tenant_id)
@@ -97,7 +96,7 @@ def init_auth(app):
     login_manager.login_message = "Please log in to continue."
 
     @login_manager.user_loader
-    def load_user(user_id: str) -> Optional[User]:
+    def load_user(user_id: str) -> User | None:
         if user_id == "admin":
             return AdminUser("admin")
         try:
@@ -153,7 +152,7 @@ def _record_attempt(success: bool = True, prefix: str = "admin") -> None:
     conn.commit()
 
 
-def find_user_by_email(email: str) -> Optional[dict]:
+def find_user_by_email(email: str) -> dict | None:
     """Find a user by email in the single platform database."""
     return database.get_user_by_email(email.lower().strip())
 
@@ -167,7 +166,7 @@ def add_user_to_tenant(email: str, password: str, role: str = "user",
 
 
 def create_user(email: str, password: str, role: str = "user",
-                display_name: str = "", tenant_id: Optional[int] = None) -> dict:
+                display_name: str = "", tenant_id: int | None = None) -> dict:
     """Validate password, hash it, and create a user in the platform DB."""
     _validate_password(password)
 

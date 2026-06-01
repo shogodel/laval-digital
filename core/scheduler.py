@@ -1,7 +1,7 @@
 import logging
 import uuid
 from datetime import datetime, UTC
-from typing import Any, Optional
+from typing import Any
 
 from core import database
 
@@ -19,7 +19,7 @@ except ImportError:
 class SchedulerManager:
     def __init__(self, get_orchestrator_func):
         self._get_orch = get_orchestrator_func
-        self._scheduler: Optional[Any] = None
+        self._scheduler: Any | None = None
 
     def _conn(self):
         return database._get_conn()
@@ -103,7 +103,7 @@ class SchedulerManager:
                 logger.warning("Failed to add job to scheduler: %s", e)
         return schedule_id
 
-    def get_schedules(self, user_id: Optional[int] = None) -> list[dict[str, Any]]:
+    def get_schedules(self, user_id: int | None = None) -> list[dict[str, Any]]:
         conn = self._conn()
         if user_id is not None:
             rows = conn.execute(

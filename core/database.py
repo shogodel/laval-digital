@@ -9,7 +9,6 @@ import sqlite3
 import logging
 import threading
 from pathlib import Path
-from typing import Optional
 from datetime import datetime, UTC
 
 logger = logging.getLogger(__name__)
@@ -421,7 +420,7 @@ def _seed_default_agents(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def list_users(role: Optional[str] = None) -> list[dict]:
+def list_users(role: str | None = None) -> list[dict]:
     """List all users, optionally filtered by role."""
     conn = _get_conn()
     if role:
@@ -431,20 +430,20 @@ def list_users(role: Optional[str] = None) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def get_user_by_email(email: str) -> Optional[dict]:
+def get_user_by_email(email: str) -> dict | None:
     conn = _get_conn()
     row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
     return dict(row) if row else None
 
 
-def get_user_by_id(uid: int) -> Optional[dict]:
+def get_user_by_id(uid: int) -> dict | None:
     conn = _get_conn()
     row = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
     return dict(row) if row else None
 
 
 def create_user(email: str, password_hash: str, role: str,
-                display_name: str = "", tenant_id: Optional[int] = None) -> int:
+                display_name: str = "", tenant_id: int | None = None) -> int:
     conn = _get_conn()
     now = datetime.now(UTC).isoformat()
     cur = conn.execute(

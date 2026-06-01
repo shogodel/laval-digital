@@ -1,7 +1,7 @@
 import logging
 import threading
 from datetime import datetime, timedelta, UTC
-from typing import Any, Optional
+from typing import Any
 
 from core import database
 
@@ -53,7 +53,7 @@ class AnalyticsEngine:
             logger.error("Analytics query failed for user %s: %s", self.user_id, e)
             return []
 
-    def _fetchone(self, sql: str, params: tuple = ()) -> Optional[dict]:
+    def _fetchone(self, sql: str, params: tuple = ()) -> dict | None:
         try:
             cursor = self._conn().cursor()
             cursor.execute(sql, params)
@@ -115,7 +115,7 @@ class AnalyticsEngine:
             "total_agents": 0,
         }
 
-    def get_lead_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> dict[str, Any]:
+    def get_lead_metrics(self, start_date: str | None = None, end_date: str | None = None) -> dict[str, Any]:
         total = self._fetchone(
             "SELECT COUNT(*) AS c FROM leads WHERE user_id = ? AND (? IS NULL OR created_at >= ?) AND (? IS NULL OR created_at <= ?)",
             (self.user_id, start_date, start_date, end_date, end_date),
@@ -144,7 +144,7 @@ class AnalyticsEngine:
             "converted": converted_count,
         }
 
-    def get_agent_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> dict[str, Any]:
+    def get_agent_metrics(self, start_date: str | None = None, end_date: str | None = None) -> dict[str, Any]:
         tasks_per_agent = self._fetchall(
             "SELECT agent_name, COUNT(*) AS total, SUM(success) AS success FROM execution_log WHERE user_id = ? AND (? IS NULL OR timestamp >= ?) AND (? IS NULL OR timestamp <= ?) GROUP BY agent_name ORDER BY total DESC",
             (self.user_id, start_date, start_date, end_date, end_date),
@@ -163,7 +163,7 @@ class AnalyticsEngine:
             "avg_response_time": 0,
         }
 
-    def get_execution_metrics(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> dict[str, Any]:
+    def get_execution_metrics(self, start_date: str | None = None, end_date: str | None = None) -> dict[str, Any]:
         stats = self._fetchone(
             "SELECT COUNT(*) AS total, SUM(success) AS success FROM execution_log WHERE user_id = ? AND (? IS NULL OR timestamp >= ?) AND (? IS NULL OR timestamp <= ?)",
             (self.user_id, start_date, start_date, end_date, end_date),
@@ -202,8 +202,8 @@ class AnalyticsEngine:
 
     # ── Reporting ───────────────────────────────────────────────────
 
-    def generate_monthly_report(self, year: Optional[int] = None,
-                                 month: Optional[int] = None) -> dict[str, Any]:
+    def generate_monthly_report(self, year: int | None = None,
+                                 month: int | None = None) -> dict[str, Any]:
         now = datetime.now(UTC)
         year = year or now.year
         month = month or now.month

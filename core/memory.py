@@ -1,7 +1,7 @@
 import logging
 import uuid
 from datetime import datetime, timedelta, UTC
-from typing import Any, Optional
+from typing import Any
 
 from core import database
 
@@ -18,7 +18,7 @@ class AgentMemory:
     # ── Feedback ────────────────────────────────────────────────────
 
     def record_feedback(self, user_id: int, agent_id: str, feedback_type: str,
-                        content: str, approved: Optional[bool] = None) -> None:
+                        content: str, approved: bool | None = None) -> None:
         conn = self._conn()
         conn.execute(
             """INSERT INTO agent_feedback (id, user_id, agent_id, feedback_type, content, approved, created_at)
@@ -92,7 +92,7 @@ class AgentMemory:
         conn.commit()
 
     def get_findings(self, user_id: int,
-                     finding_type: Optional[str] = None) -> list[dict[str, Any]]:
+                     finding_type: str | None = None) -> list[dict[str, Any]]:
         conn = self._conn()
         now = datetime.now(UTC).isoformat()
         if finding_type:

@@ -15,7 +15,7 @@ import re
 import threading
 import time
 from email.header import decode_header
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
@@ -47,8 +47,8 @@ class EmailBridge:
         self._port = imap_port
         self._username = username
         self._password = password
-        self._handler: Optional[Callable[[str, str, str], None]] = None
-        self._thread: Optional[threading.Thread] = None
+        self._handler: Callable[[str, str, str], None] | None = None
+        self._thread: threading.Thread | None = None
         self._running = False
 
     def set_handler(self, handler: Callable[[str, str, str], None]) -> None:
@@ -118,7 +118,7 @@ class EmailBridge:
             logger.warning("EmailBridge: connection failed: %s", e)
 
     @staticmethod
-    def _parse_action(body: str) -> Optional[str]:
+    def _parse_action(body: str) -> str | None:
         """Parse the first line of the reply for an action command."""
         first_line = body.strip().split("\n")[0].strip()
         if APPROVE_PATTERNS.match(first_line):
@@ -162,7 +162,7 @@ class EmailBridge:
 
 
 # Global bridge instance
-_bridge: Optional[EmailBridge] = None
+_bridge: EmailBridge | None = None
 
 
 def get_bridge() -> EmailBridge:

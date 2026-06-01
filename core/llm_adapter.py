@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Generator
 
 import requests
@@ -14,7 +14,7 @@ try:
 except ImportError:
     ChatLiteLLM = None  # type: ignore
 
-model_list: Optional[list[Any]] = None
+model_list: list[Any] | None = None
 try:
     from litellm import model_list as _litellm_model_list
     model_list = _litellm_model_list
@@ -56,13 +56,13 @@ class LLMAdapter:
     management and dynamic model discovery through litellm.model_list.
     """
 
-    _available_models_cache: Optional[list[str]] = None
+    _available_models_cache: list[str] | None = None
 
     def __init__(
         self,
         model: str,
         api_key: str,
-        api_base: Optional[str] = None,
+        api_base: str | None = None,
         temperature: float = 0.7
     ) -> None:
         """Initialize LLMAdapter.
@@ -252,7 +252,7 @@ class LLMAdapter:
 
     def invoke(self, system_prompt: str, user_message: str,
                user_id: int = 0, endpoint: str = "unknown",
-               agent_id: Optional[str] = None, thread_id: Optional[str] = None) -> str:
+               agent_id: str | None = None, thread_id: str | None = None) -> str:
         """Invoke the LLM with system prompt and user message.
 
         Args:
@@ -309,7 +309,7 @@ class LLMAdapter:
 
     def stream(self, system_prompt: str, user_message: str,
                user_id: int = 0, endpoint: str = "unknown",
-               agent_id: Optional[str] = None, thread_id: Optional[str] = None) -> Generator[str, None, None]:
+               agent_id: str | None = None, thread_id: str | None = None) -> Generator[str, None, None]:
         """Stream LLM response tokens in real-time.
 
         Args:

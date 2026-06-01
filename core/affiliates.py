@@ -3,7 +3,7 @@ import threading
 import time
 import uuid
 from datetime import datetime, UTC
-from typing import Any, Optional
+from typing import Any
 
 from core import database
 
@@ -57,7 +57,7 @@ class AffiliateManager:
     # ── Affiliate CRUD ─────────────────────────────────────────────────
 
     def create_affiliate(self, name: str, email: str, phone: str = "",
-                         code: Optional[str] = None) -> dict[str, Any]:
+                         code: str | None = None) -> dict[str, Any]:
         if not code:
             code = "REF" + uuid.uuid4().hex[:6].upper()
         now = datetime.now(UTC).isoformat()
@@ -75,7 +75,7 @@ class AffiliateManager:
             logger.error("Failed to create affiliate %s: %s", email, e)
             raise
 
-    def get_affiliate(self, code: str) -> Optional[dict[str, Any]]:
+    def get_affiliate(self, code: str) -> dict[str, Any] | None:
         try:
             conn = self._conn()
             row = conn.execute(
@@ -101,7 +101,7 @@ class AffiliateManager:
     # ── Commissions ────────────────────────────────────────────────────
 
     def add_commission(self, affiliate_code: str, client_email: str,
-                       client_name: str, amount: float) -> Optional[str]:
+                       client_name: str, amount: float) -> str | None:
         commission_id = uuid.uuid4().hex[:12]
         now = datetime.now(UTC).isoformat()
         try:
@@ -148,7 +148,7 @@ class AffiliateManager:
 
     # ── Payouts ────────────────────────────────────────────────────────
 
-    def create_payout(self, affiliate_code: str, amount: float) -> Optional[str]:
+    def create_payout(self, affiliate_code: str, amount: float) -> str | None:
         payout_id = uuid.uuid4().hex[:12]
         now = datetime.now(UTC).isoformat()
         try:
@@ -188,7 +188,7 @@ class AffiliateManager:
             logger.error("Failed to process payout %s: %s", payout_id, e)
             return False
 
-    def get_payouts(self, affiliate_code: Optional[str] = None,
+    def get_payouts(self, affiliate_code: str | None = None,
                     limit: int = 50) -> list[dict[str, Any]]:
         try:
             conn = self._conn()

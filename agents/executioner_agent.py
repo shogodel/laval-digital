@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime, UTC
 from email.mime.text import MIMEText
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Callable
 
 _LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
@@ -71,7 +71,7 @@ class ExecutionerAgent:
         ],
     }
 
-    def __init__(self, config: Optional[dict[str, Any]] = None) -> None:
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         """Initialize the ExecutionerAgent.
 
         Args:
@@ -225,7 +225,7 @@ class ExecutionerAgent:
         self,
         agent_name: str,
         approved_draft: str,
-        tool_name: Optional[str] = None,
+        tool_name: str | None = None,
         force: bool = False,
     ) -> dict[str, Any]:
         """Execute an approved draft through a registered tool.
@@ -373,7 +373,7 @@ class ExecutionerAgent:
         """
         with self._tool_registry_lock:
             tool_func = self.tool_registry[tool_name]
-        last_error: Optional[str] = None
+        last_error: str | None = None
 
         for attempt in range(1, self._max_retries + 1):
             try:
@@ -1004,7 +1004,7 @@ class ExecutionerAgent:
         draft_preview: str,
         success: bool,
         result: str,
-        error: Optional[str],
+        error: str | None,
     ) -> None:
         """Append an execution record to the JSONL log file.
 
@@ -1061,7 +1061,7 @@ class ExecutionerAgent:
         records.reverse()
         return records[:limit]
 
-    def get_execution_by_id(self, execution_id: str) -> Optional[dict[str, Any]]:
+    def get_execution_by_id(self, execution_id: str) -> dict[str, Any] | None:
         """Find a specific execution by its ID.
 
         Args:

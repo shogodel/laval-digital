@@ -4,7 +4,7 @@ import re
 import json
 import requests
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from .base_server import MCPServer, _safe_error
 from ._safe_url import _is_safe_url
 
@@ -57,7 +57,7 @@ class EcommerceMCPServer(MCPServer):
     # ------------------------------------------------------------------
 
     def manage_products(self, product_name: str = "", action: str = "add", price: float = 0.0,
-                        platform: str = "shopify", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
+                        platform: str = "shopify", api_credentials: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
         """Add or update a product on an e-commerce platform."""
         product = {
             "name": product_name or "New Product",
@@ -610,7 +610,7 @@ Order now and experience the difference."""
                              "negative_reviews": "Respond within 24 hours, apologize, take conversation offline",
                              "display": "Show reviews prominently on product pages with star rating schema"}}
 
-    def _fetch_page(self, url: str) -> Optional[requests.Response]:
+    def _fetch_page(self, url: str) -> requests.Response | None:
         try:
             if not url.startswith(('http://', 'https://')): url = 'https://' + url
             if not _is_safe_url(url):

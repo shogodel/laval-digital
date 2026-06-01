@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -33,7 +33,7 @@ LANG_TO_ELEVENLABS_VOICE = {
 
 
 class SpeechEngine:
-    def __init__(self, settings: Optional[dict[str, Any]] = None):
+    def __init__(self, settings: dict[str, Any] | None = None):
         self._settings = dict(DEFAULT_SPEECH_SETTINGS)
         if settings:
             self._settings.update(settings)

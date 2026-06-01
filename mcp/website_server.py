@@ -8,7 +8,7 @@ import requests
 from urllib.parse import urlparse, urljoin
 from datetime import datetime, UTC
 from email.utils import parsedate_to_datetime
-from typing import Any, Optional
+from typing import Any
 from .base_server import MCPServer, _safe_error
 from ._safe_url import _is_safe_url
 
@@ -66,7 +66,7 @@ class WebsiteMCPServer(MCPServer):
     # HTTP Helper
     # ------------------------------------------------------------------
 
-    def _fetch_page(self, url: str, timeout: int = 10) -> Optional[requests.Response]:
+    def _fetch_page(self, url: str, timeout: int = 10) -> requests.Response | None:
         """Fetch a URL with error handling and SSRF protection. Returns Response or None."""
         try:
             if not url.startswith(('http://', 'https://')):
@@ -85,7 +85,7 @@ class WebsiteMCPServer(MCPServer):
     # Uptime
     # ------------------------------------------------------------------
 
-    def monitor_uptime(self, website_url: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
+    def monitor_uptime(self, website_url: str = "", api_credentials: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
         url = website_url or (api_credentials.get("site_url", "") if api_credentials else "")
         if not url:
             return {"success": False, "error": "No URL provided"}
@@ -253,7 +253,7 @@ class WebsiteMCPServer(MCPServer):
     # SSL
     # ------------------------------------------------------------------
 
-    def manage_ssl(self, domain: str = "", api_credentials: Optional[dict[str, Any]] = None, **kwargs) -> dict[str, Any]:
+    def manage_ssl(self, domain: str = "", api_credentials: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
         domain = domain or (api_credentials.get("site_url", "").replace("https://", "").replace("http://", "").rstrip('/') if api_credentials else "")
         if not domain:
             return {"success": False, "error": "No domain provided"}

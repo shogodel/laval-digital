@@ -30,7 +30,7 @@ import threading
 import requests
 from urllib.parse import urlparse
 from datetime import datetime, timedelta, UTC
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +134,7 @@ def _decrypt_credential(ciphertext: str) -> str:
     return get_credential_cipher().decrypt(ciphertext.encode()).decode()
 
 
-def create_app(config_name: Optional[str] = None):
+def create_app(config_name: str | None = None):
     load_dotenv()
 
     import sentry_sdk
@@ -443,7 +443,7 @@ def create_app(config_name: Optional[str] = None):
                 "Failed to update agent activity for %s for user %s: %s", agent_id, user_id, e
             )
 
-    def get_current_user_id() -> Optional[str]:
+    def get_current_user_id() -> str | None:
         if current_user.is_authenticated and current_user.role == "admin":
             active = session.get("active_user_id")
             if active:
