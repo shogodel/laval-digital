@@ -1,7 +1,6 @@
 import logging
-import threading
 import re
-
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -161,7 +160,8 @@ class BaseAgent:
         adapter = self._get_llm_adapter()
         system_content = self._build_system_content(task)
 
-        from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+        from concurrent.futures import ThreadPoolExecutor
+        from concurrent.futures import TimeoutError as FuturesTimeout
         def _invoke():
             return adapter.invoke(system_content, task,
                                   user_id=user_id,

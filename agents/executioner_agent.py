@@ -5,16 +5,16 @@ import smtplib
 import threading
 import time
 import uuid
-from datetime import datetime, UTC
+from collections.abc import Callable
+from datetime import UTC, datetime
 from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any
-from collections.abc import Callable
 
 _LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
 
 from mcp import AGENT_MCP_ROUTING
-from mcp._safe_url import is_safe_url, is_safe_host
+from mcp._safe_url import is_safe_host, is_safe_url
 
 logger = logging.getLogger(__name__)
 
@@ -1048,7 +1048,7 @@ class ExecutionerAgent:
         records: list[dict[str, Any]] = []
         tail: deque = deque(maxlen=limit * 2)
         with self._io_lock:
-            with open(self._execution_log_path, "r", encoding="utf-8") as f:
+            with open(self._execution_log_path, encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -1074,7 +1074,7 @@ class ExecutionerAgent:
             return None
 
         with self._io_lock:
-            with open(self._execution_log_path, "r", encoding="utf-8") as f:
+            with open(self._execution_log_path, encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line:

@@ -1,14 +1,14 @@
 import logging
 import re
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 from threading import Lock
 from typing import Any
 
-from core.llm_adapter import LLMAdapter
-from core.base_agent import BaseAgent, FRENCH_KEYWORDS
+from core.base_agent import FRENCH_KEYWORDS, BaseAgent
 from core.events import get_event_bus
+from core.llm_adapter import LLMAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -527,9 +527,7 @@ class Orchestrator:
             exec_decision = None  # None = pending, True = approved, False = rejected
             min_auto_confidence = threshold * 0.5  # floor for auto/silent modes
 
-            if autonomy_level in ("auto", "silent") and confidence >= min_auto_confidence:
-                exec_decision = True
-            elif autonomy_level == "suggest" and confidence >= threshold:
+            if (autonomy_level in ("auto", "silent") and confidence >= min_auto_confidence) or (autonomy_level == "suggest" and confidence >= threshold):
                 exec_decision = True
             elif autonomy_level == "suggest" and confidence < threshold:
                 exec_decision = None  # needs human

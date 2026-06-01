@@ -1,10 +1,11 @@
 """Training hub blueprint — articles, search, and feedback."""
-from flask import Blueprint, render_template, redirect, url_for, request, session
-from flask_login import current_user
 import logging
 
 import bleach
-from core.api_helpers import api_success, api_error
+from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask_login import current_user
+
+from core.api_helpers import api_error, api_success
 from core.training_articles import ARTICLES as TRAINING_ARTICLES
 
 logger = logging.getLogger(__name__)

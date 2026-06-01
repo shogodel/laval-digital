@@ -1,7 +1,7 @@
 import logging
 import os
 import threading
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 from core import database

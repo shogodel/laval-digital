@@ -3,15 +3,17 @@ SEO MCP Server for Frankie.
 Handles content publishing to WordPress, Webflow, Netlify, Shopify, Wix, Squarespace, Ghost, Contentful, and custom websites.
 Also provides technical SEO audits, keyword tracking, competitor analysis, schema markup, local citations, and Search Console integration.
 """
-import logging
 import json
+import logging
 import re
-from pathlib import Path
 from datetime import datetime
-import requests
+from pathlib import Path
 from typing import Any
-from .base_server import MCPServer
+
+import requests
+
 from ._safe_url import _is_safe_url
+from .base_server import MCPServer
 
 logger = logging.getLogger(__name__)
 

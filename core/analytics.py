@@ -1,6 +1,6 @@
 import logging
 import threading
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from core import database
@@ -214,10 +214,7 @@ class AnalyticsEngine:
             return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#x27;")
 
         start = f"{year}-{month:02d}-01"
-        if month == 12:
-            end = f"{year + 1}-01-01"
-        else:
-            end = f"{year}-{month + 1:02d}-01"
+        end = f"{year + 1}-01-01" if month == 12 else f"{year}-{month + 1:02d}-01"
 
         conn = self._conn()
 

@@ -5,17 +5,17 @@ import smtplib
 import ssl
 import threading
 import uuid
-from typing import Any
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from typing import Any
 
 from flask import Blueprint, request, session
 from flask_login import current_user
 
 from core import database
 from core.analytics import AnalyticsEngine
-from core.api_helpers import api_success, api_error
+from core.api_helpers import api_error, api_success
 from core.app_state import get_executioner
 from core.auth import admin_required
 

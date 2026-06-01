@@ -8,7 +8,6 @@ import pytest
 
 from agents.executioner_agent import ExecutionerAgent, ExecutionerError
 
-
 _log_dir = Path(__file__).resolve().parent.parent / "logs"
 
 
@@ -230,8 +229,8 @@ class TestMCPMappingConsistency:
     """Every MCP tool should have a local fallback registered in the tool_registry."""
 
     def test_all_mcp_tools_have_local_fallback(self, executioner):
-        from mcp import AGENT_MCP_ROUTING
         from agents.executioner_agent import MCP_TOOL_TO_LOCAL
+        from mcp import AGENT_MCP_ROUTING
         for agent_name, (_server, mcp_tool) in AGENT_MCP_ROUTING.items():
             assert mcp_tool in MCP_TOOL_TO_LOCAL, f"{agent_name} → MCP {mcp_tool} lacks local fallback"
             local_tool = MCP_TOOL_TO_LOCAL[mcp_tool]

@@ -4,12 +4,13 @@ Replaces the multi-tenant TenantManager with one SQLite database
 at data/frankie.db.  All user-scoped data has a user_id column.
 """
 
+import contextlib
+import logging
 import os
 import sqlite3
-import logging
 import threading
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, UTC
 
 logger = logging.getLogger(__name__)
 
@@ -333,10 +334,8 @@ def _run_migrations(conn: sqlite3.Connection) -> None:
         if version <= current:
             continue
         for sql in sqls:
-            try:
-                conn.execute(sql)
-            except sqlite3.OperationalError:
-                pass  # column/table/index already exists (legacy catch-up)
+            with contextlib.suppress(sqlite3.OperationalError):
+                conn.execute(sql)  # column/table/index already exists (legacy catch-up)
         _set_schema_version(conn, version)
         conn.commit()
         logger.info("Migration v%d applied", version)

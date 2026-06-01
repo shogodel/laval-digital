@@ -1,12 +1,14 @@
 """Executioner blueprint — settings, SMTP test, social validation, pending actions."""
 import logging
-import socket
 import smtplib
+import socket
 from email.mime.text import MIMEText
+
 from flask import Blueprint, request
-from core.auth import admin_required
-from core.api_helpers import api_success, api_error
+
+from core.api_helpers import api_error, api_success
 from core.app_state import get_executioner
+from core.auth import admin_required
 
 logger = logging.getLogger(__name__)
 

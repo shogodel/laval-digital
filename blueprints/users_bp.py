@@ -7,7 +7,7 @@ from flask import Blueprint, request, session
 from core import database
 from core.api_helpers import api_error, api_success
 from core.app_state import safe_error, safe_int
-from core.auth import admin_required, add_user_to_tenant, validate_password
+from core.auth import add_user_to_tenant, admin_required, validate_password
 
 logger = logging.getLogger(__name__)
 users_bp = Blueprint("users", __name__)

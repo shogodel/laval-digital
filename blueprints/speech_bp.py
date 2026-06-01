@@ -1,7 +1,7 @@
 """Blueprint for speech-to-text and text-to-speech endpoints."""
 import logging
-import requests
 
+import requests
 from flask import Blueprint, request
 
 from core.api_helpers import api_error, api_success

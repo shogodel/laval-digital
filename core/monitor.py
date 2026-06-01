@@ -7,8 +7,9 @@ Runs every 5 minutes.  Starts automatically when the app boots.
 import logging
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
-from datetime import datetime, UTC
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 

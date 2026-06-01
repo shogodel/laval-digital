@@ -1,16 +1,17 @@
 """Email MCP Server for Frankie — Enterprise-grade email marketing."""
-import logging
-import smtplib
-import ssl
-import re
-import socket
-import json
 import ipaddress
+import json
+import logging
+import re
+import smtplib
+import socket
+import ssl
 from datetime import datetime
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any
+
 from .base_server import MCPServer, _safe_error
 
 logger = logging.getLogger(__name__)

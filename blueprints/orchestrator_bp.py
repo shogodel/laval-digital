@@ -2,21 +2,25 @@
 import json
 import logging
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 from flask import Blueprint, request, session
 from flask_login import current_user
 
+from blueprints._shared import AGENT_PERSONALITIES, _safe_tenant_id
 from core import database
 from core.api_helpers import api_error, api_success
 from core.app_state import (
-    get_agent_registry, get_current_user_id,
-    get_executioner, get_orchestrator, safe_error, safe_int,
+    get_agent_registry,
+    get_current_user_id,
+    get_executioner,
+    get_orchestrator,
+    safe_error,
+    safe_int,
 )
-from core.events import get_event_bus
 from core.auth import admin_required
+from core.events import get_event_bus
 from mcp import AGENT_MCP_ROUTING, get_mcp_server
-from blueprints._shared import AGENT_PERSONALITIES, _safe_tenant_id
 
 logger = logging.getLogger(__name__)
 orchestrator_bp = Blueprint("orchestrator", __name__)

@@ -3,26 +3,33 @@ import logging
 import re
 import smtplib
 import uuid
-from datetime import datetime, timedelta, UTC
-from email.mime.text import MIMEText
+from datetime import UTC, datetime, timedelta
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from html import escape
 
 from flask import Blueprint, jsonify, redirect, request, session, url_for
 from flask_login import current_user, login_user
 from werkzeug.security import generate_password_hash
 
+from blueprints._shared import AGENT_PERSONALITIES
 from core import database
 from core.api_helpers import api_error, api_success
 from core.app_state import (
-    get_current_user_id, get_executioner,
-    get_llm_adapter, get_orchestrator, get_push_manager,
-    safe_int, safe_url,
+    get_current_user_id,
+    get_executioner,
+    get_llm_adapter,
+    get_orchestrator,
+    get_push_manager,
+    safe_int,
+    safe_url,
 )
 from core.auth import (
-    _check_rate_limit, _record_attempt, User, validate_password,
+    User,
+    _check_rate_limit,
+    _record_attempt,
+    validate_password,
 )
-from blueprints._shared import AGENT_PERSONALITIES
 
 logger = logging.getLogger(__name__)
 public_bp = Blueprint("public", __name__)

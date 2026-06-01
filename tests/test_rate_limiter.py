@@ -1,21 +1,22 @@
 """Unit tests for core/rate_limiter.py."""
 import os
 import tempfile
+
 import pytest
 
 _tmp_db = tempfile.mktemp(suffix=".db")
 os.environ["FRANKIE_DB_PATH"] = _tmp_db
 
+from core.database import _get_conn, create_user, init_db, reset_conn
 from core.rate_limiter import (
-    count_tokens,
+    MODEL_PRICING,
+    RateLimitExceededError,
     calculate_cost,
+    check_rate_limits,
+    count_tokens,
     get_or_create_quota,
     log_usage,
-    check_rate_limits,
-    RateLimitExceededError,
-    MODEL_PRICING,
 )
-from core.database import init_db, create_user, _get_conn, reset_conn
 
 
 @pytest.fixture(scope="module", autouse=True)

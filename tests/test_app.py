@@ -1,5 +1,7 @@
 import os
+
 import pytest
+
 from app import app
 from core import database
 

@@ -29,7 +29,7 @@ SUBSCRIPTIONS_FILE = _base_dir / "data" / "push_subscriptions.jsonl"
 VAPID_KEYS_FILE = _base_dir / "data" / "vapid_keys.json"
 
 try:
-    from pywebpush import webpush, WebPushException
+    from pywebpush import WebPushException, webpush
     HAS_PYWEBPUSH = True
 except ImportError:
     HAS_PYWEBPUSH = False

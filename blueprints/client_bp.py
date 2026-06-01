@@ -2,13 +2,13 @@
 import logging
 from datetime import datetime
 
-from flask import Blueprint, render_template, redirect, url_for, session, request, flash
-from flask_login import login_user, logout_user, current_user
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask_login import current_user, login_user, logout_user
 
 from core import database
-from core.api_helpers import api_success
-from core.auth import _check_rate_limit, _record_attempt, find_user_by_email, User, client_required
 from core.analytics import AnalyticsEngine
+from core.api_helpers import api_success
+from core.auth import User, _check_rate_limit, _record_attempt, client_required, find_user_by_email
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ def client_logout():
 @client_required
 def client_agent_chat(agent_id):
     """Serve the client agent chat interface."""
-    from core.app_state import get_agent_registry, get_agent_meta
+    from core.app_state import get_agent_meta, get_agent_registry
     agent_registry = get_agent_registry()
     AGENT_META = get_agent_meta()
     if agent_id not in agent_registry:
@@ -106,7 +106,7 @@ def client_agent_chat(agent_id):
 @client_required
 def client_agent_chat_fr(agent_id):
     """Serve the French client agent chat interface."""
-    from core.app_state import get_agent_registry, get_agent_meta
+    from core.app_state import get_agent_meta, get_agent_registry
     agent_registry = get_agent_registry()
     AGENT_META = get_agent_meta()
     if agent_id not in agent_registry:

@@ -1,15 +1,16 @@
 """Admin blueprint — login, logout, panel, dashboard, connector, analytics, reports, managed."""
+import hmac
 import logging
 import os
-import hmac
-from functools import wraps
-from flask import Blueprint, render_template, redirect, url_for, session, request, flash
-from flask_login import login_user, logout_user, current_user
-from werkzeug.security import check_password_hash
 from datetime import datetime
+from functools import wraps
+
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask_login import current_user, login_user, logout_user
+from werkzeug.security import check_password_hash
 
 from core import database
-from core.auth import admin_page_required, AdminUser, _check_rate_limit, _record_attempt
+from core.auth import AdminUser, _check_rate_limit, _record_attempt, admin_page_required
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 logger = logging.getLogger(__name__)
@@ -108,7 +109,7 @@ def agent_chat(agent_id):
     auth_check = admin_page_required()
     if auth_check:
         return auth_check
-    from core.app_state import get_agent_registry, get_agent_meta
+    from core.app_state import get_agent_meta, get_agent_registry
     agent_registry = get_agent_registry()
     AGENT_META = get_agent_meta()
     if agent_id not in agent_registry:
@@ -253,7 +254,7 @@ def panel_redirect_fr():
 @admin_page_required_fr
 def agent_chat_fr(agent_id):
     """Serve the French admin agent chat interface."""
-    from core.app_state import get_agent_registry, get_agent_meta
+    from core.app_state import get_agent_meta, get_agent_registry
     agent_registry = get_agent_registry()
     AGENT_META = get_agent_meta()
     if agent_id not in agent_registry:

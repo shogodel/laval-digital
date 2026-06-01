@@ -2,7 +2,7 @@ import logging
 import threading
 import time
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 from core import database

@@ -3,10 +3,11 @@
 All LLM calls are mocked — no real API calls.
 """
 from unittest.mock import MagicMock
+
 import pytest
 
-from core.orchestrator import Orchestrator
 from core.llm_adapter import LLMAdapter
+from core.orchestrator import Orchestrator
 
 
 @pytest.fixture

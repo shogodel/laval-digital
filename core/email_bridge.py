@@ -14,9 +14,9 @@ import logging
 import re
 import threading
 import time
+from collections.abc import Callable
 from email.header import decode_header
 from typing import Any
-from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 

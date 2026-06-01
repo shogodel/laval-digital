@@ -1,7 +1,8 @@
+import contextlib
 import logging
 import threading
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from queue import Queue
 from typing import Any
 
@@ -56,10 +57,8 @@ class EventBus:
                     logger.debug("Event subscriber queue failed: %s", e)
                     dead.append(q)
             for q in dead:
-                try:
+                with contextlib.suppress(ValueError):
                     self._subscribers.remove(q)
-                except ValueError:
-                    pass
 
     def subscribe(self) -> Queue:
         """Return a Queue that receives all future events."""
@@ -71,10 +70,8 @@ class EventBus:
     def unsubscribe(self, q: Queue) -> None:
         """Remove a subscriber queue."""
         with self._lock:
-            try:
+            with contextlib.suppress(ValueError):
                 self._subscribers.remove(q)
-            except ValueError:
-                pass
 
     def get_history(
         self,

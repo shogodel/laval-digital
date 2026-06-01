@@ -3,8 +3,8 @@ Base class for all Frankie MCP servers.
 Each server exposes tools that Frankie can call to execute marketing tasks.
 """
 import logging
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 

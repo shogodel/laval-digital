@@ -2,7 +2,7 @@
 import json
 import logging
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 from flask import Blueprint, Response, request, stream_with_context
 from flask_login import current_user
@@ -10,8 +10,12 @@ from flask_login import current_user
 from core import database
 from core.api_helpers import api_error, api_success
 from core.app_state import (
-    get_agent_configs, get_agent_registry, get_current_user_id,
-    safe_error, safe_int, update_agent_activity,
+    get_agent_configs,
+    get_agent_registry,
+    get_current_user_id,
+    safe_error,
+    safe_int,
+    update_agent_activity,
 )
 from core.auth import admin_required
 from core.llm_adapter import LLMAdapter

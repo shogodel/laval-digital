@@ -1,10 +1,10 @@
 import re
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from functools import wraps
 
-from flask import request, flash, redirect, url_for, jsonify
+from flask import flash, jsonify, redirect, request, url_for
 from flask_login import LoginManager, UserMixin, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from core import database
 

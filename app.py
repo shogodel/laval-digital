@@ -1,11 +1,11 @@
-import os
-import re
-import sys
-import uuid
-import secrets
-import warnings
 import logging
 import logging.handlers
+import os
+import re
+import secrets
+import sys
+import uuid
+import warnings
 
 _PII_PATTERNS = [
     (re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'), '[EMAIL]'),
@@ -27,10 +27,11 @@ class PIIRedactFilter(logging.Filter):
                 record.exc_text = pattern.sub(replacement, record.exc_text)
         return True
 import threading
-import requests
-from urllib.parse import urlparse
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlparse
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -67,32 +68,30 @@ def _safe_int(val, default=0):
 warnings.filterwarnings("ignore", module="langgraph")
 warnings.filterwarnings("ignore", module="langchain")
 
-from flask import (Flask, render_template, jsonify, request,
-                   redirect, url_for, session, flash, g, abort)
-from flask_login import logout_user, current_user
-from flask_wtf.csrf import CSRFProtect, generate_csrf
-from werkzeug.middleware.proxy_fix import ProxyFix
-from dotenv import load_dotenv
-from core.api_helpers import api_success, api_error
-from core.auth import admin_required
-from core.blog_articles import ARTICLES_EN, ARTICLES_FR, ARTICLES_BY_SLUG_EN, ARTICLES_BY_SLUG_FR
-
-from mcp import init_mcp_servers
+import base64 as _b64
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-import base64 as _b64
+from dotenv import load_dotenv
+from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
+from flask_login import current_user, logout_user
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-from core.orchestrator import Orchestrator
+from agents.executioner_agent import ExecutionerAgent
+from core.api_helpers import api_error, api_success
+from core.auth import admin_required
+from core.base_agent import BaseAgent
+from core.blog_articles import ARTICLES_BY_SLUG_EN, ARTICLES_BY_SLUG_FR, ARTICLES_EN, ARTICLES_FR
+from core.email_bridge import EmailBridge
 from core.llm_adapter import LLMAdapter
-from core.push import PushManager
 from core.memory import AgentMemory
 from core.monitor import monitor as proactive_monitor
-from core.email_bridge import EmailBridge
-from core.base_agent import BaseAgent
-from agents.executioner_agent import ExecutionerAgent
+from core.orchestrator import Orchestrator
+from core.push import PushManager
+from mcp import init_mcp_servers
 
 AGENT_CLASSES = dict.fromkeys(
     ["local_seo", "social_media", "lead_conversion", "paid_ads",
@@ -102,14 +101,14 @@ AGENT_CLASSES = dict.fromkeys(
     BaseAgent,
 )
 
-from core.auth import (
-    init_auth, SESSION_TIMEOUT,
-)
-
 from core import database
 from core.affiliates import AffiliateManager
-from core.speech import SpeechEngine
+from core.auth import (
+    SESSION_TIMEOUT,
+    init_auth,
+)
 from core.scheduler import SchedulerManager
+from core.speech import SpeechEngine
 
 
 def _derive_fernet_key() -> Fernet:
