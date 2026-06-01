@@ -22,7 +22,7 @@ def _validate_smtp_host(host: str) -> bool:
         return False
     try:
         addrs = socket.getaddrinfo(host, None)
-        for family, _, _, _, sockaddr in addrs:
+        for _, _, _, _, sockaddr in addrs:
             ip = sockaddr[0]
             if not isinstance(ip, str):
                 return False

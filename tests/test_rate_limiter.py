@@ -146,6 +146,6 @@ class TestModelPricing:
         assert "gemini-1.5-pro" in MODEL_PRICING
 
     def test_pricing_positive(self):
-        for model, prices in MODEL_PRICING.items():
+        for prices in MODEL_PRICING.values():
             assert prices["input"] > 0
             assert prices["output"] > 0

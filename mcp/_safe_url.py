@@ -60,7 +60,7 @@ def is_safe_url(url: str) -> bool:
     addrs = resolve_host(hostname)
     if not addrs:
         return False
-    for ip, family in addrs:
+    for ip, _ in addrs:
         if ":" in ip:
             if _ipv6_is_private(ip):
                 return False
@@ -81,7 +81,7 @@ def is_safe_host(hostname: str) -> bool:
     addrs = resolve_host(hostname)
     if not addrs:
         return False
-    for ip, family in addrs:
+    for ip, _ in addrs:
         if ":" in ip:
             if _ipv6_is_private(ip):
                 return False
