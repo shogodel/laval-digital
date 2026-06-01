@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 import requests
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from .base_server import MCPServer, _safe_error
 
 logger = logging.getLogger(__name__)

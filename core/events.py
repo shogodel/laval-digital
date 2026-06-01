@@ -1,11 +1,9 @@
-import json
 import logging
 import threading
 import uuid
-from collections import defaultdict
 from datetime import datetime, timezone
-from queue import Queue, Empty
-from typing import Any, Dict, List, Optional, Set
+from queue import Queue
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

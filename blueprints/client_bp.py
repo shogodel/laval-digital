@@ -1,6 +1,6 @@
 """Client blueprint — login, logout, dashboard, chat, analytics, managed services, API."""
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 
 from flask import Blueprint, render_template, redirect, url_for, session, request, flash
 from flask_login import login_user, logout_user, current_user

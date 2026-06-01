@@ -1,14 +1,12 @@
-import json
 import logging
 import os
 import threading
-import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from core import database
 from core.app_state import (
-    get_executioner, safe_int,
+    get_executioner,
 )
 
 logger = logging.getLogger(__name__)

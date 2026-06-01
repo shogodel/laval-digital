@@ -14,9 +14,8 @@ import logging
 import re
 import threading
 import time
-from datetime import datetime, timezone
 from email.header import decode_header
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 logger = logging.getLogger(__name__)
 

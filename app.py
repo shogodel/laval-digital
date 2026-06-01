@@ -4,7 +4,6 @@ import sys
 import uuid
 import secrets
 import warnings
-import json
 import logging
 import logging.handlers
 
@@ -27,13 +26,10 @@ class PIIRedactFilter(logging.Filter):
             for pattern, replacement in _PII_PATTERNS:
                 record.exc_text = pattern.sub(replacement, record.exc_text)
         return True
-import ssl
 import threading
 import requests
-from functools import wraps
 from urllib.parse import urlparse
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -72,18 +68,16 @@ warnings.filterwarnings("ignore", module="langgraph")
 warnings.filterwarnings("ignore", module="langchain")
 
 from flask import (Flask, render_template, jsonify, request,
-                   redirect, url_for, session, flash, g, abort,
-                   Response, stream_with_context)
-from flask_login import login_user, logout_user, login_required, current_user
+                   redirect, url_for, session, flash, g, abort)
+from flask_login import logout_user, current_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
-from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 from core.api_helpers import api_success, api_error
 from core.auth import admin_required
 from core.blog_articles import ARTICLES_EN, ARTICLES_FR, ARTICLES_BY_SLUG_EN, ARTICLES_BY_SLUG_FR
 
-from mcp import init_mcp_servers, get_all_mcp_servers, get_mcp_server, get_all_mcp_tools, AGENT_MCP_ROUTING
+from mcp import init_mcp_servers
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
@@ -93,7 +87,6 @@ import base64 as _b64
 
 from core.orchestrator import Orchestrator
 from core.llm_adapter import LLMAdapter
-from core.events import get_event_bus
 from core.push import PushManager
 from core.memory import AgentMemory
 from core.monitor import monitor as proactive_monitor
@@ -110,16 +103,13 @@ AGENT_CLASSES = dict.fromkeys(
 )
 
 from core.auth import (
-    init_auth, User, find_user_by_email, add_user_to_tenant,
-    client_required, SESSION_TIMEOUT,
-    validate_password, _check_rate_limit, _record_attempt,
+    init_auth, SESSION_TIMEOUT,
 )
 
 from core import database
 from core.affiliates import AffiliateManager
 from core.speech import SpeechEngine
 from core.scheduler import SchedulerManager
-from core.analytics import AnalyticsEngine
 
 
 def _derive_fernet_key() -> Fernet:

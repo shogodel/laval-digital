@@ -1,10 +1,9 @@
-import os
 import re
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from typing import Optional, Tuple
 
-from flask import session, request, flash, redirect, url_for, jsonify
+from flask import request, flash, redirect, url_for, jsonify
 from flask_login import LoginManager, UserMixin, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 

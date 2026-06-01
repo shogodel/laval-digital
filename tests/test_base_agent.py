@@ -1,6 +1,5 @@
 """Unit tests for core/base_agent.py pure functions."""
-import pytest
-from core.base_agent import BaseAgent, FRENCH_KEYWORDS
+from core.base_agent import BaseAgent
 
 
 class TestDetectLanguage:

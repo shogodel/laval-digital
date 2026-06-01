@@ -5,7 +5,7 @@ import re
 import requests
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from .base_server import MCPServer, _safe_error
 from ._safe_url import _is_safe_url
 

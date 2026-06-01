@@ -8,7 +8,7 @@ import requests
 from urllib.parse import urlparse, urljoin
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from .base_server import MCPServer, _safe_error
 from ._safe_url import _is_safe_url
 

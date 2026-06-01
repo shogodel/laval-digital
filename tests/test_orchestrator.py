@@ -2,7 +2,7 @@
 
 All LLM calls are mocked — no real API calls.
 """
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import pytest
 
 from core.orchestrator import Orchestrator

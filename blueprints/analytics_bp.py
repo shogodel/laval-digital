@@ -10,13 +10,13 @@ from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from flask import Blueprint, render_template, request, session, jsonify
+from flask import Blueprint, request, session
 from flask_login import current_user
 
 from core import database
 from core.analytics import AnalyticsEngine
 from core.api_helpers import api_success, api_error
-from core.app_state import get_executioner, get_current_user_id
+from core.app_state import get_executioner
 from core.auth import admin_required
 
 logger = logging.getLogger(__name__)

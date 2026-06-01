@@ -1,8 +1,7 @@
 """Ads MCP Server for Frankie — Multi-platform ad campaign management."""
 import logging
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from .base_server import MCPServer
 
 logger = logging.getLogger(__name__)

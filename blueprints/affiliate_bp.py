@@ -1,21 +1,19 @@
 """Affiliate blueprint — signup, login, dashboard, API, admin routes."""
-import os
 import secrets
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 
 from flask import (
     Blueprint, render_template, redirect, url_for,
     session, request, flash,
 )
 from flask_login import login_user, logout_user, login_required, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
 
 from core import database
 from core.api_helpers import api_success, api_error
 from core.auth import (
     User, find_user_by_email, add_user_to_tenant,
-    validate_password, admin_required, _check_rate_limit, _record_attempt,
+    admin_required, _check_rate_limit, _record_attempt,
 )
 
 

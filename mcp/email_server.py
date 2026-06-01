@@ -10,7 +10,7 @@ from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from .base_server import MCPServer, _safe_error
 
 logger = logging.getLogger(__name__)
