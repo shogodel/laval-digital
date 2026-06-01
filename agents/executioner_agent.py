@@ -117,10 +117,7 @@ class ExecutionerAgent:
         if not val:
             return ""
         from core.app_state import get_credential_cipher
-        try:
-            return get_credential_cipher().encrypt(val.encode()).decode()
-        except Exception:
-            return val
+        return get_credential_cipher().encrypt(val.encode()).decode()
 
     @staticmethod
     def _decrypt(val: str) -> str:
@@ -130,7 +127,8 @@ class ExecutionerAgent:
         try:
             return get_credential_cipher().decrypt(val.encode()).decode()
         except Exception:
-            return val
+            logger.exception("Failed to decrypt secret value")
+            return ""
 
     _SECRET_KEYS = frozenset({"smtp_password", "social_api_key"})
 
