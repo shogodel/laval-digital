@@ -44,6 +44,7 @@ class BaseAgent:
         self._system_prompt_file = config["system_prompt_file"]
         self._credentials = config.get("credentials", {})
         self._system_prompt = self._load_system_prompt()
+        self._llm_adapter: LLMAdapter | None = None
         self._logger = logging.getLogger(self.__class__.__module__)
         self._logger.info("%s initialized: %s", self.__class__.__name__, agent_id)
 
@@ -96,12 +97,14 @@ class BaseAgent:
         return self._system_prompt
 
     def _get_llm_adapter(self) -> LLMAdapter:
+        if self._llm_adapter is not None:
+            return self._llm_adapter
         api_key = self._credentials.get("api_key", "")
         if not api_key:
             raise ValueError(
                 "No API key configured. Go to Admin → Settings → Configuration to enter your LLM provider API key."
             )
-        return LLMAdapter(
+        self._llm_adapter = LLMAdapter(
             model=self._model,
             api_key=api_key,
             api_base=self._credentials.get("api_base"),
@@ -227,7 +230,6 @@ class BaseAgent:
     @staticmethod
     def _save_output(subdir: str, prefix: str, content: str, ext: str = "md") -> str:
         from datetime import datetime
-        from pathlib import Path
         target_dir = _CONTENT_DIR / subdir
         target_dir.mkdir(parents=True, exist_ok=True)
         first_line = content.strip().split("\n")[0][:60] if content else "output"

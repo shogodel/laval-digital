@@ -1,3 +1,4 @@
+import logging
 import re
 from datetime import UTC, datetime, timedelta
 from functools import wraps
@@ -9,8 +10,6 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from core import database
 
 login_manager = LoginManager()
-
-import logging
 
 logger = logging.getLogger(__name__)
 

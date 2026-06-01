@@ -4,11 +4,12 @@ import tempfile
 
 import pytest
 
-_tmp_db = tempfile.mktemp(suffix=".db")
+_fd, _tmp_db = tempfile.mkstemp(suffix=".db")
+os.close(_fd)
 os.environ["FRANKIE_DB_PATH"] = _tmp_db
 
-from core.database import _get_conn, create_user, init_db, reset_conn
-from core.rate_limiter import (
+from core.database import _get_conn, create_user, init_db, reset_conn  # noqa: E402
+from core.rate_limiter import (  # noqa: E402
     MODEL_PRICING,
     RateLimitExceededError,
     calculate_cost,

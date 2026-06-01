@@ -11,11 +11,11 @@ from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any
 
-_LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
-_CONTENT_DIR = Path(__file__).resolve().parent.parent / "content"
-
 from mcp import AGENT_MCP_ROUTING
 from mcp._safe_url import is_safe_host, is_safe_url
+
+_LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
+_CONTENT_DIR = Path(__file__).resolve().parent.parent / "content"
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,10 @@ MCP_TOOL_TO_LOCAL: dict[str, str] = {
 
 class ExecutionerError(Exception):
     pass
+
+
+class PermanentToolError(Exception):
+    """Tool error that should NOT be retried (e.g. authentication failure)."""
 
 
 class ExecutionerAgent:
@@ -461,6 +465,13 @@ class ExecutionerAgent:
                     last_error,
                 )
 
+            except PermanentToolError:
+                logger.error(
+                    "Execution %s failed with permanent error (tool=%s, attempt=%s)",
+                    execution_id, tool_name, attempt,
+                )
+                last_error = "Permanent failure — not retrying"
+                break
             except Exception as exc:
                 last_error = str(exc)
                 logger.error(
@@ -913,6 +924,12 @@ class ExecutionerAgent:
                 "result": f"Email sent to {recipient_str}: {subject}",
                 "error": None,
             }
+        except smtplib.SMTPAuthenticationError:
+            logger.error("SMTP authentication failed for user %s", smtp_user)
+            raise PermanentToolError("SMTP authentication failed — check credentials") from None
+        except OSError as exc:
+            logger.error("SMTP connection failed: %s", exc)
+            return {"success": False, "result": "", "error": f"SMTP connection failed: {exc}"}
         except Exception as exc:
             logger.error("SMTP send failed: %s", exc)
             return {"success": False, "result": "", "error": f"SMTP send failed: {exc}"}
@@ -1009,7 +1026,7 @@ class ExecutionerAgent:
             Result dict with success, result path, and error.
         """
         try:
-            target_dir = _CONTENT_DIR / base_dir
+            target_dir = _CONTENT_DIR / base_dir.lstrip("/")
             target_dir.mkdir(parents=True, exist_ok=True)
             slug = self._slugify(draft.strip().split("\n")[0][:60])
             ts = datetime.now().strftime("%Y%m%d%H%M%S")

@@ -2,6 +2,7 @@ import logging
 import re
 import time
 import uuid
+from collections import deque
 from datetime import UTC, datetime
 from pathlib import Path
 from threading import Lock
@@ -211,7 +212,7 @@ class Orchestrator:
         self._activity_lock = Lock()
         self._panicked = False
         self._panic_lock = Lock()
-        self._last_execution: dict[str, Any] | None = None
+        self._last_executions: deque[dict[str, Any]] = deque(maxlen=20)
         self._findings_board: dict[str, list[dict[str, Any]]] = {}
         self._findings_lock = Lock()
         self._agent_prompts: dict[str, str] = {}
@@ -288,9 +289,9 @@ class Orchestrator:
             return {"response": fallback_fr if language == "fr" else fallback_en, "agent": "orchestrator", "status": "welcome"}
 
     def undo_last(self) -> dict[str, Any] | None:
-        if not self._last_execution:
+        if not self._last_executions:
             return None
-        last = self._last_execution
+        last = self._last_executions.pop()
         path = last.get("file_path", "")
         if path:
             import os as _os
@@ -585,12 +586,12 @@ class Orchestrator:
                 })
 
                 # Track last execution for undo
-                self._last_execution = {
+                self._last_executions.append({
                     "agent": agent_name,
                     "tool": agent_name,
                     "file_path": execution_result.get("result", "") if execution_result else "",
                     "draft": clean_draft[:200],
-                }
+                })
 
                 # Publish event
                 event_type = "agent_executed" if success_flag else "agent_failed"
@@ -744,12 +745,12 @@ class Orchestrator:
             self._publish_finding(user_id, agent_name, f"Approved draft: {draft[:80]}...")
 
             # Track for undo
-            self._last_execution = {
+            self._last_executions.append({
                 "agent": agent_name,
                 "tool": execution_result.get("tool", "") if execution_result else "",
                 "file_path": execution_result.get("result", "") if execution_result else "",
                 "draft": draft[:200],
-            }
+            })
 
             # Publish event
             event_type = "agent_executed" if success_flag else "agent_failed"

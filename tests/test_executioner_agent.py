@@ -59,10 +59,10 @@ class TestSaveFile:
         saved = executioner._save_file("a/b/c", "x", "json", "{}", "Nested")
         assert Path(saved["result"]).exists()
 
-    def test_os_error_returns_error(self, executioner):
+    def test_absolute_base_dir_sanitized(self, executioner):
         saved = executioner._save_file("/proc/forbidden", "x", "txt", "data", "Forbidden")
-        assert saved["success"] is False
-        assert saved["error"] is not None
+        assert saved["success"] is True
+        assert saved["result"].startswith(str(_content_dir / "proc/forbidden"))
 
 
 class TestPublishBlogPost:
