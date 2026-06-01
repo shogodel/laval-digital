@@ -95,6 +95,8 @@ class ExecutionerAgent:
         self._retry_delay = config.get("retry_delay", 5)
         self.tool_registry: dict[str, Callable] = {}
         self._settings: dict[str, Any] = dict(self.DEFAULT_SETTINGS)
+        self._settings_path = _LOG_DIR / "executioner_settings.json"
+        self._load_settings()
         self._pending: dict[str, dict[str, Any]] = {}
         self._io_lock = threading.Lock()
         self._pending_lock = threading.Lock()
@@ -107,6 +109,23 @@ class ExecutionerAgent:
             self._execution_log_path,
             self._max_retries,
         )
+
+    def _load_settings(self) -> None:
+        try:
+            if self._settings_path.exists():
+                data = json.loads(self._settings_path.read_text(encoding="utf-8"))
+                if isinstance(data, dict):
+                    self._settings.update(data)
+                    logger.info("Loaded settings from %s", self._settings_path)
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning("Failed to load settings from %s: %s", self._settings_path, e)
+
+    def _save_settings(self) -> None:
+        try:
+            data = dict(self._settings)
+            self._settings_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        except OSError as e:
+            logger.error("Failed to save settings to %s: %s", self._settings_path, e)
 
     # ------------------------------------------------------------------
     # Settings
@@ -152,6 +171,7 @@ class ExecutionerAgent:
             for key, value in settings.items():
                 if key in allowed_keys and value != "********":
                     self._settings[key] = self._encrypt(value) if key in self._SECRET_KEYS else value
+        self._save_settings()
         logger.debug("Settings updated: %s", [k for k in settings if k in allowed_keys])
 
     def get_settings(self) -> dict[str, Any]:
@@ -259,6 +279,19 @@ class ExecutionerAgent:
         Raises:
             ExecutionerError: If no tool can be found for the given inputs.
         """
+        if not agent_name or not isinstance(agent_name, str):
+            raise ExecutionerError("agent_name must be a non-empty string")
+        if len(agent_name) > 100:
+            raise ExecutionerError("agent_name too long (max 100 characters)")
+        if not re.match(r'^[a-zA-Z0-9_-]+$', agent_name):
+            raise ExecutionerError("agent_name contains invalid characters")
+        if not approved_draft or not isinstance(approved_draft, str):
+            raise ExecutionerError("approved_draft must be a non-empty string")
+        if len(approved_draft) > 100_000:
+            raise ExecutionerError("approved_draft too long (max 100,000 characters)")
+        if tool_name is not None and (not isinstance(tool_name, str) or not tool_name):
+            raise ExecutionerError("tool_name must be a non-empty string or None")
+
         # ── Path 1: MCP execution when agent has a routing entry ──
         if tool_name is None:
             mapping = AGENT_MCP_ROUTING.get(agent_name)
@@ -659,9 +692,9 @@ class ExecutionerAgent:
         api_key = self._settings.get("social_api_key", "")
 
         if api_key:
-            try:
-                import requests as req
+            import requests as req
 
+            try:
                 if provider == "socialapi":
                     resp = req.post(
                         "https://api.socialapi.com/v1/posts",
@@ -730,7 +763,7 @@ class ExecutionerAgent:
 
                     return {"success": False, "result": "", "error": "No custom API URL configured (set SOCIAL_API_CUSTOM_URL)"}
 
-            except Exception as exc:
+            except (req.RequestException, ValueError) as exc:
                 return {"success": False, "result": "", "error": f"Social API request failed: {exc}"}
 
         # Fallback: queue to JSONL file for manual review

@@ -6,7 +6,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Any
 
-from core.base_agent import FRENCH_KEYWORDS, BaseAgent
+from core.base_agent import BaseAgent
 from core.events import get_event_bus
 from core.llm_adapter import LLMAdapter
 
@@ -793,9 +793,13 @@ class Orchestrator:
         if not m:
             logger.warning("Could not extract agent from LLM response, defaulting to local_seo")
             return "local_seo"
-        return m.group(1).lower()
+        agent_name = m.group(1).lower()
+        if agent_name not in self._agent_registry:
+            logger.warning(
+                "LLM returned unknown agent '%s', defaulting to local_seo", agent_name
+            )
+            return "local_seo"
+        return agent_name
 
     def _detect_language(self, text: str) -> str:
-        text_lower = text.lower()
-        count = sum(1 for kw in FRENCH_KEYWORDS if re.search(r'\b' + re.escape(kw) + r'\b', text_lower))
-        return "fr" if count >= 3 else "en"
+        return BaseAgent._detect_language(text)
