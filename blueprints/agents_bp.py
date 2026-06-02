@@ -68,7 +68,7 @@ def get_agents():
 def get_agent_stats(agent_id):
     if agent_id not in get_agent_registry():
         return api_error("Agent not found", 404)
-    tenant_id = str(current_user.id) if not current_user.is_anonymous else None
+    tenant_id = get_current_user_id()
     stats = {"agent_id": agent_id, "task_count": 0, "success_count": 0, "failure_count": 0, "enabled": get_agent_registry()[agent_id].enabled, "model": get_agent_registry()[agent_id].model}
     if tenant_id:
         try:
@@ -288,7 +288,7 @@ def agent_chat(agent_id):
         from core.base_agent import BaseAgent
         language = BaseAgent._detect_language(message)
 
-    tenant_id = str(current_user.id) if not current_user.is_anonymous else None
+    tenant_id = get_current_user_id()
     now_iso = datetime.now(UTC).isoformat()
 
     conversation_context = ""
