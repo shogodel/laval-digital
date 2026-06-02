@@ -1100,8 +1100,8 @@ class ExecutionerAgent:
             try:
                 log_path = self._execution_log_path
                 if log_path.exists() and log_path.stat().st_size >= _EXECUTION_LOG_MAX_BYTES:
-                    backup = log_path.with_suffix(".1.jsonl")
-                    backup.unlink(missing_ok=True)
+                    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+                    backup = log_path.with_name(f"execution_log.{ts}.jsonl")
                     log_path.rename(backup)
                     logger.info("Rotated execution log to %s", backup.name)
                 with open(log_path, "a", encoding="utf-8") as f:
@@ -1111,6 +1111,12 @@ class ExecutionerAgent:
 
     def get_execution_history(self, limit: int = 50) -> list[dict[str, Any]]:
         """Read recent execution records from the JSONL log.
+
+        Reads both the current log file and any rotated backups
+        (``execution_log.YYYYMMDD-HHMMSS.jsonl``), returning the most
+        recent *limit* records.  Rotated files are consumed in reverse
+        chronological order (newest backup first) so that records are
+        returned newest-first without sorting the full dataset.
 
         Args:
             limit: Maximum number of records to return, newest first.
@@ -1122,21 +1128,23 @@ class ExecutionerAgent:
         if not self._execution_log_path.exists():
             return []
 
-        from collections import deque
-        records: list[dict[str, Any]] = []
-        tail: deque = deque(maxlen=limit * 2)
-        with self._io_lock, open(self._execution_log_path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    try:
-                        tail.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        logger.warning("Skipping malformed log line")
+        backup_files = sorted(
+            self._execution_log_path.parent.glob("execution_log.*.jsonl"),
+            reverse=True,
+        )
+        all_records: list[dict[str, Any]] = []
 
-        records = list(tail)
-        records.reverse()
-        return records[:limit]
+        for path in (self._execution_log_path, *backup_files):
+            with self._io_lock, open(path, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            all_records.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            logger.warning("Skipping malformed log line in %s", path.name)
+        all_records.reverse()
+        return all_records[:limit]
 
     def get_execution_by_id(self, execution_id: str) -> dict[str, Any] | None:
         """Find a specific execution by its ID.
