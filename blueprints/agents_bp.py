@@ -36,7 +36,7 @@ def get_agents():
             act = activity.get(agent_id, {})
             agents_status.append({
                 "agent_id": agent_id,
-                "enabled": agent.enabled,
+                "enabled": bool(act.get("enabled", agent.enabled)),
                 "model": agent.model,
                 "api_key": "",
                 "status": act.get("status", "idle"),
@@ -69,16 +69,18 @@ def get_agent_stats(agent_id):
     if agent_id not in get_agent_registry():
         return api_error("Agent not found", 404)
     tenant_id = get_current_user_id()
-    stats = {"agent_id": agent_id, "task_count": 0, "success_count": 0, "failure_count": 0, "enabled": get_agent_registry()[agent_id].enabled, "model": get_agent_registry()[agent_id].model}
+    stats = {"agent_id": agent_id, "task_count": 0, "success_count": 0, "failure_count": 0, "enabled": None, "model": get_agent_registry()[agent_id].model}
     if tenant_id:
         try:
             conn = database._get_conn()
             row = conn.execute(
-                "SELECT task_count, success_count, failure_count FROM agent_configs WHERE agent_id = ? AND user_id = ?",
+                "SELECT enabled, task_count, success_count, failure_count FROM agent_configs WHERE agent_id = ? AND user_id = ?",
                 (agent_id, safe_int(tenant_id)),
             ).fetchone()
             if row:
-                stats.update(dict(row))
+                r = dict(row)
+                r["enabled"] = bool(r["enabled"])
+                stats.update(r)
         except Exception as e:
             logger.error("Silent exception in get_agent_stats: %s", e)
     return api_success(stats)
@@ -91,22 +93,33 @@ def toggle_agent(agent_id):
         return api_error("Agent not found", 404)
 
     agent = get_agent_registry()[agent_id]
-    agent.enabled = not agent.enabled
-
     user_id = session.get("active_user_id") or (str(current_user.id) if not current_user.is_anonymous else None)
+    enabled = not agent.enabled
     if user_id and user_id != "admin":
         try:
             conn = database._get_conn()
-            cursor = conn.cursor()
-            cursor.execute(
+            uid = safe_int(user_id)
+            row = conn.execute(
+                "SELECT enabled FROM agent_configs WHERE agent_id = ? AND user_id = ?",
+                (agent_id, uid),
+            ).fetchone()
+            current = bool(row["enabled"]) if row else None
+            enabled = not current if current is not None else not agent.enabled
+            cur = conn.execute(
                 "UPDATE agent_configs SET enabled = ? WHERE agent_id = ? AND user_id = ?",
-                (int(agent.enabled), agent_id, safe_int(user_id)),
+                (int(enabled), agent_id, uid),
             )
+            if cur.rowcount == 0:
+                conn.execute(
+                    "INSERT INTO agent_configs (agent_id, user_id, enabled) VALUES (?, ?, ?)",
+                    (agent_id, uid, int(enabled)),
+                )
             conn.commit()
         except Exception as e:
-            logger.error("Silent exception in toggle_agent: %s", e)
+            logger.error("Failed to persist toggle: %s", e)
 
-    return api_success({"agent_id": agent_id, "enabled": agent.enabled})
+    agent.enabled = enabled
+    return api_success({"agent_id": agent_id, "enabled": enabled})
 
 
 @agents_bp.route("/api/agents/<agent_id>/config", methods=["GET"])

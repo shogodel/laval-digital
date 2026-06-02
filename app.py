@@ -397,7 +397,7 @@ def create_app(config_name: str | None = None):
             conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT agent_id, status, last_invoked, task_count, "
+                "SELECT agent_id, enabled, status, last_invoked, task_count, "
                 "success_count, failure_count, last_draft_preview "
                 "FROM agent_configs WHERE user_id = ?",
                 (uid,),
