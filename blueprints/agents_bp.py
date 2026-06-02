@@ -26,7 +26,7 @@ agents_bp = Blueprint("agents", __name__)
 
 @agents_bp.route("/api/agents", methods=["GET"])
 def get_agents():
-    tenant_id = str(current_user.id) if not current_user.is_anonymous else None
+    tenant_id = get_current_user_id()
     agents_status = []
 
     if tenant_id:

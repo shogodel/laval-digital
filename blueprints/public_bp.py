@@ -237,7 +237,7 @@ def handle_leads():
         lead_id = str(uuid.uuid4())
         now = datetime.now(UTC).isoformat()
         user_id = None
-        if not current_user.is_anonymous:
+        if not current_user.is_anonymous and current_user.role != "admin":
             user_id = int(current_user.id)
         conn.execute(
             "INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
