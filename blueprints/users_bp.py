@@ -3,6 +3,7 @@ import logging
 import re
 
 from flask import Blueprint, request, session
+from flask_login import current_user
 
 from core import database
 from core.api_helpers import api_error, api_success
@@ -126,6 +127,7 @@ def switch_tenant():
 
     if tenant_id:
         session["active_user_id"] = tenant_id
+        logger.info("Admin '%s' switched to tenant %s", current_user.id, tenant_id)
         return api_success({
             "active_tenant": tenant_id,
             "message": f"Switched to {tenant_id}",
