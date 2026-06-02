@@ -62,111 +62,10 @@ def api_contact():
     if not _check_rate_limit("contact"):
         return api_error("Too many submissions. Please try again later.", 429)
     _record_attempt(False, "contact")
-    data = request.json
+    data = request.json or {}
     if not data:
         return api_error("No data provided", 400)
 
-    name = (data.get("name") or "").strip()
-    email = (data.get("email") or "").strip()
-    phone = (data.get("phone") or "").strip()
-    service = (data.get("service") or "").strip()
-    message = (data.get("message") or "").strip()
-
-    if not name or not email or not phone:
-        return api_error("Name, email, and phone are required", 400)
-
-    service_labels = {
-        "managed": "Managed For You ($897.99/mo)",
-        "website": "Custom Website (From $999)",
-        "both": "Both Services",
-        "other": "Other / General Inquiry",
-    }
-    service_label = service_labels.get(service, service)
-
-    try:
-        settings = get_executioner().get_smtp_config()
-        smtp_host = settings.get("smtp_host", "smtp.gmail.com")
-        smtp_port = int(settings.get("smtp_port", 587))
-        smtp_user = settings.get("smtp_username", "")
-        smtp_pass = settings.get("smtp_password", "")
-        smtp_from = settings.get("smtp_from_email", smtp_user)
-        use_tls = settings.get("smtp_use_tls", True)
-
-        if not smtp_user or not smtp_pass:
-            logger.warning("Contact form: SMTP credentials not configured, storing as lead")
-            conn = database._get_conn()
-            lead_id = str(uuid.uuid4())
-            now = datetime.now(UTC).isoformat()
-            conn.execute(
-                "INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (lead_id, None, name, phone, service, "", now),
-            )
-            conn.commit()
-            return api_success({"status": "ok", "message": "Message received (email not configured)"}, status_code=201)
-
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"Contact Form: {service_label} \u2014 {name}"
-        msg["From"] = smtp_from
-        msg["To"] = "lavaldigital@gmail.com"
-        msg["Reply-To"] = email
-
-        text_body = f"""New contact form submission
-
-Name: {name}
-Email: {email}
-Phone: {phone}
-Service: {service_label}
-
-Message:
-{message if message else "(none)"}
-"""
-        html_body = f"""\
-<html>
-<body style="font-family: Arial, sans-serif; color: #1f2937;">
-<h2 style="color: #0f2b45;">New Contact Form Submission</h2>
-<table style="border-collapse: collapse; margin: 16px 0;">
-<tr><td style="padding: 6px 12px; font-weight: bold; background: #f3f4f6;">Name</td><td style="padding: 6px 12px;">{escape(name)}</td></tr>
-<tr><td style="padding: 6px 12px; font-weight: bold; background: #f3f4f6;">Email</td><td style="padding: 6px 12px;"><a href="mailto:{escape(email)}">{escape(email)}</a></td></tr>
-<tr><td style="padding: 6px 12px; font-weight: bold; background: #f3f4f6;">Phone</td><td style="padding: 6px 12px;">{escape(phone)}</td></tr>
-<tr><td style="padding: 6px 12px; font-weight: bold; background: #f3f4f6;">Service</td><td style="padding: 6px 12px;">{escape(service_label)}</td></tr>
-</table>
-<h3 style="color: #0f2b45;">Message</h3>
-<p style="background: #f9fafb; padding: 12px; border-radius: 6px;">{escape(message) if message else "<em>(none)</em>"}</p>
-</body>
-</html>
-"""
-        msg.attach(MIMEText(text_body, "plain", "utf-8"))
-        msg.attach(MIMEText(html_body, "html", "utf-8"))
-
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
-            if use_tls:
-                server.starttls()
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-
-        conn = database._get_conn()
-        lead_id = str(uuid.uuid4())
-        now = datetime.now(UTC).isoformat()
-        conn.execute(
-            "INSERT INTO leads (id, user_id, name, phone, service, urgency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (lead_id, None, name, phone, service, "", now),
-        )
-        conn.commit()
-
-        logger.info("Contact form email sent to lavaldigital@gmail.com from %s (%s)", email, name)
-        return api_success({"status": "ok", "message": "Message sent successfully"}, status_code=201)
-
-    except Exception as e:
-        logger.error("Contact form email failed: %s", e)
-        return api_error("Failed to send message. Please try again later.", 500)
-
-
-@public_bp.route("/api/signup", methods=["POST"])
-def api_signup():
-    if not _check_rate_limit("signup"):
-        return api_error("Too many attempts. Please try again later.", 429)
-
-    data = request.json
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip().lower()
     password = data.get("password", "")
@@ -229,7 +128,7 @@ def handle_leads():
     if request.method == "POST":
         if not _check_rate_limit("leads"):
             return api_error("Too many attempts. Please try again later.", 429)
-        data = request.json
+        data = request.json or {}
         name = data.get("name", "")
         phone = data.get("phone", "")
         if not name or not phone:
@@ -286,7 +185,7 @@ def api_push_vapid_key():
 
 @public_bp.route("/api/push/subscribe", methods=["POST"])
 def api_push_subscribe():
-    data = request.json
+    data = request.json or {}
     if not data:
         return api_error("No subscription data", 400)
     ok = get_push_manager().subscribe(data)

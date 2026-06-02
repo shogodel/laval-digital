@@ -97,7 +97,7 @@ def save_mcp_credentials():
     if not tenant_id:
         return api_error("No tenant selected", 400)
 
-    data = request.json
+    data = request.json or {}
     server_name = data.get("server_name", "")
     platform = data.get("platform", "")
     credentials = data.get("credentials", {})

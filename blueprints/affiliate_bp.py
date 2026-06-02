@@ -173,7 +173,7 @@ def affiliate_status():
 def affiliate_signup_api():
     """Register a new affiliate and return their referral code."""
     from app import affiliate_manager
-    data = request.json
+    data = request.json or {}
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip()
     phone = (data.get("phone") or "").strip()
@@ -285,7 +285,7 @@ def api_admin_process_payout(code):
         return auth_check
     from core.app_state import get_affiliate_manager
     affiliate_manager = get_affiliate_manager()
-    data = request.json
+    data = request.json or {}
     payout_id = data.get("payout_id", "")
     if not payout_id:
         return api_error("payout_id required", 400)

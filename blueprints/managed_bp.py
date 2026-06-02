@@ -185,7 +185,7 @@ def api_managed_clients():
 @managed_bp.route("/api/managed/pause", methods=["POST"])
 @admin_required
 def api_managed_pause():
-    data = request.json
+    data = request.json or {}
     tenant_id = data.get("tenant_id")
     if not tenant_id:
         return api_error("tenant_id required", 400)
@@ -207,7 +207,7 @@ def api_managed_pause():
 @managed_bp.route("/api/managed/resume", methods=["POST"])
 @admin_required
 def api_managed_resume():
-    data = request.json
+    data = request.json or {}
     tenant_id = data.get("tenant_id")
     if not tenant_id:
         return api_error("tenant_id required", 400)
@@ -230,7 +230,7 @@ def api_managed_resume():
 @managed_bp.route("/api/managed/bulk-approve", methods=["POST"])
 @admin_required
 def api_managed_bulk_approve():
-    data = request.json
+    data = request.json or {}
     tenant_id = data.get("tenant_id")
     if not tenant_id:
         return api_error("tenant_id required", 400)

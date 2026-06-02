@@ -65,7 +65,7 @@ def api_training_feedback():
     """Log training article feedback."""
     if not (current_user.is_authenticated and current_user.role == "admin") and not session.get("_user_id"):
         return api_error("Unauthorized", 401)
-    data = request.json
+    data = request.json or {}
     slug = data.get("slug", "")
     helpful = data.get("helpful")
     logger.info("Training feedback: slug=%s helpful=%s", slug, helpful)

@@ -60,7 +60,7 @@ def api_list_users():
 @users_bp.route("/api/users", methods=["POST"])
 @admin_required
 def api_add_user():
-    data = request.json
+    data = request.json or {}
     email = (data.get("email") or "").strip()
     password = data.get("password", "")
     role = data.get("role", "user")
@@ -122,7 +122,7 @@ def list_tenants():
 @users_bp.route("/api/tenants/switch", methods=["POST"])
 @admin_required
 def switch_tenant():
-    data = request.json
+    data = request.json or {}
     tenant_id = data.get("tenant_id")
 
     if tenant_id:

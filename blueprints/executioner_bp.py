@@ -111,7 +111,7 @@ def validate_social_key():
 @executioner_bp.route("/social-settings", methods=["POST"])
 @admin_required
 def save_social_settings():
-    data = request.json
+    data = request.json or {}
     exe = get_executioner()
     exe.update_settings({
         "social_api_provider": data.get("provider", "socialapi"),

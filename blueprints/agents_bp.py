@@ -139,7 +139,7 @@ def get_available_models():
 
 @agents_bp.route("/api/models/detect", methods=["POST"])
 def detect_models():
-    data = request.json
+    data = request.json or {}
     api_key = data.get("api_key", "")
     if not api_key:
         return api_error("API key is required", 400)
@@ -223,7 +223,7 @@ def invoke_agent(agent_id):
     if not agent.enabled:
         return api_error("Agent is disabled", 403)
 
-    data = request.json
+    data = request.json or {}
     task = data.get("task")
 
     if not task:

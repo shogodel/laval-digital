@@ -273,7 +273,7 @@ def api_analytics_executions():
 @analytics_bp.route("/api/analytics/report/generate", methods=["POST"])
 @admin_required
 def api_analytics_generate_report():
-    data = request.json
+    data = request.json or {}
     user_id = data.get("user_id") or session.get("active_user_id")
     month = data.get("month")
     year = data.get("year")
@@ -287,7 +287,7 @@ def api_analytics_generate_report():
 @analytics_bp.route("/api/analytics/report/save", methods=["POST"])
 @admin_required
 def api_analytics_save_report():
-    data = request.json
+    data = request.json or {}
     report_id = uuid.uuid4().hex[:12]
     raw_html = data.get("html", "")
     entry = {
@@ -347,7 +347,7 @@ def api_analytics_email_saved_report(report_id):
 @analytics_bp.route("/api/analytics/report/email", methods=["POST"])
 @admin_required
 def api_analytics_email_report():
-    data = request.json
+    data = request.json or {}
     user_id = data.get("user_id")
     raw_html = data.get("html")
     if not user_id or not raw_html:
