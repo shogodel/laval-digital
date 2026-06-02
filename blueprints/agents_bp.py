@@ -93,14 +93,14 @@ def toggle_agent(agent_id):
     agent = get_agent_registry()[agent_id]
     agent.enabled = not agent.enabled
 
-    tenant_id = str(current_user.id) if not current_user.is_anonymous else None
-    if tenant_id:
+    user_id = session.get("active_user_id") or (str(current_user.id) if not current_user.is_anonymous else None)
+    if user_id and user_id != "admin":
         try:
             conn = database._get_conn()
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE agent_configs SET enabled = ? WHERE agent_id = ? AND user_id = ?",
-                (int(agent.enabled), agent_id, safe_int(tenant_id)),
+                (int(agent.enabled), agent_id, safe_int(user_id)),
             )
             conn.commit()
         except Exception as e:
