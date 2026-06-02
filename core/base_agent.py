@@ -125,17 +125,23 @@ class BaseAgent:
         return "IMPORTANT: Respond in English."
 
     @staticmethod
-    def _parse_confidence(draft: str) -> float:
+    def _parse_confidence(draft: str) -> float | None:
         """Extract confidence score from the end of an agent's draft.
 
         Expects the draft to end with ``CONFIDENCE: <0-100>`` (optionally
-        followed by a ``REASONING:`` line). Returns 0.0 if not found.
+        followed by a ``REASONING:`` line). Returns ``None`` if the
+        confidence line is missing — this may indicate a prompt-injection
+        attempt that stripped the metadata.
+
+        Returns:
+            Normalized float 0.0–1.0, or ``None`` if not found.
         """
         match = re.search(r'CONFIDENCE\s*:\s*(\d{1,3})', draft)
         if match:
             score = int(match.group(1))
             return max(0.0, min(1.0, score / 100.0))
-        return 0.0
+        logger.warning("Could not parse CONFIDENCE from draft (possible injection)")
+        return None
 
     @staticmethod
     def _strip_confidence_metadata(draft: str) -> str:
@@ -184,7 +190,7 @@ class BaseAgent:
         return {
             "draft_output": self._strip_confidence_metadata(raw),
             "language": self._detect_language(task),
-            "confidence": self._parse_confidence(raw),
+            "confidence": self._parse_confidence(raw) or 0.0,
         }
 
     def _stream_llm(self, task: str, user_id: int = 0):
@@ -209,7 +215,7 @@ class BaseAgent:
             "type": "result",
             "draft_output": self._strip_confidence_metadata(raw),
             "language": self._detect_language(task),
-            "confidence": self._parse_confidence(raw),
+            "confidence": self._parse_confidence(raw) or 0.0,
         }
 
     def invoke_llm(self, task: str, user_id: int = 0) -> dict[str, Any]:

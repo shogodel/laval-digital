@@ -49,7 +49,7 @@ class TestParseConfidence:
 
     def test_no_confidence(self):
         draft = "Some output without confidence"
-        assert BaseAgent._parse_confidence(draft) == 0.0
+        assert BaseAgent._parse_confidence(draft) is None
 
     def test_confidence_without_reasoning(self):
         draft = "Draft text\nCONFIDENCE: 42"

@@ -576,7 +576,7 @@ class Orchestrator:
 
             # Parse confidence from agent response if suggest/auto
             if autonomy_level in ("suggest", "auto", "silent"):
-                confidence = BaseAgent._parse_confidence(response)
+                confidence = BaseAgent._parse_confidence(response) or 0.0
                 if autonomy_level in ("auto", "silent"):
                     confidence = min(confidence, 0.5)
 
