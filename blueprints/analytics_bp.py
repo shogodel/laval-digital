@@ -10,6 +10,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
 
+import bleach
+
 from flask import Blueprint, request, session
 from flask_login import current_user
 
@@ -25,6 +27,19 @@ analytics_bp = Blueprint("analytics", __name__, url_prefix="")
 
 _report_history: list[dict[str, Any]] = []
 _report_history_lock = threading.Lock()
+
+_ALLOWED_HTML_TAGS = frozenset({
+    "p", "br", "strong", "em", "u", "h1", "h2", "h3", "h4", "h5", "h6",
+    "ul", "ol", "li", "a", "code", "pre", "blockquote", "img", "hr",
+    "table", "thead", "tbody", "tr", "th", "td", "span", "div",
+    "section", "header", "footer", "main", "article",
+})
+_ALLOWED_HTML_ATTRS = {
+    "a": ("href", "title", "rel"), "img": ("src", "alt", "title", "width", "height"),
+    "td": ("colspan", "rowspan"), "th": ("colspan", "rowspan"),
+    "*": ("class", "id"),
+}
+_ALLOWED_HTML_PROTOCOLS = frozenset({"https", "http", "mailto"})
 
 
 def _safe_int(val, default=0):
@@ -275,12 +290,19 @@ def api_analytics_generate_report():
 def api_analytics_save_report():
     data = request.json
     report_id = uuid.uuid4().hex[:12]
+    raw_html = data.get("html", "")
     entry = {
         "id": report_id,
         "user_id": data.get("user_id", ""),
         "month": data.get("month"),
         "year": data.get("year"),
-        "html": data.get("html", ""),
+        "html": bleach.clean(
+            raw_html,
+            tags=_ALLOWED_HTML_TAGS,
+            attributes=_ALLOWED_HTML_ATTRS,
+            protocols=_ALLOWED_HTML_PROTOCOLS,
+            strip=True,
+        ),
         "created_at": datetime.now(UTC).isoformat(),
     }
     with _report_history_lock:
@@ -328,7 +350,14 @@ def api_analytics_email_saved_report(report_id):
 def api_analytics_email_report():
     data = request.json
     user_id = data.get("user_id")
-    html = data.get("html")
-    if not user_id or not html:
+    raw_html = data.get("html")
+    if not user_id or not raw_html:
         return api_error("user_id and html are required", 400)
+    html = bleach.clean(
+        raw_html,
+        tags=_ALLOWED_HTML_TAGS,
+        attributes=_ALLOWED_HTML_ATTRS,
+        protocols=_ALLOWED_HTML_PROTOCOLS,
+        strip=True,
+    )
     return _send_report_email(html, user_id)
