@@ -20,7 +20,7 @@ from core.app_state import (
 )
 from core.auth import admin_required
 from core.events import get_event_bus
-from mcp import AGENT_MCP_ROUTING, get_mcp_server
+
 
 logger = logging.getLogger(__name__)
 orchestrator_bp = Blueprint("orchestrator", __name__)
@@ -170,28 +170,10 @@ def respond_approval(thread_id):
 
         if approved and agent_name and agent_name in get_agent_registry():
             exec_result = None
-            mapping = AGENT_MCP_ROUTING.get(agent_name)
-            if mapping:
-                server_name, tool_name = mapping
-                mcp_server = get_mcp_server(server_name)
-                if mcp_server:
-                    try:
-                        mcp_result = mcp_server.call_tool(tool_name, content=draft)
-                        exec_result = {
-                            "success": mcp_result.get("success", False),
-                            "result": mcp_result.get("result", ""),
-                            "error": mcp_result.get("error"),
-                            "execution_id": f"mcp-{server_name}-{tool_name}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-                        }
-                        logger.info("MCP execution: %s/%s \u2192 success=%s", server_name, tool_name, exec_result['success'])
-                    except Exception as e:
-                        logger.warning("MCP execution failed, falling back to Executioner: %s", e)
-
-            if not exec_result:
-                try:
-                    exec_result = get_executioner().execute(agent_name, draft)
-                except Exception as exec_err:
-                    exec_result = {"success": False, "error": str(exec_err)}
+            try:
+                exec_result = get_executioner().execute(agent_name, draft)
+            except Exception as exec_err:
+                exec_result = {"success": False, "error": str(exec_err)}
 
             execution_result = {
                 "success": exec_result.get("success", False),
