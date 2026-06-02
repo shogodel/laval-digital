@@ -873,12 +873,13 @@ class ExecutionerAgent:
         Returns:
             Result dict.
         """
-        smtp_host = self._settings.get("smtp_host", "")
-        smtp_port = int(self._settings.get("smtp_port", 587))
-        smtp_user = self._settings.get("smtp_username", "")
-        smtp_pass = self._settings.get("smtp_password", "")
-        smtp_from = self._settings.get("smtp_from_email", smtp_user)
-        use_tls = self._settings.get("smtp_use_tls", True)
+        config = self.get_smtp_config()
+        smtp_host = config["smtp_host"]
+        smtp_port = config["smtp_port"]
+        smtp_user = config["smtp_username"]
+        smtp_pass = config["smtp_password"]
+        smtp_from = config["smtp_from_email"]
+        use_tls = config["smtp_use_tls"]
 
         if not smtp_user:
             return {
