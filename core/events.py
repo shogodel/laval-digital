@@ -3,7 +3,7 @@ import logging
 import threading
 import uuid
 from datetime import UTC, datetime
-from queue import Queue
+from queue import Full, Queue
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -53,8 +53,10 @@ class EventBus:
             for q in self._subscribers:
                 try:
                     q.put_nowait(event)
+                except Full:
+                    logger.debug("Subscriber queue full, dropping event")
                 except Exception as e:
-                    logger.debug("Event subscriber queue failed: %s", e)
+                    logger.warning("Removing dead subscriber: %s", e)
                     dead.append(q)
             for q in dead:
                 with contextlib.suppress(ValueError):
