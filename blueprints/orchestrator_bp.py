@@ -116,7 +116,7 @@ def respond_approval(thread_id):
 
     drafts = orch.get_pending_drafts(tenant_id)
     if thread_id in drafts:
-        result = orch.handle_approval(thread_id, approved=approved)
+        result = orch.handle_approval(thread_id, approved=approved, user_id=_safe_tenant_id(tenant_id) or 0)
         # Mark thread approved in DB so the DB-fallback path
         # does not re-execute the same draft.
         uid = _safe_tenant_id(tenant_id)
