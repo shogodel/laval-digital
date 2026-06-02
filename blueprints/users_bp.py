@@ -133,7 +133,9 @@ def switch_tenant():
             "message": f"Switched to {tenant_id}",
         })
     else:
-        session.pop("active_user_id", None)
+        cleared = session.pop("active_user_id", None)
+        if cleared:
+            logger.info("Admin '%s' cleared tenant %s", current_user.id, cleared)
         return api_success({
             "active_tenant": None,
             "message": "Client cleared",
