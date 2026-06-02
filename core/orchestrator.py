@@ -335,16 +335,6 @@ class Orchestrator:
                 return {"success": False, "action": "delete_error"}
         return {"success": False, "action": "no_undo_available"}
 
-    def _record_feedback(self, user_id: int, agent_id: str, draft: str, approved: bool) -> None:
-        if self._memory and user_id:
-            self._memory.record_feedback(user_id, agent_id, "approval", draft, approved)
-
-    def _publish_finding(self, user_id: int, agent_id: str, summary: str) -> None:
-        if self._memory and user_id:
-            self._memory.publish_finding(user_id, agent_id, "agent_output", summary)
-        with self._findings_lock:
-            self._findings_board.setdefault(agent_id, []).append({"summary": summary, "ts": datetime.now(UTC).isoformat()})
-
     def _send_push(self, event_type: str, agent: str, data: dict[str, Any]) -> None:
         if self._push_manager and hasattr(self._push_manager, "send_event"):
             try:

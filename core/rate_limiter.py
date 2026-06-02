@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from functools import wraps
 from typing import Any
 
-from flask import request, jsonify
+from flask import jsonify, request
 
 from core import database
 

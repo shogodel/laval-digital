@@ -223,7 +223,7 @@ class ExecutionerAgent:
         with self._settings_lock:
             public = dict(self._settings)
         if public.get("smtp_password"):
-            public["smtp_password"] = "********"
+            public["smtp_password"] = "********"  # noqa: S105
         if public.get("social_api_key"):
             public["social_api_key"] = "********"
         return public

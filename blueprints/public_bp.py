@@ -14,7 +14,6 @@ from werkzeug.security import generate_password_hash
 
 from blueprints._shared import AGENT_PERSONALITIES
 from core import database
-from core.rate_limiter import ip_rate_limit
 from core.api_helpers import api_error, api_success
 from core.app_state import (
     get_current_user_id,
@@ -31,6 +30,7 @@ from core.auth import (
     _record_attempt,
     validate_password,
 )
+from core.rate_limiter import ip_rate_limit
 
 logger = logging.getLogger(__name__)
 public_bp = Blueprint("public", __name__)
