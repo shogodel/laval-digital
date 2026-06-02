@@ -18,7 +18,7 @@ from flask_login import current_user
 from core import database
 from core.analytics import AnalyticsEngine
 from core.api_helpers import api_error, api_success
-from core.app_state import get_executioner
+from core.app_state import get_current_user_id, get_executioner
 from core.auth import admin_required
 
 logger = logging.getLogger(__name__)
@@ -238,7 +238,7 @@ def api_analytics_summary():
 @analytics_bp.route("/api/analytics/leads")
 @admin_required
 def api_analytics_leads():
-    user_id = request.args.get("client", "").strip() or session.get("active_user_id") or getattr(current_user, "id", None)
+    user_id = request.args.get("client", "").strip() or session.get("active_user_id") or get_current_user_id()
     start = request.args.get("start")
     end = request.args.get("end")
     if not user_id:
@@ -250,7 +250,7 @@ def api_analytics_leads():
 @analytics_bp.route("/api/analytics/agents")
 @admin_required
 def api_analytics_agents():
-    user_id = request.args.get("client", "").strip() or session.get("active_user_id") or getattr(current_user, "id", None)
+    user_id = request.args.get("client", "").strip() or session.get("active_user_id") or get_current_user_id()
     start = request.args.get("start")
     end = request.args.get("end")
     if not user_id:
@@ -262,7 +262,7 @@ def api_analytics_agents():
 @analytics_bp.route("/api/analytics/executions")
 @admin_required
 def api_analytics_executions():
-    user_id = request.args.get("client", "").strip() or session.get("active_user_id") or getattr(current_user, "id", None)
+    user_id = request.args.get("client", "").strip() or session.get("active_user_id") or get_current_user_id()
     start = request.args.get("start")
     end = request.args.get("end")
     if not user_id:
@@ -293,7 +293,7 @@ def api_analytics_save_report():
     raw_html = data.get("html", "")
     entry = {
         "id": report_id,
-        "user_id": data.get("user_id", ""),
+        "user_id": user_id or "",
         "month": data.get("month"),
         "year": data.get("year"),
         "html": bleach.clean(
