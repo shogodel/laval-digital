@@ -206,7 +206,7 @@ class Orchestrator:
         self._executioner = executioner
         self._push_manager = push_manager
         self._memory = memory
-        self._pending_drafts: dict[str, dict[str, Any]] = {}
+        self._pending_drafts: dict[str, deque[dict[str, Any]]] = {}
         self._pending_lock = Lock()
         self._activity_feed: list[dict[str, Any]] = []
         self._activity_lock = Lock()
@@ -282,11 +282,15 @@ class Orchestrator:
             return self._activity_feed[:limit]
 
     def get_pending_drafts(self, user_id: int | None = None) -> dict[str, dict[str, Any]]:
-        """Return all pending approval drafts, optionally filtered by user_id."""
+        """Return the latest pending approval draft per thread, optionally filtered by user_id."""
         with self._pending_lock:
-            if user_id is None:
-                return dict(self._pending_drafts)
-            return {tid: info for tid, info in self._pending_drafts.items() if info.get("user_id") == user_id}
+            latest = {}
+            for tid, drafts in self._pending_drafts.items():
+                if drafts:
+                    info = drafts[-1]
+                    if user_id is None or info.get("user_id") == user_id:
+                        latest[tid] = info
+            return latest
 
     # ------------------------------------------------------------------
     # Welcome / Suggestions
@@ -688,11 +692,8 @@ class Orchestrator:
 
             # Store draft for human approval (manual mode or low-confidence suggest)
             with self._pending_lock:
-                if thread_id in self._pending_drafts:
-                    logger.warning(
-                        "Overwriting pending draft for thread %s (agent=%s)", thread_id, agent_name
-                    )
-                self._pending_drafts[thread_id] = {
+                drafts = self._pending_drafts.setdefault(thread_id, deque(maxlen=5))
+                drafts.append({
                     "agent": agent_name,
                     "draft": clean_draft,
                     "raw_draft": response,
@@ -702,7 +703,7 @@ class Orchestrator:
                     "autonomy": autonomy_level,
                     "user_id": user_id,
                     "created_at": now_iso,
-                }
+                })
 
             result: dict[str, Any] = {
                 "response": clean_draft,
@@ -733,7 +734,8 @@ class Orchestrator:
 
     def _handle_approval(self, thread_id: str, approved: bool, user_id: int = 0) -> dict[str, Any]:
         with self._pending_lock:
-            if thread_id not in self._pending_drafts:
+            drafts = self._pending_drafts.get(thread_id)
+            if not drafts:
                 return {
                     "response": "I don't have any pending content to approve or reject. Send me a new request and I'll generate something for you!",
                     "agent": "orchestrator",
@@ -741,7 +743,9 @@ class Orchestrator:
                     "thread_id": thread_id,
                     "pending_approval": False,
                 }
-            draft_info = self._pending_drafts.pop(thread_id)
+            draft_info = drafts.pop()
+            if not drafts:
+                del self._pending_drafts[thread_id]
         language = draft_info.get("language", "en")
 
         try:
@@ -863,8 +867,7 @@ class Orchestrator:
         except Exception:
             logger.exception("Unexpected error handling approval for thread %s", thread_id)
             with self._pending_lock:
-                if thread_id not in self._pending_drafts:
-                    self._pending_drafts[thread_id] = draft_info
+                self._pending_drafts.setdefault(thread_id, deque(maxlen=5)).append(draft_info)
             return {
                 "response": "An unexpected error occurred. The draft has been preserved and you can try again.",
                 "agent": "orchestrator",
