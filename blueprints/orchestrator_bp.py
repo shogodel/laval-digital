@@ -343,7 +343,7 @@ def api_events_stream():
                     yield f"event: {event['type']}\ndata: {json.dumps(event)}\n\n"
                 except _QueueEmpty:
                     yield f"event: heartbeat\ndata: {{\"ts\": \"{datetime.now(UTC).isoformat()}\"}}\n\n"
-        except GeneratorExit:
+        finally:
             event_bus.unsubscribe(q)
 
     from flask import current_app as app
