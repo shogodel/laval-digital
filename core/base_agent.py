@@ -110,6 +110,7 @@ class BaseAgent:
             api_base=self._credentials.get("api_base"),
             temperature=0.7,
         )
+        return self._llm_adapter
 
     @staticmethod
     def _detect_language(task: str) -> str:
