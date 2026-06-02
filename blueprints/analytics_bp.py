@@ -105,12 +105,11 @@ def _send_report_email(html: str, user_id: str):
 def api_analytics_summary():
     if not (current_user.is_authenticated and current_user.role == "admin"):
         return api_error("Unauthorized", 401)
-    user_id = request.args.get("client", "").strip()
+    user_id = request.args.get("client", "").strip() or get_current_user_id()
     days = int(request.args.get("days", 30))
     end_date = datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     is_admin = current_user.is_authenticated and current_user.role == "admin"
-    session_user = session.get("active_user_id") or getattr(current_user, "id", None)
     if user_id and is_admin:
         engine = AnalyticsEngine(_safe_int(user_id))
         perf = engine.get_performance_summary()
