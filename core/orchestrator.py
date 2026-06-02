@@ -260,9 +260,9 @@ class Orchestrator:
         for k in stale:
             del self._recent_cache[k]
 
-        _MAX_CACHE_ENTRIES = 500
-        if len(self._recent_cache) > _MAX_CACHE_ENTRIES:
-            excess = len(self._recent_cache) - _MAX_CACHE_ENTRIES
+        max_cache_entries = 500
+        if len(self._recent_cache) > max_cache_entries:
+            excess = len(self._recent_cache) - max_cache_entries
             evict = sorted(self._recent_cache.items(), key=lambda kv: kv[1][0])[:excess]
             for k, _ in evict:
                 del self._recent_cache[k]
@@ -744,106 +744,134 @@ class Orchestrator:
             draft_info = self._pending_drafts.pop(thread_id)
         language = draft_info.get("language", "en")
 
-        if approved:
-            execution_result = None
-            agent_name = draft_info["agent"]
-            draft = draft_info["draft"]
-            now_iso = datetime.now(UTC).isoformat()
+        try:
+            if approved:
+                execution_result = None
+                agent_name = draft_info["agent"]
+                draft = draft_info["draft"]
+                now_iso = datetime.now(UTC).isoformat()
 
-            if self._executioner:
+                if self._executioner:
+                    try:
+                        exec_result = self._executioner.execute(agent_name, draft)
+                        execution_result = {
+                            "success": exec_result.get("success", False),
+                            "result": exec_result.get("result", ""),
+                            "execution_id": exec_result.get("execution_id"),
+                            "execution_source": exec_result.get("execution_source", "unknown"),
+                        }
+                        logger.info(
+                            "Orchestrator executed draft via %s (success=%s)",
+                            agent_name,
+                            execution_result["success"],
+                        )
+                    except Exception as e:
+                        logger.error("Orchestrator execution failed for %s: %s", agent_name, e, exc_info=True)
+                        execution_result = {"success": False, "error": "Execution failed."}
+
+                success_flag = execution_result.get("success") if execution_result else None
+                self._push_activity({
+                    "id": uuid.uuid4().hex[:12],
+                    "agent": agent_name,
+                    "action": "approved",
+                    "autonomy": draft_info.get("autonomy", "manual"),
+                    "confidence": draft_info.get("confidence", 0.0),
+                    "draft_preview": draft[:120],
+                    "success": success_flag,
+                    "timestamp": now_iso,
+                })
+
+                if self._memory and user_id:
+                    try:
+                        self._memory.record_feedback(user_id, agent_name, "approval", draft, True)
+                        self._memory.publish_finding(user_id, agent_name, "agent_output", f"Approved draft: {draft[:80]}...")
+                    except Exception as e:
+                        logger.warning("Failed to record feedback for approved draft: %s", e)
+
+                with self._findings_lock:
+                    self._findings_board.setdefault(agent_name, []).append({"summary": f"Approved draft: {draft[:80]}...", "ts": now_iso})
+
+                # Track for undo
+                self._last_executions.append({
+                    "agent": agent_name,
+                    "tool": execution_result.get("tool", "") if execution_result else "",
+                    "file_path": execution_result.get("result", "") if execution_result else "",
+                    "draft": draft[:200],
+                })
+
+                event_type = "agent_executed" if success_flag else "agent_failed"
+                event_data_approve = {
+                    "autonomy": draft_info.get("autonomy", "manual"),
+                    "confidence": draft_info.get("confidence", 0.0),
+                    "draft_preview": draft[:200],
+                    "success": success_flag,
+                    "source": "human_approval",
+                }
+                get_event_bus().publish(event_type, agent_name, event_data_approve)
+                self._send_push(event_type, agent_name, event_data_approve)
+
+                msg_en = f"✅ Approved! The content from **{agent_name}** has been executed."
+                msg_fr = f"✅ Approuvé ! Le contenu de **{agent_name}** a été exécuté."
+                if execution_result:
+                    source_label = execution_result.get("execution_source", "unknown")
+                    if execution_result.get("success"):
+                        msg_en += f"\n\n**Result:** {execution_result.get('result', 'Done.')} *(via {source_label})*"
+                        msg_fr += f"\n\n**Résultat :** {execution_result.get('result', 'Terminé.')} *(via {source_label})*"
+                    elif execution_result.get("error"):
+                        msg_en += f"\n\n**Error:** {execution_result['error']}"
+                        msg_fr += f"\n\n**Erreur :** {execution_result['error']}"
+
+                return {
+                    "response": msg_fr if language == "fr" else msg_en,
+                    "agent": agent_name,
+                    "status": "approved",
+                    "thread_id": thread_id,
+                    "pending_approval": False,
+                    "approved_draft": draft,
+                    "agent_for_execution": agent_name,
+                    "execution": execution_result,
+                }
+
+            event_data_reject = {
+                "thread_id": thread_id,
+                "approved": False,
+                "task": draft_info.get("task", "")[:200],
+            }
+            get_event_bus().publish("approval_responded", draft_info["agent"], event_data_reject)
+            self._send_push("approval_responded", draft_info["agent"], event_data_reject)
+            if self._memory and int(draft_info.get("user_id", 0) or 0):
                 try:
-                    exec_result = self._executioner.execute(agent_name, draft)
-                    execution_result = {
-                        "success": exec_result.get("success", False),
-                        "result": exec_result.get("result", ""),
-                        "execution_id": exec_result.get("execution_id"),
-                        "execution_source": exec_result.get("execution_source", "unknown"),
-                    }
-                    logger.info(
-                        "Orchestrator executed draft via %s (success=%s)",
-                        agent_name,
-                        execution_result["success"],
+                    self._memory.record_feedback(
+                        int(draft_info.get("user_id", 0) or 0),
+                        draft_info["agent"],
+                        "approval",
+                        draft_info.get("draft", ""),
+                        False,
                     )
                 except Exception as e:
-                    logger.error("Orchestrator execution failed for %s: %s", agent_name, e, exc_info=True)
-                    execution_result = {"success": False, "error": "Execution failed."}
+                    logger.warning("Failed to record feedback for rejected draft: %s", e)
 
-            success_flag = execution_result.get("success") if execution_result else None
-            self._push_activity({
-                "id": uuid.uuid4().hex[:12],
-                "agent": agent_name,
-                "action": "approved",
-                "autonomy": draft_info.get("autonomy", "manual"),
-                "confidence": draft_info.get("confidence", 0.0),
-                "draft_preview": draft[:120],
-                "success": success_flag,
-                "timestamp": now_iso,
-            })
-
-            # Record feedback (memory)
-            self._record_feedback(user_id, agent_name, draft, True)
-            self._publish_finding(user_id, agent_name, f"Approved draft: {draft[:80]}...")
-
-            # Track for undo
-            self._last_executions.append({
-                "agent": agent_name,
-                "tool": execution_result.get("tool", "") if execution_result else "",
-                "file_path": execution_result.get("result", "") if execution_result else "",
-                "draft": draft[:200],
-            })
-
-            # Publish event
-            event_type = "agent_executed" if success_flag else "agent_failed"
-            event_data_approve = {
-                "autonomy": draft_info.get("autonomy", "manual"),
-                "confidence": draft_info.get("confidence", 0.0),
-                "draft_preview": draft[:200],
-                "success": success_flag,
-                "source": "human_approval",
-            }
-            get_event_bus().publish(event_type, agent_name, event_data_approve)
-            self._send_push(event_type, agent_name, event_data_approve)
-
-            msg_en = f"✅ Approved! The content from **{agent_name}** has been executed."
-            msg_fr = f"✅ Approuvé ! Le contenu de **{agent_name}** a été exécuté."
-            if execution_result:
-                source_label = execution_result.get("execution_source", "unknown")
-                if execution_result.get("success"):
-                    msg_en += f"\n\n**Result:** {execution_result.get('result', 'Done.')} *(via {source_label})*"
-                    msg_fr += f"\n\n**Résultat :** {execution_result.get('result', 'Terminé.')} *(via {source_label})*"
-                elif execution_result.get("error"):
-                    msg_en += f"\n\n**Error:** {execution_result['error']}"
-                    msg_fr += f"\n\n**Erreur :** {execution_result['error']}"
-
+            msg_en = f"❌ Rejected. The content from **{draft_info['agent']}** has been discarded. Send me a new request and I'll try again!"
+            msg_fr = f"❌ Rejeté. Le contenu de **{draft_info['agent']}** a été supprimé. Envoyez-moi une nouvelle demande et je réessaierai !"
             return {
                 "response": msg_fr if language == "fr" else msg_en,
-                "agent": agent_name,
-                "status": "approved",
+                "agent": draft_info["agent"],
+                "status": "rejected",
                 "thread_id": thread_id,
                 "pending_approval": False,
-                "approved_draft": draft,
-                "agent_for_execution": agent_name,
-                "execution": execution_result,
             }
-
-        event_data_reject = {
-            "thread_id": thread_id,
-            "approved": False,
-            "task": draft_info.get("task", "")[:200],
-        }
-        get_event_bus().publish("approval_responded", draft_info["agent"], event_data_reject)
-        self._send_push("approval_responded", draft_info["agent"], event_data_reject)
-        self._record_feedback(int(draft_info.get("user_id", 0) or 0), draft_info["agent"], draft_info.get("draft", ""), False)
-
-        msg_en = f"❌ Rejected. The content from **{draft_info['agent']}** has been discarded. Send me a new request and I'll try again!"
-        msg_fr = f"❌ Rejeté. Le contenu de **{draft_info['agent']}** a été supprimé. Envoyez-moi une nouvelle demande et je réessaierai !"
-        return {
-            "response": msg_fr if language == "fr" else msg_en,
-            "agent": draft_info["agent"],
-            "status": "rejected",
-            "thread_id": thread_id,
-            "pending_approval": False,
-        }
+        except Exception:
+            logger.exception("Unexpected error handling approval for thread %s", thread_id)
+            with self._pending_lock:
+                if thread_id not in self._pending_drafts:
+                    self._pending_drafts[thread_id] = draft_info
+            return {
+                "response": "An unexpected error occurred. The draft has been preserved and you can try again.",
+                "agent": "orchestrator",
+                "status": "error",
+                "thread_id": thread_id,
+                "pending_approval": True,
+            }
 
     def handle_approval(self, thread_id: str, approved: bool, user_id: int = 0) -> dict[str, Any]:
         """Public wrapper for responding to approval requests."""
