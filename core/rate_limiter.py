@@ -1,6 +1,12 @@
 import logging
 import threading
+import time
+from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import wraps
+from typing import Any
+
+from flask import request, jsonify
 
 from core import database
 
@@ -206,3 +212,67 @@ def log_usage(
         logger.debug("Logged LLM usage: user=%d model=%s tokens=%d cost=%.4f", user_id, model, total_tokens, cost)
     except Exception as e:
         logger.warning("Failed to log LLM usage: %s", e)
+
+
+# ── IP-based HTTP rate limiting ──────────────────────────────────────
+
+_ip_request_log: dict[str, list[float]] = {}
+_ip_rate_lock = threading.Lock()
+
+
+def _get_client_ip() -> str:
+    """Extract the real client IP from request headers or socket."""
+    forwarded = request.headers.get("X-Forwarded-For", "").partition(",")[0].strip()
+    if forwarded:
+        return forwarded
+    return request.remote_addr or "unknown"
+
+
+def check_ip_rate_limit(max_request: int = 60, window_seconds: int = 60) -> None:
+    """Enforce a per-IP sliding-window rate limit.
+
+    Raises ``RateLimitExceededError`` if the client has exceeded
+    *max_request* requests within the last *window_seconds*.
+
+    Safe for multi-worker deployments — each worker enforces its own
+    budget, so the effective limit is ``max_request * worker_count`` in
+    the window.  This is acceptable because the primary goal is to
+    prevent a single abusive IP from saturating one worker.
+    """
+    ip = _get_client_ip()
+    now = time.monotonic()
+    cutoff = now - window_seconds
+
+    with _ip_rate_lock:
+        timestamps = _ip_request_log.get(ip, [])
+        # Prune expired entries
+        fresh = [ts for ts in timestamps if ts > cutoff]
+        if len(fresh) >= max_request:
+            raise RateLimitExceededError(
+                f"Too many requests from this IP (max {max_request} per {window_seconds}s).",
+                limit_type="ip_rate",
+            )
+        fresh.append(now)
+        _ip_request_log[ip] = fresh
+
+
+def ip_rate_limit(max_request: int = 60, window_seconds: int = 60) -> Callable:
+    """Flask decorator that rate-limits the endpoint per client IP.
+
+    Usage::
+
+        @public_bp.route("/api/contact")
+        @ip_rate_limit(max_request=10, window_seconds=60)
+        def contact(): ...
+    """
+    def decorator(f: Callable) -> Callable:
+        @wraps(f)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            try:
+                check_ip_rate_limit(max_request, window_seconds)
+            except RateLimitExceededError as e:
+                logger.warning("IP rate limit hit: %s", e)
+                return jsonify({"error": str(e)}), 429
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
