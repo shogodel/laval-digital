@@ -117,6 +117,19 @@ def respond_approval(thread_id):
     drafts = orch.get_pending_drafts(tenant_id)
     if thread_id in drafts:
         result = orch.handle_approval(thread_id, approved=approved)
+        # Mark thread approved in DB so the DB-fallback path
+        # does not re-execute the same draft.
+        uid = _safe_tenant_id(tenant_id)
+        if uid is not None:
+            try:
+                conn = database._get_conn()
+                conn.execute(
+                    "UPDATE threads SET approved = ?, status = 'completed', updated_at = ? WHERE thread_id = ? AND user_id = ?",
+                    (int(approved), datetime.now(UTC).isoformat(), thread_id, uid),
+                )
+                conn.commit()
+            except Exception as e:
+                logger.warning("Failed to update thread approval status: %s", e)
         return api_success({
             "thread_id": thread_id,
             "status": "completed" if approved else "rejected",
@@ -131,12 +144,19 @@ def respond_approval(thread_id):
         conn = database._get_conn()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT routed_agent, agent_draft FROM threads WHERE thread_id = ? AND user_id = ?",
+            "SELECT routed_agent, agent_draft, approved FROM threads WHERE thread_id = ? AND user_id = ?",
             (thread_id, uid),
         )
         row = cursor.fetchone()
         if not row:
             return api_error("Thread not found", 404)
+
+        if row["approved"]:
+            return api_success({
+                "thread_id": thread_id,
+                "status": "already_processed",
+                "execution": None,
+            })
 
         agent_name = row["routed_agent"]
         draft = row["agent_draft"]
