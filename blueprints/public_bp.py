@@ -163,7 +163,7 @@ Message:
 
 @public_bp.route("/api/signup", methods=["POST"])
 def api_signup():
-    if not _check_rate_limit():
+    if not _check_rate_limit("signup"):
         return api_error("Too many attempts. Please try again later.", 429)
 
     data = request.json
@@ -205,15 +205,15 @@ def api_signup():
         session["last_active"] = datetime.now(UTC).isoformat()
 
         logger.info("New trial user created: %s (id=%s)", email, uid)
-        _record_attempt(True)
+        _record_attempt(True, "signup")
         return api_success({"redirect": url_for("client.client_dashboard")}, status_code=201)
 
     except ValueError as e:
-        _record_attempt(False)
+        _record_attempt(False, "signup")
         logger.warning("Signup validation failed: %s", e)
         return api_error("Invalid signup data. Please check your information.", 400)
     except RuntimeError as e:
-        _record_attempt(False)
+        _record_attempt(False, "signup")
         logger.error("Signup failed: %s", e, exc_info=True)
         return api_error("Account creation failed. Please try again later.", 500)
 
@@ -227,7 +227,7 @@ def login_redirect():
 def handle_leads():
     conn = database._get_conn()
     if request.method == "POST":
-        if not _check_rate_limit():
+        if not _check_rate_limit("leads"):
             return api_error("Too many attempts. Please try again later.", 429)
         data = request.json
         name = data.get("name", "")
