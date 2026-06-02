@@ -348,12 +348,11 @@ class EmailMCPServer(MCPServer):
                 msg["Cc"] = cc.replace("\r", "").replace("\n", "")
             if bcc:
                 msg["Bcc"] = bcc.replace("\r", "").replace("\n", "")
-            server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
-            if use_tls:
-                server.starttls(context=ssl.create_default_context())
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-            server.quit()
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+                if use_tls:
+                    server.starttls(context=ssl.create_default_context())
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
             return {"success": True, "result": f"Email sent: {subject}", "error": None}
         except Exception as e:
             logger.error("SMTP send failed: %s", e)
