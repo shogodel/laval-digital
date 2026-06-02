@@ -396,6 +396,70 @@ class Orchestrator:
             lines.append(f"{label}: {content}")
         return "\n".join(lines) + "\n\n"
 
+    _APPROVE_WORDS = frozenset({"approve", "approved", "yes", "confirm", "oui", "approuvé", "approuve", "confirmer"})
+    _REJECT_WORDS = frozenset({"reject", "rejected", "no", "discard", "cancel", "non", "rejeté", "rejeter", "annuler"})
+    _APPROVE_PHRASES = frozenset({"go ahead", "run it", "do it", "publish it", "exécute", "exécuter"})
+    _REJECT_PHRASES = frozenset({"not now", "not yet", "no thanks", "non merci", "pas maintenant", "arrête", "arrêter"})
+
+    def _is_approval(self, message_lower: str) -> bool:
+        words = message_lower.split()
+        if not words:
+            return False
+
+        if any(p in message_lower for p in self._APPROVE_PHRASES):
+            return True
+
+        has_negation = any(w in {"not", "no", "don't", "dont", "ne", "pas"} for w in words)
+        has_reject = any(w in self._REJECT_WORDS for w in words)
+        has_approve = any(w in self._APPROVE_WORDS for w in words)
+
+        if has_negation and has_approve:
+            return False
+        if has_reject and not has_approve:
+            return False
+        if not has_approve:
+            return False
+        if has_reject:
+            return False
+
+        if len(words) <= 3:
+            return True
+
+        first = words[0].strip(".,!?")
+        if first in self._APPROVE_WORDS:
+            return True
+
+        return False
+
+    def _is_rejection(self, message_lower: str) -> bool:
+        words = message_lower.split()
+        if not words:
+            return False
+
+        if any(p in message_lower for p in self._REJECT_PHRASES):
+            return True
+
+        has_negation = any(w in {"not", "no", "don't", "dont", "ne", "pas"} for w in words)
+        has_approve = any(w in self._APPROVE_WORDS for w in words)
+        has_reject = any(w in self._REJECT_WORDS for w in words)
+
+        if has_negation and has_approve:
+            return True
+
+        if has_approve and not has_reject:
+            return False
+        if not has_reject:
+            return False
+
+        if len(words) <= 3:
+            return True
+
+        first = words[0].strip(".,!?")
+        if first in self._REJECT_WORDS and not has_approve:
+            return True
+
+        return False
+
     def process_message(
         self,
         user_message: str,
@@ -439,12 +503,9 @@ class Orchestrator:
         if language is None:
             language = self._detect_language(user_message)
 
-        approve_words = {"approve", "approved", "yes", "execute", "run it", "go ahead", "confirm", "approuvé", "approuve", "oui", "exécute", "exécuter", "confirmer"}
-        reject_words = {"reject", "rejected", "no", "discard", "cancel", "stop", "non", "rejeté", "rejeter", "annuler", "supprimer"}
-        message_words = set(message_lower.split())
-        if message_words & approve_words:
+        if self._is_approval(message_lower):
             return self._handle_approval(thread_id, approved=True, user_id=user_id)
-        elif message_words & reject_words:
+        if self._is_rejection(message_lower):
             return self._handle_approval(thread_id, approved=False, user_id=user_id)
 
         key = (thread_id, message_lower)
