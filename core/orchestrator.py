@@ -801,7 +801,10 @@ class Orchestrator:
                     "success": success_flag,
                     "source": "human_approval",
                 }
-                get_event_bus().publish(event_type, agent_name, event_data_approve)
+                try:
+                    get_event_bus().publish(event_type, agent_name, event_data_approve)
+                except Exception as e:
+                    logger.warning("Failed to publish approve event: %s", e)
                 self._send_push(event_type, agent_name, event_data_approve)
 
                 msg_en = f"✅ Approved! The content from **{agent_name}** has been executed."
@@ -831,7 +834,10 @@ class Orchestrator:
                 "approved": False,
                 "task": draft_info.get("task", "")[:200],
             }
-            get_event_bus().publish("approval_responded", draft_info["agent"], event_data_reject)
+            try:
+                get_event_bus().publish("approval_responded", draft_info["agent"], event_data_reject)
+            except Exception as e:
+                logger.warning("Failed to publish reject event: %s", e)
             self._send_push("approval_responded", draft_info["agent"], event_data_reject)
             if self._memory and int(draft_info.get("user_id", 0) or 0):
                 try:
