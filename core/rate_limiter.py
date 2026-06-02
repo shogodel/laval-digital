@@ -254,6 +254,12 @@ def check_ip_rate_limit(max_request: int = 60, window_seconds: int = 60) -> None
             )
         fresh.append(now)
         _ip_request_log[ip] = fresh
+        if len(_ip_request_log) > 10_000:
+            stale_till = time.monotonic() - 300
+            _ip_request_log = {
+                k: v for k, v in _ip_request_log.items()
+                if any(ts > stale_till for ts in v)
+            }
 
 
 def ip_rate_limit(max_request: int = 60, window_seconds: int = 60) -> Callable:
