@@ -29,7 +29,7 @@ orchestrator_bp = Blueprint("orchestrator", __name__)
 @orchestrator_bp.route("/api/tasks", methods=["POST"])
 @admin_required
 def submit_task():
-    data = request.json
+    data = request.json or {}
     user_request = data.get("request", "").strip()
 
     if not user_request:
@@ -108,7 +108,7 @@ def respond_approval(thread_id):
     tenant_id = get_current_user_id()
     if not tenant_id:
         return api_error("Authentication required", 401)
-    data = request.json
+    data = request.json or {}
     approved = data.get("approved", False)
     now_iso = datetime.now(UTC).isoformat()
 
