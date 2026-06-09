@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Affiliate Program — Laval Digital</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
-    <meta name="description" content="Join the Laval Digital affiliate program. Earn up to $3,300 per referral. Your friends save $500. 20% commission. Proudly Canadian.">
+    <meta name="description" content="Join the Laval Digital affiliate program. Earn 20% recurring commission on every referral. Proudly Canadian.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
@@ -313,8 +313,8 @@
 
 <section class="hero">
     <div class="container">
-        <h1>Earn <span>Up to $3,300</span> Per Referral</h1>
-        <p>🍁 Proudly Canadian. Share your unique link. Your friends save $500 on any AI marketing suite. You earn <strong>20% commission</strong>. No limit, no cap, no funny business.</p>
+        <h1>Earn <span>20% Recurring</span> Commission</h1>
+        <p>🍁 Proudly Canadian. Share your unique link. You earn <strong>20% commission</strong> on every monthly payment — for as long as they're a client. No limit, no cap, no funny business.</p>
         <div class="hero-buttons">
             <a href="#signup" class="btn btn-primary">Get Your Referral Link</a>
         </div>
@@ -334,7 +334,7 @@
             <div class="step-card">
                 <div class="icon">📤</div>
                 <h3>Share It</h3>
-                <p>Text it, post it, email it. Anyone who uses your link gets $500 OFF their suite.</p>
+                <p>Text it, post it, email it. Anyone who uses your link gets started with Frankie.</p>
             </div>
             <div class="step-card">
                 <div class="icon">💰</div>
@@ -348,25 +348,14 @@
 <section class="section commission-bg" id="commission">
     <div class="container">
         <h2 class="section-title">What You Earn</h2>
-        <p class="section-subtitle">20% commission on every package — paid within 48 hours via Interac e-Transfer. That's up to $3,300 per client.</p>
+        <p class="section-subtitle">20% recurring commission on every referral — paid monthly via Interac e-Transfer.</p>
         <div class="commission-grid">
             <div class="commission-card">
-                <h3>Core Suite</h3>
-                <p class="client-pays">Client Pays: <strong>$8,000</strong></p>
-                <div class="you-earn">$1,600</div>
-                <div class="you-earn-label">your commission</div>
-            </div>
-            <div class="commission-card">
-                <h3>Growth Suite</h3>
-                <p class="client-pays">Client Pays: <strong>$12,000</strong></p>
-                <div class="you-earn">$2,400</div>
-                <div class="you-earn-label">your commission</div>
-            </div>
-            <div class="commission-card">
-                <h3>Full Empire</h3>
-                <p class="client-pays">Client Pays: <strong>$16,500</strong></p>
-                <div class="you-earn">$3,300</div>
-                <div class="you-earn-label">your commission</div>
+                <h3>Frankie AI Marketing Suite</h3>
+                <p class="client-pays">Client Pays: <strong>$597.99/month</strong></p>
+                <div class="you-earn">$119.60</div>
+                <div class="you-earn-label">your commission per month, per client</div>
+                <p style="margin-top:12px; font-size:0.85rem; color:var(--mid-gray);">Recurring — you earn every month they're a client</p>
             </div>
         </div>
     </div>
@@ -397,7 +386,7 @@
                 <h3>You're In!</h3>
                 <p>Your unique referral link is ready. Share it with local business owners to start earning.</p>
                 <div class="ref-link">https://lavaldigital.ca/?ref=YOURCODE123</div>
-                <p style="margin-top:16px; font-size:0.85rem; color:var(--mid-gray);">We've also sent this link to your email. Check your inbox!</p>
+                <p style="margin-top:16px; font-size:0.85rem; color:var(--mid-gray);">We've sent this link to your email. Check your inbox!</p>
             </div>
         </div>
     </div>
@@ -414,10 +403,6 @@
             <div class="faq-item">
                 <h4>When do I get paid?</h4>
                 <p>Within 48 hours of the client making their first payment. We send it via Interac e-Transfer — the Canadian way.</p>
-            </div>
-            <div class="faq-item">
-                <h4>Can I refer myself or my own business?</h4>
-                <p>Unfortunately no. The program is for referring new clients only. But you can sign up as a client yourself — just don't use your own code!</p>
             </div>
             <div class="faq-item">
                 <h4>Is there a limit on how many people I can refer?</h4>

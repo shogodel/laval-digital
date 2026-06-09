@@ -163,10 +163,9 @@ def affiliate_status():
             return api_success({
                 "active": True,
                 "code": ref_code,
-                "discount": 500,
                 "affiliate_name": aff.get("name", "Partner"),
             })
-    return api_success({"active": False, "discount": 0})
+    return api_success({"active": False})
 
 
 @affiliate_bp.route("/api/affiliate/signup", methods=["POST"])

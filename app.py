@@ -454,7 +454,7 @@ def create_app(config_name: str | None = None):
         if ref_code and affiliate_manager.is_valid_code(ref_code):
             session.permanent = True
             session["affiliate_ref"] = ref_code
-            session["affiliate_discount"] = 500
+            session["affiliate_discount"] = 0
             affiliate_manager.track_lead(
                 ref_code=ref_code,
                 ip=request.remote_addr or "",
