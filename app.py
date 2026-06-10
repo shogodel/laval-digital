@@ -321,6 +321,10 @@ def create_app(config_name: str | None = None):
         if response.content_type and response.content_type.startswith("application/json"):
             response.content_type = "application/json; charset=utf-8"
         response.headers["X-Request-ID"] = getattr(g, "request_id", "")
+        if response.content_type and response.content_type.startswith("text/html"):
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
