@@ -21,8 +21,10 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.DROPLET_IP }} >> ~/.ssh/known_hosts
           ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME }}@${{ secrets.DROPLET_IP }} '
+            set -e
             cd /home/bogdan/apps/laval-digital
             git pull
-            docker compose up -d --build
+            docker compose build --no-cache
+            docker compose up -d
             docker image prune -f
           '
