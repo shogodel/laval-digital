@@ -18,8 +18,8 @@ jobs:
 
       - name: Add host key and deploy
         run: |
-            mkdir -p ~/.ssh
-            ssh-keyscan -H ${{ secrets.DROPLET_IP }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.DROPLET_IP }} >> ~/.ssh/known_hosts 2>/dev/null || true
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=15 -o ServerAliveCountMax=3 ${{ secrets.USERNAME }}@${{ secrets.DROPLET_IP }} '
             cd /home/bogdan/apps/laval-digital
             git pull
