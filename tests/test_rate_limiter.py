@@ -26,7 +26,11 @@ def setup_db():
     init_db()
     create_user("test@test.com", "hash", "user", "Test User")
     yield
-    os.unlink(_tmp_db)
+    reset_conn()
+    try:
+        os.unlink(_tmp_db)
+    except PermissionError:
+        pass
     os.environ.pop("FRANKIE_DB_PATH", None)
 
 

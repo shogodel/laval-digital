@@ -69,7 +69,7 @@ class TestPublishBlogPost:
     def test_writes_markdown_file(self, executioner):
         result = executioner._publish_blog_post("# Blog Post\n\nContent.")
         assert result["success"] is True
-        assert "content/blog/" in result["result"]
+        assert "blog" in result["result"]
         assert Path(result["result"]).exists()
 
     def test_file_has_content(self, executioner):

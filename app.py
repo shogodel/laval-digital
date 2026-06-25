@@ -221,6 +221,11 @@ def create_app(config_name: str | None = None):
         "/api/training/articles",
         "/api/training/feedback",
         "/api/health",
+        # Shopify public routes
+        "/api/auth/install",
+        "/api/auth/callback",
+        "/api/webhooks",
+        "/api/shopify/register-webhooks",
     }
 
     csrf = CSRFProtect(app)
@@ -246,6 +251,8 @@ def create_app(config_name: str | None = None):
     logging.getLogger().setLevel(logging.INFO)
 
     database.init_db()
+    from core.shopify_auth import ensure_shop_tables
+    ensure_shop_tables()
 
     affiliate_manager = AffiliateManager()
     push_manager = PushManager()
@@ -285,6 +292,8 @@ def create_app(config_name: str | None = None):
     app.register_blueprint(actions_bp)
     from blueprints.users_bp import users_bp
     app.register_blueprint(users_bp)
+    from blueprints.shopify_bp import shopify_bp
+    app.register_blueprint(shopify_bp)
 
     for rule in app.url_map.iter_rules():
         if rule.rule in _api_public and rule.methods and not {'GET', 'HEAD', 'OPTIONS'}.issuperset(rule.methods):
@@ -326,26 +335,32 @@ def create_app(config_name: str | None = None):
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
+        if not request.headers.get("X-Shopify-Shop-Domain") and not request.args.get("shop"):
+            response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         nonce = getattr(g, "csp_nonce", "")
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            f"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net; "
-            f"style-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
-            "style-src-attr 'unsafe-inline'; "
-            "font-src 'self' https://fonts.gstatic.com; "
-            "img-src 'self' data:; "
-            "connect-src 'self' https://api.deepseek.com; "
-            "frame-ancestors 'none'; "
-            "form-action 'self'; "
-            "base-uri 'self'; "
-            "object-src 'none'; "
-            "upgrade-insecure-requests"
-        )
-        allowed_origins = {"https://lavaldigital.ca", "https://www.lavaldigital.ca", "http://127.0.0.1:5000", "http://localhost:5000"}
+        csp_directives = [
+            "default-src 'self'",
+            f"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net https://cdn.shopify.com",
+            f"style-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net https://fonts.googleapis.com https://cdn.shopify.com https://*.shopify.com",
+            "style-src-attr 'unsafe-inline'",
+            "font-src 'self' https://fonts.gstatic.com https://cdn.shopify.com",
+            "img-src 'self' data: https://cdn.shopify.com https://*.shopify.com",
+            "connect-src 'self' https://api.deepseek.com https://*.shopify.com",
+            "frame-ancestors https://*.myshopify.com https://admin.shopify.com",
+            "form-action 'self'",
+            "base-uri 'self'",
+            "object-src 'none'",
+            "upgrade-insecure-requests",
+        ]
+        response.headers["Content-Security-Policy"] = "; ".join(csp_directives)
+        allowed_origins = {
+            "https://lavaldigital.ca", "https://www.lavaldigital.ca",
+            "http://127.0.0.1:5000", "http://localhost:5000",
+            "https://admin.shopify.com",
+        }
         origin = request.headers.get("Origin")
         if origin in allowed_origins:
             response.headers["Access-Control-Allow-Origin"] = origin
@@ -391,6 +406,26 @@ def create_app(config_name: str | None = None):
             return
         if current_user.is_authenticated:
             return
+        # Shopify auth: resolve shop from session (set during OAuth or admin_embedded)
+        shop = session.get("shop") or request.args.get("shop") or request.headers.get("X-Shopify-Shop-Domain")
+        if shop:
+            from core.shopify_auth import get_shop_by_domain, verify_session_token
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                payload = verify_session_token(auth_header[7:])
+                if payload and shop in payload.get("dest", ""):
+                    g.shop = shop
+                    return
+            # Allow requests from the embedded admin (shop in session or valid query param)
+            session_shop = session.get("shop")
+            if session_shop and session_shop == shop:
+                g.shop = shop
+                return
+            # Fallback: validate shop exists in DB
+            shop_data = get_shop_by_domain(shop)
+            if shop_data and shop_data.get("is_active"):
+                g.shop = shop
+                return
         if request.method == "OPTIONS":
             return
         return api_error("Authentication required", 401)
@@ -450,6 +485,13 @@ def create_app(config_name: str | None = None):
             return active
         if current_user.is_authenticated:
             return str(current_user.id)
+        # Shopify shop context set by require_api_auth
+        shop = getattr(g, "shop", None)
+        if shop:
+            from core.shopify_auth import get_shop_by_domain
+            shop_data = get_shop_by_domain(shop)
+            if shop_data and shop_data.get("user_id"):
+                return str(shop_data["user_id"])
         return None
 
     @app.before_request

@@ -397,6 +397,45 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
         "CREATE INDEX IF NOT EXISTS idx_agent_feedback_user ON agent_feedback(user_id)",
         "CREATE INDEX IF NOT EXISTS idx_agent_findings_user ON agent_findings(user_id)",
     ]),
+    (10, [
+        "CREATE TABLE IF NOT EXISTS shops ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "shop TEXT NOT NULL UNIQUE, "
+        "access_token TEXT NOT NULL, "
+        "user_id INTEGER REFERENCES users(id), "
+        "myshopify_domain TEXT, "
+        "name TEXT, "
+        "email TEXT, "
+        "domain TEXT, "
+        "province TEXT, "
+        "country TEXT, "
+        "currency TEXT, "
+        "plan_name TEXT, "
+        "installed_at TEXT NOT NULL, "
+        "uninstalled_at TEXT, "
+        "scopes TEXT NOT NULL, "
+        "is_active INTEGER DEFAULT 1, "
+        "trial_expires_at TEXT, "
+        "billing_plan TEXT DEFAULT 'free', "
+        "last_webhook_at TEXT"
+        ")",
+        "CREATE TABLE IF NOT EXISTS webhook_events ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "shop TEXT NOT NULL, "
+        "topic TEXT NOT NULL, "
+        "body TEXT NOT NULL, "
+        "received_at TEXT NOT NULL, "
+        "processed INTEGER DEFAULT 0"
+        ")",
+        "CREATE INDEX IF NOT EXISTS idx_shops_active ON shops(is_active)",
+        "CREATE INDEX IF NOT EXISTS idx_shops_domain ON shops(shop)",
+        "CREATE INDEX IF NOT EXISTS idx_webhook_events_shop ON webhook_events(shop)",
+        "CREATE INDEX IF NOT EXISTS idx_webhook_events_topic ON webhook_events(topic)",
+    ]),
+    (11, [
+        "ALTER TABLE agent_schedules ADD COLUMN shop TEXT",
+        "ALTER TABLE agent_schedules ADD COLUMN next_run TEXT",
+    ]),
 ]
 
 

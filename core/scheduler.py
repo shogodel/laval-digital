@@ -59,8 +59,17 @@ class SchedulerManager:
             except Exception as e:
                 logger.warning("Failed to schedule job %s: %s", row["id"], e)
 
+    def _get_user_id_for_shop(self, shop: str) -> int | None:
+        """Look up the internal user_id for a Shopify shop."""
+        conn = self._conn()
+        row = conn.execute(
+            "SELECT user_id FROM shops WHERE shop = ? AND is_active = 1",
+            (shop,),
+        ).fetchone()
+        return row["user_id"] if row else None
+
     def _run_task(self, schedule_id: str, user_id: int, agent_id: str,
-                  task: str, language: str):
+                  task: str, language: str, shop: str | None = None):
         try:
             orch = self._get_orch()
             orch.process_message(
@@ -80,14 +89,15 @@ class SchedulerManager:
             logger.error("Scheduled task %s failed: %s", schedule_id, e)
 
     def create_schedule(self, user_id: int, agent_id: str, task_template: str,
-                        cron_expr: str, language: str = "en") -> str:
+                        cron_expr: str, language: str = "en",
+                        shop: str | None = None) -> str:
         schedule_id = uuid.uuid4().hex[:12]
         now = datetime.now(UTC).isoformat()
         conn = self._conn()
         conn.execute(
-            """INSERT INTO agent_schedules (id, user_id, agent_id, task_template, cron_expr, enabled, language, created_at)
-               VALUES (?, ?, ?, ?, ?, 1, ?, ?)""",
-            (schedule_id, user_id, agent_id, task_template, cron_expr, language, now),
+            """INSERT INTO agent_schedules (id, user_id, shop, agent_id, task_template, cron_expr, enabled, language, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)""",
+            (schedule_id, user_id, shop, agent_id, task_template, cron_expr, language, now),
         )
         conn.commit()
         if self._scheduler:
@@ -96,16 +106,24 @@ class SchedulerManager:
                     func=self._run_task,
                     trigger=CronTrigger.from_crontab(cron_expr),
                     id=schedule_id,
-                    args=[schedule_id, user_id, agent_id, task_template, language],
+                    args=[schedule_id, user_id, agent_id, task_template, language, shop],
                     replace_existing=True,
                 )
             except Exception as e:
                 logger.warning("Failed to add job to scheduler: %s", e)
         return schedule_id
 
-    def get_schedules(self, user_id: int | None = None) -> list[dict[str, Any]]:
+    def get_schedules(self, user_id: int | None = None, shop: str | None = None) -> list[dict[str, Any]]:
         conn = self._conn()
-        if user_id is not None:
+        if shop:
+            uid = self._get_user_id_for_shop(shop)
+            if not uid:
+                return []
+            rows = conn.execute(
+                "SELECT * FROM agent_schedules WHERE user_id = ? ORDER BY created_at DESC",
+                (uid,),
+            ).fetchall()
+        elif user_id is not None:
             rows = conn.execute(
                 "SELECT * FROM agent_schedules WHERE user_id = ? ORDER BY created_at DESC",
                 (user_id,),

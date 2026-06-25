@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#D42B2B">
+    <title>Frankie — AI Marketing Command Center</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <script src="https://cdn.shopify.com/static/shopify-app-bridge.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+    <style>
+        body { background: var(--gray-100); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; }
+        .app { display: flex; min-height: 100vh; }
+        .sidebar { width: 240px; background: var(--navy); color: #fff; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; overflow-y: auto; }
+        .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-brand img { width: 32px; height: 32px; }
+        .sidebar-brand span { font-size: 1rem; font-weight: 700; }
+        .sidebar-nav { display: flex; flex-direction: column; padding: 8px 0; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.15s; border-left: 3px solid transparent; }
+        .sidebar-nav a:hover { background: rgba(255,255,255,0.06); color: #fff; }
+        .sidebar-nav a.active { background: rgba(255,255,255,0.1); color: #fff; border-left-color: var(--red); }
+        .main { margin-left: 240px; flex: 1; padding: 24px; min-height: 100vh; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .topbar h1 { font-size: 1.5rem; font-weight: 700; color: var(--navy); margin: 0; }
+        .card { background: #fff; border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+        .card-header h2 { font-size: 1.05rem; font-weight: 600; color: var(--navy); margin: 0; }
+        .card-header p { font-size: 0.85rem; color: var(--gray-500); margin: 0; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .stat-card { background: #fff; border-radius: var(--radius); padding: 16px; text-align: center; box-shadow: var(--shadow); }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--navy); }
+        .stat-label { font-size: 0.75rem; color: var(--gray-500); margin-top: 4px; }
+        .btn { border: none; border-radius: var(--radius); padding: 8px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-red { background: var(--red); color: #fff; }
+        .btn-red:hover { background: var(--red-dark); }
+        .btn-gray { background: var(--gray-100); color: var(--gray-700); }
+        .btn-gray:hover { background: var(--gray-200); }
+        .btn-green { background: var(--green); color: #fff; }
+        .btn-green:hover { background: #047857; }
+        .btn-amber { background: var(--amber); color: #fff; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .agent-card { background: #fff; border-radius: var(--radius); padding: 12px 16px; margin-bottom: 8px; box-shadow: var(--shadow); display: flex; justify-content: space-between; align-items: center; }
+        .agent-card .info { flex: 1; }
+        .agent-card .name { font-weight: 600; color: var(--navy); }
+        .agent-card .desc { font-size: 0.8rem; color: var(--gray-500); }
+        .agent-card .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .status-dot.active { background: var(--green); }
+        .status-dot.idle { background: var(--gray-400); }
+        .status-dot.error { background: var(--red); }
+        .empty { color: var(--gray-400); font-size: 0.85rem; text-align: center; padding: 20px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--gray-700); margin-bottom: 4px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 0.85rem; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .form-row .form-group { flex: 1; min-width: 200px; }
+        .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 500; }
+        .pill-green { background: #ecfdf5; color: #065f46; }
+        .pill-gray { background: var(--gray-100); color: var(--gray-600); }
+        .pill-amber { background: #fffbeb; color: #92400e; }
+        .pill-red { background: #fef2f2; color: #991b1b; }
+        #toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: #1f2937; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 360px; transition: opacity 0.3s; display: none; }
+        select { width: 100%; padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 0.85rem; font-family: inherit; background: #fff; }
+    </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="app">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="{{ url_for('static', filename='frankie.svg') }}" alt="Frankie">
+            <span>Frankie Control Center</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="active" data-tab="dashboard"><span>📊</span> Dashboard</a>
+            <a href="#" data-tab="agents"><span>🤖</span> AI Agents</a>
+            <a href="#" data-tab="products"><span>📦</span> Products</a>
+            <a href="#" data-tab="orders"><span>🛒</span> Orders</a>
+            <a href="#" data-tab="analytics"><span>📈</span> Analytics</a>
+            <a href="#" data-tab="settings"><span>⚙️</span> Settings</a>
+        </nav>
+    </aside>
+
+    <main class="main">
+        <div class="topbar">
+            <h1 id="page-title">Dashboard</h1>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span class="pill pill-green" id="shop-name">{{ shop }}</span>
+                <button class="btn btn-gray btn-sm" id="logout-btn">Logout</button>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="tab-content active" id="tab-dashboard">
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card"><div class="stat-value" id="stat-agents">-</div><div class="stat-label">AI Agents</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-active">-</div><div class="stat-label">Active</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-pending">-</div><div class="stat-label">Pending</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-products">-</div><div class="stat-label">Products</div></div>
+                <div class="stat-card"><div class="stat-value" id="stat-orders">-</div><div class="stat-label">Orders</div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h2>Agent Health</h2></div>
+                <div id="dashboard-agent-health"><p class="empty">Loading...</p></div>
+            </div>
+        </div>
+
+        <!-- Agents -->
+        <div class="tab-content" id="tab-agents">
+            <div class="card">
+                <div class="card-header"><h2>AI Workers</h2><p>16 specialized marketing agents working 24/7</p></div>
+                <div id="agent-list"><p class="empty">Loading agents...</p></div>
+            </div>
+        </div>
+
+        <!-- Products -->
+        <div class="tab-content" id="tab-products">
+            <div class="card">
+                <div class="card-header"><h2>Products</h2><p>From your Shopify store</p></div>
+                <div id="product-list"><p class="empty">Loading products...</p></div>
+            </div>
+        </div>
+
+        <!-- Orders -->
+        <div class="tab-content" id="tab-orders">
+            <div class="card">
+                <div class="card-header"><h2>Recent Orders</h2><p>From your Shopify store</p></div>
+                <div id="order-list"><p class="empty">Loading orders...</p></div>
+            </div>
+        </div>
+
+        <!-- Analytics -->
+        <div class="tab-content" id="tab-analytics">
+            <div class="card">
+                <div class="card-header"><h2>Marketing Analytics</h2><p>Cross-channel performance</p></div>
+                <div id="analytics-content"><p class="empty">Loading analytics...</p></div>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="tab-content" id="tab-settings">
+            <div class="card">
+                <div class="card-header"><h2>Agent Configuration</h2><p>Configure LLM models and API keys</p></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="config-model">Model</label>
+                        <select id="config-model">
+                            <option value="deepseek-chat">DeepSeek Chat</option>
+                            <option value="gpt-4o">GPT-4o</option>
+                            <option value="gpt-4o-mini">GPT-4o Mini</option>
+                            <option value="claude-3-haiku">Claude 3 Haiku</option>
+                            <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="config-api-key">API Key</label>
+                        <input type="password" id="config-api-key" placeholder="sk-...">
+                    </div>
+                    <div class="form-group">
+                        <label for="config-api-base">API Base URL (optional)</label>
+                        <input type="text" id="config-api-base" placeholder="https://api.deepseek.com/v1">
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button class="btn btn-red" id="save-config-btn">Save to All Agents</button>
+                    <span id="config-save-result"></span>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+var SHOP = '{{ shop|safe }}';
+var API_KEY = '{{ api_key|safe }}';
+
+var app = window.app = {};
+var AppBridge = window['shopify-app-bridge'];
+if (AppBridge) {
+    app = AppBridge.createApp({
+        apiKey: API_KEY,
+        shopOrigin: SHOP,
+        forceRedirect: true,
+    });
+}
+
+function toast(msg) {
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.style.opacity = '1';
+    setTimeout(function() { el.style.opacity = '0'; setTimeout(function() { el.style.display = 'none'; }, 300); }, 3000);
+}
+
+function api(path, opts) {
+    opts = opts || {};
+    var url = path + (path.indexOf('?') > -1 ? '&' : '?') + 'shop=' + encodeURIComponent(SHOP);
+    var headers = { 'Content-Type': 'application/json' };
+    return fetch(url, {
+        method: opts.method || 'GET',
+        headers: headers,
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
+        credentials: 'same-origin',
+    }).then(function(r) { return r.json(); });
+}
+
+// Tab switching
+document.querySelectorAll('.sidebar-nav a').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.querySelectorAll('.sidebar-nav a').forEach(function(x) { x.classList.remove('active'); });
+        a.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+        var tab = document.getElementById('tab-' + a.dataset.tab);
+        if (tab) { tab.classList.add('active'); }
+        document.getElementById('page-title').textContent = a.textContent.trim();
+    });
+});
+
+// Load agents
+function loadAgents() {
+    api('/api/agents').then(function(data) {
+        var agents = data.agents || [];
+        var list = document.getElementById('agent-list');
+        var health = document.getElementById('dashboard-agent-health');
+        var active = 0, pending = 0;
+        list.innerHTML = '';
+        health.innerHTML = '';
+        agents.forEach(function(a) {
+            if (a.status === 'active' || a.enabled) active++;
+            var meta = data.meta && data.meta[a.agent_id] || {};
+            var card = document.createElement('div');
+            card.className = 'agent-card';
+            var dotClass = a.enabled ? 'active' : (a.status === 'error' ? 'error' : 'idle');
+            card.innerHTML = '<div class="info"><div class="name"><span class="status-dot ' + dotClass + '"></span>' + (meta.name || a.agent_id) + '</div><div class="desc">' + (meta.desc || '') + '</div></div>' +
+                '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span class="pill pill-' + (a.enabled ? 'green' : 'gray') + '">' + (a.status || 'idle') + '</span>' +
+                '<button class="btn btn-sm ' + (a.enabled ? 'btn-gray' : 'btn-green') + '" onclick="toggleAgent(\'' + a.agent_id + '\')">' + (a.enabled ? 'Disable' : 'Enable') + '</button></div>';
+            list.appendChild(card);
+            var hDot = document.createElement('div');
+            hDot.className = 'pill pill-' + (a.enabled ? 'green' : 'gray');
+            hDot.textContent = (meta.name || a.agent_id) + ': ' + (a.enabled ? 'Active' : 'Idle');
+            health.appendChild(hDot);
+        });
+        document.getElementById('stat-agents').textContent = agents.length;
+        document.getElementById('stat-active').textContent = active;
+        document.getElementById('stat-pending').textContent = pending;
+    });
+}
+
+function toggleAgent(id) {
+    api('/api/agents/' + id + '/toggle', { method: 'POST' }).then(function() { loadAgents(); toast('Agent toggled'); });
+}
+
+// Load products
+function loadProducts() {
+    api('/api/shopify/products').then(function(data) {
+        var products = data.data || [];
+        var list = document.getElementById('product-list');
+        list.innerHTML = '';
+        document.getElementById('stat-products').textContent = products.length;
+        if (!products.length) { list.innerHTML = '<p class="empty">No products found</p>'; return; }
+        products.forEach(function(p) {
+            var node = p.node || p;
+            var card = document.createElement('div');
+            card.className = 'agent-card';
+            card.innerHTML = '<div class="info"><div class="name">' + (node.title || 'Unknown') + '</div><div class="desc">' +
+                (node.status || '') + ' &middot; ' + (node.totalInventory || 0) + ' in stock</div></div>' +
+                '<span class="pill pill-' + (node.status === 'ACTIVE' ? 'green' : 'gray') + '">' + (node.status || '') + '</span>';
+            list.appendChild(card);
+        });
+    });
+}
+
+// Load orders
+function loadOrders() {
+    api('/api/shopify/orders').then(function(data) {
+        var orders = data.data || [];
+        var list = document.getElementById('order-list');
+        list.innerHTML = '';
+        document.getElementById('stat-orders').textContent = orders.length;
+        if (!orders.length) { list.innerHTML = '<p class="empty">No orders found</p>'; return; }
+        orders.forEach(function(o) {
+            var node = o.node || o;
+            var card = document.createElement('div');
+            card.className = 'agent-card';
+            var amount = node.totalPriceSet && node.totalPriceSet.shopMoney ? node.totalPriceSet.shopMoney.amount + ' ' + node.totalPriceSet.shopMoney.currencyCode : '';
+            card.innerHTML = '<div class="info"><div class="name">' + (node.name || 'Order') + '</div><div class="desc">' +
+                (node.email || '') + ' &middot; ' + amount + '</div></div>' +
+                '<span class="pill pill-' + (node.displayFinancialStatus === 'PAID' ? 'green' : 'amber') + '">' + (node.displayFinancialStatus || 'PENDING') + '</span>';
+            list.appendChild(card);
+        });
+    });
+}
+
+// Save config
+document.getElementById('save-config-btn').addEventListener('click', function() {
+    var model = document.getElementById('config-model').value;
+    var apiKey = document.getElementById('config-api-key').value;
+    var apiBase = document.getElementById('config-api-base').value;
+    var resultEl = document.getElementById('config-save-result');
+    resultEl.innerHTML = '<span style="color:var(--blue)">Saving...</span>';
+    api('/api/agents/bulk/config', {
+        method: 'POST',
+        body: { model: model, api_key: apiKey, api_base: apiBase }
+    }).then(function(data) {
+        resultEl.innerHTML = '<span style="color:var(--green)">Saved!</span>';
+        setTimeout(function() { resultEl.textContent = ''; }, 3000);
+    });
+});
+
+// Logout
+document.getElementById('logout-btn').addEventListener('click', function() {
+    if (app && app.redirect) {
+        app.redirect('/api/auth/logout');
+    } else {
+        window.location.href = '/logout';
+    }
+});
+
+loadAgents();
+loadProducts();
+loadOrders();
+</script>
+</body>
+</html>

@@ -66,7 +66,7 @@ class BaseAgent:
             raise ValueError(f"System prompt path must not be a symlink: {self._system_prompt_file}")
         path = raw_path.resolve()
         prompts_dir = Path("prompts").resolve()
-        if not str(path).startswith(str(prompts_dir) + "/"):
+        if prompts_dir not in path.parents and path.parent != prompts_dir:
             raise ValueError(f"System prompt file must be within prompts/ directory: {self._system_prompt_file}")
         if not path.exists():
             raise FileNotFoundError(f"System prompt file not found: {path}")
