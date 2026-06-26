@@ -61,7 +61,8 @@ def get_agents():
                 "last_draft_preview": None,
             })
 
-    return api_success({"agents": agents_status})
+    from core.app_state import get_agent_meta
+    return api_success({"agents": agents_status, "meta": get_agent_meta()})
 
 
 @agents_bp.route("/api/agents/<agent_id>", methods=["GET"])
@@ -93,7 +94,7 @@ def toggle_agent(agent_id):
         return api_error("Agent not found", 404)
 
     agent = get_agent_registry()[agent_id]
-    user_id = session.get("active_user_id") or (str(current_user.id) if not current_user.is_anonymous else None)
+    user_id = session.get("active_user_id") or (str(current_user.id) if not current_user.is_anonymous else None) or get_current_user_id()
     enabled = not agent.enabled
     if user_id and user_id != "admin":
         try:

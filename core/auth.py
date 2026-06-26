@@ -3,7 +3,7 @@ import re
 from datetime import UTC, datetime, timedelta
 from functools import wraps
 
-from flask import flash, jsonify, redirect, request, url_for
+from flask import flash, g, jsonify, redirect, request, url_for
 from flask_login import LoginManager, UserMixin, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -218,6 +218,16 @@ def login_required(f):
 
 
 def _is_admin() -> bool:
+    """True for platform admins (Flask-Login) OR shop-authenticated users (via require_api_auth middleware)."""
+    if current_user.is_authenticated and current_user.role == "admin":
+        return True
+    if hasattr(g, "shop") and g.shop:
+        return True
+    return False
+
+
+def _is_platform_admin() -> bool:
+    """True only for platform admins — NOT shop-authenticated users."""
     return current_user.is_authenticated and current_user.role == "admin"
 
 
@@ -246,9 +256,11 @@ def admin_page_required(f=None):
 
     As a decorator, wraps the route function and redirects to login if not logged in.
     As middleware, returns a redirect response if not logged in, else None.
+
+    NOTE: Uses _is_platform_admin() — shop-authenticated users cannot access these pages.
     """
     if f is None:
-        if not _is_admin():
+        if not _is_platform_admin():
             return redirect(url_for("admin.login"))
         return None
 
