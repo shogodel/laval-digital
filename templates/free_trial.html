@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Try Frankie Free for 7 Days — Laval Digital</title>
+    <title>Try Free for 7 Days — AI Marketing Specialist for Shopify</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
-    <meta name="description" content="Start your 7-day free trial of Frankie — the AI marketing command center. 16 agents, 111+ tools, no credit card required.">
+    <meta name="description" content="Start your 7-day free trial of the AI Marketing Specialist for Shopify. 16 agents, no credit card required.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
@@ -49,7 +49,7 @@
 <body>
 <header>
     <div class="container">
-        <a href="{{ url_for('home') }}" class="logo">LAVAL <span>DIGITAL</span></a>
+        <a href="{{ url_for('home') }}" class="logo">AI MARKETING <span>SPECIALIST</span></a>
         <nav>
             <a href="{{ url_for('home') }}">Home</a>
             <a href="{{ url_for('demo') }}">Demo</a>
@@ -59,8 +59,8 @@
 
 <div class="main">
     <div class="card">
-        <h1>Try Frankie Free</h1>
-        <p class="subtitle">7 days of full access to all 16 AI agents and 111+ marketing tools. No credit card required.</p>
+        <h1>Start Your Free Trial</h1>
+        <p class="subtitle">7 days of full access to all 16 AI agents. Connect your Shopify store and start growing. No credit card required.</p>
 
         <div id="flash" class="flash"></div>
 
@@ -72,7 +72,7 @@
             </div>
             <div class="form-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required autocomplete="email" placeholder="sarah@mybusiness.ca">
+                <input type="email" id="email" name="email" required autocomplete="email" placeholder="sarah@mystore.com">
                 <div class="error" id="email-error"></div>
             </div>
             <div class="form-group">
@@ -89,14 +89,14 @@
 
         <ul class="benefits">
             <li>All 16 AI agents — full access</li>
-            <li>111+ execution tools (SEO, social, ads, email)</li>
+            <li>Shopify store integration included</li>
             <li>Cancel anytime before billing starts</li>
-            <li>$597.99/month after trial — one flat fee</li>
+            <li>$23.99/month after trial — one flat fee</li>
         </ul>
     </div>
 </div>
 
-<footer>&copy; 2026 Laval Digital. All rights reserved.</footer>
+<footer>&copy; 2026 AI Marketing Specialist. All rights reserved.</footer>
 
 <script nonce="{{ csp_nonce }}">
 document.getElementById("signup-form").addEventListener("submit", async function(e) {

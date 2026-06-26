@@ -63,7 +63,7 @@ ARTICLES = [
 <div class="step">
     <div class="step-num">4</div>
     <div class="step-content">
-        <p>Click <strong>Create API Key</strong>. Give it a name like <code>Laval Digital Agents</code> so you can identify it later.</p>
+        <p>Click <strong>Create API Key</strong>. Give it a name like <code>My Store Agents</code> so you can identify it later.</p>
     </div>
 </div>
 
@@ -78,7 +78,7 @@ ARTICLES = [
 <div class="step">
     <div class="step-num">6</div>
     <div class="step-content">
-        <p>Log in to your <a href="/client/login">Laval Digital client dashboard</a> and go to the <strong>Agent Configuration</strong> tab.</p>
+        <p>Log in to your <a href="/client/login">client dashboard</a> and go to the <strong>Agent Configuration</strong> tab.</p>
     </div>
 </div>
 
@@ -110,7 +110,7 @@ ARTICLES = [
     {
         "slug": "point-domain-to-website",
         "title": "How to Point Your Domain to Your New Website",
-        "description": "DNS setup instructions for Namecheap, GoDaddy, and Google Domains to connect your domain to your Laval Digital site.",
+        "description": "DNS setup instructions for Namecheap, GoDaddy, and Google Domains to connect your domain to your website.",
         "icon": "🌐",
         "category": "getting-started",
         "category_label": "Getting Started",
@@ -119,7 +119,7 @@ ARTICLES = [
         "tags": ["domain", "dns", "nameservers", "website", "setup"],
         "content_html": """
 <h2>Overview</h2>
-<p>After we deploy your website, you'll want to point your domain name (like <code>myplumbingbusiness.com</code>) to it. This is done through DNS settings at your domain registrar. Don't worry — it's a simple process that takes about 10 minutes.</p>
+<p>After we set up your website, you'll want to point your domain name (like <code>mystore.com</code>) to it. This is done through DNS settings at your domain registrar. Don't worry — it's a simple process that takes about 10 minutes.</p>
 
 <h2>What You'll Need</h2>
 <ul>
@@ -224,7 +224,7 @@ ARTICLES = [
 
 <div class="tip">
     <span class="tip-icon">💡</span>
-    <p><strong>Not sure?</strong> Email us at support@lavaldigital.ca and we'll help you configure your DNS. Managed services clients get this done for them automatically.</p>
+    <p><strong>Not sure?</strong> Email us and we'll help you configure your DNS.</p>
 </div>
 """
     },
@@ -240,7 +240,7 @@ ARTICLES = [
         "tags": ["dashboard", "navigation", "overview", "agents"],
         "content_html": """
 <h2>Welcome to Your Dashboard</h2>
-<p>Your Laval Digital client dashboard is the command center for your AI marketing suite. Here's a tour of everything you'll see.</p>
+<p>Your client dashboard is the command center for your AI marketing suite. Here's a tour of everything you'll see.</p>
 
 <h2>Top Navigation Bar</h2>
 <p>The navigation bar at the top gives you quick access to all major sections:</p>
@@ -272,7 +272,7 @@ ARTICLES = [
 <p>Your installment plan is displayed here with each payment's amount, due date, and paid/unpaid status. You'll also see your total paid and remaining balance.</p>
 
 <h2>Submit a Request</h2>
-<p>This is where you tell your AI agents what to do. Type your request in plain English (e.g., <em>"I need more plumbing leads in Laval this week"</em>) and click Submit. The orchestrator routes your request to the right agent automatically.</p>
+<p>This is where you tell your AI agents what to do. Type your request in plain English (e.g., <em>"Create a Facebook campaign for my new arrivals"</em>) and click Submit. The orchestrator routes your request to the right agent automatically.</p>
 
 <h2>Download Contract</h2>
 <p>Your signed agreement is available here for download.</p>
@@ -377,7 +377,7 @@ ARTICLES = [
     {
         "slug": "add-manager-google-business",
         "title": "How to Add Us as a Manager on Your Google Business Profile",
-        "description": "Screenshot guide to granting Laval Digital manager access to your Google Business Profile.",
+        "description": "Screenshot guide to granting manager access to your Google Business Profile.",
         "icon": "📍",
         "category": "seo",
         "category_label": "SEO",
@@ -391,7 +391,7 @@ ARTICLES = [
     <li>Go to <a href="https://business.google.com" target="_blank">business.google.com</a> and sign in</li>
     <li>Click the three dots menu on your profile, then <strong>Business Profile settings</strong></li>
     <li>Click <strong>People and access</strong> in the left menu</li>
-    <li>Click <strong>Add</strong>, enter <code>support@lavaldigital.ca</code>, and select <strong>Manager</strong> role</li>
+    <li>Click <strong>Add</strong>, enter <code>{{ CONTACT_EMAIL }}</code>, and select <strong>Manager</strong> role</li>
     <li>Click <strong>Invite</strong> and let us know you've sent the invitation</li>
 </ol>
 """
@@ -419,7 +419,7 @@ ARTICLES = [
     {
         "slug": "how-ai-agents-work-together",
         "title": "How Our AI Agents Work Together",
-        "description": "The architecture explained in plain language — how 11 specialized agents coordinate to market your business.",
+        "description": "The architecture explained in plain language — how 16 specialized agents coordinate to market your store.",
         "icon": "🤖",
         "category": "getting-started",
         "category_label": "Getting Started",
@@ -428,7 +428,7 @@ ARTICLES = [
         "tags": ["architecture", "agents", "orchestrator", "how-it-works"],
         "content_html": """
 <h2>The AI Team Behind Your Business</h2>
-<p>Think of your 11 AI agents as a specialized marketing team. Each has a specific role, and they all work together under the direction of the Orchestrator.</p>
+<p>Think of your 16 AI agents as a specialized marketing team. Each has a specific role, and they all work together under the direction of the AI Marketing Specialist.</p>
 <ul>
     <li><strong>Local SEO Agent</strong> — Handles Google rankings and local search visibility</li>
     <li><strong>Social Media Agent</strong> — Creates and schedules posts across platforms</li>
