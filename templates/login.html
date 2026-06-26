@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laval Digital - Admin Login</title>
+    <title>Admin Login - Shopify AI Marketing</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <style nonce="{{ csp_nonce }}">
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -90,25 +90,38 @@
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="96">
         </div>
         <h1>Admin Login</h1>
-        <p>Enter your credentials to access the admin panel.</p>
+        <p>Sign in with your Shopify store to access the admin panel.</p>
 
         <div class="error {% if error %}show{% endif %}" id="error-msg">
-            {{ error or 'Invalid username or password.' }}
+            {{ error }}
         </div>
 
+        <form method="POST" action="{{ url_for('admin.login') }}">
+            <div class="form-group">
+                <label for="shop">Shopify Store Domain</label>
+                <input type="text" id="shop" name="shop" placeholder="mystore.myshopify.com" required autofocus>
+            </div>
+            <button type="submit" class="login-btn">Login with Shopify</button>
+        </form>
+
+        {% if legacy_admin %}
+        <hr style="margin: 24px 0; border: none; border-top: 1px solid #e0e0e0;">
+        <p style="color: #888; font-size: 0.85rem; margin-bottom: 16px;">Legacy password login</p>
         <form method="POST" action="{{ url_for('admin.login') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
+                <input type="text" id="username" name="username" placeholder="Enter your username">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                <input type="password" id="password" name="password" placeholder="Enter your password">
             </div>
-            <button type="submit" class="login-btn">Sign In</button>
+            <button type="submit" class="login-btn" style="background: #555;">Sign In</button>
         </form>
-        <div class="footer-text">Laval Digital &copy; {{ now.year }}</div>
+        {% endif %}
+
+        <div class="footer-text">&copy; {{ now.year }}</div>
     </div>
 
     <script nonce="{{ csp_nonce }}">

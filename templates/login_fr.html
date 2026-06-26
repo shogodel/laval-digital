@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laval Digital - Connexion Admin</title>
+    <title>Connexion Admin - Shopify AI Marketing</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <style nonce="{{ csp_nonce }}">
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -86,25 +86,38 @@
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="96">
         </div>
         <h1>Connexion Admin</h1>
-        <p>Entrez vos identifiants pour acc&eacute;der au panneau d'administration.</p>
+        <p>Connectez-vous avec votre boutique Shopify pour acc&eacute;der au panneau d'administration.</p>
 
         <div class="error {% if error %}show{% endif %}" id="error-msg">
-            {{ error or 'Nom d\'utilisateur ou mot de passe invalide.' }}
+            {{ error }}
         </div>
 
+        <form method="POST" action="{{ url_for('admin_fr.login_fr') }}">
+            <div class="form-group">
+                <label for="shop">Domaine de la boutique Shopify</label>
+                <input type="text" id="shop" name="shop" placeholder="maboutique.myshopify.com" required autofocus>
+            </div>
+            <button type="submit" class="login-btn">Connexion avec Shopify</button>
+        </form>
+
+        {% if legacy_admin %}
+        <hr style="margin: 24px 0; border: none; border-top: 1px solid #e0e0e0;">
+        <p style="color: #888; font-size: 0.85rem; margin-bottom: 16px;">Connexion par mot de passe (ancien)</p>
         <form method="POST" action="{{ url_for('admin_fr.login_fr') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="username">Nom d'utilisateur</label>
-                <input type="text" id="username" name="username" placeholder="Entrez votre nom d'utilisateur" required autofocus>
+                <input type="text" id="username" name="username" placeholder="Entrez votre nom d'utilisateur">
             </div>
             <div class="form-group">
                 <label for="password">Mot de passe</label>
-                <input type="password" id="password" name="password" placeholder="Entrez votre mot de passe" required>
+                <input type="password" id="password" name="password" placeholder="Entrez votre mot de passe">
             </div>
-            <button type="submit" class="login-btn">Se Connecter</button>
+            <button type="submit" class="login-btn" style="background: #555;">Se Connecter</button>
         </form>
-        <div class="footer-text">Laval Digital &copy; {{ now.year }}</div>
+        {% endif %}
+
+        <div class="footer-text">&copy; {{ now.year }}</div>
     </div>
 
     <script nonce="{{ csp_nonce }}">

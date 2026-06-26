@@ -150,37 +150,6 @@ def create_app(config_name: str | None = None):
             "FLASK_SECRET_KEY contains the default value. "
             "Generate a secure key: python3 -c \"import secrets; print(secrets.token_hex(32))\""
         )
-    if not os.getenv("ADMIN_USERNAME"):
-        raise RuntimeError(
-            "ADMIN_USERNAME environment variable is required. "
-            "Create a .env file with ADMIN_USERNAME=your-admin-username"
-        )
-    if not os.getenv("ADMIN_PASSWORD"):
-        raise RuntimeError(
-            "ADMIN_PASSWORD environment variable is required. "
-            "Create a .env file with ADMIN_PASSWORD=your-secure-password"
-        )
-    pw = os.getenv("ADMIN_PASSWORD", "")
-    if len(pw) < 8:
-        raise RuntimeError(
-            "ADMIN_PASSWORD must be at least 8 characters."
-        )
-    if not any(c.isupper() for c in pw):
-        raise RuntimeError(
-            "ADMIN_PASSWORD must include at least one uppercase letter."
-        )
-    if not any(c.islower() for c in pw):
-        raise RuntimeError(
-            "ADMIN_PASSWORD must include at least one lowercase letter."
-        )
-    if not any(c.isdigit() for c in pw):
-        raise RuntimeError(
-            "ADMIN_PASSWORD must include at least one digit."
-        )
-    if not any(c in "!@#$%^&*()_+-=[]{}|;':\",./<>?`~" for c in pw):
-        raise RuntimeError(
-            "ADMIN_PASSWORD must include at least one special character."
-        )
     if not os.getenv("CREDENTIAL_SALT"):
         logger.warning(
             "CREDENTIAL_SALT not set — using HKDF domain separation (recommended). "

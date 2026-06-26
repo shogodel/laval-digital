@@ -38,6 +38,7 @@ SHOPIFY_APP_SCOPES = os.getenv(
     "read_price_rules,write_price_rules,read_shipping,write_shipping",
 )
 SHOPIFY_APP_HOME = os.getenv("SHOPIFY_APP_HOME", "https://lavaldigital.ca")
+ADMIN_SHOP_DOMAIN = os.getenv("ADMIN_SHOP_DOMAIN", "").strip().lower()
 SESSION_TOKEN_EXPIRY = timedelta(hours=2)
 
 
@@ -182,11 +183,13 @@ def _ensure_shop_user(shop: str) -> int:
     from werkzeug.security import generate_password_hash
     import secrets
     now = datetime.now(UTC).isoformat()
+    conn.execute("PRAGMA ignore_check_constraints = ON")
     cur = conn.execute(
         """INSERT INTO users (email, password_hash, role, display_name, created_at)
            VALUES (?, ?, 'shop', ?, ?)""",
         (shop, generate_password_hash(secrets.token_hex(32)), shop, now),
     )
+    conn.execute("PRAGMA ignore_check_constraints = OFF")
     conn.commit()
     uid = cur.lastrowid
     if uid is None:
@@ -218,16 +221,18 @@ def register_shop(shop: str, access_token: str, scopes: str) -> int | None:
     now = datetime.now(UTC).isoformat()
     try:
         user_id = _ensure_shop_user(shop)
+        is_admin = 1 if ADMIN_SHOP_DOMAIN and shop == ADMIN_SHOP_DOMAIN else 0
         cur = conn.execute(
-            """INSERT INTO shops (shop, access_token, user_id, scopes, installed_at)
-               VALUES (?, ?, ?, ?, ?)
+            """INSERT INTO shops (shop, access_token, user_id, scopes, installed_at, is_platform_admin)
+               VALUES (?, ?, ?, ?, ?, ?)
                ON CONFLICT(shop) DO UPDATE SET
                    access_token = excluded.access_token,
                    user_id = excluded.user_id,
                    scopes = excluded.scopes,
                    is_active = 1,
-                   uninstalled_at = NULL""",
-            (shop, _encrypt_token(access_token), user_id, scopes, now),
+                   uninstalled_at = NULL,
+                   is_platform_admin = MAX(is_platform_admin, excluded.is_platform_admin)""",
+            (shop, _encrypt_token(access_token), user_id, scopes, now, is_admin),
         )
         conn.commit()
         return cur.lastrowid

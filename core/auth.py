@@ -8,6 +8,7 @@ from flask_login import LoginManager, UserMixin, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from core import database
+from core.shopify_auth import get_shop_by_domain
 
 login_manager = LoginManager()
 
@@ -227,8 +228,17 @@ def _is_admin() -> bool:
 
 
 def _is_platform_admin() -> bool:
-    """True only for platform admins — NOT shop-authenticated users."""
-    return current_user.is_authenticated and current_user.role == "admin"
+    """True for platform admins — either Flask-Login admin or designated admin shop."""
+    if current_user.is_authenticated and current_user.role == "admin":
+        return True
+    if hasattr(g, "shop") and g.shop:
+        try:
+            shop_record = get_shop_by_domain(g.shop)
+            if shop_record and shop_record.get("is_platform_admin"):
+                return True
+        except Exception:
+            pass
+    return False
 
 
 def admin_required(f=None):

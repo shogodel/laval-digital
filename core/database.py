@@ -79,7 +79,7 @@ def init_db() -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
-            role TEXT NOT NULL CHECK(role IN ('admin', 'user')),
+            role TEXT NOT NULL CHECK(role IN ('admin', 'user', 'shop')),
             display_name TEXT NOT NULL,
             created_at TEXT NOT NULL,
             last_login TEXT
@@ -393,6 +393,9 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
     ]),
     (12, [
         "ALTER TABLE shops ADD COLUMN agent_name TEXT DEFAULT NULL",
+    ]),
+    (13, [
+        "ALTER TABLE shops ADD COLUMN is_platform_admin INTEGER DEFAULT 0",
     ]),
 ]
 

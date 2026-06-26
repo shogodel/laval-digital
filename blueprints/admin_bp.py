@@ -10,7 +10,7 @@ from flask_login import current_user, login_user, logout_user
 from werkzeug.security import check_password_hash
 
 from core import database
-from core.auth import AdminUser, _check_rate_limit, _record_attempt, admin_page_required
+from core.auth import AdminUser, _check_rate_limit, _is_platform_admin, _record_attempt, admin_page_required
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def admin_page_required_fr(f):
     """Decorator that requires admin session authentication (redirects to French login)."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not (current_user.is_authenticated and current_user.role == "admin"):
+        if not _is_platform_admin():
             return redirect(url_for("admin_fr.login_fr"))
         return f(*args, **kwargs)
     return decorated
@@ -54,24 +54,34 @@ def admin_page_required_fr(f):
 
 @admin_bp.route("/login", methods=["GET", "POST"])
 def login():
-    """Serve the admin login page and handle authentication."""
+    """Serve the admin login page. Supports Shopify OAuth or legacy password login."""
+    legacy_admin = os.getenv("ADMIN_USERNAME") and os.getenv("ADMIN_PASSWORD")
+
     if request.method == "POST":
-        if not _check_rate_limit("admin"):
+        shop = request.form.get("shop", "").strip().lower()
+        if shop:
+            return redirect(url_for("shopify.install", shop=shop))
+        if legacy_admin:
+            if not _check_rate_limit("admin"):
+                return render_template(
+                    "login.html", error="Too many attempts. Please try again later.", now=datetime.now(),
+                    legacy_admin=True
+                )
+            username = request.form.get("username", "")
+            password = request.form.get("password", "")
+            expected_user = os.getenv("ADMIN_USERNAME")
+            if hmac.compare_digest(username, expected_user) and check_password_hash(_get_admin_password_hash(), password):
+                _record_attempt(True, "admin")
+                login_user(AdminUser("admin"))
+                return redirect(url_for("admin.panel"))
+            _record_attempt(False, "admin")
             return render_template(
-                "login.html", error="Too many attempts. Please try again later.", now=datetime.now()
+                "login.html", error="Invalid username or password.", now=datetime.now(),
+                legacy_admin=True
             )
-        username = request.form.get("username", "")
-        password = request.form.get("password", "")
-        expected_user = os.getenv("ADMIN_USERNAME")
-        if hmac.compare_digest(username, expected_user) and check_password_hash(_get_admin_password_hash(), password):
-            _record_attempt(True, "admin")
-            login_user(AdminUser("admin"))
-            return redirect(url_for("admin.panel"))
-        _record_attempt(False, "admin")
-        return render_template(
-            "login.html", error="Invalid username or password.", now=datetime.now()
-        )
-    return render_template("login.html", now=datetime.now())
+        return render_template("login.html", error="Invalid request.", now=datetime.now(), legacy_admin=False)
+
+    return render_template("login.html", now=datetime.now(), legacy_admin=legacy_admin)
 
 
 @admin_bp.route("/logout")
@@ -205,26 +215,38 @@ def managed():
 
 @admin_fr_bp.route("/login", methods=["GET", "POST"])
 def login_fr():
-    """Serve the French admin login page."""
+    """Serve the French admin login page. Supports Shopify OAuth or legacy password login."""
+    legacy_admin = os.getenv("ADMIN_USERNAME") and os.getenv("ADMIN_PASSWORD")
+
     if request.method == "POST":
-        if not _check_rate_limit("admin"):
+        shop = request.form.get("shop", "").strip().lower()
+        if shop:
+            return redirect(url_for("shopify.install", shop=shop))
+        if legacy_admin:
+            if not _check_rate_limit("admin"):
+                return render_template(
+                    "login_fr.html", error="Trop de tentatives. Veuillez réessayer plus tard.",
+                    now=datetime.now(), legacy_admin=True
+                )
+            username = request.form.get("username", "")
+            password = request.form.get("password", "")
+            expected_user = os.getenv("ADMIN_USERNAME")
+            if hmac.compare_digest(username, expected_user) and check_password_hash(_get_admin_password_hash(), password):
+                _record_attempt(True, "admin")
+                login_user(AdminUser("admin"))
+                return redirect(url_for("admin_fr.panel_redirect_fr"))
+            _record_attempt(False, "admin")
             return render_template(
-                "login_fr.html", error="Trop de tentatives. Veuillez réessayer plus tard.", now=datetime.now()
+                "login_fr.html",
+                error="Nom d'utilisateur ou mot de passe invalide.",
+                now=datetime.now(),
+                legacy_admin=True
             )
-        username = request.form.get("username", "")
-        password = request.form.get("password", "")
-        expected_user = os.getenv("ADMIN_USERNAME")
-        if hmac.compare_digest(username, expected_user) and check_password_hash(_get_admin_password_hash(), password):
-            _record_attempt(True, "admin")
-            login_user(AdminUser("admin"))
-            return redirect(url_for("admin_fr.panel_redirect_fr"))
-        _record_attempt(False, "admin")
         return render_template(
-            "login_fr.html",
-            error="Nom d'utilisateur ou mot de passe invalide.",
-            now=datetime.now(),
+            "login_fr.html", error="Requête invalide.", now=datetime.now(), legacy_admin=False
         )
-    return render_template("login_fr.html", now=datetime.now())
+
+    return render_template("login_fr.html", now=datetime.now(), legacy_admin=legacy_admin)
 
 
 @admin_fr_bp.route("/logout")
