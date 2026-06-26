@@ -118,6 +118,8 @@ def callback():
     session["shop"] = shop
     session["access_token"] = access_token
 
+    _subscribe_webhooks(shop, access_token)
+
     return redirect(url_for("shopify.admin_embedded"))
 
 
@@ -461,37 +463,40 @@ def api_agent_name():
 # ── Register webhooks at install time ────────────────────────────
 
 
-@shopify_bp.route("/api/shopify/register-webhooks", methods=["POST"])
-def register_webhooks():
-    """Register required webhooks for the current shop."""
-    shop = request.args.get("shop", session.get("shop", ""))
-    token = get_shop_token(shop)
-    if not token:
-        return api_error("Shop not active", 400)
-
+def _subscribe_webhooks(shop: str, token: str) -> None:
+    """Register required webhooks for a shop using its access token."""
     topics = [
         "app/uninstalled",
         "shop/redact",
         "customers/redact",
         "customers/data_request",
     ]
-
-    results = []
     for topic in topics:
-        result = graphql(shop, """
-            mutation webhookSubscriptionCreate($topic: WebhookSubscriptionTopic!, $webhookSubscription: WebhookSubscriptionInput!) {
-                webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
-                    webhookSubscription { id }
-                    userErrors { field message }
+        try:
+            graphql(shop, """
+                mutation webhookSubscriptionCreate($topic: WebhookSubscriptionTopic!, $webhookSubscription: WebhookSubscriptionInput!) {
+                    webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
+                        webhookSubscription { id }
+                        userErrors { field message }
+                    }
                 }
-            }
-        """, {
-            "topic": topic.upper().replace("/", "_"),
-            "webhookSubscription": {
-                "callbackUrl": f"{SHOPIFY_APP_HOME}/api/webhooks",
-                "format": "JSON",
-            },
-        })
-        results.append({"topic": topic, "result": result})
+            """, {
+                "topic": topic.upper().replace("/", "_"),
+                "webhookSubscription": {
+                    "callbackUrl": f"{SHOPIFY_APP_HOME}/api/webhooks",
+                    "format": "JSON",
+                },
+            })
+        except Exception as e:
+            logger.warning("Failed to register webhook %s for %s: %s", topic, shop, e)
 
-    return api_success({"results": results})
+
+@shopify_bp.route("/api/shopify/register-webhooks", methods=["POST"])
+def register_webhooks():
+    """Register required webhooks for the current shop (manual trigger)."""
+    shop = request.args.get("shop", session.get("shop", ""))
+    token = get_shop_token(shop)
+    if not token:
+        return api_error("Shop not active", 400)
+    _subscribe_webhooks(shop, token)
+    return api_success({"status": "ok"})
