@@ -212,12 +212,9 @@ def login_required(f):
     def decorated(*args, **kwargs):
         if not current_user.is_authenticated:
             flash("Please log in to continue.")
-            return redirect(url_for("client.client_login"))
+            return redirect(url_for("admin.login"))
         return f(*args, **kwargs)
     return decorated
-
-
-client_required = login_required
 
 
 def _is_admin() -> bool:

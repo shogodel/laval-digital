@@ -14,7 +14,6 @@ _executioner = None
 _push_manager = None
 _agent_memory = None
 _speech_engine = None
-_affiliate_manager = None
 _scheduler_manager = None
 _agent_meta: dict[str, dict[str, str]] | None = None
 _agent_configs: dict | None = None
@@ -43,7 +42,6 @@ def init_executioner(v): global _executioner; _executioner = v
 def init_push_manager(v): global _push_manager; _push_manager = v
 def init_agent_memory(v): global _agent_memory; _agent_memory = v
 def init_speech_engine(v): global _speech_engine; _speech_engine = v
-def init_affiliate_manager(v): global _affiliate_manager; _affiliate_manager = v
 def init_scheduler_manager(v): global _scheduler_manager; _scheduler_manager = v
 def init_agent_meta(v): global _agent_meta; _agent_meta = v
 def init_agent_configs(v): global _agent_configs; _agent_configs = v
@@ -85,10 +83,6 @@ def get_agent_memory():
 
 def get_speech_engine():
     return _require("speech_engine", _speech_engine)
-
-
-def get_affiliate_manager():
-    return _require("affiliate_manager", _affiliate_manager)
 
 
 def get_scheduler_manager():

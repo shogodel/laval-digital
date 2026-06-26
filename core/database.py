@@ -79,43 +79,10 @@ def init_db() -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
-            role TEXT NOT NULL CHECK(role IN ('admin', 'user', 'affiliate')),
+            role TEXT NOT NULL CHECK(role IN ('admin', 'user')),
             display_name TEXT NOT NULL,
             created_at TEXT NOT NULL,
             last_login TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS affiliates (
-            code TEXT PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id),
-            name TEXT NOT NULL,
-            email TEXT NOT NULL,
-            phone TEXT DEFAULT '',
-            total_earnings REAL DEFAULT 0,
-            paid_earnings REAL DEFAULT 0,
-            status TEXT DEFAULT 'active',
-            created_at TEXT NOT NULL,
-            last_login TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS commissions (
-            id TEXT PRIMARY KEY,
-            affiliate_code TEXT NOT NULL,
-            client_email TEXT,
-            client_name TEXT,
-            amount REAL NOT NULL,
-            status TEXT DEFAULT 'pending',
-            created_at TEXT NOT NULL,
-            paid_at TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS payouts (
-            id TEXT PRIMARY KEY,
-            affiliate_code TEXT NOT NULL,
-            amount REAL NOT NULL,
-            status TEXT DEFAULT 'pending',
-            created_at TEXT NOT NULL,
-            processed_at TEXT
         );
 
         CREATE TABLE IF NOT EXISTS agent_schedules (
@@ -255,17 +222,6 @@ def init_db() -> None:
             timestamp TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS affiliate_leads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER REFERENCES users(id),
-            ref_code TEXT,
-            lead_email TEXT,
-            lead_name TEXT,
-            status TEXT DEFAULT 'lead',
-            commission REAL,
-            created_at TEXT
-        );
-
         CREATE TABLE IF NOT EXISTS pending_actions (
             id TEXT PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id),
@@ -392,7 +348,6 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
         "CREATE INDEX IF NOT EXISTS idx_pending_actions_user ON pending_actions(user_id)",
         "CREATE INDEX IF NOT EXISTS idx_pending_actions_status ON pending_actions(status)",
         "CREATE INDEX IF NOT EXISTS idx_mcp_credentials_user ON mcp_credentials(user_id)",
-        "CREATE INDEX IF NOT EXISTS idx_affiliate_leads_user ON affiliate_leads(user_id)",
         "CREATE INDEX IF NOT EXISTS idx_agent_schedules_user ON agent_schedules(user_id)",
         "CREATE INDEX IF NOT EXISTS idx_agent_feedback_user ON agent_feedback(user_id)",
         "CREATE INDEX IF NOT EXISTS idx_agent_findings_user ON agent_findings(user_id)",
@@ -534,10 +489,6 @@ def delete_user(uid: int) -> None:
         conn.execute("DELETE FROM agent_schedules WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM llm_usage_log WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM user_llm_quotas WHERE user_id = ?", (uid,))
-        conn.execute("DELETE FROM affiliate_leads WHERE user_id = ?", (uid,))
-        conn.execute("DELETE FROM affiliates WHERE user_id = ?", (uid,))
-        conn.execute("DELETE FROM commissions WHERE affiliate_code IN (SELECT code FROM affiliates WHERE user_id = ?)", (uid,))
-        conn.execute("DELETE FROM payouts WHERE affiliate_code IN (SELECT code FROM affiliates WHERE user_id = ?)", (uid,))
         conn.execute("UPDATE users SET tenant_id = NULL WHERE tenant_id = ?", (uid,))
         conn.execute("DELETE FROM users WHERE id = ?", (uid,))
         conn.commit()

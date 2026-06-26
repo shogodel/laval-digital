@@ -32,14 +32,6 @@ class TestPublicRoutes:
         r = client.get("/fr/demo")
         assert r.status_code == 200
 
-    def test_blog(self, client):
-        r = client.get("/blog")
-        assert r.status_code == 200
-
-    def test_blog_fr(self, client):
-        r = client.get("/fr/blogue")
-        assert r.status_code == 200
-
     def test_free_trial(self, client):
         r = client.get("/free-trial")
         assert r.status_code == 200
@@ -58,14 +50,6 @@ class TestPublicRoutes:
 
     def test_trial_expired(self, client):
         r = client.get("/trial-expired")
-        assert r.status_code == 200
-
-    def test_affiliate(self, client):
-        r = client.get("/affiliate")
-        assert r.status_code == 200
-
-    def test_affiliate_fr(self, client):
-        r = client.get("/fr/affiliate")
         assert r.status_code == 200
 
     def test_training_hub(self, client):
@@ -191,37 +175,10 @@ class TestAdminAuth:
         assert b"Frankie" in r.data or b"Agents" in r.data
 
 
-class TestClientRoutes:
-    def test_client_login_page(self, client):
-        r = client.get("/client/login")
-        assert r.status_code == 200
-
-
-class TestAffiliateRoutes:
-    def test_affiliate_login_page(self, client):
-        r = client.get("/affiliate/login")
-        assert r.status_code == 200
-
-    def test_affiliate_dashboard_redirects_when_not_logged_in(self, client):
-        r = client.get("/affiliate/dashboard")
-        assert r.status_code in (302, 401)
-
-    def test_affiliate_status_api(self, client):
-        r = client.get("/api/affiliate/status")
-        assert r.status_code == 200
-        data = r.get_json()
-        assert data is not None
-        assert "data" in data
-
-
 class TestApiAuth:
     def test_api_requires_auth_by_default(self, client):
         r = client.get("/api/agents")
         assert r.status_code == 401
-
-    def test_api_public_routes_accessible_without_auth(self, client):
-        r = client.get("/api/affiliate/status")
-        assert r.status_code == 200
 
     def test_api_models_accessible(self, client):
         r = client.get("/api/models")

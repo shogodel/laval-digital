@@ -116,7 +116,6 @@
         <button class="hamburger" id="hamburger-btn">☰</button>
         <ul id="nav-menu">
             <li><a href="{{ url_for('home') }}">Home</a></li>
-            <li><a href="{{ url_for('blog') }}">Blog</a></li>
             <li><a href="{{ url_for('training.training_hub') }}">Training</a></li>
         </ul>
     </nav>
@@ -155,11 +154,7 @@
                 <div id="feedback-msg"></div>
             </div>
 
-            <div class="cta-section">
-                <h3>Need more help?</h3>
-                <p>Our managed services team can handle everything for you — approvals, publishing, support, and more.</p>
-                <a href="{{ url_for('client.client_managed_services') }}" class="btn btn-red">Learn About Managed Services</a>
-            </div>
+
 
             {% if related %}
             <div class="related">

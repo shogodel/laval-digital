@@ -25,11 +25,9 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from agents.executioner_agent import ExecutionerAgent
 from core import database
-from core.affiliates import AffiliateManager
 from core.api_helpers import api_error, api_success
 from core.auth import SESSION_TIMEOUT, admin_required, init_auth
 from core.base_agent import BaseAgent
-from core.blog_articles import ARTICLES_BY_SLUG_EN, ARTICLES_BY_SLUG_FR, ARTICLES_EN, ARTICLES_FR
 from core.email_bridge import EmailBridge
 from core.llm_adapter import LLMAdapter
 from core.memory import AgentMemory
@@ -206,8 +204,6 @@ def create_app(config_name: str | None = None):
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)  # type: ignore[method-assign]
 
     _api_public: set = {
-        "/api/affiliate/status",
-        "/api/affiliate/signup",
         "/api/contact",
         "/api/push/vapid-key",
         "/api/personalities",
@@ -254,7 +250,6 @@ def create_app(config_name: str | None = None):
     from core.shopify_auth import ensure_shop_tables
     ensure_shop_tables()
 
-    affiliate_manager = AffiliateManager()
     push_manager = PushManager()
     agent_memory = AgentMemory()
 
@@ -264,20 +259,14 @@ def create_app(config_name: str | None = None):
     app.register_blueprint(admin_bp)
     app.register_blueprint(admin_fr_bp)
 
-    from blueprints.affiliate_bp import affiliate_bp
-    app.register_blueprint(affiliate_bp)
     from blueprints.mcp_bp import mcp_bp
     app.register_blueprint(mcp_bp)
     from blueprints.training_bp import training_bp
     app.register_blueprint(training_bp)
-    from blueprints.client_bp import client_bp
-    app.register_blueprint(client_bp)
     from blueprints.executioner_bp import executioner_bp
     app.register_blueprint(executioner_bp)
     from blueprints.analytics_bp import analytics_bp
     app.register_blueprint(analytics_bp)
-    from blueprints.managed_bp import managed_bp
-    app.register_blueprint(managed_bp)
     from blueprints.public_bp import public_bp
     app.register_blueprint(public_bp)
     from blueprints.agents_bp import agents_bp
@@ -494,20 +483,6 @@ def create_app(config_name: str | None = None):
                 return str(shop_data["user_id"])
         return None
 
-    @app.before_request
-    def capture_affiliate_referral():
-        ref_code = request.args.get("ref")
-        if ref_code and affiliate_manager.is_valid_code(ref_code):
-            session.permanent = True
-            session["affiliate_ref"] = ref_code
-            session["affiliate_discount"] = 0
-            affiliate_manager.track_lead(
-                ref_code=ref_code,
-                ip=request.remote_addr or "",
-                user_agent=request.headers.get("User-Agent", ""),
-                landing_page=request.path,
-            )
-
     @login_manager.request_loader
     def load_user_from_request(request):
         return None
@@ -524,14 +499,8 @@ def create_app(config_name: str | None = None):
                     session.clear()
                     flash("Session expired. Please log in again.", "error")
                     if current_user.is_authenticated:
-                        user_role = current_user.role if hasattr(current_user, 'role') else None
                         logout_user()
-                        if user_role in ("client", "user"):
-                            return redirect(url_for("client.client_login"))
-                        elif user_role == "affiliate":
-                            return redirect(url_for("affiliate.affiliate_login"))
-                        elif user_role == "admin":
-                            return redirect(url_for("admin.login"))
+                        return redirect(url_for("admin.login"))
             except Exception as e:
                 logger.debug("Session timeout check failed: %s", e)
         session["last_active"] = datetime.now(UTC).isoformat()
@@ -628,50 +597,12 @@ def create_app(config_name: str | None = None):
     def demo_fr():
         return render_template("demo_fr.html")
 
-    @app.route("/blog")
-    def blog():
-        return render_template("blog.html", articles=ARTICLES_EN)
-
-    @app.route("/blog/<slug>")
-    def blog_article(slug):
-        article = ARTICLES_BY_SLUG_EN.get(slug)
-        if not article:
-            abort(404)
-        return render_template("blog_article.html",
-            article=article, lang="en",
-            home_route="home", demo_route="demo", blog_route="blog",
-            home_label="Home", demo_label="Live Demo", blog_label="Blog",
-            training_label="Training Hub",
-            other_lang_route="blog_fr", other_lang_label="FR",
-            back_label="Back to Blog")
-
-    @app.route("/fr/blogue")
-    def blog_fr():
-        return render_template("blog_fr.html", articles=ARTICLES_FR)
-
-    @app.route("/fr/blogue/<slug>")
-    def blog_article_fr(slug):
-        article = ARTICLES_BY_SLUG_FR.get(slug)
-        if not article:
-            abort(404)
-        return render_template("blog_article.html",
-            article=article, lang="fr",
-            home_route="home_fr", demo_route="demo_fr", blog_route="blog_fr",
-            home_label="Accueil", demo_label="Démo", blog_label="Blogue",
-            training_label="Formation",
-            other_lang_route="blog", other_lang_label="EN",
-            back_label="Retour au blogue")
-
     @app.route("/free-trial")
     def free_trial():
-        if current_user.is_authenticated:
-            return redirect(url_for("client.client_dashboard"))
         return render_template("free_trial.html")
 
     @app.route("/fr/essai-gratuit")
     def free_trial_fr():
-        if current_user.is_authenticated:
-            return redirect(url_for("client.client_dashboard"))
         return render_template("free_trial_fr.html")
 
     @app.route("/contact")
@@ -805,7 +736,6 @@ def create_app(config_name: str | None = None):
     _app_state.init_push_manager(push_manager)
     _app_state.init_agent_memory(agent_memory)
     _app_state.init_speech_engine(speech_engine)
-    _app_state.init_affiliate_manager(affiliate_manager)
     _app_state.init_scheduler_manager(scheduler_manager)
     _app_state.init_agent_meta(agent_meta)
     _app_state.init_agent_configs(agent_configs)

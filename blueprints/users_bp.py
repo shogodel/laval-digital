@@ -26,7 +26,7 @@ def api_list_users():
         conn = database._get_conn()
         cursor = conn.cursor()
         if tenant_id:
-            if role_filter in ("user", "affiliate"):
+            if role_filter == "user":
                 cursor.execute(
                     "SELECT id, email, display_name, role, created_at, last_login "
                     "FROM users WHERE (id = ? OR tenant_id = ?) AND role = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
@@ -39,7 +39,7 @@ def api_list_users():
                     (safe_int(tenant_id), safe_int(tenant_id), limit, offset),
                 )
         else:
-            if role_filter in ("user", "affiliate"):
+            if role_filter == "user":
                 cursor.execute(
                     "SELECT id, email, display_name, role, created_at, last_login "
                     "FROM users WHERE role = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
@@ -66,8 +66,8 @@ def api_add_user():
     role = data.get("role", "user")
     display_name = (data.get("display_name") or "").strip()
 
-    if role not in ("user", "affiliate"):
-        return api_error("Invalid role. Must be 'user' or 'affiliate'.", 400)
+    if role != "user":
+        return api_error("Invalid role. Must be 'user'.", 400)
 
     if not email or not password:
         return api_error("Email and password are required", 400)
