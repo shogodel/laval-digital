@@ -4,7 +4,7 @@ import logging
 import uuid
 from datetime import UTC, datetime
 
-from flask import Blueprint, request, session
+from flask import Blueprint, g, request, session
 from flask_login import current_user
 
 from blueprints._shared import AGENT_PERSONALITIES, _safe_tenant_id
@@ -23,6 +23,21 @@ from core.events import get_event_bus
 
 
 logger = logging.getLogger(__name__)
+
+
+def _get_agent_name() -> str:
+    """Resolve the shop's custom agent name from the current context."""
+    shop = session.get("shop") or getattr(g, "shop", "")
+    if shop:
+        try:
+            from core import database
+            conn = database._get_conn()
+            row = conn.execute("SELECT agent_name FROM shops WHERE shop = ?", (shop,)).fetchone()
+            if row and row["agent_name"]:
+                return row["agent_name"]
+        except Exception:
+            pass
+    return "AI Marketing Specialist"
 orchestrator_bp = Blueprint("orchestrator", __name__)
 
 
@@ -72,6 +87,7 @@ def submit_task():
             autonomy_config=autonomy_config,
             user_id=safe_int(user_id) if user_id else 0,
             conversation_history=conversation_history[-20:],
+            agent_name=_get_agent_name(),
         )
 
         return api_success(result)
@@ -263,6 +279,7 @@ def api_dashboard_ask():
             autonomy_config=autonomy_config,
             user_id=safe_int(user_id) if user_id else 0,
             source="frankie",
+            agent_name=_get_agent_name(),
         )
 
         status = result.get("status", "error")

@@ -5,7 +5,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#D42B2B">
-    <title>Frankie — AI Marketing Command Center</title>
+    <title>AI Marketing Specialist</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <script src="https://cdn.shopify.com/static/shopify-app-bridge.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
@@ -73,8 +73,8 @@
 <div class="app">
     <aside class="sidebar">
         <div class="sidebar-brand">
-            <img src="{{ url_for('static', filename='frankie.svg') }}" alt="Frankie">
-            <span>Frankie Control Center</span>
+            <img src="{{ url_for('static', filename='frankie.svg') }}" alt="AI Marketing Specialist">
+            <span id="brand-name">AI Marketing Specialist</span>
         </div>
         <nav class="sidebar-nav">
             <a href="#" class="active" data-tab="dashboard"><span>📊</span> Dashboard</a>
@@ -92,6 +92,7 @@
             <div style="display:flex;align-items:center;gap:8px;">
                 <span class="pill pill-green" id="shop-name">{{ shop }}</span>
                 <button class="btn btn-gray btn-sm" id="logout-btn">Logout</button>
+                <button class="btn btn-gray btn-sm" id="rename-btn" style="display:none;">Rename</button>
             </div>
         </div>
 
@@ -144,6 +145,17 @@
 
         <!-- Settings -->
         <div class="tab-content" id="tab-settings">
+            <div class="card">
+                <div class="card-header"><h2>AI Marketing Specialist Name</h2><p>Give your AI agent a name (shown in chat and responses)</p></div>
+                <div class="form-group">
+                    <label for="agent-name-input">Agent Name</label>
+                    <input type="text" id="agent-name-input" placeholder="AI Marketing Specialist" maxlength="50">
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button class="btn btn-red" id="save-name-btn">Save Name</button>
+                    <span id="name-save-result"></span>
+                </div>
+            </div>
             <div class="card">
                 <div class="card-header"><h2>Agent Configuration</h2><p>Configure LLM models and API keys</p></div>
                 <div class="form-row">
@@ -313,6 +325,41 @@ document.getElementById('save-config-btn').addEventListener('click', function() 
     });
 });
 
+// Load agent name
+function loadAgentName() {
+    api('/api/shopify/agent-name').then(function(data) {
+        if (data.success && data.data && data.data.name) {
+            document.getElementById('brand-name').textContent = data.data.name;
+            document.getElementById('agent-name-input').value = data.data.name;
+            document.getElementById('page-title').textContent = data.data.name;
+        }
+    });
+}
+
+// Save agent name
+document.getElementById('save-name-btn').addEventListener('click', function() {
+    var name = document.getElementById('agent-name-input').value.trim();
+    var resultEl = document.getElementById('name-save-result');
+    if (!name) {
+        resultEl.innerHTML = '<span style="color:var(--red)">Name cannot be empty</span>';
+        return;
+    }
+    resultEl.innerHTML = '<span style="color:var(--blue)">Saving...</span>';
+    api('/api/shopify/agent-name', {
+        method: 'PUT',
+        body: { name: name }
+    }).then(function(data) {
+        if (data.success) {
+            document.getElementById('brand-name').textContent = name;
+            document.getElementById('page-title').textContent = name;
+            resultEl.innerHTML = '<span style="color:var(--green)">Saved!</span>';
+        } else {
+            resultEl.innerHTML = '<span style="color:var(--red)">' + (data.error || 'Error saving name') + '</span>';
+        }
+        setTimeout(function() { resultEl.textContent = ''; }, 3000);
+    });
+});
+
 // Logout
 document.getElementById('logout-btn').addEventListener('click', function() {
     if (app && app.redirect) {
@@ -325,6 +372,7 @@ document.getElementById('logout-btn').addEventListener('click', function() {
 loadAgents();
 loadProducts();
 loadOrders();
+loadAgentName();
 </script>
 </body>
 </html>

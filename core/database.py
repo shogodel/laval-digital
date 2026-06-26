@@ -391,6 +391,9 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
         "ALTER TABLE agent_schedules ADD COLUMN shop TEXT",
         "ALTER TABLE agent_schedules ADD COLUMN next_run TEXT",
     ]),
+    (12, [
+        "ALTER TABLE shops ADD COLUMN agent_name TEXT DEFAULT NULL",
+    ]),
 ]
 
 

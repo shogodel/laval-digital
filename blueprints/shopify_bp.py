@@ -344,8 +344,8 @@ def create_billing_charge():
     data = request.json or {}
     plan = data.get("plan", "monthly")
     plans = {
-        "monthly": {"name": "Frankie Monthly", "price": 59.99, "trial_days": 7},
-        "yearly": {"name": "Frankie Yearly", "price": 599.99, "trial_days": 14},
+        "monthly": {"name": "AI Marketing Monthly", "price": 59.99, "trial_days": 7},
+        "yearly": {"name": "AI Marketing Yearly", "price": 599.99, "trial_days": 14},
     }
     selected = plans.get(plan, plans["monthly"])
 
@@ -398,6 +398,64 @@ def billing_callback():
         conn.commit()
 
     return redirect(url_for("shopify.admin_embedded", shop=shop))
+
+
+# ── Agent Name API ──────────────────────────────────────────────
+
+_RESTRICTED_NAMES = [
+    "jesus", "jesus christ", "christ", "christ jesus",
+    "mary", "the virgin mary", "mary the virgin", "virgin mary",
+    "the holy trinity", "holy trinity", "trinity",
+    "god", "almighty", "savior", "saviour", "messiah",
+    "the father", "the son", "the holy spirit", "holy spirit",
+]
+
+
+def _validate_agent_name(name: str) -> str | None:
+    """Validate an agent name. Returns error message or None if valid."""
+    name = name.strip()
+    if not name:
+        return "Name cannot be empty"
+    if len(name) > 50:
+        return "Name must be under 50 characters"
+    lower = name.lower().strip()
+    for restricted in _RESTRICTED_NAMES:
+        if restricted in lower:
+            return f"Name '{name}' contains a restricted word and cannot be used."
+    if re.search(r'[<>{}]', name):
+        return "Name contains invalid characters"
+    return None
+
+
+@shopify_bp.route("/api/shopify/agent-name", methods=["GET", "PUT"])
+def api_agent_name():
+    """Get or set the custom agent name for this shop."""
+    shop = request.args.get("shop", session.get("shop", ""))
+    if not shop:
+        return api_error("No shop", 400)
+
+    conn = database._get_conn()
+
+    # Ensure column exists (migration safety)
+    try:
+        conn.execute("SELECT agent_name FROM shops LIMIT 1")
+    except Exception:
+        conn.execute("ALTER TABLE shops ADD COLUMN agent_name TEXT DEFAULT NULL")
+        conn.commit()
+
+    if request.method == "PUT":
+        data = request.json or {}
+        name = data.get("name", "").strip()
+        error = _validate_agent_name(name)
+        if error:
+            return api_error(error, 400)
+        conn.execute("UPDATE shops SET agent_name = ? WHERE shop = ?", (name, shop))
+        conn.commit()
+        return api_success({"name": name})
+
+    row = conn.execute("SELECT agent_name FROM shops WHERE shop = ?", (shop,)).fetchone()
+    current = row["agent_name"] if row and row["agent_name"] else None
+    return api_success({"name": current})
 
 
 # ── Register webhooks at install time ────────────────────────────
