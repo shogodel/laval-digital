@@ -239,13 +239,7 @@ class AnalyticsEngine:
             (self.user_id, start, end),
         ).fetchall()
 
-        # Business info
-        biz = conn.execute(
-            "SELECT business_name FROM client_details WHERE user_id = ? LIMIT 1",
-            (self.user_id,),
-        ).fetchone()
-        business_name = _h(biz["business_name"] if biz else "")
-
+        business_name = ""
         agent_lines = "".join(
             f"<tr><td>{_h(a['agent_name'])}</td><td>{a['c']}</td><td>{a['s'] or 0}</td></tr>"
             for a in agents

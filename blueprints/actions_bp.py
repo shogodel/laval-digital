@@ -133,13 +133,6 @@ def api_set_email_bridge():
         "password": encrypt_credential(data.get("password", "")),
     }
     try:
-        conn = database._get_conn()
-        cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE client_details SET email = ?, services = ? WHERE user_id = ?",
-            (settings["username"], json.dumps({"email_bridge": settings}), safe_int(tenant_id)),
-        )
-        conn.commit()
         decrypted_pw = _decrypt_credential(settings["password"])
         with _email_bridge_lock:
             bridge = _get_email_bridge()

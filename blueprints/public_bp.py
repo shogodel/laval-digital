@@ -225,18 +225,7 @@ def api_frankie_inspect():
     user_id = get_current_user_id()
     if not user_id:
         return api_success({"suggestions": [], "error": "No user"})
-    try:
-        conn = database._get_conn()
-        row = conn.execute("SELECT site_url, business_name, city, niche FROM client_details WHERE user_id = ? LIMIT 1", (safe_int(user_id),)).fetchone()
-    except Exception:
-        logger.warning("Failed to query client_details for suggestions", exc_info=True)
-        row = None
-    if not row or not row.get("site_url"):
-        return api_success({"suggestions": [], "site": None})
-
-    site_url = row["site_url"]
-    business = row.get("business_name", "")
-    city = row.get("city", "")
+    return api_success({"suggestions": [], "site": None})
     niche = row.get("niche", "")
 
     suggestions = []

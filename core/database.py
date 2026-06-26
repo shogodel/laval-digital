@@ -170,34 +170,6 @@ def init_db() -> None:
             updated_at TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS client_details (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL REFERENCES users(id),
-            business_name TEXT,
-            contact_name TEXT,
-            email TEXT,
-            phone TEXT,
-            city TEXT,
-            services TEXT,
-            niche TEXT,
-            package TEXT,
-            price REAL,
-            affiliate_code TEXT,
-            payment_status TEXT DEFAULT 'pending',
-            created_at TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS payments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL REFERENCES users(id),
-            installment_number INTEGER,
-            amount REAL,
-            due_date TEXT,
-            paid INTEGER DEFAULT 0,
-            paid_date TEXT,
-            notes TEXT
-        );
-
         CREATE TABLE IF NOT EXISTS leads (
             id TEXT PRIMARY KEY,
             user_id INTEGER REFERENCES users(id),
@@ -245,24 +217,6 @@ def init_db() -> None:
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             UNIQUE(user_id, server_name, platform, credential_key)
-        );
-
-        CREATE TABLE IF NOT EXISTS deployments (
-            id TEXT PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id),
-            business_name TEXT,
-            subdomain TEXT,
-            niche TEXT,
-            package TEXT,
-            status TEXT DEFAULT 'running',
-            stations_completed TEXT,
-            error TEXT,
-            site_url TEXT,
-            admin_url TEXT,
-            ssl_provisioned INTEGER DEFAULT 0,
-            email_sent INTEGER DEFAULT 0,
-            created_at TEXT,
-            completed_at TEXT
         );
     """)
 
@@ -340,7 +294,6 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
         "CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id)",
         "CREATE INDEX IF NOT EXISTS idx_agent_configs_user ON agent_configs(user_id)",
         "CREATE INDEX IF NOT EXISTS idx_threads_user ON threads(user_id)",
-        "CREATE INDEX IF NOT EXISTS idx_client_details_user ON client_details(user_id)",
         "CREATE INDEX IF NOT EXISTS idx_leads_user ON leads(user_id)",
         "CREATE INDEX IF NOT EXISTS idx_leads_created ON leads(created_at)",
         "CREATE INDEX IF NOT EXISTS idx_execution_log_user ON execution_log(user_id)",
@@ -396,6 +349,11 @@ MIGRATIONS: list[tuple[int, list[str]]] = [
     ]),
     (13, [
         "ALTER TABLE shops ADD COLUMN is_platform_admin INTEGER DEFAULT 0",
+    ]),
+    (14, [
+        "DROP TABLE IF EXISTS client_details",
+        "DROP TABLE IF EXISTS payments",
+        "DROP TABLE IF EXISTS deployments",
     ]),
 ]
 
@@ -484,7 +442,6 @@ def delete_user(uid: int) -> None:
         conn.execute("BEGIN")
         conn.execute("DELETE FROM agent_configs WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM threads WHERE user_id = ?", (uid,))
-        conn.execute("DELETE FROM client_details WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM leads WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM execution_log WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM pending_actions WHERE user_id = ?", (uid,))

@@ -76,9 +76,9 @@ def _leads_by_month(engine, months: int = 6) -> list:
 def _send_report_email(html: str, user_id: str):
     try:
         engine = AnalyticsEngine(_safe_int(user_id))
-        biz_row = engine._fetchone("SELECT business_name, email FROM client_details WHERE user_id = ?", (_safe_int(user_id),))
-        business_name = biz_row["business_name"] if biz_row else user_id
-        client_email = biz_row["email"] if biz_row else None
+        user_row = database.get_user_by_id(_safe_int(user_id))
+        client_email = user_row["email"] if user_row else None
+        business_name = user_row.get("display_name", user_id) if user_row else user_id
         if not client_email:
             return api_error("No client email found", 400)
         settings = get_executioner().get_smtp_config()
