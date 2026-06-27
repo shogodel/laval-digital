@@ -27,20 +27,22 @@ jobs:
             docker compose up -d --build
             docker image prune -f
 
-            # Write proxy block and sed script to temp files (base64 avoids quoting issues)
-            echo "ICAgIGxvY2F0aW9uIC8gewogICAgICAgIHByb3h5X3Bhc3MgaHR0cDovLzEyNy4wLjAuMTo1MDAwOwogICAgICAgIHByb3h5X2h0dHBfdmVyc2lvbiAxLjE7CiAgICAgICAgcHJveHlfc2V0X2hlYWRlciBVcGdyYWRlICRodHRwX3VwZ3JhZGU7CiAgICAgICAgcHJveHlfc2V0X2hlYWRlciBDb25uZWN0aW9uICJ1cGdyYWRlIjsKICAgICAgICBwcm94eV9zZXRfaGVhZGVyIEhvc3QgJGhvc3Q7CiAgICAgICAgcHJveHlfc2V0X2hlYWRlciBYLVJlYWwtSVAgJHJlbW90ZV9hZGRyOwogICAgICAgIHByb3h5X3NldF9oZWFkZXIgWC1Gb3J3YXJkZWQtRm9yICRwcm94eV9hZGRfeF9mb3J3YXJkZWRfZm9yOwogICAgICAgIHByb3h5X3NldF9oZWFkZXIgWC1Gb3J3YXJkZWQtUHJvdG8gJHNjaGVtZTsKICAgICAgICBwcm94eV9yZWFkX3RpbWVvdXQgMTIwczsKICAgIH0K" | base64 -d > /tmp/proxy.conf
-            echo "L15zZXJ2ZXJfbmFtZSBsYXZhbC5kaWdpdGFsIHd3dy5sYXZhbC5kaWdpdGFsOy8sL159L3sKICAgIC9efS97CiAgICAgICAgciAvdG1wL3Byb3h5LmNvbmYKICAgICAgICBhXAp9CiAgICAgICAgZAogICAgfQp9Cg==" | base64 -d > /tmp/proxy.sed
-            # Inject into SWAG default.conf if not already present
-            if ! grep -q "proxy_pass http://127.0.0.1:5000" /home/bogdan/apps/nginx-conf/nginx/site-confs/default.conf 2>/dev/null; then
-              docker cp /tmp/proxy.conf swag:/tmp/proxy.conf
-              docker cp /tmp/proxy.sed swag:/tmp/proxy.sed
-              docker exec swag sed -i -f /tmp/proxy.sed /config/nginx/site-confs/default.conf
-              echo "Added proxy config to SWAG default.conf"
+            # Detect Docker gateway IP (host IP reachable from containers)
+            HOST_IP=$(docker exec swag sh -c "ip route 2>/dev/null || true" | awk "/default/ {print \$3}")
+            HOST_IP=${HOST_IP:-172.17.0.1}
+            TARGET="http://${HOST_IP}:5000"
+
+            # Replace proxy_pass in the existing laval.digital server block
+            if grep -q "$TARGET" /home/bogdan/apps/nginx-conf/nginx/site-confs/default.conf 2>/dev/null; then
+              echo "Proxy already points to $TARGET"
             else
-              echo "Proxy config already present in SWAG default.conf"
+              docker exec swag sed -i "/server_name laval.digital;/,/^}/s|proxy_pass http://laval:8000;|proxy_pass $TARGET;|" /config/nginx/site-confs/default.conf
+              echo "Updated proxy_pass to $TARGET"
             fi
-            rm -f /tmp/proxy.conf /tmp/proxy.sed
+
             # Clean up old standalone config file
             rm -f /home/bogdan/apps/nginx-conf/nginx/site-confs/laval-digital.conf
-            docker exec swag nginx -s reload || true
+
+            # Test config and reload
+            docker exec swag nginx -t && docker exec swag nginx -s reload || echo "nginx reload skipped (non-fatal)"
           '
