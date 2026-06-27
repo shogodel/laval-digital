@@ -48,7 +48,21 @@ def _get_conn() -> sqlite3.Connection:
                 logger.warning("Failed to close stale connection (pid %s): %s", current_pid, e)
         db_path = _db_path()
         db_path.parent.mkdir(parents=True, exist_ok=True)
-        _local.conn = sqlite3.connect(str(db_path), timeout=30)
+        try:
+            _local.conn = sqlite3.connect(str(db_path), timeout=30)
+        except sqlite3.OperationalError:
+            dir_stat = db_path.parent.stat() if db_path.parent.exists() else None
+            logger.error(
+                "Cannot open database at %s — dir=%s owner=%s mode=%s — falling back to /tmp",
+                db_path, db_path.parent,
+                dir_stat.st_uid if dir_stat else "N/A",
+                oct(dir_stat.st_mode) if dir_stat else "N/A",
+            )
+            import tempfile
+            db_path = Path(tempfile.gettempdir()) / "shopify.db"
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            _local.conn = sqlite3.connect(str(db_path), timeout=30)
+            logger.warning("Using fallback database at %s", db_path)
         _local.conn.row_factory = sqlite3.Row
         _local.conn.execute("PRAGMA foreign_keys = ON")
         _local.conn.execute("PRAGMA journal_mode = WAL")
