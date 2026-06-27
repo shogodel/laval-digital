@@ -21,8 +21,20 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.DROPLET_IP }} >> ~/.ssh/known_hosts 2>/dev/null || true
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=15 -o ServerAliveCountMax=3 ${{ secrets.USERNAME }}@${{ secrets.DROPLET_IP }} '
+            set -e
             cd /home/bogdan/apps/laval-digital
             git pull
             docker compose up -d --build
             docker image prune -f
+
+            # Inject proxy config into SWAG nginx for the laval.digital server block
+            rm -f /home/bogdan/apps/nginx-conf/nginx/site-confs/laval-digital.conf
+            PROXY_BLOCK="\n    location / {\n        proxy_pass http://127.0.0.1:5000;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade \$http_upgrade;\n        proxy_set_header Connection \"upgrade\";\n        proxy_set_header Host \$host;\n        proxy_set_header X-Real-IP \$remote_addr;\n        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto \$scheme;\n        proxy_read_timeout 120s;\n    }"
+            if grep -q "proxy_pass http://127.0.0.1:5000" /home/bogdan/apps/nginx-conf/nginx/site-confs/default.conf 2>/dev/null; then
+              echo "Proxy config already present in SWAG default.conf"
+            else
+              sudo sed -i "/server_name laval.digital www.laval.digital;/,/^}/s/^}/$PROXY_BLOCK\n}/" /home/bogdan/apps/nginx-conf/nginx/site-confs/default.conf
+              echo "Added proxy config to SWAG default.conf"
+            fi
+            docker exec swag nginx -s reload || true
           '
