@@ -33,7 +33,7 @@ jobs:
             if grep -q "proxy_pass http://127.0.0.1:5000" /home/bogdan/apps/nginx-conf/nginx/site-confs/default.conf 2>/dev/null; then
               echo "Proxy config already present in SWAG default.conf"
             else
-              sudo sed -i "/server_name laval.digital www.laval.digital;/,/^}/s/^}/$PROXY_BLOCK\n}/" /home/bogdan/apps/nginx-conf/nginx/site-confs/default.conf
+              docker exec swag sed -i "/server_name laval.digital www.laval.digital;/,/^}/s/^}/$PROXY_BLOCK\n}/" /config/nginx/site-confs/default.conf
               echo "Added proxy config to SWAG default.conf"
             fi
             docker exec swag nginx -s reload || true
