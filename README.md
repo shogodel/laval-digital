@@ -8,7 +8,7 @@ Frankie is a standalone AI marketing command center that connects to your existi
 - **Frankie Orchestrator**: Agent workflow routing with LLM-based agent selection, draft generation, approval, and execution
 - **MCP Server Layer**: 8 MCP servers (111 tools) for real platform execution — SEO, Social, Email, GMB, Ads, Analytics, Website, E-Commerce
 - **MCP-First Execution**: Every execution path (chat, approvals, direct invoke, executioner) tries MCP servers first, falls back to file-based tools
-- **Single Database**: Shared SQLite at `data/frankie.db` with `user_id` column for data scoping (no per-tenant databases)
+- **Single Database**: Shared SQLite at `data/shopify.db` with `user_id` column for data scoping
 - **Bilingual**: All public pages served in English and French (`/fr/` routes)
 - **Admin Panel**: Tabbed sidebar layout (Dashboard, Agents, Tasks & Approvals, Settings, Users, Analytics, Reports, MCP Servers) with tenant selector, inline agent toggle, agent config, MCP credential management, and execution management
 - **Affiliate Referrals**: Lightweight 20% commission tracking with session-based referral cookies

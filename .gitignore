@@ -57,7 +57,7 @@ gunicorn.log
 
 # Database files (runtime data)
 *.db
-data/frankie.db
+data/shopify.db
 
 # Runtime state files
 data/login_attempts.json

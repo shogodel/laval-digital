@@ -6,7 +6,7 @@ import pytest
 
 _fd, _tmp_db = tempfile.mkstemp(suffix=".db")
 os.close(_fd)
-os.environ["FRANKIE_DB_PATH"] = _tmp_db
+os.environ["SHOPIFY_DB_PATH"] = _tmp_db
 
 from core.database import _get_conn, create_user, init_db, reset_conn  # noqa: E402
 from core.rate_limiter import (  # noqa: E402
@@ -31,7 +31,7 @@ def setup_db():
         os.unlink(_tmp_db)
     except PermissionError:
         pass
-    os.environ.pop("FRANKIE_DB_PATH", None)
+    os.environ.pop("SHOPIFY_DB_PATH", None)
 
 
 class TestCountTokens:

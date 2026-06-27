@@ -1,7 +1,6 @@
-"""Single-database backend for Frankie.
+"""Single-database backend for the Shopify AI Marketing Specialist.
 
-Replaces the multi-tenant TenantManager with one SQLite database
-at data/frankie.db.  All user-scoped data has a user_id column.
+All user-scoped data has a user_id column.
 """
 
 import contextlib
@@ -15,7 +14,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 def _db_path() -> Path:
-    return Path(os.environ.get("FRANKIE_DB_PATH", str(Path(__file__).parent.parent / "data" / "frankie.db")))
+    return Path(os.environ.get("SHOPIFY_DB_PATH", str(Path(__file__).parent.parent / "data" / "shopify.db")))
 _local = threading.local()
 
 DEFAULT_AGENTS = [
