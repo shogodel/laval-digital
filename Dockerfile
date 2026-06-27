@@ -16,6 +16,7 @@ RUN mkdir -p /app/tenants/direct /app/backups /app/logs /app/content /app/data \
     && chown -R appuser:appgroup /app/tenants /app/backups /app/logs /app/content /app/data
 
 EXPOSE 5000
+ENV HOME=/tmp
 USER appuser
 
 CMD ["gunicorn", "-w", "1", "--threads", "8", "--worker-class", "gthread", "--bind", "0.0.0.0:5000", "--timeout", "120", "--graceful-timeout", "120", "--keep-alive", "15", "--max-requests", "10000", "--max-requests-jitter", "2000", "app:app"]
