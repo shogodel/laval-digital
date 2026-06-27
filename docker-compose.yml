@@ -6,7 +6,7 @@ services:
     container_name: laval-digital
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5000:5000"
+      - "5000:5000"
     volumes:
       - ./tenants:/app/tenants
       - ./logs:/app/logs
