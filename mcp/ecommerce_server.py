@@ -67,6 +67,10 @@ class EcommerceMCPServer(MCPServer):
             "Fetch detailed customer profile with orders, tags, addresses, and metafields")
         self.register_tool("search_customers", self.search_customers,
             "Search Shopify customers by email, display name, or tags")
+        self.register_tool("get_store_analytics", self.get_store_analytics,
+            "Fetch store-level analytics: product count, order count, customer count, total sales, AOV")
+        self.register_tool("get_sales_trend", self.get_sales_trend,
+            "Get sales trend by day for a date range (pulls from Shopify order data)")
         self.register_tool("manage_products", self.manage_products,
             "Add, update, and optimize product listings via Shopify Admin API")
         self.register_tool("track_inventory", self.track_inventory,
@@ -330,6 +334,77 @@ class EcommerceMCPServer(MCPServer):
         customers = [e["node"] for e in edges]
         return {"success": True, "result": f"Found {len(customers)} customers matching '{query}'",
                 "total_count": total, "customers": customers}
+
+    def get_store_analytics(self, **kwargs) -> dict[str, Any]:
+        """Fetch store-level analytics via Shopify GraphQL aggregates."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        result = graphql(shop, """
+            query {
+                shop { name email plan { displayName } }
+                productsCount { count }
+                ordersCount { count }
+                customersCount { count }
+            }
+        """, None)
+        if not result:
+            return {"success": False, "error": "GraphQL query failed"}
+        data = result.get("data", {})
+        shop_info = data.get("shop", {})
+        stats = {"products": data.get("productsCount", {}).get("count", 0),
+                 "orders": data.get("ordersCount", {}).get("count", 0),
+                 "customers": data.get("customersCount", {}).get("count", 0),
+                 "store_name": shop_info.get("name", ""), "plan": shop_info.get("plan", {}).get("displayName", "")}
+        return {"success": True, "result": f"Store: {stats['products']} products, {stats['orders']} orders, {stats['customers']} customers",
+                "analytics": stats}
+
+    def get_sales_trend(self, days: int = 30, **kwargs) -> dict[str, Any]:
+        """Get daily sales trend for recent N days from Shopify orders."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if days > 365:
+            days = 365
+        # Fetch enough orders to cover the period
+        limit = min(days * 10, 1000)
+        result = graphql(shop, """
+            query($first: Int!) {
+                orders(first: $first, sortKey: CREATED_AT, reverse: true) {
+                    edges { node {
+                        createdAt
+                        totalPriceSet { shopMoney { amount currencyCode } }
+                        displayFinancialStatus
+                    } }
+                }
+            }
+        """, {"first": limit})
+        if not result:
+            return {"success": False, "error": "GraphQL query failed"}
+        edges = result.get("data", {}).get("orders", {}).get("edges", [])
+        from datetime import timedelta
+        cutoff = datetime.now(UTC) - timedelta(days=days)
+        daily: dict[str, dict] = {}
+        for e in edges:
+            o = e["node"]
+            try:
+                order_date = datetime.fromisoformat(o.get("createdAt", "").replace('Z', '+00:00'))
+            except Exception:
+                continue
+            if order_date < cutoff:
+                continue
+            day_key = order_date.strftime("%Y-%m-%d")
+            amount = float(o.get("totalPriceSet", {}).get("shopMoney", {}).get("amount", 0))
+            if day_key not in daily:
+                daily[day_key] = {"date": day_key, "sales": 0, "orders": 0}
+            daily[day_key]["sales"] += amount
+            daily[day_key]["orders"] += 1
+        trend = sorted(daily.values(), key=lambda x: x["date"])
+        total_sales = sum(d["sales"] for d in trend)
+        total_orders = sum(d["orders"] for d in trend)
+        return {"success": True, "result": f"Sales trend: {total_sales:.2f} over {len(trend)} days ({total_orders} orders)",
+                "total_sales": round(total_sales, 2), "total_orders": total_orders,
+                "days": len(trend), "trend": trend}
 
     # ------------------------------------------------------------------
     # Theme & Metafields — Shopify
