@@ -65,6 +65,8 @@
         #toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: #1f2937; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 360px; transition: opacity 0.3s; display: none; }
         select { width: 100%; padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 0.85rem; font-family: inherit; background: #fff; }
         .resource-picker-btn { margin-top: 8px; }
+        .store-switcher { position: relative; }
+        .store-switcher select { width: auto; min-width: 180px; font-size: 0.8rem; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -91,7 +93,11 @@
         <div class="topbar">
             <h1 id="page-title">Dashboard</h1>
             <div style="display:flex;align-items:center;gap:8px;">
-                <span class="pill pill-green" id="shop-name">{{ shop }}</span>
+                <div class="store-switcher">
+                    <select id="store-selector" onchange="switchStore(this.value)">
+                        <option value="{{ shop }}">{{ shop }}</option>
+                    </select>
+                </div>
                 <button class="btn btn-gray btn-sm" id="logout-btn">Logout</button>
                 <button class="btn btn-gray btn-sm" id="rename-btn" style="display:none;">Rename</button>
             </div>
@@ -236,6 +242,42 @@ function appBridgeSetTitle(title) {
 function toast(msg) { appBridgeToast(msg, false); }
 function toastError(msg) { appBridgeToast(msg, true); }
 
+// ── Store switcher ───────────────────────────────
+
+var STORES = [];
+function loadStores() {
+    api('/api/shopify/stores').then(function(data) {
+        if (!data.success) return;
+        var result = data.data || data;
+        STORES = result.stores || [];
+        var sel = document.getElementById('store-selector');
+        sel.innerHTML = '';
+        STORES.forEach(function(s) {
+            var opt = document.createElement('option');
+            opt.value = s.shop;
+            opt.textContent = s.name ? s.name + ' (' + s.shop + ')' : s.shop;
+            if (s.shop === SHOP) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    });
+}
+
+function switchStore(shop) {
+    if (shop === SHOP) return;
+    SHOP = shop;
+    localStorage.setItem('selected_shop', shop);
+    api('/api/shopify/switch-store', { method: 'POST', body: { shop: shop } });
+    document.getElementById('page-title').textContent = 'Switching to ' + shop + '...';
+    loadAgents();
+    loadProducts();
+    loadOrders();
+    loadAnalytics();
+    loadAgentName();
+    var sel = document.getElementById('store-selector');
+    sel.value = shop;
+    toast('Switched to ' + shop);
+}
+
 function api(path, opts) {
     opts = opts || {};
     var url = path + (path.indexOf('?') > -1 ? '&' : '?') + 'shop=' + encodeURIComponent(SHOP);
@@ -292,6 +334,24 @@ function openProductPicker() {
         }
     });
     picker.dispatch();
+}
+
+// ── Load analytics ───────────────────────────────
+
+function loadAnalytics() {
+    api('/api/shopify/analytics').then(function(data) {
+        var el = document.getElementById('analytics-content');
+        if (!data.success || !data.data) {
+            el.innerHTML = '<p class="empty">Analytics loading... Use the Dashboard tab for store stats</p>';
+            return;
+        }
+        el.innerHTML = '<div class="stats-grid">' +
+            '<div class="stat-card"><div class="stat-value">' + (data.data.total_sales || data.total_sales || '-') + '</div><div class="stat-label">Total Sales</div></div>' +
+            '<div class="stat-card"><div class="stat-value">' + (data.data.aov || data.aov || '-') + '</div><div class="stat-label">Avg Order Value</div></div>' +
+            '<div class="stat-card"><div class="stat-value">' + (data.data.order_count || data.order_count || '-') + '</div><div class="stat-label">Orders</div></div>' +
+            '<div class="stat-card"><div class="stat-value">' + (data.data.customer_count || data.customer_count || '-') + '</div><div class="stat-label">Customers</div></div>' +
+            '</div>';
+    });
 }
 
 // ── Load agents ──────────────────────────────────
@@ -443,9 +503,11 @@ document.getElementById('logout-btn').addEventListener('click', function() {
     }
 });
 
+loadStores();
 loadAgents();
 loadProducts();
 loadOrders();
+loadAnalytics();
 loadAgentName();
 </script>
 </body>

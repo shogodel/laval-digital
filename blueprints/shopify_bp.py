@@ -90,7 +90,7 @@ def callback():
     access_token = token_data.get("access_token", "")
     scopes = token_data.get("scope", SHOPIFY_APP_SCOPES)
 
-    register_shop(shop, access_token, scopes)
+    row_id = register_shop(shop, access_token, scopes)
 
     shop_info = get_shop_data(shop, access_token)
     if shop_info:
@@ -113,6 +113,27 @@ def callback():
                 shop,
             ),
         )
+
+        # Auto-link stores with the same owner email under one user_id
+        owner_email = shop_info.get("email")
+        if owner_email:
+            our_row = conn.execute(
+                "SELECT user_id FROM shops WHERE shop = ?", (shop,)
+            ).fetchone()
+            existing = conn.execute(
+                "SELECT user_id FROM shops WHERE email = ? AND shop != ? AND is_active = 1 AND user_id IS NOT NULL LIMIT 1",
+                (owner_email, shop),
+            ).fetchone()
+            if existing and our_row:
+                new_uid = existing["user_id"]
+                old_uid = our_row["user_id"]
+                if old_uid != new_uid:
+                    conn.execute("UPDATE shops SET user_id = ? WHERE shop = ?", (new_uid, shop))
+                    conn.execute(
+                        "UPDATE OR IGNORE agent_configs SET user_id = ? WHERE user_id = ?",
+                        (new_uid, old_uid),
+                    )
+
         conn.commit()
 
     session["shop"] = shop
@@ -516,6 +537,39 @@ def api_agent_name():
     row = conn.execute("SELECT agent_name FROM shops WHERE shop = ?", (shop,)).fetchone()
     current = row["agent_name"] if row and row["agent_name"] else None
     return api_success({"name": current})
+
+
+# ── Multi-Store API ────────────────────────────────────────────────
+
+
+@shopify_bp.route("/api/shopify/switch-store", methods=["POST"])
+def api_switch_store():
+    """Switch the current session to a different store."""
+    shop = (request.json or {}).get("shop", "")
+    if not shop:
+        return api_error("Shop parameter required", 400)
+    from core.shopify_auth import get_shop_by_domain
+    shop_data = get_shop_by_domain(shop)
+    if not shop_data or not shop_data.get("is_active"):
+        return api_error("Shop not found or inactive", 404)
+    session["shop"] = shop
+    return api_success({"shop": shop})
+
+
+@shopify_bp.route("/api/shopify/stores", methods=["GET"])
+def api_list_stores():
+    """List all active stores linked to the current user."""
+    from core.shopify_auth import get_shops_by_user_id
+    shop = request.args.get("shop", session.get("shop", ""))
+    if not shop:
+        return api_error("No shop context", 400)
+    from core.shopify_auth import get_shop_by_domain
+    shop_data = get_shop_by_domain(shop)
+    if not shop_data or not shop_data.get("user_id"):
+        return api_success({"stores": [{"shop": shop}], "current": shop})
+    user_id = shop_data["user_id"]
+    stores = get_shops_by_user_id(user_id)
+    return api_success({"stores": stores, "current": shop, "user_id": user_id})
 
 
 # ── Register webhooks at install time ────────────────────────────

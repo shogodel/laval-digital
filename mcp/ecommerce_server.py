@@ -110,6 +110,10 @@ class EcommerceMCPServer(MCPServer):
             "Delete a Shopify webhook subscription by ID")
         self.register_tool("get_webhook_events", self.get_webhook_events,
             "Query recent webhook events received from Shopify")
+        self.register_tool("list_stores", self.list_stores,
+            "List all Shopify stores linked to the current user account")
+        self.register_tool("get_current_store", self.get_current_store,
+            "Get the currently selected store domain")
 
     def _get_shop(self, kwargs: dict) -> str | None:
         """Extract shop from tool kwargs."""
@@ -1430,3 +1434,31 @@ class EcommerceMCPServer(MCPServer):
         ).fetchall()
         events = [dict(r) for r in rows]
         return {"success": True, "events": events, "count": len(events)}
+
+    def list_stores(self, **kwargs) -> dict[str, Any]:
+        """List all Shopify stores linked to the current user account."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop parameter required"}
+        from core.shopify_auth import get_shop_by_domain, get_shops_by_user_id
+        shop_data = get_shop_by_domain(shop)
+        if not shop_data or not shop_data.get("user_id"):
+            return {"success": False, "error": "Could not resolve user for this shop"}
+        stores = get_shops_by_user_id(shop_data["user_id"])
+        return {"success": True, "stores": stores, "count": len(stores), "current": shop}
+
+    def get_current_store(self, **kwargs) -> dict[str, Any]:
+        """Get the currently selected store domain."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "No shop context"}
+        from core.shopify_auth import get_shop_by_domain
+        shop_data = get_shop_by_domain(shop)
+        info = {
+            "shop": shop,
+            "name": shop_data.get("name") if shop_data else None,
+            "email": shop_data.get("email") if shop_data else None,
+            "currency": shop_data.get("currency") if shop_data else None,
+            "plan_name": shop_data.get("plan_name") if shop_data else None,
+        }
+        return {"success": True, "store": info}

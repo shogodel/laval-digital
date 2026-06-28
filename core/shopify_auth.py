@@ -276,6 +276,17 @@ def get_active_shops() -> list[dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
+def get_shops_by_user_id(user_id: int) -> list[dict[str, Any]]:
+    """List active shops linked to a given internal user ID."""
+    conn = database._get_conn()
+    rows = conn.execute(
+        """SELECT shop, name, email, domain, currency, plan_name, myshopify_domain, installed_at
+           FROM shops WHERE user_id = ? AND is_active = 1 ORDER BY installed_at DESC""",
+        (user_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def get_shop_by_domain(shop: str) -> dict[str, Any] | None:
     """Get a shop by its domain."""
     conn = database._get_conn()
