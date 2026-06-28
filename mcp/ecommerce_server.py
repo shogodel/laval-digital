@@ -35,6 +35,14 @@ class EcommerceMCPServer(MCPServer):
             "Set metafields on any Shopify resource (product, variant, collection, page, etc.)")
         self.register_tool("update_seo_metadata", self.update_seo_metadata,
             "Update SEO title and description on products, collections, or pages")
+        self.register_tool("list_discounts", self.list_discounts,
+            "List all active discounts from Shopify")
+        self.register_tool("create_discount_code", self.create_discount_code,
+            "Create a percentage or fixed-amount discount code with optional start/end dates")
+        self.register_tool("create_bogo_discount", self.create_bogo_discount,
+            "Create a Buy X Get Y (BOGO) discount code")
+        self.register_tool("create_automatic_discount", self.create_automatic_discount,
+            "Create an automatic percentage or fixed-amount discount (no code needed)")
         self.register_tool("get_product_catalog", self.get_product_catalog,
             "Fetch full product catalog from Shopify via GraphQL — variants, inventory, images, SEO, prices")
         self.register_tool("get_order_history", self.get_order_history,
@@ -341,6 +349,211 @@ class EcommerceMCPServer(MCPServer):
         updated = result.get("data", {}).get(mutation_name, {}).get(payload_key, {})
         return {"success": True, "result": f"SEO metadata updated on {resource_type}",
                 "resource": updated}
+
+    # ------------------------------------------------------------------
+    # Discount & Pricing Rules — Shopify
+    # ------------------------------------------------------------------
+
+    def list_discounts(self, **kwargs) -> dict[str, Any]:
+        """List all active discounts from Shopify."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        result = graphql(shop, """
+            query($first: Int!) {
+                discountNodes(first: $first) {
+                    edges { node {
+                        id
+                        discount {
+                            ... on DiscountCodeBasic { codes(first: 5) { edges { node { code } } }
+                                title startsAt endsAt status
+                                customerSelection { all }
+                                appliesOn { ... on DiscountProducts { products(first: 5) { edges { node { id } } } } }
+                                value { ... on DiscountPercentage { percentage } ... on DiscountAmount { amount { amount currencyCode } } }
+                            }
+                            ... on DiscountCodeBxgy { codes(first: 5) { edges { node { code } } }
+                                title startsAt endsAt status
+                                customerSelection { all }
+                                value { ... on DiscountBuyXGetY { customerGets {
+                                    quantity value { ... on DiscountOnQuantity { quantity { quantity } effect { ... on DiscountPercentage { percentage } } } }
+                                } } }
+                            }
+                            ... on DiscountAutomaticBasic { title startsAt endsAt status
+                                value { ... on DiscountPercentage { percentage } ... on DiscountAmount { amount { amount currencyCode } } }
+                            }
+                        }
+                    } }
+                }
+            }
+        """, {"first": min(kwargs.get("limit", 50), 100)})
+        if not result:
+            return {"success": False, "error": "GraphQL query failed"}
+        edges = result.get("data", {}).get("discountNodes", {}).get("edges", [])
+        discounts = []
+        for e in edges:
+            node = e["node"]
+            disc = node.get("discount", {})
+            entry = {"id": node["id"], "title": disc.get("title", ""),
+                     "status": disc.get("status", ""), "starts_at": disc.get("startsAt"),
+                     "ends_at": disc.get("endsAt")}
+            codes = disc.get("codes", {}).get("edges", [])
+            if codes:
+                entry["codes"] = [c["node"]["code"] for c in codes]
+            discounts.append(entry)
+        return {"success": True, "result": f"Found {len(discounts)} active discounts",
+                "discounts": discounts}
+
+    def create_discount_code(self, title: str = "", code: str = "",
+                              discount_type: str = "percentage", value: float = 10.0,
+                              starts_at: str = "", ends_at: str = "",
+                              applies_to_product_ids: str = "", **kwargs) -> dict[str, Any]:
+        """Create a percentage or fixed-amount discount code."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not title:
+            return {"success": False, "error": "title is required"}
+        if not code:
+            import secrets
+            code = title.upper().replace(" ", "")[:20] + secrets.token_hex(3).upper()
+        mutation = "discountCodeBasicCreate"
+        input_type = "DiscountCodeBasicInput!"
+        if discount_type == "percentage":
+            discount_value = {"percentage": value / 100}
+        elif discount_type == "fixed":
+            discount_value = {"amount": {"amount": value, "currencyCode": "CAD"}}
+        else:
+            return {"success": False, "error": f"Unsupported discount_type: {discount_type}"}
+        gql_input = {
+            "title": title,
+            "code": code,
+            "startsAt": starts_at or None,
+            "endsAt": ends_at or None,
+            "customerGets": {"value": {"discountOnQuantity": {
+                "quantity": None,
+                "effect": {"percentage": value / 100 if discount_type == "percentage" else 0},
+            }}},
+        }
+        if discount_type == "percentage":
+            gql_input["customerGets"]["value"] = {"discountOnQuantity": {
+                "quantity": None, "effect": {"percentage": value / 100}
+            }}
+        else:
+            gql_input["customerGets"]["value"] = {"discountAmount": {"amount": value, "appliesOnEachItem": False}}
+
+        result = graphql(shop, f"""
+            mutation($input: {input_type}) {{
+                {mutation}(input: $input) {{
+                    code {{
+                        discountNode {{ id }}
+                        codes(first: 1) {{ edges {{ node {{ code }} }} }}
+                    }}
+                    userErrors {{ field message }}
+                }}
+            }}
+        """, {"input": {
+            "title": title,
+            "code": code,
+            "startsAt": starts_at or None,
+            "endsAt": ends_at or None,
+            "customerGets": {
+                "value": {
+                    "discountAmount" if discount_type == "fixed" else "discountOnQuantity": {
+                        "quantity": None,
+                        "effect": {"percentage": value / 100} if discount_type == "percentage" else None,
+                    } if discount_type == "percentage" else None,
+                } if discount_type == "percentage" else {
+                    "discountAmount": {"amount": value, "appliesOnEachItem": False}
+                }
+            },
+        }})
+        if not result:
+            return {"success": False, "error": "GraphQL mutation failed"}
+        errors = result.get("data", {}).get(mutation, {}).get("userErrors", [])
+        if errors:
+            return {"success": False, "error": "; ".join(e["message"] for e in errors)}
+        discount_node = result.get("data", {}).get(mutation, {}).get("code", {}).get("discountNode", {})
+        return {"success": True, "result": f"Discount '{code}' created ({value}{'%' if discount_type == 'percentage' else '$'})",
+                "discount_id": discount_node.get("id"), "code": code}
+
+    def create_bogo_discount(self, title: str = "", code: str = "",
+                              customer_gets_qty: int = 1, customer_gets_discount_pct: float = 100.0,
+                              customer_buys_qty: int = 1, starts_at: str = "", ends_at: str = "",
+                              **kwargs) -> dict[str, Any]:
+        """Create a Buy X Get Y (BOGO) discount code."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not title:
+            return {"success": False, "error": "title is required"}
+        if not code:
+            import secrets
+            code = "BOGO" + secrets.token_hex(3).upper()
+        result = graphql(shop, """
+            mutation($input: DiscountCodeBxgyInput!) {
+                discountCodeBxgyCreate(input: $input) {
+                    codeNode { id }
+                    userErrors { field message }
+                }
+            }
+        """, {"input": {
+            "title": title,
+            "code": code,
+            "startsAt": starts_at or None,
+            "endsAt": ends_at or None,
+            "customerBuys": {"quantity": customer_buys_qty},
+            "customerGets": {
+                "quantity": customer_gets_qty,
+                "value": {"discountOnQuantity": {
+                    "quantity": customer_gets_qty,
+                    "effect": {"percentage": customer_gets_discount_pct / 100},
+                }},
+            },
+        }})
+        if not result:
+            return {"success": False, "error": "GraphQL mutation failed"}
+        errors = result.get("data", {}).get("discountCodeBxgyCreate", {}).get("userErrors", [])
+        if errors:
+            return {"success": False, "error": "; ".join(e["message"] for e in errors)}
+        node = result.get("data", {}).get("discountCodeBxgyCreate", {}).get("codeNode", {})
+        return {"success": True, "result": f"BOGO discount '{code}' created (buy {customer_buys_qty}, get {customer_gets_qty} at {customer_gets_discount_pct:.0f}% off)",
+                "discount_id": node.get("id"), "code": code}
+
+    def create_automatic_discount(self, title: str = "",
+                                  discount_type: str = "percentage", value: float = 10.0,
+                                  starts_at: str = "", ends_at: str = "",
+                                  **kwargs) -> dict[str, Any]:
+        """Create an automatic percentage or fixed-amount discount (no code needed)."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not title:
+            return {"success": False, "error": "title is required"}
+        mutation = "discountAutomaticBasicCreate"
+        input_type = "DiscountAutomaticBasicInput!"
+        result = graphql(shop, f"""
+            mutation($input: {input_type}) {{
+                {mutation}(input: $input) {{
+                    automaticDiscountNode {{ id }}
+                    userErrors {{ field message }}
+                }}
+            }}
+        """, {"input": {
+            "title": title,
+            "startsAt": starts_at or None,
+            "endsAt": ends_at or None,
+            "customerGets": {"value": {
+                "discountOnQuantity": {"quantity": None, "effect": {"percentage": value / 100}}
+            }},
+        }})
+        if not result:
+            return {"success": False, "error": "GraphQL mutation failed"}
+        errors = result.get("data", {}).get(mutation, {}).get("userErrors", [])
+        if errors:
+            return {"success": False, "error": "; ".join(e["message"] for e in errors)}
+        node = result.get("data", {}).get(mutation, {}).get("automaticDiscountNode", {})
+        return {"success": True, "result": f"Automatic discount '{title}' created ({value}{'%' if discount_type == 'percentage' else '$'})",
+                "discount_id": node.get("id")}
 
     # ------------------------------------------------------------------
     # Product Management — Shopify-native
