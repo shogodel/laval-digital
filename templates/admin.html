@@ -311,18 +311,14 @@
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
                                 <strong>🌐 {% if locale == 'fr' %}Votre Site Web{% else %}Your Website{% endif %}</strong>
-                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">WordPress, Webflow, Shopify, Wix, Squarespace{% if locale == 'fr' %}, ou tout site{% else %}, or any site{% endif %}</p>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Shopify{% if locale == 'fr' %} ou un site personnalisé{% else %} or custom site{% endif %}</p>
                             </div>
                             <button class="btn btn-gray btn-sm" id="connect-website-btn">{{ t.connect }}</button>
                         </div>
                         <div id="connect-website" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
                             <label for="website-type" style="font-size:0.85rem;margin-bottom:8px;display:block;">{% if locale == 'fr' %}Quel type de site web avez-vous ?{% else %}What kind of website do you have?{% endif %}</label>
                             <select id="website-type" style="margin-bottom:8px;">
-                                <option value="wordpress">WordPress</option>
-                                <option value="webflow">Webflow</option>
                                 <option value="shopify">Shopify</option>
-                                <option value="wix">Wix</option>
-                                <option value="squarespace">Squarespace</option>
                                 <option value="other">{% if locale == 'fr' %}Autre / Personnalis&eacute;{% else %}Other / Custom{% endif %}</option>
                             </select>
                             <label for="website-url" style="font-size:0.85rem;margin-bottom:8px;display:block;">{% if locale == 'fr' %}URL du site{% else %}Your website URL{% endif %}</label>

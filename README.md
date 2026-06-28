@@ -45,7 +45,7 @@ laval-digital/
 │   ├── ads_server.py         # Paid Advertising — Google Ads, Meta Ads, TikTok Ads (18 tools)
 │   ├── analytics_server.py   # Analytics & Reporting — ROI, trends, dashboards, executive summary (12 tools)
 │   ├── website_server.py     # Website Technical — uptime, SSL, DNS, security, SEO scanning (18 tools)
-│   └── ecommerce_server.py   # E-Commerce — products, inventory, pricing, RFM, Shopify/WooCommerce (15 tools)
+│   └── ecommerce_server.py   # E-Commerce — products, inventory, pricing, RFM, Shopify (15 tools)
 ├── agents/                   # 16 specialized agent implementations
 │   ├── local_seo_agent.py
 │   ├── social_media_agent.py
@@ -179,14 +179,14 @@ laval-digital/
 
 | Server | Tools | Key Capabilities |
 |---|---|---|
-| **SEO** (13) | publish_blog_post, run_site_audit, generate_schema, find_backlink_opportunities, ... | WordPress/Webflow/Shopify CMS integration, site crawling, schema markup, backlink prospecting |
+| **SEO** (13) | publish_blog_post, run_site_audit, generate_schema, find_backlink_opportunities, ... | Shopify CMS integration, site crawling, schema markup, backlink prospecting |
 | **Social** (18) | post_to_facebook, post_to_instagram, post_to_tiktok, post_to_linkedin, post_to_x, ... | Multi-platform publishing, content calendars, hashtag generation, engagement tracking |
 | **Email** (16) | send_email, send_campaign, create_sequence, design_automation, ... | SMTP/SendGrid/Mailgun integration, campaign management, drip sequences |
 | **GMB** (16) | create_gmb_post, respond_to_review, manage_qa, update_hours, ... | Google Business Profile posts, review management, business info updates |
 | **Ads** (18) | create_google_ads_campaign, create_meta_ads, optimize_bidding, ... | Google Ads, Meta Ads, TikTok Ads campaign creation and optimization |
 | **Analytics** (12) | track_roi, analyze_trends, compare_periods, get_executive_summary, get_chart_data, ... | DB-driven ROI from tenant data, trend analysis, period comparison, executive summaries |
 | **Website** (18) | monitor_uptime, check_page_speed, manage_ssl, security_scan, dns_lookup, ... | Real HTTP scanning, SSL verification, DNS lookups, security header checks, sitemap validation |
-| **E-Commerce** (15) | manage_products, track_inventory, optimize_product_pages, analyze_customers, ... | Shopify/WooCommerce API, RFM segmentation, live page auditing, pricing optimization, Canadian taxes |
+| **E-Commerce** (15) | manage_products, track_inventory, optimize_product_pages, analyze_customers, ... | Shopify API, RFM segmentation, live page auditing, pricing optimization, Canadian taxes |
 
 ## Execution Flow
 
@@ -231,7 +231,7 @@ Every execution path — chat Execute button, admin approval flow, direct agent 
 
 ## Pricing
 
-**$597.99/month** — All 16 AI agents + command center. One product. One price.
+**$23.99/month** — All 16 AI agents + command center. One product. One price.
 
 ## Agent Configuration
 

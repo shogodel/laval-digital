@@ -522,7 +522,7 @@ class WebsiteMCPServer(MCPServer):
         return {"success": True, "result": "Backup strategy: daily DB + weekly full backup to off-site storage."}
 
     def update_cms(self, **kwargs):
-        return {"success": True, "result": "CMS detection: use audit_seo_health to check for WordPress/Shopify signatures in page source."}
+        return {"success": True, "result": "CMS detection: use audit_seo_health to check for CMS signatures in page source."}
 
     def track_page_changes(self, **kwargs):
         return {"success": True, "result": "Use the compare_websites tool with the same URL at different times to detect changes."}

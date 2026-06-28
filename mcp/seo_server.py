@@ -24,12 +24,12 @@ class SEOMCPServer(MCPServer):
     def __init__(self):
         super().__init__(
             name="seo",
-            description="SEO and content publishing — WordPress, Webflow, Netlify, Shopify, Wix, Squarespace, Ghost, Contentful, custom sites"
+            description="SEO and content publishing — Shopify and custom sites"
         )
 
     def _register_tools(self) -> None:
         self.register_tool("publish_blog_post", self.publish_blog_post,
-            "Publish a blog post to WordPress, Webflow, Shopify, Wix, Squarespace, Ghost, Contentful, or Netlify")
+            "Publish a blog post to Shopify or save locally")
         self.register_tool("update_meta_tags", self.update_meta_tags,
             "Update meta title and description for a given URL")
         self.register_tool("get_site_info", self.get_site_info,
@@ -62,101 +62,10 @@ class SEOMCPServer(MCPServer):
             lines = content.strip().split('\n')
             title = lines[0].replace('#', '').strip()[:100] if lines else "Untitled"
 
-        if cms_type == "wordpress" and api_credentials:
-            return self._publish_wordpress(title, content, api_credentials)
-        if cms_type == "webflow" and api_credentials:
-            return self._publish_webflow(title, content, api_credentials)
-        if cms_type == "netlify" and api_credentials:
-            return self._publish_netlify(title, content, api_credentials)
         if cms_type == "shopify" and api_credentials:
             return self._publish_shopify(title, content, api_credentials)
-        if cms_type == "wix" and api_credentials:
-            return self._publish_wix(title, content, api_credentials)
-        if cms_type == "squarespace" and api_credentials:
-            return self._publish_squarespace(title, content, api_credentials)
-        if cms_type == "ghost" and api_credentials:
-            return self._publish_ghost(title, content, api_credentials)
-        if cms_type == "contentful" and api_credentials:
-            return self._publish_contentful(title, content, api_credentials)
 
         return self._publish_to_file(title, content)
-
-    def _publish_wordpress(self, title: str, content: str, creds: dict) -> dict[str, Any]:
-        """Publish to WordPress REST API."""
-        try:
-            site_url = creds.get("site_url", "")
-            if site_url and not _is_safe_url(site_url.rstrip('/') + "/"):
-                return {"success": False, "result": "", "error": "Blocked site URL"}
-            url = site_url.rstrip('/') + "/wp-json/wp/v2/posts"
-            resp = requests.post(
-                url,
-                auth=(creds.get("username", ""), creds.get("app_password", "")),
-                json={"title": title, "content": content, "status": "publish"},
-                timeout=15
-            )
-            if resp.status_code in (200, 201):
-                post_data = resp.json()
-                return {
-                    "success": True,
-                    "result": f"Published to WordPress: {post_data.get('link', 'Live')}",
-                    "error": None
-                }
-            return {"success": False, "result": "", "error": f"WordPress API error: {resp.text}"}
-        except Exception as e:
-            return {"success": False, "result": "", "error": f"WordPress publish failed: {e}"}
-
-    def _publish_webflow(self, title: str, content: str, creds: dict) -> dict[str, Any]:
-        """Publish to Webflow CMS via API v2."""
-        try:
-            api_token = creds.get("api_token", "")
-            site_id = creds.get("site_id", "")
-            collection_id = creds.get("collection_id", "")
-            if not all([api_token, site_id, collection_id]):
-                return {"success": False, "result": "", "error": "Missing Webflow credentials (api_token, site_id, collection_id)"}
-            slug = re.sub(r'[^a-z0-9-]', '', title.lower().replace(" ", "-"))
-            url = f"https://api.webflow.com/v2/sites/{site_id}/collections/{collection_id}/items"
-            headers = {
-                "Authorization": f"Bearer {api_token}",
-                "accept": "application/json",
-                "content-type": "application/json",
-            }
-            payload = {
-                "isArchived": False,
-                "isDraft": False,
-                "fieldData": {
-                    "name": title,
-                    "slug": slug,
-                    "_archived": False,
-                    "_draft": False,
-                    "body": content,
-                },
-            }
-            resp = requests.post(url, headers=headers, json=payload, timeout=15)
-            if resp.status_code in (200, 201):
-                item = resp.json()
-                return {
-                    "success": True,
-                    "result": f"Published to Webflow: {item.get('body', {}).get('webflowUrl', 'Live')}",
-                    "error": None,
-                }
-            return {"success": False, "result": "", "error": f"Webflow API error: {resp.text}"}
-        except Exception as e:
-            return {"success": False, "result": "", "error": f"Webflow publish failed: {e}"}
-
-    def _publish_netlify(self, title: str, content: str, creds: dict) -> dict[str, Any]:
-        """Trigger Netlify deploy via build hook."""
-        try:
-            hook_url = creds.get("build_hook_url", "")
-            if not hook_url:
-                return {"success": False, "result": "", "error": "No Netlify build hook URL configured"}
-            if not _is_safe_url(hook_url):
-                return {"success": False, "result": "", "error": "Blocked site URL"}
-            resp = requests.post(hook_url, timeout=15)
-            if resp.status_code == 200:
-                return {"success": True, "result": "Netlify deploy triggered", "error": None}
-            return {"success": False, "result": "", "error": f"Netlify hook error: {resp.text}"}
-        except Exception as e:
-            return {"success": False, "result": "", "error": f"Netlify deploy failed: {e}"}
 
     def _publish_shopify(self, title: str, content: str, creds: dict) -> dict[str, Any]:
         """Publish to Shopify blog via Admin API."""
@@ -173,63 +82,6 @@ class SEOMCPServer(MCPServer):
             return {"success": False, "result": "", "error": f"Shopify API: {resp.text}"}
         except Exception as e:
             return {"success": False, "result": "", "error": f"Shopify publish failed: {e}"}
-
-    def _publish_wix(self, title: str, content: str, creds: dict) -> dict[str, Any]:
-        """Publish to Wix blog via API."""
-        try:
-            url = "https://www.wixapis.com/blog/v3/posts"
-            headers = {"Authorization": creds.get("api_key", ""), "Content-Type": "application/json"}
-            payload = {"post": {"title": title, "content": content, "status": "PUBLISHED"}}
-            resp = requests.post(url, headers=headers, json=payload, timeout=15)
-            if resp.status_code in (200, 201):
-                return {"success": True, "result": "Published to Wix blog", "error": None}
-            return {"success": False, "result": "", "error": f"Wix API: {resp.text}"}
-        except Exception as e:
-            return {"success": False, "result": "", "error": f"Wix publish failed: {e}"}
-
-    def _publish_squarespace(self, title: str, content: str, creds: dict) -> dict[str, Any]:
-        """Publish to Squarespace via API."""
-        try:
-            headers = {"Authorization": f"Bearer {creds.get('api_key', '')}", "Content-Type": "application/json"}
-            resp = requests.get("https://api.squarespace.com/1.0/pages", headers=headers, timeout=15)
-            if resp.status_code != 200:
-                return {"success": False, "result": "", "error": f"Squarespace returned HTTP {resp.status_code}"}
-            return {"success": True, "result": "Squarespace connection verified. Full publishing coming soon.", "error": None}
-        except Exception as e:
-            return {"success": False, "result": "", "error": f"Squarespace publish failed: {e}"}
-
-    def _publish_ghost(self, title: str, content: str, creds: dict) -> dict[str, Any]:
-        """Publish to Ghost CMS via Admin API."""
-        try:
-            site_url = creds.get('site_url', '')
-            if site_url and not _is_safe_url(site_url.rstrip('/') + "/"):
-                return {"success": False, "result": "", "error": "Blocked site URL"}
-            url = f"{site_url}/ghost/api/v3/admin/posts/"
-            headers = {"Authorization": f"Ghost {creds.get('admin_api_key', '')}", "Content-Type": "application/json"}
-            payload = {"posts": [{"title": title, "html": content, "status": "published"}]}
-            resp = requests.post(url, headers=headers, json=payload, timeout=15)
-            if resp.status_code == 201:
-                return {"success": True, "result": "Published to Ghost", "error": None}
-            return {"success": False, "result": "", "error": f"Ghost API: {resp.text}"}
-        except Exception as e:
-            return {"success": False, "result": "", "error": f"Ghost publish failed: {e}"}
-
-    def _publish_contentful(self, title: str, content: str, creds: dict) -> dict[str, Any]:
-        """Publish to Contentful via Management API."""
-        try:
-            space_id = creds.get("space_id", "")
-            url = f"https://api.contentful.com/spaces/{space_id}/entries"
-            headers = {
-                "Authorization": f"Bearer {creds.get('access_token', '')}",
-                "Content-Type": "application/vnd.contentful.management.v1+json"
-            }
-            payload = {"fields": {"title": {"en-US": title}, "body": {"en-US": content}}}
-            resp = requests.post(url, headers=headers, json=payload, timeout=15)
-            if resp.status_code == 201:
-                return {"success": True, "result": "Published to Contentful", "error": None}
-            return {"success": False, "result": "", "error": f"Contentful API: {resp.text}"}
-        except Exception as e:
-            return {"success": False, "result": "", "error": f"Contentful publish failed: {e}"}
 
     def _publish_to_file(self, title: str, content: str) -> dict[str, Any]:
         """Save blog post as a Markdown file (fallback)."""

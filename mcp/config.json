@@ -2,7 +2,7 @@
   "servers": {
     "seo": {
       "enabled": true,
-      "description": "Content publishing to WordPress, Webflow, Netlify, and custom sites"
+      "description": "Content publishing to Shopify and custom sites"
     },
     "social": {
       "enabled": true,
