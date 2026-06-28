@@ -193,11 +193,69 @@ def _handle_customers_data_request(shop: str, data: dict):
     logger.info("Customer data request for shop %s: %d customers", shop, len(customer_ids))
 
 
+def _handle_products_create(shop: str, data: dict):
+    """Log product creation; triggers agent-based SEO/content generation."""
+    product_id = data.get("id", "")
+    title = data.get("title", "")
+    logger.info("Product created in %s: %s (id=%s)", shop, title, product_id)
+
+
+def _handle_products_update(shop: str, data: dict):
+    """Log product updates; could trigger re-audit."""
+    product_id = data.get("id", "")
+    title = data.get("title", "")
+    logger.info("Product updated in %s: %s (id=%s)", shop, title, product_id)
+
+
+def _handle_orders_create(shop: str, data: dict):
+    """Log new orders; could trigger fulfillment or thank-you workflows."""
+    order_id = data.get("id", "")
+    order_name = data.get("name", "")
+    total = data.get("total_price", "")
+    logger.info("Order created in %s: %s (id=%s, total=%s)", shop, order_name, order_id, total)
+
+
+def _handle_orders_updated(shop: str, data: dict):
+    """Order status or fulfillment changes; could trigger notifications."""
+    order_id = data.get("id", "")
+    order_name = data.get("name", "")
+    fulfillment = data.get("fulfillment_status", "")
+    financial = data.get("financial_status", "")
+    logger.info("Order updated in %s: %s (fulfillment=%s, financial=%s)", shop, order_name, fulfillment, financial)
+
+
+def _handle_collections_create(shop: str, data: dict):
+    """Log collection creation; could suggest SEO metadata."""
+    collection_id = data.get("id", "")
+    title = data.get("title", "")
+    logger.info("Collection created in %s: %s (id=%s)", shop, title, collection_id)
+
+
+def _handle_collections_update(shop: str, data: dict):
+    """Log collection updates."""
+    collection_id = data.get("id", "")
+    title = data.get("title", "")
+    logger.info("Collection updated in %s: %s (id=%s)", shop, title, collection_id)
+
+
+def _handle_scopes_update(shop: str, data: dict):
+    """Log app scope changes."""
+    scopes = data.get("scopes", [])
+    logger.info("App scopes updated for %s: %s", shop, ", ".join(scopes) if scopes else "none")
+
+
 _WEBHOOK_HANDLERS = {
     "app/uninstalled": _handle_app_uninstalled,
     "shop/redact": _handle_shop_redact,
     "customers/redact": _handle_customers_redact,
     "customers/data_request": _handle_customers_data_request,
+    "products/create": _handle_products_create,
+    "products/update": _handle_products_update,
+    "orders/create": _handle_orders_create,
+    "orders/updated": _handle_orders_updated,
+    "collections/create": _handle_collections_create,
+    "collections/update": _handle_collections_update,
+    "app/scopes_update": _handle_scopes_update,
 }
 
 
@@ -470,6 +528,13 @@ def _subscribe_webhooks(shop: str, token: str) -> None:
         "shop/redact",
         "customers/redact",
         "customers/data_request",
+        "products/create",
+        "products/update",
+        "orders/create",
+        "orders/updated",
+        "collections/create",
+        "collections/update",
+        "app/scopes_update",
     ]
     for topic in topics:
         try:

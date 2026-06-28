@@ -9,7 +9,8 @@ from typing import Any
 
 import requests
 
-from core.shopify_auth import graphql, rest_get, rest_put
+from core import database as db
+from core.shopify_auth import SHOPIFY_APP_HOME, graphql, rest_get, rest_put
 
 from ._safe_url import _is_safe_url
 from .base_server import MCPServer, _safe_error
@@ -101,6 +102,14 @@ class EcommerceMCPServer(MCPServer):
             "Canadian tax rate lookup by province with GST/HST/PST breakdown")
         self.register_tool("audit_store_health", self.audit_store_health,
             "Comprehensive store health audit across products, pages, and settings")
+        self.register_tool("list_webhooks", self.list_webhooks,
+            "List all registered Shopify webhook subscriptions for a store")
+        self.register_tool("register_webhook", self.register_webhook,
+            "Register a new Shopify webhook subscription by topic (e.g. products/create)")
+        self.register_tool("unregister_webhook", self.unregister_webhook,
+            "Delete a Shopify webhook subscription by ID")
+        self.register_tool("get_webhook_events", self.get_webhook_events,
+            "Query recent webhook events received from Shopify")
 
     def _get_shop(self, kwargs: dict) -> str | None:
         """Extract shop from tool kwargs."""
@@ -1312,3 +1321,112 @@ class EcommerceMCPServer(MCPServer):
             {"category": "Marketing", "check": "Email capture", "target": "Newsletter signup", "priority": "medium"},
         ]
         return {"success": True, "result": f"Store health: {len(checks)} checks", "checks": checks}
+
+    # ------------------------------------------------------------------
+    # Webhook Management
+    # ------------------------------------------------------------------
+
+    def list_webhooks(self, **kwargs) -> dict[str, Any]:
+        """List all registered Shopify webhook subscriptions."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop parameter required"}
+        result = graphql(shop, """
+            query {
+                webhookSubscriptions(first: 50) {
+                    edges {
+                        node {
+                            id
+                            topic
+                            callbackUrl
+                            format
+                            createdAt
+                        }
+                    }
+                }
+            }
+        """)
+        if not result:
+            return {"success": False, "error": "Failed to fetch webhooks"}
+        edges = result.get("data", {}).get("webhookSubscriptions", {}).get("edges", [])
+        webhooks = [e["node"] for e in edges]
+        return {"success": True, "webhooks": webhooks, "count": len(webhooks)}
+
+    def register_webhook(self, topic: str = "", **kwargs) -> dict[str, Any]:
+        """Register a new Shopify webhook subscription.
+
+        Args:
+            topic: Shopify webhook topic (e.g. products/create, orders/create)
+        """
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop parameter required"}
+        if not topic:
+            return {"success": False, "error": "Topic parameter required"}
+        graphql_topic = topic.upper().replace("/", "_")
+        result = graphql(shop, """
+            mutation webhookSubscriptionCreate($topic: WebhookSubscriptionTopic!,
+                $webhookSubscription: WebhookSubscriptionInput!) {
+                webhookSubscriptionCreate(topic: $topic,
+                    webhookSubscription: $webhookSubscription) {
+                    webhookSubscription { id topic callbackUrl }
+                    userErrors { field message }
+                }
+            }
+        """, {
+            "topic": graphql_topic,
+            "webhookSubscription": {
+                "callbackUrl": f"{SHOPIFY_APP_HOME}/api/webhooks",
+                "format": "JSON",
+            },
+        })
+        if not result:
+            return {"success": False, "error": "GraphQL call failed"}
+        user_errors = result.get("data", {}).get("webhookSubscriptionCreate", {}).get("userErrors", [])
+        if user_errors:
+            return {"success": False, "error": user_errors[0].get("message", "Unknown error")}
+        sub = result.get("data", {}).get("webhookSubscriptionCreate", {}).get("webhookSubscription", {})
+        return {"success": True, "webhook": sub, "result": f"Registered webhook {topic}"}
+
+    def unregister_webhook(self, webhook_id: str = "", **kwargs) -> dict[str, Any]:
+        """Delete a Shopify webhook subscription by ID.
+
+        Args:
+            webhook_id: The GraphQL ID of the webhook subscription (e.g. gid://shopify/WebhookSubscription/123)
+        """
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop parameter required"}
+        if not webhook_id:
+            return {"success": False, "error": "webhook_id parameter required"}
+        result = graphql(shop, """
+            mutation webhookSubscriptionDelete($id: ID!) {
+                webhookSubscriptionDelete(id: $id) {
+                    deletedWebhookSubscriptionId
+                    userErrors { field message }
+                }
+            }
+        """, {"id": webhook_id})
+        if not result:
+            return {"success": False, "error": "GraphQL call failed"}
+        user_errors = result.get("data", {}).get("webhookSubscriptionDelete", {}).get("userErrors", [])
+        if user_errors:
+            return {"success": False, "error": user_errors[0].get("message", "Unknown error")}
+        return {"success": True, "result": f"Deleted webhook subscription {webhook_id}"}
+
+    def get_webhook_events(self, limit: int = 20, **kwargs) -> dict[str, Any]:
+        """Query recent webhook events received from Shopify.
+
+        Args:
+            limit: Max number of recent events to return (default 20)
+        """
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop parameter required"}
+        conn = db._get_conn()
+        rows = conn.execute(
+            "SELECT id, shop, topic, received_at, processed FROM webhook_events WHERE shop = ? ORDER BY received_at DESC LIMIT ?",
+            (shop, limit),
+        ).fetchall()
+        events = [dict(r) for r in rows]
+        return {"success": True, "events": events, "count": len(events)}
