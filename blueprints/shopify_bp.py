@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 from base64 import b64encode as _b64encode
 from datetime import UTC, datetime
 from typing import Any
@@ -425,12 +426,12 @@ def create_billing_charge():
     data = request.json or {}
     plan = data.get("plan", "monthly")
     plans = {
-        "monthly": {"name": "AI Marketing Monthly", "price": 59.99, "trial_days": 7},
-        "yearly": {"name": "AI Marketing Yearly", "price": 599.99, "trial_days": 14},
+        "monthly": {"name": "AI Marketing Specialist Monthly", "price": 23.99, "trial_days": 7},
+        "yearly": {"name": "AI Marketing Specialist Yearly", "price": 239.99, "trial_days": 14},
     }
     selected = plans.get(plan, plans["monthly"])
 
-    return_url = f"{SHOPIFY_APP_HOME}/api/shopify/billing/callback?shop={shop}"
+    return_url = f"{SHOPIFY_APP_HOME}/api/shopify/billing/callback?shop={shop}&plan={plan}"
     result = graphql(shop, """
         mutation($name: String!, $amount: Decimal!, $trialDays: Int!, $returnUrl: URL!) {
             appSubscriptionCreate(
@@ -469,12 +470,13 @@ def billing_callback():
     """Handle the billing confirmation callback."""
     shop = request.args.get("shop", session.get("shop", ""))
     charge_id = request.args.get("charge_id", "")
+    plan = request.args.get("plan", "monthly")
 
     if shop and charge_id:
         conn = database._get_conn()
         conn.execute(
-            "UPDATE shops SET billing_plan = 'monthly' WHERE shop = ?",
-            (shop,),
+            "UPDATE shops SET billing_plan = ? WHERE shop = ?",
+            (plan, shop),
         )
         conn.commit()
 

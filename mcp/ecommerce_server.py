@@ -10,7 +10,7 @@ from typing import Any
 import requests
 
 from core import database as db
-from core.shopify_auth import SHOPIFY_APP_HOME, graphql, rest_get, rest_put
+from core.shopify_auth import SHOPIFY_APP_HOME, get_shop_by_domain, get_shops_by_user_id, graphql, rest_get, rest_post, rest_put
 
 from ._safe_url import _is_safe_url
 from .base_server import MCPServer, _safe_error
@@ -593,28 +593,11 @@ class EcommerceMCPServer(MCPServer):
         mutation = "discountCodeBasicCreate"
         input_type = "DiscountCodeBasicInput!"
         if discount_type == "percentage":
-            discount_value = {"percentage": value / 100}
+            discount_value = {"discountOnQuantity": {"quantity": None, "effect": {"percentage": value / 100}}}
         elif discount_type == "fixed":
-            discount_value = {"amount": {"amount": value, "currencyCode": "CAD"}}
+            discount_value = {"discountAmount": {"amount": value, "appliesOnEachItem": False}}
         else:
             return {"success": False, "error": f"Unsupported discount_type: {discount_type}"}
-        gql_input = {
-            "title": title,
-            "code": code,
-            "startsAt": starts_at or None,
-            "endsAt": ends_at or None,
-            "customerGets": {"value": {"discountOnQuantity": {
-                "quantity": None,
-                "effect": {"percentage": value / 100 if discount_type == "percentage" else 0},
-            }}},
-        }
-        if discount_type == "percentage":
-            gql_input["customerGets"]["value"] = {"discountOnQuantity": {
-                "quantity": None, "effect": {"percentage": value / 100}
-            }}
-        else:
-            gql_input["customerGets"]["value"] = {"discountAmount": {"amount": value, "appliesOnEachItem": False}}
-
         result = graphql(shop, f"""
             mutation($input: {input_type}) {{
                 {mutation}(input: $input) {{
@@ -630,16 +613,7 @@ class EcommerceMCPServer(MCPServer):
             "code": code,
             "startsAt": starts_at or None,
             "endsAt": ends_at or None,
-            "customerGets": {
-                "value": {
-                    "discountAmount" if discount_type == "fixed" else "discountOnQuantity": {
-                        "quantity": None,
-                        "effect": {"percentage": value / 100} if discount_type == "percentage" else None,
-                    } if discount_type == "percentage" else None,
-                } if discount_type == "percentage" else {
-                    "discountAmount": {"amount": value, "appliesOnEachItem": False}
-                }
-            },
+            "customerGets": {"value": discount_value},
         }})
         if not result:
             return {"success": False, "error": "GraphQL mutation failed"}
@@ -705,6 +679,12 @@ class EcommerceMCPServer(MCPServer):
             return {"success": False, "error": "title is required"}
         mutation = "discountAutomaticBasicCreate"
         input_type = "DiscountAutomaticBasicInput!"
+        if discount_type == "percentage":
+            discount_value = {"discountOnQuantity": {"quantity": None, "effect": {"percentage": value / 100}}}
+        elif discount_type == "fixed":
+            discount_value = {"discountAmount": {"amount": value, "appliesOnEachItem": False}}
+        else:
+            return {"success": False, "error": f"Unsupported discount_type: {discount_type}"}
         result = graphql(shop, f"""
             mutation($input: {input_type}) {{
                 {mutation}(input: $input) {{
@@ -716,9 +696,7 @@ class EcommerceMCPServer(MCPServer):
             "title": title,
             "startsAt": starts_at or None,
             "endsAt": ends_at or None,
-            "customerGets": {"value": {
-                "discountOnQuantity": {"quantity": None, "effect": {"percentage": value / 100}}
-            }},
+            "customerGets": {"value": discount_value},
         }})
         if not result:
             return {"success": False, "error": "GraphQL mutation failed"}
@@ -1440,7 +1418,6 @@ class EcommerceMCPServer(MCPServer):
         shop = self._get_shop(kwargs)
         if not shop:
             return {"success": False, "error": "Shop parameter required"}
-        from core.shopify_auth import get_shop_by_domain, get_shops_by_user_id
         shop_data = get_shop_by_domain(shop)
         if not shop_data or not shop_data.get("user_id"):
             return {"success": False, "error": "Could not resolve user for this shop"}
@@ -1452,7 +1429,6 @@ class EcommerceMCPServer(MCPServer):
         shop = self._get_shop(kwargs)
         if not shop:
             return {"success": False, "error": "No shop context"}
-        from core.shopify_auth import get_shop_by_domain
         shop_data = get_shop_by_domain(shop)
         info = {
             "shop": shop,
