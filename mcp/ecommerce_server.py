@@ -51,6 +51,12 @@ class EcommerceMCPServer(MCPServer):
             "Create a manual collection and add products by ID")
         self.register_tool("update_collection_seo", self.update_collection_seo,
             "Update a collection's title, description, or SEO metadata")
+        self.register_tool("get_locations", self.get_locations,
+            "List Shopify inventory locations")
+        self.register_tool("create_fulfillment", self.create_fulfillment,
+            "Mark order line items as fulfilled with tracking info via REST API")
+        self.register_tool("get_fulfillments", self.get_fulfillments,
+            "Get fulfillment records for an order")
         self.register_tool("get_product_catalog", self.get_product_catalog,
             "Fetch full product catalog from Shopify via GraphQL — variants, inventory, images, SEO, prices")
         self.register_tool("get_order_history", self.get_order_history,
@@ -707,6 +713,76 @@ class EcommerceMCPServer(MCPServer):
         col = result.get("data", {}).get("collectionUpdate", {}).get("collection", {})
         return {"success": True, "result": f"Collection '{col.get('title', collection_id)}' updated",
                 "collection": col}
+
+    # ------------------------------------------------------------------
+    # Fulfillment Integration — Shopify
+    # ------------------------------------------------------------------
+
+    def get_locations(self, **kwargs) -> dict[str, Any]:
+        """List Shopify inventory locations."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        result = rest_get(shop, "locations.json")
+        if not result:
+            return {"success": False, "error": "Failed to fetch locations"}
+        locs = result.get("locations", [])
+        return {"success": True, "result": f"Found {len(locs)} locations",
+                "locations": [{"id": l["id"], "name": l.get("name"), "address": l.get("address1"),
+                               "city": l.get("city"), "province": l.get("province"), "active": l.get("active")}
+                              for l in locs]}
+
+    def create_fulfillment(self, order_id: int = 0, location_id: int = 0,
+                            tracking_number: str = "", tracking_company: str = "",
+                            tracking_url: str = "", line_item_ids: str = "",
+                            notify: bool = True, **kwargs) -> dict[str, Any]:
+        """Mark order line items as fulfilled with tracking info."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not order_id:
+            return {"success": False, "error": "order_id is required"}
+        # Auto-detect location if not provided
+        if not location_id:
+            locs = rest_get(shop, "locations.json")
+            if locs and locs.get("locations"):
+                location_id = locs["locations"][0]["id"]
+        ids = [int(i.strip()) for i in line_item_ids.split(",") if i.strip().isdigit()] if line_item_ids else []
+        payload: dict[str, Any] = {
+            "fulfillment": {
+                "location_id": location_id,
+                "notify_customer": notify,
+            }
+        }
+        if tracking_number:
+            payload["fulfillment"]["tracking_number"] = tracking_number
+            payload["fulfillment"]["tracking_company"] = tracking_company or ""
+            if tracking_url:
+                payload["fulfillment"]["tracking_urls"] = [tracking_url]
+        if ids:
+            payload["fulfillment"]["line_items"] = [{"id": i} for i in ids]
+        result = rest_post(shop, f"orders/{order_id}/fulfillments.json", payload)
+        if not result:
+            return {"success": False, "error": "Failed to create fulfillment"}
+        fulfillment = result.get("fulfillment", {})
+        return {"success": True, "result": f"Order #{order_id} fulfilled" + (f" (tracking: {tracking_number})" if tracking_number else ""),
+                "fulfillment": {"id": fulfillment.get("id"), "status": fulfillment.get("status"),
+                                "tracking": fulfillment.get("tracking_number"),
+                                "created_at": fulfillment.get("created_at")}}
+
+    def get_fulfillments(self, order_id: int = 0, **kwargs) -> dict[str, Any]:
+        """Get fulfillment records for an order."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not order_id:
+            return {"success": False, "error": "order_id is required"}
+        result = rest_get(shop, f"orders/{order_id}/fulfillments.json")
+        if not result:
+            return {"success": False, "error": "Failed to fetch fulfillments"}
+        fulfillments = result.get("fulfillments", [])
+        return {"success": True, "result": f"Found {len(fulfillments)} fulfillments for order #{order_id}",
+                "fulfillments": fulfillments}
 
     # ------------------------------------------------------------------
     # Product Management — Shopify-native
