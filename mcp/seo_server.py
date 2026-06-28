@@ -257,8 +257,8 @@ class SEOMCPServer(MCPServer):
         }
 
     def find_backlink_opportunities(self, niche: str = "", location: str = "", api_credentials: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
-        """Find backlink opportunities for a local business."""
-        niche = niche or api_credentials.get("business_type", "local business") if api_credentials else "local business"
+        """Find backlink opportunities for a Shopify store."""
+        niche = niche or api_credentials.get("business_type", "Shopify store") if api_credentials else "Shopify store"
         location = location or api_credentials.get("city", "your area") if api_credentials else "your area"
 
         opportunities = [

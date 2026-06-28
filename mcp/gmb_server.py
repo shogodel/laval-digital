@@ -190,7 +190,7 @@ class GMBMCPServer(MCPServer):
             "views_search": "How many times your profile appeared in search results",
             "views_maps": "How many times your profile appeared on Google Maps",
             "actions_website": "Clicks to your website",
-            "actions_directions": "Direction requests — critical for local businesses",
+            "actions_directions": "Direction requests — critical for local stores",
             "actions_phone": "Phone calls from GMB — direct lead count",
             "actions_bookings": "Bookings made through GMB",
             "photo_views": "How many times your photos were viewed vs competitors",

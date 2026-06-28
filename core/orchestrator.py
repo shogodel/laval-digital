@@ -300,7 +300,7 @@ class Orchestrator:
         lang_label = "français" if language == "fr" else "english"
         try:
             response = self._llm_adapter.invoke(
-                system_prompt=f"You are a friendly AI orchestrator for local business marketing. Respond in {lang_label}.",
+                system_prompt=f"You are a friendly AI orchestrator for Shopify store marketing. Respond in {lang_label}.",
                 user_message=WELCOME_PROMPT.format(language=lang_label),
                 user_id=user_id,
                 endpoint="welcome",
