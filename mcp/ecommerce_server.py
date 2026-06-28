@@ -43,6 +43,14 @@ class EcommerceMCPServer(MCPServer):
             "Create a Buy X Get Y (BOGO) discount code")
         self.register_tool("create_automatic_discount", self.create_automatic_discount,
             "Create an automatic percentage or fixed-amount discount (no code needed)")
+        self.register_tool("list_collections", self.list_collections,
+            "List all collections (smart and manual) from Shopify")
+        self.register_tool("create_smart_collection", self.create_smart_collection,
+            "Create a smart collection with rules (tag, price, type, vendor conditions)")
+        self.register_tool("create_manual_collection", self.create_manual_collection,
+            "Create a manual collection and add products by ID")
+        self.register_tool("update_collection_seo", self.update_collection_seo,
+            "Update a collection's title, description, or SEO metadata")
         self.register_tool("get_product_catalog", self.get_product_catalog,
             "Fetch full product catalog from Shopify via GraphQL — variants, inventory, images, SEO, prices")
         self.register_tool("get_order_history", self.get_order_history,
@@ -554,6 +562,151 @@ class EcommerceMCPServer(MCPServer):
         node = result.get("data", {}).get(mutation, {}).get("automaticDiscountNode", {})
         return {"success": True, "result": f"Automatic discount '{title}' created ({value}{'%' if discount_type == 'percentage' else '$'})",
                 "discount_id": node.get("id")}
+
+    # ------------------------------------------------------------------
+    # Collection Management — Shopify
+    # ------------------------------------------------------------------
+
+    def list_collections(self, **kwargs) -> dict[str, Any]:
+        """List all collections (smart and manual) from Shopify."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        result = graphql(shop, """
+            query($first: Int!) {
+                collections(first: $first) {
+                    edges { node {
+                        id title handle description
+                        collectionType
+                        updatedAt
+                        productsCount { count }
+                        ruleSet { appliedDisjunctively rules { column relation condition } }
+                        seo { title description }
+                    } }
+                }
+            }
+        """, {"first": min(kwargs.get("limit", 50), 100)})
+        if not result:
+            return {"success": False, "error": "GraphQL query failed"}
+        edges = result.get("data", {}).get("collections", {}).get("edges", [])
+        collections = [e["node"] for e in edges]
+        return {"success": True, "result": f"Found {len(collections)} collections",
+                "collections": collections}
+
+    def create_smart_collection(self, title: str = "", description: str = "",
+                                 rule_column: str = "TAG", rule_relation: str = "EQUALS",
+                                 rule_condition: str = "", combine_with: str = "AND",
+                                 **kwargs) -> dict[str, Any]:
+        """Create a smart collection with automatic product rules."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not title:
+            return {"success": False, "error": "title is required"}
+        if not rule_condition:
+            return {"success": False, "error": "rule_condition is required"}
+        result = graphql(shop, """
+            mutation($input: CollectionInput!) {
+                collectionCreate(input: $input) {
+                    collection { id title handle collectionType productsCount { count } }
+                    userErrors { field message }
+                }
+            }
+        """, {"input": {
+            "title": title,
+            "descriptionHtml": description or "",
+            "ruleSet": {
+                "appliedDisjunctively": combine_with.upper() == "OR",
+                "rules": [{"column": rule_column.upper(), "relation": rule_relation.upper(), "condition": rule_condition}],
+            },
+            "sortOrder": "ALPHA_ASC",
+        }})
+        if not result:
+            return {"success": False, "error": "GraphQL mutation failed"}
+        errors = result.get("data", {}).get("collectionCreate", {}).get("userErrors", [])
+        if errors:
+            return {"success": False, "error": "; ".join(e["message"] for e in errors)}
+        col = result.get("data", {}).get("collectionCreate", {}).get("collection", {})
+        return {"success": True, "result": f"Smart collection '{title}' created",
+                "collection": col}
+
+    def create_manual_collection(self, title: str = "", description: str = "",
+                                  product_ids: str = "", **kwargs) -> dict[str, Any]:
+        """Create a manual collection and add products by ID."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not title:
+            return {"success": False, "error": "title is required"}
+        # Create the collection first (no ruleSet = manual)
+        result = graphql(shop, """
+            mutation($input: CollectionInput!) {
+                collectionCreate(input: $input) {
+                    collection { id title handle }
+                    userErrors { field message }
+                }
+            }
+        """, {"input": {"title": title, "descriptionHtml": description or "",
+                        "sortOrder": "ALPHA_ASC"}})
+        if not result:
+            return {"success": False, "error": "GraphQL mutation failed"}
+        errors = result.get("data", {}).get("collectionCreate", {}).get("userErrors", [])
+        if errors:
+            return {"success": False, "error": "; ".join(e["message"] for e in errors)}
+        col = result.get("data", {}).get("collectionCreate", {}).get("collection", {})
+        col_id = col.get("id", "")
+        # Add products if provided
+        ids = [p.strip() for p in product_ids.split(",") if p.strip()] if product_ids else []
+        added = []
+        if col_id and ids:
+            add_result = graphql(shop, """
+                mutation($collectionId: ID!, $productIds: [ID!]!) {
+                    collectionAddProductsV2(id: $collectionId, productIds: $productIds) {
+                        job { id }
+                        userErrors { field message }
+                    }
+                }
+            """, {"collectionId": col_id, "productIds": ids})
+            if add_result:
+                add_errors = add_result.get("data", {}).get("collectionAddProductsV2", {}).get("userErrors", [])
+                if not add_errors:
+                    added = ids
+        return {"success": True, "result": f"Manual collection '{title}' created with {len(added)} products",
+                "collection": col, "products_added": added}
+
+    def update_collection_seo(self, collection_id: str = "",
+                               title: str = "", description: str = "",
+                               seo_title: str = "", seo_description: str = "",
+                               **kwargs) -> dict[str, Any]:
+        """Update a collection's title, description, or SEO metadata."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not collection_id:
+            return {"success": False, "error": "collection_id is required"}
+        input_data: dict[str, Any] = {"id": collection_id}
+        if title: input_data["title"] = title
+        if description: input_data["descriptionHtml"] = description
+        seo = {}
+        if seo_title: seo["title"] = seo_title
+        if seo_description: seo["description"] = seo_description
+        if seo: input_data["seo"] = seo
+        result = graphql(shop, """
+            mutation($input: CollectionInput!) {
+                collectionUpdate(input: $input) {
+                    collection { id title handle collectionType seo { title description } }
+                    userErrors { field message }
+                }
+            }
+        """, {"input": input_data})
+        if not result:
+            return {"success": False, "error": "GraphQL mutation failed"}
+        errors = result.get("data", {}).get("collectionUpdate", {}).get("userErrors", [])
+        if errors:
+            return {"success": False, "error": "; ".join(e["message"] for e in errors)}
+        col = result.get("data", {}).get("collectionUpdate", {}).get("collection", {})
+        return {"success": True, "result": f"Collection '{col.get('title', collection_id)}' updated",
+                "collection": col}
 
     # ------------------------------------------------------------------
     # Product Management — Shopify-native
