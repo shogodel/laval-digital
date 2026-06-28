@@ -27,6 +27,12 @@ class EcommerceMCPServer(MCPServer):
         )
 
     def _register_tools(self) -> None:
+        self.register_tool("get_product_catalog", self.get_product_catalog,
+            "Fetch full product catalog from Shopify via GraphQL — variants, inventory, images, SEO, prices")
+        self.register_tool("get_order_history", self.get_order_history,
+            "Fetch order history from Shopify via GraphQL — line items, fulfillment, payment, customers")
+        self.register_tool("get_customer_segments", self.get_customer_segments,
+            "Fetch customer segments from Shopify via GraphQL — segment counts, customer breakdown")
         self.register_tool("manage_products", self.manage_products,
             "Add, update, and optimize product listings via Shopify Admin API")
         self.register_tool("track_inventory", self.track_inventory,
@@ -94,6 +100,134 @@ class EcommerceMCPServer(MCPServer):
             return []
         edges = result.get("data", {}).get("orders", {}).get("edges", [])
         return [e["node"] for e in edges]
+
+    # ------------------------------------------------------------------
+    # GraphQL Data Access — Product Catalog, Orders, Customers
+    # ------------------------------------------------------------------
+
+    def get_product_catalog(self, **kwargs) -> dict[str, Any]:
+        """Fetch full product catalog from Shopify via GraphQL."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        limit = min(kwargs.get("limit", 250), 250)
+        result = graphql(shop, """
+            query($first: Int!) {
+                products(first: $first) {
+                    edges { node {
+                        id title handle descriptionHtml productType vendor
+                        totalInventory availableForSale status
+                        seo { title description }
+                        onlineStorePreviewUrl
+                        priceRangeV2 { minVariantPrice { amount currencyCode }
+                                       maxVariantPrice { amount currencyCode } }
+                        variants(first: 10) { edges { node {
+                            id title sku price compareAtPrice currencyCode
+                            inventoryQuantity inventoryItem { id tracked }
+                        } } }
+                        images(first: 5) { edges { node { url altText } } }
+                        metafields(first: 20) { edges { node {
+                            namespace key value type
+                        } } }
+                    } }
+                }
+            }
+        """, {"first": limit})
+        if not result:
+            return {"success": False, "error": "GraphQL query failed or no token"}
+        edges = result.get("data", {}).get("products", {}).get("edges", [])
+        products = [e["node"] for e in edges]
+        return {
+            "success": True,
+            "result": f"Fetched {len(products)} products",
+            "total_count": len(products),
+            "products": products,
+        }
+
+    def get_order_history(self, **kwargs) -> dict[str, Any]:
+        """Fetch order history from Shopify via GraphQL."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        limit = min(kwargs.get("limit", 250), 250)
+        result = graphql(shop, """
+            query($first: Int!) {
+                orders(first: $first, sortKey: CREATED_AT, reverse: true) {
+                    edges { node {
+                        id name email phone
+                        createdAt processedAt cancelledAt
+                        displayFinancialStatus displayFulfillmentStatus
+                        totalPriceSet { shopMoney { amount currencyCode } }
+                        subtotalPriceSet { shopMoney { amount currencyCode } }
+                        totalTaxSet { shopMoney { amount currencyCode } }
+                        totalShippingPriceSet { shopMoney { amount currencyCode } }
+                        customer { id displayName email }
+                        shippingAddress { address1 city province country zip }
+                        lineItems(first: 25) { edges { node {
+                            title quantity variantTitle sku
+                            originalTotalSet { shopMoney { amount currencyCode } }
+                            product { id }
+                        } } }
+                        fulfillments(first: 10) { edges { node {
+                            id status trackingCompany trackingNumbers
+                        } } }
+                        transactions(first: 10) { edges { node {
+                            id kind status amountSet { shopMoney { amount currencyCode } }
+                            gateway
+                        } } }
+                    } }
+                }
+            }
+        """, {"first": limit})
+        if not result:
+            return {"success": False, "error": "GraphQL query failed or no token"}
+        edges = result.get("data", {}).get("orders", {}).get("edges", [])
+        orders = [e["node"] for e in edges]
+        return {
+            "success": True,
+            "result": f"Fetched {len(orders)} orders",
+            "total_count": len(orders),
+            "orders": orders,
+        }
+
+    def get_customer_segments(self, **kwargs) -> dict[str, Any]:
+        """Fetch customer segments from Shopify via GraphQL."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        limit = min(kwargs.get("limit", 50), 50)
+        result = graphql(shop, """
+            query($first: Int!) {
+                customerSegments(first: $first) {
+                    edges { node {
+                        id name query
+                        memberCount
+                    } }
+                }
+                customers(first: 20) {
+                    totalCount
+                    edges { node {
+                        id displayName email
+                        numberOfOrders amountSpent { amount currencyCode }
+                        createdAt
+                    } }
+                }
+            }
+        """, {"first": limit})
+        if not result:
+            return {"success": False, "error": "GraphQL query failed or no token"}
+        segments_edges = result.get("data", {}).get("customerSegments", {}).get("edges", [])
+        customers_edges = result.get("data", {}).get("customers", {}).get("edges", [])
+        total_customers = result.get("data", {}).get("customers", {}).get("totalCount", 0)
+        segments = [e["node"] for e in segments_edges]
+        customers = [e["node"] for e in customers_edges]
+        return {
+            "success": True,
+            "result": f"Fetched {len(segments)} segments, {total_customers} total customers",
+            "segments": segments,
+            "recent_customers": customers,
+            "total_customers": total_customers,
+        }
 
     # ------------------------------------------------------------------
     # Product Management — Shopify-native
