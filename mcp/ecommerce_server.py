@@ -63,6 +63,10 @@ class EcommerceMCPServer(MCPServer):
             "Fetch order history from Shopify via GraphQL — line items, fulfillment, payment, customers")
         self.register_tool("get_customer_segments", self.get_customer_segments,
             "Fetch customer segments from Shopify via GraphQL — segment counts, customer breakdown")
+        self.register_tool("get_customer_details", self.get_customer_details,
+            "Fetch detailed customer profile with orders, tags, addresses, and metafields")
+        self.register_tool("search_customers", self.search_customers,
+            "Search Shopify customers by email, display name, or tags")
         self.register_tool("manage_products", self.manage_products,
             "Add, update, and optimize product listings via Shopify Admin API")
         self.register_tool("track_inventory", self.track_inventory,
@@ -258,6 +262,74 @@ class EcommerceMCPServer(MCPServer):
             "recent_customers": customers,
             "total_customers": total_customers,
         }
+
+    def get_customer_details(self, customer_id: str = "", **kwargs) -> dict[str, Any]:
+        """Fetch detailed customer profile with orders, tags, addresses, and metafields."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not customer_id:
+            return {"success": False, "error": "customer_id is required"}
+        result = graphql(shop, """
+            query($id: ID!) {
+                customer(id: $id) {
+                    id displayName email phone
+                    firstName lastName
+                    numberOfOrders amountSpent { amount currencyCode }
+                    createdAt updatedAt
+                    tags
+                    emailMarketingConsent { consentUpdatedAt state optInLevel }
+                    smsMarketingConsent { consentUpdatedAt state optInLevel }
+                    defaultAddress { address1 address2 city province country zip phone }
+                    addresses(first: 5) { edges { node {
+                        address1 address2 city province country zip phone
+                    } } }
+                    metafields(first: 20) { edges { node { namespace key value type } } }
+                    orders(first: 20, sortKey: CREATED_AT, reverse: true) {
+                        edges { node {
+                            id name createdAt totalPriceSet { shopMoney { amount currencyCode } }
+                            displayFinancialStatus displayFulfillmentStatus
+                            lineItems(first: 5) { edges { node { title quantity } } }
+                        } }
+                    }
+                }
+            }
+        """, {"id": customer_id})
+        if not result:
+            return {"success": False, "error": "GraphQL query failed"}
+        customer = result.get("data", {}).get("customer")
+        if not customer:
+            return {"success": False, "error": "Customer not found"}
+        return {"success": True, "result": f"Customer: {customer.get('displayName', 'Unknown')}",
+                "customer": customer}
+
+    def search_customers(self, query: str = "", **kwargs) -> dict[str, Any]:
+        """Search Shopify customers by email, display name, or tags."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not query:
+            return {"success": False, "error": "query is required"}
+        result = graphql(shop, """
+            query($q: String!, $first: Int!) {
+                customers(first: $first, query: $q) {
+                    totalCount
+                    edges { node {
+                        id displayName email phone
+                        numberOfOrders amountSpent { amount currencyCode }
+                        tags city
+                        createdAt
+                    } }
+                }
+            }
+        """, {"q": query, "first": min(kwargs.get("limit", 50), 100)})
+        if not result:
+            return {"success": False, "error": "GraphQL query failed"}
+        edges = result.get("data", {}).get("customers", {}).get("edges", [])
+        total = result.get("data", {}).get("customers", {}).get("totalCount", 0)
+        customers = [e["node"] for e in edges]
+        return {"success": True, "result": f"Found {len(customers)} customers matching '{query}'",
+                "total_count": total, "customers": customers}
 
     # ------------------------------------------------------------------
     # Theme & Metafields — Shopify
