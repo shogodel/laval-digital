@@ -17,7 +17,7 @@
         .sidebar-brand img { width: 32px; height: 32px; }
         .sidebar-brand span { font-size: 1rem; font-weight: 700; }
         .sidebar-nav { display: flex; flex-direction: column; padding: 8px 0; }
-        .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.15s; border-left: 3px solid transparent; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.15s; border-left: 3px solid transparent; cursor: pointer; }
         .sidebar-nav a:hover { background: rgba(255,255,255,0.06); color: #fff; }
         .sidebar-nav a.active { background: rgba(255,255,255,0.1); color: #fff; border-left-color: var(--red); }
         .main { margin-left: 240px; flex: 1; padding: 24px; min-height: 100vh; }
@@ -64,6 +64,7 @@
         .pill-red { background: #fef2f2; color: #991b1b; }
         #toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: #1f2937; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 360px; transition: opacity 0.3s; display: none; }
         select { width: 100%; padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: var(--radius); font-size: 0.85rem; font-family: inherit; background: #fff; }
+        .resource-picker-btn { margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -123,7 +124,8 @@
         <div class="tab-content" id="tab-products">
             <div class="card">
                 <div class="card-header"><h2>Products</h2><p>From your Shopify store</p></div>
-                <div id="product-list"><p class="empty">Loading products...</p></div>
+                <button class="btn btn-green btn-sm resource-picker-btn" id="pick-products-btn">📦 Pick Products</button>
+                <div id="product-list" style="margin-top:12px;"><p class="empty">Loading products...</p></div>
             </div>
         </div>
 
@@ -190,6 +192,8 @@
 <script>
 var SHOP = '{{ shop|safe }}';
 var API_KEY = '{{ api_key|safe }}';
+var CURRENT_TAB = 'dashboard';
+var TITLE_NAMES = { dashboard: 'Dashboard', agents: 'AI Agents', products: 'Products', orders: 'Orders', analytics: 'Analytics', settings: 'Settings' };
 
 var app = window.app = {};
 var AppBridge = window['shopify-app-bridge'];
@@ -201,13 +205,36 @@ if (AppBridge) {
     });
 }
 
-function toast(msg) {
-    var el = document.getElementById('toast');
-    el.textContent = msg;
-    el.style.display = 'block';
-    el.style.opacity = '1';
-    setTimeout(function() { el.style.opacity = '0'; setTimeout(function() { el.style.display = 'none'; }, 300); }, 3000);
+// ── App Bridge helpers ───────────────────────────
+
+function appBridgeToast(msg, isError) {
+    if (app && app.dispatch && AppBridge && AppBridge.actions && AppBridge.actions.Toast) {
+        app.dispatch(AppBridge.actions.Toast.create(app, { message: msg, isError: isError || false, duration: 3000 }));
+    } else {
+        // Fallback to inline toast
+        var el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.display = 'block';
+        el.style.opacity = '1';
+        setTimeout(function() { el.style.opacity = '0'; setTimeout(function() { el.style.display = 'none'; }, 300); }, 3000);
+    }
 }
+
+function appBridgeNavigate(path) {
+    if (app && app.dispatch && AppBridge && AppBridge.actions && AppBridge.actions.Redirect) {
+        app.dispatch(AppBridge.actions.Redirect.toApp({ path: path }));
+    }
+}
+
+function appBridgeSetTitle(title) {
+    if (app && app.dispatch && AppBridge && AppBridge.actions && AppBridge.actions.TitleBar) {
+        app.dispatch(AppBridge.actions.TitleBar.create(app, { title: title }));
+    }
+}
+
+// Toast with App Bridge fallback
+function toast(msg) { appBridgeToast(msg, false); }
+function toastError(msg) { appBridgeToast(msg, true); }
 
 function api(path, opts) {
     opts = opts || {};
@@ -221,20 +248,54 @@ function api(path, opts) {
     }).then(function(r) { return r.json(); });
 }
 
-// Tab switching
+// ── Tab switching with deep linking ──────────────
+
+function switchTab(tab) {
+    CURRENT_TAB = tab;
+    document.querySelectorAll('.sidebar-nav a').forEach(function(x) { x.classList.remove('active'); });
+    document.querySelector('.sidebar-nav a[data-tab="' + tab + '"]').classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    var pane = document.getElementById('tab-' + tab);
+    if (pane) pane.classList.add('active');
+    var title = TITLE_NAMES[tab] || tab;
+    document.getElementById('page-title').textContent = title;
+    appBridgeSetTitle(title);
+}
+
 document.querySelectorAll('.sidebar-nav a').forEach(function(a) {
     a.addEventListener('click', function(e) {
         e.preventDefault();
-        document.querySelectorAll('.sidebar-nav a').forEach(function(x) { x.classList.remove('active'); });
-        a.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
-        var tab = document.getElementById('tab-' + a.dataset.tab);
-        if (tab) { tab.classList.add('active'); }
-        document.getElementById('page-title').textContent = a.textContent.trim();
+        switchTab(a.dataset.tab);
     });
 });
 
-// Load agents
+// ── App Bridge Resource Picker ───────────────────
+
+function openProductPicker() {
+    if (!app || !AppBridge || !AppBridge.actions || !AppBridge.actions.ResourcePicker) {
+        toastError('Resource Picker requires Shopify App Bridge');
+        return;
+    }
+    var picker = AppBridge.actions.ResourcePicker.create(app, {
+        type: 'product',
+        action: 'select',
+        multiple: true,
+    });
+    picker.subscribe(function(payload) {
+        var selection = payload.selection || [];
+        if (selection.length) {
+            toast('Selected ' + selection.length + ' product(s)');
+            var ids = selection.map(function(p) { return p.id; });
+            api('/api/shopify/products', { method: 'POST', body: { ids: ids } }).then(function() {
+                setTimeout(loadProducts, 500);
+            });
+        }
+    });
+    picker.dispatch();
+}
+
+// ── Load agents ──────────────────────────────────
+
 function loadAgents() {
     api('/api/agents').then(function(data) {
         var agents = data.agents || [];
@@ -261,6 +322,7 @@ function loadAgents() {
         document.getElementById('stat-agents').textContent = agents.length;
         document.getElementById('stat-active').textContent = active;
         document.getElementById('stat-pending').textContent = pending;
+        appBridgeSetTitle(TITLE_NAMES[CURRENT_TAB] || 'Dashboard');
     });
 }
 
@@ -268,7 +330,8 @@ function toggleAgent(id) {
     api('/api/agents/' + id + '/toggle', { method: 'POST' }).then(function() { loadAgents(); toast('Agent toggled'); });
 }
 
-// Load products
+// ── Load products ────────────────────────────────
+
 function loadProducts() {
     api('/api/shopify/products').then(function(data) {
         var products = data.data || [];
@@ -288,7 +351,8 @@ function loadProducts() {
     });
 }
 
-// Load orders
+// ── Load orders ──────────────────────────────────
+
 function loadOrders() {
     api('/api/shopify/orders').then(function(data) {
         var orders = data.data || [];
@@ -309,7 +373,8 @@ function loadOrders() {
     });
 }
 
-// Save config
+// ── Save config ──────────────────────────────────
+
 document.getElementById('save-config-btn').addEventListener('click', function() {
     var model = document.getElementById('config-model').value;
     var apiKey = document.getElementById('config-api-key').value;
@@ -321,11 +386,13 @@ document.getElementById('save-config-btn').addEventListener('click', function() 
         body: { model: model, api_key: apiKey, api_base: apiBase }
     }).then(function(data) {
         resultEl.innerHTML = '<span style="color:var(--green)">Saved!</span>';
+        toast('Configuration saved to all agents');
         setTimeout(function() { resultEl.textContent = ''; }, 3000);
     });
 });
 
-// Load agent name
+// ── Agent name ───────────────────────────────────
+
 function loadAgentName() {
     api('/api/shopify/agent-name').then(function(data) {
         if (data.success && data.data && data.data.name) {
@@ -336,7 +403,6 @@ function loadAgentName() {
     });
 }
 
-// Save agent name
 document.getElementById('save-name-btn').addEventListener('click', function() {
     var name = document.getElementById('agent-name-input').value.trim();
     var resultEl = document.getElementById('name-save-result');
@@ -353,6 +419,7 @@ document.getElementById('save-name-btn').addEventListener('click', function() {
             document.getElementById('brand-name').textContent = name;
             document.getElementById('page-title').textContent = name;
             resultEl.innerHTML = '<span style="color:var(--green)">Saved!</span>';
+            toast('Agent name updated');
         } else {
             resultEl.innerHTML = '<span style="color:var(--red)">' + (data.error || 'Error saving name') + '</span>';
         }
@@ -360,9 +427,16 @@ document.getElementById('save-name-btn').addEventListener('click', function() {
     });
 });
 
-// Logout
+// ── Resource Picker ──────────────────────────────
+
+document.getElementById('pick-products-btn').addEventListener('click', openProductPicker);
+
+// ── Logout with App Bridge ───────────────────────
+
 document.getElementById('logout-btn').addEventListener('click', function() {
-    if (app && app.redirect) {
+    if (app && app.dispatch && AppBridge && AppBridge.actions && AppBridge.actions.Redirect) {
+        app.dispatch(AppBridge.actions.Redirect.toApp({ path: '/api/auth/logout' }));
+    } else if (app && app.redirect) {
         app.redirect('/api/auth/logout');
     } else {
         window.location.href = '/logout';
