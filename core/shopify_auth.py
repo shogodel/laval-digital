@@ -378,3 +378,19 @@ def rest_post(shop: str, path: str, data: dict[str, Any] | None = None) -> dict[
     except Exception as e:
         logger.error("REST POST error for %s %s: %s", shop, path, e)
         return None
+
+
+def rest_put(shop: str, path: str, data: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    """Execute a PUT request against the Shopify Admin REST API."""
+    token = get_shop_token(shop)
+    if not token:
+        return None
+    url = f"https://{shop}/admin/api/2024-01/{path.lstrip('/')}"
+    headers = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+    try:
+        resp = requests.put(url, headers=headers, json=data, timeout=30)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        logger.error("REST PUT error for %s %s: %s", shop, path, e)
+        return None

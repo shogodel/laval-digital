@@ -9,7 +9,7 @@ from typing import Any
 
 import requests
 
-from core.shopify_auth import graphql
+from core.shopify_auth import graphql, rest_get, rest_put
 
 from ._safe_url import _is_safe_url
 from .base_server import MCPServer, _safe_error
@@ -27,6 +27,14 @@ class EcommerceMCPServer(MCPServer):
         )
 
     def _register_tools(self) -> None:
+        self.register_tool("get_themes", self.get_themes,
+            "List Shopify themes and their assets")
+        self.register_tool("update_theme_asset", self.update_theme_asset,
+            "Create or update a theme asset (liquid, JSON, CSS, JS file)")
+        self.register_tool("set_metafields", self.set_metafields,
+            "Set metafields on any Shopify resource (product, variant, collection, page, etc.)")
+        self.register_tool("update_seo_metadata", self.update_seo_metadata,
+            "Update SEO title and description on products, collections, or pages")
         self.register_tool("get_product_catalog", self.get_product_catalog,
             "Fetch full product catalog from Shopify via GraphQL — variants, inventory, images, SEO, prices")
         self.register_tool("get_order_history", self.get_order_history,
@@ -228,6 +236,111 @@ class EcommerceMCPServer(MCPServer):
             "recent_customers": customers,
             "total_customers": total_customers,
         }
+
+    # ------------------------------------------------------------------
+    # Theme & Metafields — Shopify
+    # ------------------------------------------------------------------
+
+    def get_themes(self, **kwargs) -> dict[str, Any]:
+        """List Shopify themes with their assets."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        themes = rest_get(shop, "themes.json")
+        if not themes:
+            return {"success": False, "error": "Failed to fetch themes"}
+        return {"success": True, "result": f"Found {len(themes.get('themes', []))} themes",
+                "themes": themes.get("themes", [])}
+
+    def update_theme_asset(self, theme_id: str = "", asset_key: str = "",
+                           value: str = "", **kwargs) -> dict[str, Any]:
+        """Create or update a theme asset file (liquid, JSON, CSS, JS)."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not theme_id or not asset_key:
+            return {"success": False, "error": "theme_id and asset_key are required"}
+        payload = {"asset": {"key": asset_key, "value": value}}
+        result = rest_put(shop, f"themes/{theme_id}/assets.json", payload)
+        if not result:
+            return {"success": False, "error": "Failed to update theme asset"}
+        asset = result.get("asset", {})
+        return {"success": True, "result": f"Asset '{asset_key}' updated",
+                "asset": {"key": asset.get("key"), "size": asset.get("size")}}
+
+    def set_metafields(self, owner_id: str = "", namespace: str = "custom",
+                       key: str = "", value: str = "", type: str = "single_line_text_field",
+                       **kwargs) -> dict[str, Any]:
+        """Set a metafield on any Shopify resource via GraphQL."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not owner_id or not key:
+            return {"success": False, "error": "owner_id and key are required"}
+        result = graphql(shop, """
+            mutation($input: [MetafieldsSetInput!]!) {
+                metafieldsSet(metafields: $input) {
+                    metafields { id namespace key value type ownerType }
+                    userErrors { field message }
+                }
+            }
+        """, {"input": [{
+            "ownerId": owner_id,
+            "namespace": namespace,
+            "key": key,
+            "value": value,
+            "type": type,
+        }]})
+        if not result:
+            return {"success": False, "error": "GraphQL mutation failed"}
+        errors = result.get("data", {}).get("metafieldsSet", {}).get("userErrors", [])
+        if errors:
+            return {"success": False, "error": "; ".join(e["message"] for e in errors)}
+        mf = result.get("data", {}).get("metafieldsSet", {}).get("metafields", [])
+        return {"success": True, "result": f"Metafield '{namespace}.{key}' set",
+                "metafields": mf}
+
+    def update_seo_metadata(self, resource_type: str = "product", resource_id: str = "",
+                            seo_title: str = "", seo_description: str = "",
+                            **kwargs) -> dict[str, Any]:
+        """Update SEO title and description on a product, collection, or page."""
+        shop = self._get_shop(kwargs)
+        if not shop:
+            return {"success": False, "error": "Shop is required"}
+        if not resource_id:
+            return {"success": False, "error": "resource_id is required"}
+        mutations = {
+            "product": ("productUpdate", "product", "ProductInput!"),
+            "collection": ("collectionUpdate", "collection", "CollectionInput!"),
+            "page": ("pageUpdate", "page", "PageInput!"),
+        }
+        entry = mutations.get(resource_type)
+        if not entry:
+            return {"success": False, "error": f"Unsupported resource_type: {resource_type}"}
+        mutation_name, payload_key, input_type = entry
+        seo_input = {}
+        if seo_title:
+            seo_input["title"] = seo_title
+        if seo_description:
+            seo_input["description"] = seo_description
+        if not seo_input:
+            return {"success": False, "error": "Provide at least seo_title or seo_description"}
+        result = graphql(shop, f"""
+            mutation($input: {input_type}) {{
+                {mutation_name}(input: $input) {{
+                    {payload_key} {{ id seo {{ title description }} }}
+                    userErrors {{ field message }}
+                }}
+            }}
+        """, {"input": {"id": resource_id, "seo": seo_input}})
+        if not result:
+            return {"success": False, "error": "GraphQL mutation failed"}
+        errors = result.get("data", {}).get(mutation_name, {}).get("userErrors", [])
+        if errors:
+            return {"success": False, "error": "; ".join(e["message"] for e in errors)}
+        updated = result.get("data", {}).get(mutation_name, {}).get(payload_key, {})
+        return {"success": True, "result": f"SEO metadata updated on {resource_type}",
+                "resource": updated}
 
     # ------------------------------------------------------------------
     # Product Management — Shopify-native
