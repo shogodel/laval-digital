@@ -1,4 +1,4 @@
-"""Website & Technical MCP Server for Frankie — Site monitoring, optimization, security, backups."""
+"""Website & Technical MCP Server — Site monitoring, optimization, security, backups."""
 import json
 import logging
 import re
@@ -76,7 +76,7 @@ class WebsiteMCPServer(MCPServer):
             if not _is_safe_url(url):
                 logger.warning("Blocked SSRF attempt to private IP: %s", url)
                 return None
-            headers = {'User-Agent': 'Frankie-Website-Scanner/1.0'}
+            headers = {'User-Agent': 'AI-Website-Scanner/1.0'}
             # SSRF protection: no redirect following to prevent DNS rebinding
             return requests.get(url, headers=headers, timeout=timeout, allow_redirects=False)
         except Exception as e:
@@ -167,7 +167,7 @@ class WebsiteMCPServer(MCPServer):
             try:
                 # SSRF protection: no redirect following to prevent DNS rebinding
                 link_resp = requests.head(full_url, timeout=5, allow_redirects=False,
-                                          headers={'User-Agent': 'Frankie-Link-Checker/1.0'})
+                                          headers={'User-Agent': 'AI-Link-Checker/1.0'})
                 results.append({"url": full_url, "status": link_resp.status_code,
                                 "ok": link_resp.status_code < 400})
             except Exception:
@@ -439,7 +439,7 @@ class WebsiteMCPServer(MCPServer):
             try:
                 # SSRF protection: no redirect following to prevent DNS rebinding
                 resp = requests.get(current, allow_redirects=False, timeout=10,
-                                   headers={'User-Agent': 'Frankie-Redirect-Tracer/1.0'})
+                                   headers={'User-Agent': 'AI-Redirect-Tracer/1.0'})
                 chain.append({"url": current, "status": resp.status_code})
                 if resp.status_code in (301, 302, 307, 308):
                     current = urljoin(current, resp.headers.get('Location', ''))

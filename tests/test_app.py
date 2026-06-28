@@ -18,7 +18,7 @@ class TestPublicRoutes:
     def test_home_page(self, client):
         r = client.get("/")
         assert r.status_code == 200
-        assert b"Laval" in r.data or b"Frankie" in r.data
+        assert b"Laval" in r.data or b"Admin" in r.data
 
     def test_home_fr(self, client):
         r = client.get("/fr/")
@@ -172,7 +172,7 @@ class TestAdminAuth:
         })
         r = client.get("/admin")
         assert r.status_code == 200
-        assert b"Frankie" in r.data or b"Agents" in r.data
+        assert b"AI Marketing Specialist" in r.data or b"Agents" in r.data
 
 
 class TestApiAuth:

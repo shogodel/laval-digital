@@ -227,8 +227,8 @@ def admin_embedded():
 # ── App Proxy Routes ─────────────────────────────────────────────
 
 
-@shopify_bp.route("/apps/frankie")
-@shopify_bp.route("/apps/frankie/<path:subpath>")
+@shopify_bp.route("/apps/assistant")
+@shopify_bp.route("/apps/assistant/<path:subpath>")
 def app_proxy(subpath: str = ""):
     """App Proxy routes — served through Shopify's proxy on the shop's domain."""
     shop = request.args.get("shop", "")

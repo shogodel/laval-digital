@@ -220,8 +220,8 @@ def api_orchestrator_suggestions():
     return api_success(orch.get_suggestions(language))
 
 
-@public_bp.route("/api/frankie/inspect", methods=["GET"])
-def api_frankie_inspect():
+@public_bp.route("/api/site/inspect", methods=["GET"])
+def api_site_inspect():
     user_id = get_current_user_id()
     if not user_id:
         return api_success({"suggestions": [], "error": "No user"})

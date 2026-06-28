@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Frankie Command Center</title>
+    <title>AI Assistant Command Center</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#D42B2B">
@@ -110,7 +110,7 @@
         <a href="{{ url_for('admin.analytics') }}">Analytics</a>
     </div>
     <div class="topbar-center">
-        <h1>&#9889; Frankie Command Center <span>live</span></h1>
+        <h1>&#9889; AI Assistant Command Center <span>live</span></h1>
     </div>
         <div class="topbar-right">
             <button id="panic-btn" class="panic-btn">&#9888; Stop All</button>
@@ -148,7 +148,7 @@
             </div>
             {% endfor %}
         </div>
-        <div style="text-align:center;padding:8px 0 4px;font-size:0.65rem;color:var(--gray-400);letter-spacing:0.04em;">&#129302; Frankie</div>
+        <div style="text-align:center;padding:8px 0 4px;font-size:0.65rem;color:var(--gray-400);letter-spacing:0.04em;">&#129302; AI Assistant</div>
     </div>
     <div class="feed-panel">
         <div class="feed-header">
@@ -166,7 +166,7 @@
             <div class="feed-empty">Loading...</div>
         </div>
         <div class="ask-bar">
-            <input type="text" id="ask-input" placeholder="Talk to Frankie...">
+            <input type="text" id="ask-input" placeholder="Talk to AI Assistant...">
             <button id="ask-btn">Ask</button>
             <div class="ask-response" id="ask-response"></div>
         </div>
@@ -324,8 +324,8 @@ async function undoLast() {
     setTimeout(() => { btn.style.display = 'none'; btn.textContent = '↩ Undo Last'; btn.style.background = ''; }, 2000);
 }
 
-/* ── Frankie Ask ── */
-async function askFrankie() {
+/* ── AI Assistant Ask ── */
+async function askAgent() {
     const input = document.getElementById('ask-input');
     const response = document.getElementById('ask-response');
     const q = input.value.trim();
@@ -579,11 +579,11 @@ document.getElementById('push-subscribe').addEventListener('change', togglePush)
 document.getElementById('filter-all').addEventListener('click', function() { setFilter('all', this); });
 document.getElementById('filter-approval').addEventListener('click', function() { setFilter('approval', this); });
 document.getElementById('filter-activity').addEventListener('click', function() { setFilter('activity', this); });
-document.getElementById('ask-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') askFrankie(); });
-document.getElementById('ask-btn').addEventListener('click', askFrankie);
+document.getElementById('ask-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') askAgent(); });
+document.getElementById('ask-btn').addEventListener('click', askAgent);
 document.getElementById('undo-btn').addEventListener('click', undoLast);
 </script>
 
-{% include 'admin/frankie.html' %}
+{% include 'admin/widget.html' %}
 </body>
 </html>

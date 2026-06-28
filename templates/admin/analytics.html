@@ -197,7 +197,7 @@ function exportAnalyticsCSV() {
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'frankie_analytics_export.csv';
+    a.download = 'ai_analytics_export.csv';
     a.click();
 }
 

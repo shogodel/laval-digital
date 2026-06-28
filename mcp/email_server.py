@@ -1,4 +1,4 @@
-"""Email MCP Server for Frankie — Enterprise-grade email marketing."""
+"""Email MCP Server — Enterprise-grade email marketing."""
 import ipaddress
 import json
 import logging
@@ -99,7 +99,7 @@ class EmailMCPServer(MCPServer):
         """Send a single email with HTML support, CC/BCC, and attachments."""
         subject_match = re.search(r"^(?:#\s*)?Subject\s*:\s*(.+)$", content, re.MULTILINE | re.IGNORECASE)
         if not subject:
-            subject = subject_match.group(1).strip() if subject_match else "Message from Frankie"
+            subject = subject_match.group(1).strip() if subject_match else "Message from AI Marketing"
         if not to_email and api_credentials:
             to_email = api_credentials.get("from_email", "")
 
@@ -116,7 +116,7 @@ class EmailMCPServer(MCPServer):
                 datetime.fromisoformat(schedule_time)
             except ValueError:
                 return {"success": False, "result": "", "error": "Invalid schedule_time format. Use ISO: 2026-06-15T09:00:00"}
-        subject = subject or "Newsletter from Frankie"
+        subject = subject or "Newsletter from AI Marketing"
         segment_info = f" (segment: {segment})" if segment else ""
         schedule_info = f", scheduled for {schedule_time}" if schedule_time else ""
 
@@ -313,7 +313,7 @@ class EmailMCPServer(MCPServer):
         if not api_credentials or not api_credentials.get("smtp_host"):
             return {"success": False, "result": "", "error": "No SMTP credentials configured"}
         try:
-            return self._send_smtp("Frankie email test — your configuration works!", "Frankie Test Email",
+            return self._send_smtp("AI Marketing email test — your configuration works!", "AI Marketing Test Email",
                                    api_credentials.get("from_email", ""), api_credentials)
         except Exception as e:
             return {"success": False, "result": "", "error": _safe_error(e)}

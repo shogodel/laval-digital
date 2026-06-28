@@ -4,7 +4,7 @@
     </div>
 
     <div class="card">
-        <div class="card-header"><h2>Generate Your Monthly Report</h2><p>See exactly what Frankie did for your business this month</p></div>
+        <div class="card-header"><h2>Generate Your Monthly Report</h2><p>See exactly what AI Assistant did for your business this month</p></div>
         <div class="form-row">
             <div class="form-group">
                 <label>Month</label>
@@ -160,7 +160,7 @@ function downloadReport() {
     const blob = new Blob([lastReportHtml], { type: 'text/html' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'frankie_report.html';
+    a.download = 'ai_report.html';
     a.click();
     URL.revokeObjectURL(a.href);
 }
@@ -231,7 +231,7 @@ function downloadHistoryReport(reportId) {
                 const a = document.createElement('a');
                 const url = URL.createObjectURL(blob);
                 a.href = url;
-                a.download = 'frankie_report_' + reportId + '.html';
+                a.download = 'ai_report_' + reportId + '.html';
                 a.click();
                 URL.revokeObjectURL(url);
             }

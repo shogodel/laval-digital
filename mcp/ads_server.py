@@ -1,4 +1,4 @@
-"""Ads MCP Server for Frankie — Multi-platform ad campaign management."""
+"""Ads MCP Server — Multi-platform ad campaign management."""
 import logging
 from datetime import datetime
 from typing import Any
@@ -73,7 +73,7 @@ class AdsMCPServer(MCPServer):
         }
         ctype = campaign_types.get(campaign_type, campaign_types["search"])
         campaign = {
-            "name": campaign_name or f"Frankie {campaign_type.title()} Campaign",
+            "name": campaign_name or f"AI {campaign_type.title()} Campaign",
             "platform": "google",
             "type": campaign_type,
             "budget_daily": budget / 30,
@@ -103,7 +103,7 @@ class AdsMCPServer(MCPServer):
         obj = objectives.get(objective, objectives["leads"])
         audience_list = [a.strip() for a in audiences.split(',') if a.strip()] if audiences else ["Local residents 25-65", "Homeowners", "People interested in home services"]
         campaign = {
-            "name": campaign_name or f"Frankie Meta {objective.title()} Campaign",
+            "name": campaign_name or f"AI Meta {objective.title()} Campaign",
             "platform": "meta",
             "objective": objective,
             "budget_daily": budget / 30,
@@ -125,7 +125,7 @@ class AdsMCPServer(MCPServer):
         """Create a TikTok Ads campaign. Types: spark, infeed, topview, hashtag."""
         objectives = {"traffic": "Drive website visits", "leads": "Collect lead forms", "awareness": "Maximum reach", "app_install": "App downloads"}
         campaign = {
-            "name": campaign_name or "Frankie TikTok Campaign",
+            "name": campaign_name or "AI TikTok Campaign",
             "platform": "tiktok",
             "objective": objective,
             "budget_daily": budget / 30,
@@ -144,7 +144,7 @@ class AdsMCPServer(MCPServer):
                                      api_credentials: dict[str, Any] | None = None, **kwargs) -> dict[str, Any]:
         """Create a LinkedIn Ads campaign. Best for B2B and high-ticket services."""
         campaign = {
-            "name": campaign_name or "Frankie LinkedIn Campaign",
+            "name": campaign_name or "AI LinkedIn Campaign",
             "platform": "linkedin",
             "objective": objective,
             "budget_daily": budget / 30,

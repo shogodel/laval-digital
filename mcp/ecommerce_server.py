@@ -1,4 +1,4 @@
-"""E-Commerce MCP Server for Frankie — Shopify-native product, order, and customer management.
+"""E-Commerce MCP Server — Shopify-native product, order, and customer management.
 
 Uses the stored Shopify access token from the shop's OAuth flow instead of manual API keys.
 """
@@ -226,7 +226,7 @@ class EcommerceMCPServer(MCPServer):
         if not _is_safe_url(url):
             return {"success": False, "error": "Blocked request to private IP"}
         try:
-            resp = requests.get(url, headers={'User-Agent': 'Frankie-Ecom/1.0'}, timeout=10, allow_redirects=False)
+            resp = requests.get(url, headers={'User-Agent': 'AI-Ecom/1.0'}, timeout=10, allow_redirects=False)
             content = resp.text
             score = 0; checks = []
 

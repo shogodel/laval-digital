@@ -110,8 +110,8 @@ class TestFormatHistory:
 
 
 class TestSelectAgentPrompt:
-    def test_frankie_source_returns_none(self, orchestrator):
-        prompt, agent = orchestrator._select_agent_prompt("SEO help", source="frankie")
+    def test_widget_source_returns_none(self, orchestrator):
+        prompt, agent = orchestrator._select_agent_prompt("SEO help", source="widget")
         assert prompt is None
         assert agent is None
 

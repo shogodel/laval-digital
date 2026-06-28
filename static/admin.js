@@ -159,7 +159,7 @@ var S = LOCALE === 'fr' ? {
     connectionFailed: 'Connection failed: ',
     connected: 'Connected',
     saving: 'Saving...',
-    connectSuccess: '\u2713 Connected! Frankie can now publish to your ',
+    connectSuccess: '\u2713 Connected! AI Assistant can now publish to your ',
     connectError: 'Error: ',
     connectFail: 'Connection failed. Please try again.',
     noMCPServers: 'No MCP servers available.',
@@ -975,7 +975,7 @@ document.addEventListener('keydown', function(e) {
     // Dashboard (EN-only buttons, safe to try)
     el = byId('switch-tasks-btn'); if (el) el.addEventListener('click', function() { switchTab('tasks'); });
     el = byId('switch-analytics-btn'); if (el) el.addEventListener('click', function() { switchTab('analytics'); });
-    el = byId('talk-to-frankie-btn'); if (el) el.addEventListener('click', function() { if (window.frankie) frankie.toggle(); });
+    el = byId('talk-to-agent-btn'); if (el) el.addEventListener('click', function() { if (window.chatWidget) chatWidget.toggle(); });
 
     // Approvals / Pending
     el = byId('refresh-approvals-btn'); if (el) el.addEventListener('click', loadApprovals);

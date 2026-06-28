@@ -1,5 +1,5 @@
 """
-Frankie MCP Server Registry.
+MCP Server Registry.
 Discovers and manages all MCP servers.
 """
 import json

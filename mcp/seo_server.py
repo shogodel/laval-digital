@@ -1,6 +1,6 @@
 """
-SEO MCP Server for Frankie.
-Handles content publishing to WordPress, Webflow, Netlify, Shopify, Wix, Squarespace, Ghost, Contentful, and custom websites.
+SEO MCP Server.
+Handles content publishing to Shopify and custom websites.
 Also provides technical SEO audits, keyword tracking, competitor analysis, schema markup, local citations, and Search Console integration.
 """
 import json

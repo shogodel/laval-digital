@@ -1,4 +1,4 @@
-"""Google Business Profile MCP Server for Frankie — Complete local SEO management."""
+"""Google Business Profile MCP Server — Complete local SEO management."""
 import json
 import logging
 import re

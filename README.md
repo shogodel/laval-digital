@@ -1,11 +1,11 @@
-# Frankie — AI Marketing Command Center
+# Shopify AI Marketing Specialist — AI Marketing Command Center
 
-Frankie is a standalone AI marketing command center that connects to your existing website, social accounts, email, and ad platforms. 16 specialized AI agents work 24/7 to grow your business. One product. One price. No website builder, no subdomain, no payment schedules.
+An AI marketing command center that connects to your existing website, social accounts, email, and ad platforms. 16 specialized AI agents work 24/7 to grow your business. One product. One price. No website builder, no subdomain, no payment schedules.
 
 ## Architecture
 
 - **Multi-Agent System**: 16 specialized agents (Local SEO, Social Media, Lead Conversion, Paid Ads, Growth Hacker, Reputation, Email Marketing, TikTok, Outreach, Backlinks, Content Strategy, Technical SEO, CRO, Video, SMS Marketing, Analytics & Reports)
-- **Frankie Orchestrator**: Agent workflow routing with LLM-based agent selection, draft generation, approval, and execution
+- **AI Orchestrator**: Agent workflow routing with LLM-based agent selection, draft generation, approval, and execution
 - **MCP Server Layer**: 8 MCP servers (111 tools) for real platform execution — SEO, Social, Email, GMB, Ads, Analytics, Website, E-Commerce
 - **MCP-First Execution**: Every execution path (chat, approvals, direct invoke, executioner) tries MCP servers first, falls back to file-based tools
 - **Single Database**: Shared SQLite at `data/shopify.db` with `user_id` column for data scoping
@@ -231,7 +231,7 @@ Every execution path — chat Execute button, admin approval flow, direct agent 
 
 ## Pricing
 
-**$597.99/month** — All 16 AI agents + Frankie command center. One product. One price.
+**$597.99/month** — All 16 AI agents + command center. One product. One price.
 
 ## Agent Configuration
 

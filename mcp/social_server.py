@@ -1,4 +1,4 @@
-"""Social Media MCP Server for Frankie — Enterprise-grade social media management."""
+"""Social Media MCP Server — Enterprise-grade social media management."""
 import json
 import logging
 from datetime import datetime
@@ -393,8 +393,8 @@ class SocialMCPServer(MCPServer):
         return {
             "success": True,
             "result": "Social link tracking initialized",
-            "setup": "Add UTM parameters to your links: ?utm_source={{platform}}&utm_medium=social&utm_campaign=Frankie",
-            "example": "https://yoursite.com/?utm_source=instagram&utm_medium=social&utm_campaign=Frankie"
+            "setup": "Add UTM parameters to your links: ?utm_source={{platform}}&utm_medium=social&utm_campaign=ai-marketing",
+            "example": "https://yoursite.com/?utm_source=instagram&utm_medium=social&utm_campaign=ai-marketing"
         }
 
     # ------------------------------------------------------------------

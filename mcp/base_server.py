@@ -1,6 +1,6 @@
 """
-Base class for all Frankie MCP servers.
-Each server exposes tools that Frankie can call to execute marketing tasks.
+Base class for all MCP servers.
+Each server exposes tools that the orchestrator can call to execute marketing tasks.
 """
 import logging
 from collections.abc import Callable
@@ -30,7 +30,7 @@ class MCPServer:
     """Base class for MCP (Marketing Command Protocol) servers.
 
     Each server handles one domain (SEO, social, email, etc.) and exposes
-    tools that Frankie's orchestrator can call.
+    tools that the orchestrator can call.
     """
 
     def __init__(self, name: str, description: str):
@@ -45,12 +45,12 @@ class MCPServer:
         pass
 
     def register_tool(self, name: str, func: Callable, description: str = "") -> None:
-        """Register a tool that Frankie can call.
+        """Register a tool that agents can call.
 
         Args:
             name: Tool name (e.g., 'publish_blog_post')
             func: Callable that accepts **kwargs and returns {"success": bool, "result": str, "error": str}
-            description: Human-readable description for Frankie
+            description: Human-readable description
         """
         self.tools[name] = func
         self.tool_descriptions[name] = description or (func.__doc__ or "No description")

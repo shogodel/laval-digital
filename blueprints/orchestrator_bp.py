@@ -274,11 +274,11 @@ def api_dashboard_ask():
 
         result = orch.process_message(
             user_message=query,
-            thread_id="frankie-" + uuid.uuid4().hex[:8],
+            thread_id="chat-" + uuid.uuid4().hex[:8],
             language=lang if lang else None,
             autonomy_config=autonomy_config,
             user_id=safe_int(user_id) if user_id else 0,
-            source="frankie",
+            source="widget",
             agent_name=_get_agent_name(),
         )
 
@@ -307,7 +307,7 @@ def api_dashboard_ask():
         else:
             return api_success({"response": response or "Done."})
     except Exception as e:
-        logger.error("Frankie query failed: %s", e, exc_info=True)
+        logger.error("Chat query failed: %s", e, exc_info=True)
         fallback = "Je n'ai pas pu traiter \u00e7a. Essayez de me parler des agents, des approbations ou de l'activit\u00e9 r\u00e9cente." if lang == "fr" else "I couldn't process that. Try asking about agents, approvals, or recent activity."
         return api_success({"response": fallback})
 

@@ -1,75 +1,75 @@
-<div id="frankie-container">
-    <button id="frankie-bubble" aria-label="Open Frankie AI assistant" title="Frankie AI Assistant">
-        <img src="{{ url_for('static', filename='frankie.svg') }}" alt="Frankie" id="frankie-bubble-icon" style="width:36px;height:36px;">
-        <span id="frankie-status-dot"></span>
+<div id="widget-container">
+    <button id="widget-bubble" aria-label="Open AI Assistant AI assistant" title="AI Assistant AI Assistant">
+        <img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="AI Assistant" id="widget-bubble-icon" style="width:36px;height:36px;">
+        <span id="widget-status-dot"></span>
     </button>
 
-    <div id="frankie-panel">
-        <div id="frankie-header">
+    <div id="widget-panel">
+        <div id="widget-header">
             <div style="display:flex;align-items:center;gap:10px;">
-                <img src="{{ url_for('static', filename='frankie.svg') }}" alt="Frankie" style="width:32px;height:32px;vertical-align:middle;">
+                <img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="AI Assistant" style="width:32px;height:32px;vertical-align:middle;">
                 <div>
-                    <strong style="font-size:1rem;color:var(--white);">Frankie</strong>
-                    <div style="font-size:0.7rem;color:rgba(255,255,255,0.6);" id="frankie-status">Online</div>
+                    <strong style="font-size:1rem;color:var(--white);">AI Assistant</strong>
+                    <div style="font-size:0.7rem;color:rgba(255,255,255,0.6);" id="widget-status">Online</div>
                 </div>
             </div>
-                <button id="frankie-close-btn" aria-label="Close Frankie panel" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:1.4rem;cursor:pointer;">&times;</button>
+                <button id="widget-close-btn" aria-label="Close AI Assistant panel" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:1.4rem;cursor:pointer;">&times;</button>
         </div>
-        <div id="frankie-connect-bar">
-            <button id="frankie-connect-toggle" style="display:flex;align-items:center;gap:6px;width:100%;padding:8px 14px;background:var(--gray-50);border:none;border-bottom:1px solid var(--gray-200);cursor:pointer;font-size:0.82rem;font-weight:500;color:var(--gray-700);font-family:inherit;transition:background 0.15s;">
-                <span id="frankie-connect-indicator" style="font-size:1rem;"></span>
-                <span id="frankie-connect-text" style="flex:1;text-align:left;">Checking...</span>
-                <span id="frankie-connect-arrow" style="font-size:0.7rem;color:var(--gray-400);">▾</span>
+        <div id="widget-connect-bar">
+            <button id="widget-connect-toggle" style="display:flex;align-items:center;gap:6px;width:100%;padding:8px 14px;background:var(--gray-50);border:none;border-bottom:1px solid var(--gray-200);cursor:pointer;font-size:0.82rem;font-weight:500;color:var(--gray-700);font-family:inherit;transition:background 0.15s;">
+                <span id="widget-connect-indicator" style="font-size:1rem;"></span>
+                <span id="widget-connect-text" style="flex:1;text-align:left;">Checking...</span>
+                <span id="widget-connect-arrow" style="font-size:0.7rem;color:var(--gray-400);">▾</span>
             </button>
-            <div id="frankie-connect-form" style="display:none;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">
+            <div id="widget-connect-form" style="display:none;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">
                 <div style="padding:10px 14px;">
                     <div style="margin-bottom:6px;">
                         <label style="font-size:0.7rem;font-weight:600;color:var(--gray-600);display:block;margin-bottom:2px;">Model</label>
-                        <select id="frankie-config-model" style="width:100%;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
+                        <select id="widget-config-model" style="width:100%;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
                             <option value="">-- Detect or enter API key --</option>
                         </select>
                     </div>
                     <div style="margin-bottom:6px;">
                         <label style="font-size:0.7rem;font-weight:600;color:var(--gray-600);display:block;margin-bottom:2px;">API Base URL (optional)</label>
-                        <input type="text" id="frankie-config-base" placeholder="https://api.deepseek.com/v1" style="width:100%;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
+                        <input type="text" id="widget-config-base" placeholder="https://api.deepseek.com/v1" style="width:100%;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
                     </div>
                     <div style="margin-bottom:6px;">
                         <label style="font-size:0.7rem;font-weight:600;color:var(--gray-600);display:block;margin-bottom:2px;">API Key</label>
                         <div style="display:flex;gap:6px;">
-                            <input type="password" id="frankie-config-key" placeholder="sk-..." style="flex:1;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
-                            <button id="frankie-detect-btn" disabled style="padding:7px 12px;font-size:0.75rem;font-weight:600;background:var(--gray-200);color:var(--gray-700);border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap;">Detect</button>
+                            <input type="password" id="widget-config-key" placeholder="sk-..." style="flex:1;padding:7px 10px;font-size:0.8rem;border:1px solid var(--gray-300);border-radius:6px;font-family:inherit;">
+                            <button id="widget-detect-btn" disabled style="padding:7px 12px;font-size:0.75rem;font-weight:600;background:var(--gray-200);color:var(--gray-700);border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap;">Detect</button>
                         </div>
-                        <div id="frankie-detect-result" style="font-size:0.7rem;margin-top:2px;"></div>
+                        <div id="widget-detect-result" style="font-size:0.7rem;margin-top:2px;"></div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
-                        <button id="frankie-save-config-btn" style="padding:7px 14px;font-size:0.78rem;font-weight:600;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">Connect Frankie to AI</button>
-                        <span id="frankie-config-result" style="font-size:0.75rem;"></span>
+                        <button id="widget-save-config-btn" style="padding:7px 14px;font-size:0.78rem;font-weight:600;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">Connect AI Assistant to AI</button>
+                        <span id="widget-config-result" style="font-size:0.75rem;"></span>
                     </div>
                 </div>
             </div>
         </div>
-        <div id="frankie-body">
-            <div id="frankie-messages">
-                <div class="frankie-msg frankie-bot" id="frankie-greeting">
-<div class="frankie-avatar"><img src="{{ url_for('static', filename='frankie.svg') }}" alt="Frankie" style="width:28px;height:28px;"></div>
-                    <div class="frankie-bubble">
-                        <div id="frankie-greeting-text">Loading...</div>
-                        <div id="frankie-suggestions" style="margin-top:10px;"></div>
+        <div id="widget-body">
+            <div id="widget-messages">
+                <div class="widget-msg widget-bot" id="widget-greeting">
+<div class="widget-avatar"><img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="AI Assistant" style="width:28px;height:28px;"></div>
+                    <div class="widget-bubble">
+                        <div id="widget-greeting-text">Loading...</div>
+                        <div id="widget-suggestions" style="margin-top:10px;"></div>
                     </div>
                 </div>
             </div>
-            <div id="frankie-input-area">
-                <input type="text" id="frankie-input" placeholder="Ask Frankie anything..." aria-label="Type your question to Frankie">
-                <button id="frankie-voice-btn" title="Toggle voice input" aria-label="Toggle voice input" style="background:none;border:1px solid var(--gray-300);border-radius:10px;padding:9px 10px;font-size:1rem;cursor:pointer;flex-shrink:0;transition:0.15s;">🎤</button>
-                <button id="frankie-send-btn" aria-label="Send message to Frankie">Send</button>
+            <div id="widget-input-area">
+                <input type="text" id="widget-input" placeholder="Ask AI Assistant anything..." aria-label="Type your question to AI Assistant">
+                <button id="widget-voice-btn" title="Toggle voice input" aria-label="Toggle voice input" style="background:none;border:1px solid var(--gray-300);border-radius:10px;padding:9px 10px;font-size:1rem;cursor:pointer;flex-shrink:0;transition:0.15s;">🎤</button>
+                <button id="widget-send-btn" aria-label="Send message to AI Assistant">Send</button>
             </div>
         </div>
     </div>
 </div>
 
 <style nonce="{{ csp_nonce }}">
-#frankie-container { font-family: 'Inter', sans-serif; }
-#frankie-bubble {
+#widget-container { font-family: 'Inter', sans-serif; }
+#widget-bubble {
     position: fixed; bottom: 24px; right: 24px; z-index: 99999;
     width: 64px; height: 64px; border-radius: 50%;
     background: linear-gradient(135deg, var(--navy, #0f2b45), #1a3a5c);
@@ -79,76 +79,76 @@
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     font-family: inherit;
 }
-#frankie-bubble:focus-visible {
+#widget-bubble:focus-visible {
     outline: 3px solid #2563eb;
     outline-offset: 3px;
 }
-#frankie-bubble::after {
-    content: '🤖 Frankie'; position: absolute; right: 72px;
+#widget-bubble::after {
+    content: '🤖 AI Assistant'; position: absolute; right: 72px;
     background: var(--navy, #0f2b45); color: #fff;
     padding: 6px 14px; border-radius: 20px; font-size: 0.78rem;
     font-weight: 600; white-space: nowrap;
     opacity: 0; pointer-events: none; transition: opacity 0.3s;
     box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
-#frankie-bubble:hover::after { opacity: 1; }
-#frankie-bubble:hover { transform: scale(1.08); box-shadow: 0 8px 32px rgba(0,0,0,0.35); }
-#frankie-bubble-icon { font-size: 1.6rem; line-height: 1; }
-#frankie-status-dot {
+#widget-bubble:hover::after { opacity: 1; }
+#widget-bubble:hover { transform: scale(1.08); box-shadow: 0 8px 32px rgba(0,0,0,0.35); }
+#widget-bubble-icon { font-size: 1.6rem; line-height: 1; }
+#widget-status-dot {
     position: absolute; bottom: 2px; right: 2px;
     width: 14px; height: 14px; border-radius: 50%;
     border: 2px solid var(--navy, #0f2b45);
-    background: #10b981; animation: frankie-pulse 2s infinite;
+    background: #10b981; animation: widget-pulse 2s infinite;
 }
-@keyframes frankie-pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+@keyframes widget-pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
 
-#frankie-panel {
+#widget-panel {
     position: fixed; bottom: 96px; right: 24px; z-index: 99999;
     width: 380px; max-height: 520px; background: var(--white, #fff);
     border-radius: 16px; box-shadow: 0 16px 64px rgba(0,0,0,0.2);
     display: none; flex-direction: column; overflow: hidden;
     border: 1px solid var(--gray-200, #e5e7eb);
 }
-#frankie-panel.open { display: flex; }
+#widget-panel.open { display: flex; }
 
-#frankie-header {
+#widget-header {
     background: linear-gradient(135deg, var(--navy, #0f2b45), #1a3a5c);
     padding: 16px 18px; display: flex; align-items: center;
     justify-content: space-between; flex-shrink: 0;
 }
-#frankie-body { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-#frankie-messages {
+#widget-body { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+#widget-messages {
     flex: 1; overflow-y: auto; padding: 16px; display: flex;
     flex-direction: column; gap: 12px; min-height: 200px;
     background: #f9fafb;
 }
-.frankie-msg { display: flex; gap: 8px; align-items: flex-start; max-width: 100%; }
-.frankie-msg.frankie-user { flex-direction: row-reverse; }
-.frankie-avatar {
+.widget-msg { display: flex; gap: 8px; align-items: flex-start; max-width: 100%; }
+.widget-msg.widget-user { flex-direction: row-reverse; }
+.widget-avatar {
     width: 32px; height: 32px; border-radius: 50%;
     background: var(--gray-200, #e5e7eb); display: flex;
     align-items: center; justify-content: center; font-size: 1rem;
     flex-shrink: 0;
 }
-.frankie-user .frankie-avatar { background: var(--navy, #0f2b45); }
-.frankie-bubble {
+.widget-user .widget-avatar { background: var(--navy, #0f2b45); }
+.widget-bubble {
     background: var(--white, #fff); border-radius: 12px 12px 12px 4px;
     padding: 10px 14px; font-size: 0.85rem; color: #1f2937;
     line-height: 1.5; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     max-width: 280px; word-wrap: break-word;
 }
-.frankie-user .frankie-bubble {
+.widget-user .widget-bubble {
     background: #0f2b45; color: #fff;
     border-radius: 12px 12px 4px 12px;
 }
-.frankie-typing { display: flex; gap: 4px; padding: 12px 16px; }
-.frankie-typing span {
+.widget-typing { display: flex; gap: 4px; padding: 12px 16px; }
+.widget-typing span {
     width: 7px; height: 7px; border-radius: 50%;
-    background: #9ca3af; animation: frankie-bounce 1.2s infinite;
+    background: #9ca3af; animation: widget-bounce 1.2s infinite;
 }
-.frankie-typing span:nth-child(2) { animation-delay:0.2s; }
-.frankie-typing span:nth-child(3) { animation-delay:0.4s; }
-@keyframes frankie-bounce { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-4px); } }
+.widget-typing span:nth-child(2) { animation-delay:0.2s; }
+.widget-typing span:nth-child(3) { animation-delay:0.4s; }
+@keyframes widget-bounce { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-4px); } }
 
 .suggestion-chip {
     display: inline-block; padding: 5px 12px; margin: 3px;
@@ -158,41 +158,41 @@
 }
 .suggestion-chip:hover { background: #dbeafe; border-color: #93c5fd; }
 
-#frankie-input-area {
+#widget-input-area {
     display: flex; gap: 8px; padding: 12px 14px;
     border-top: 1px solid var(--gray-200, #e5e7eb);
     background: var(--white, #fff); flex-shrink: 0;
 }
-#frankie-input {
+#widget-input {
     flex: 1; padding: 9px 14px; font-size: 0.85rem; font-family: inherit;
     border: 1px solid var(--gray-300, #d1d5db); border-radius: 10px;
     outline: none; transition: border-color 0.15s;
 }
-#frankie-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-#frankie-send-btn {
+#widget-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+#widget-send-btn {
     padding: 9px 18px; font-size: 0.82rem; font-weight: 600;
     font-family: inherit; background: #D42B2B; color: #fff;
     border: none; border-radius: 10px; cursor: pointer;
     transition: background 0.15s; white-space: nowrap;
 }
-#frankie-send-btn:hover { background: #A82323; }
-#frankie-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+#widget-send-btn:hover { background: #A82323; }
+#widget-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 @media (max-width: 480px) {
-    #frankie-panel { width: calc(100% - 32px); right: 16px; bottom: 88px; max-height: 60vh; }
-    #frankie-bubble { bottom: 16px; right: 16px; width: 52px; height: 52px; }
+    #widget-panel { width: calc(100% - 32px); right: 16px; bottom: 88px; max-height: 60vh; }
+    #widget-bubble { bottom: 16px; right: 16px; width: 52px; height: 52px; }
 }
 </style>
 
 <script nonce="{{ csp_nonce }}">
-window.frankie = {
+window.chatWidget = {
     panel: null, bubble: null, messages: null, input: null,
     greeting: null, suggestions: null, status: null,
     voiceEnabled: false,
 
     toggleVoice: function() {
         this.voiceEnabled = !this.voiceEnabled;
-        var btn = document.getElementById('frankie-voice-btn');
+        var btn = document.getElementById('widget-voice-btn');
         btn.style.background = this.voiceEnabled ? '#10b981' : '';
         btn.style.borderColor = this.voiceEnabled ? '#10b981' : '';
         btn.title = this.voiceEnabled ? 'Voice on' : 'Voice off';
@@ -208,13 +208,13 @@ window.frankie = {
     },
 
     init: function() {
-        this.panel = document.getElementById('frankie-panel');
-        this.bubble = document.getElementById('frankie-bubble');
-        this.messages = document.getElementById('frankie-messages');
-        this.input = document.getElementById('frankie-input');
-        this.greeting = document.getElementById('frankie-greeting-text');
-        this.suggestions = document.getElementById('frankie-suggestions');
-        this.status = document.getElementById('frankie-status');
+        this.panel = document.getElementById('widget-panel');
+        this.bubble = document.getElementById('widget-bubble');
+        this.messages = document.getElementById('widget-messages');
+        this.input = document.getElementById('widget-input');
+        this.greeting = document.getElementById('widget-greeting-text');
+        this.suggestions = document.getElementById('widget-suggestions');
+        this.status = document.getElementById('widget-status');
         this.loadContext();
         this.checkConnect();
     },
@@ -226,9 +226,9 @@ window.frankie = {
             var connected = agents.some(function(a) {
                 return a.api_key && a.api_key !== '' && a.model && a.model !== '' && a.model !== 'none';
             });
-            var indicator = document.getElementById('frankie-connect-indicator');
-            var text = document.getElementById('frankie-connect-text');
-            var bar = document.getElementById('frankie-connect-bar');
+            var indicator = document.getElementById('widget-connect-indicator');
+            var text = document.getElementById('widget-connect-text');
+            var bar = document.getElementById('widget-connect-bar');
             if (connected) {
                 if (indicator) { indicator.textContent = '😊'; indicator.style.fontSize = '1.2rem'; }
                 if (text) { text.textContent = 'Connected'; text.style.color = '#059669'; text.style.fontWeight = '700'; }
@@ -239,16 +239,16 @@ window.frankie = {
                 if (bar) bar.style.background = 'var(--gray-50)';
             }
         }).catch(function() {
-            var indicator = document.getElementById('frankie-connect-indicator');
-            var text = document.getElementById('frankie-connect-text');
+            var indicator = document.getElementById('widget-connect-indicator');
+            var text = document.getElementById('widget-connect-text');
             if (indicator) indicator.textContent = '😟';
             if (text) text.textContent = 'Not connected';
         });
     },
 
     toggleConnect: function() {
-        var form = document.getElementById('frankie-connect-form');
-        var arrow = document.getElementById('frankie-connect-arrow');
+        var form = document.getElementById('widget-connect-form');
+        var arrow = document.getElementById('widget-connect-arrow');
         if (!form) return;
         var isOpen = form.style.display !== 'none';
         form.style.display = isOpen ? 'none' : 'block';
@@ -256,16 +256,16 @@ window.frankie = {
     },
 
     onKeyInput: function() {
-        var key = document.getElementById('frankie-config-key');
-        var btn = document.getElementById('frankie-detect-btn');
+        var key = document.getElementById('widget-config-key');
+        var btn = document.getElementById('widget-detect-btn');
         if (btn) btn.disabled = !key.value.trim();
     },
 
     detectModels: function() {
-        var apiKey = document.getElementById('frankie-config-key').value.trim();
+        var apiKey = document.getElementById('widget-config-key').value.trim();
         if (!apiKey) return;
-        var btn = document.getElementById('frankie-detect-btn');
-        var resultDiv = document.getElementById('frankie-detect-result');
+        var btn = document.getElementById('widget-detect-btn');
+        var resultDiv = document.getElementById('widget-detect-result');
         btn.disabled = true; btn.textContent = 'Detecting...';
         resultDiv.textContent = '';
         fetch('/api/models/detect', {
@@ -275,7 +275,7 @@ window.frankie = {
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-            var select = document.getElementById('frankie-config-model');
+            var select = document.getElementById('widget-config-model');
             if (data.provider === 'unknown' || !data.models.length) {
                 select.innerHTML = '<option value="">-- No models detected --</option>';
                 resultDiv.textContent = 'Could not detect provider. Check your key.';
@@ -290,7 +290,7 @@ window.frankie = {
             resultDiv.style.color = 'var(--green)';
         })
         .catch(function(err) {
-            document.getElementById('frankie-config-model').innerHTML = '<option value="">-- Detection failed --</option>';
+            document.getElementById('widget-config-model').innerHTML = '<option value="">-- Detection failed --</option>';
             resultDiv.textContent = 'Error: ' + err.message;
             resultDiv.style.color = 'var(--red)';
         })
@@ -299,13 +299,13 @@ window.frankie = {
 
     saveConfig: function() {
         var self = this;
-        var model = document.getElementById('frankie-config-model').value;
-        var apiKey = document.getElementById('frankie-config-key').value;
-        var apiBase = document.getElementById('frankie-config-base').value;
+        var model = document.getElementById('widget-config-model').value;
+        var apiKey = document.getElementById('widget-config-key').value;
+        var apiBase = document.getElementById('widget-config-base').value;
         if (!apiKey) { toast('API Key is required.', 'error'); return; }
         var payload = { api_key: apiKey, api_base: apiBase };
         if (model && model !== '__keep__') payload.model = model;
-        var resultDiv = document.getElementById('frankie-config-result');
+        var resultDiv = document.getElementById('widget-config-result');
         resultDiv.innerHTML = '<span style="color:var(--blue);">Connecting...</span>';
         fetch('/api/agents/bulk/config', {
             method: 'POST',
@@ -315,7 +315,7 @@ window.frankie = {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success || data.message) {
-                resultDiv.innerHTML = '<span style="color:var(--green);font-weight:700;">Frankie is now connected and ready!</span>';
+                resultDiv.innerHTML = '<span style="color:var(--green);font-weight:700;">AI Assistant is now connected and ready!</span>';
                 self.checkConnect();
             } else {
                 var span = document.createElement('span');
@@ -345,7 +345,7 @@ window.frankie = {
             var hour = new Date().getHours();
             var timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-            var msg = timeGreeting + '! I\'m Frankie, your AI command center. ';
+            var msg = timeGreeting + '! I\'m AI Assistant, your AI command center. ';
             if (pending > 0) {
                 msg += 'You have <strong>' + pending + ' pending approval' + (pending > 1 ? 's' : '') + '</strong> waiting. ';
             } else {
@@ -356,7 +356,7 @@ window.frankie = {
             self.greeting.innerHTML = msg;
 
             // Inspect the live site
-            fetch('/api/frankie/inspect').then(function(r) { return r.json(); }).then(function(data) {
+            fetch('/api/site/inspect').then(function(r) { return r.json(); }).then(function(data) {
                 var extra = '';
                 if (data.site && data.site.business) {
                     extra = 'I looked at <strong>' + escapeHtml(data.site.url) + '</strong>. ';
@@ -364,39 +364,39 @@ window.frankie = {
                 if (data.suggestions && data.suggestions.length > 0) {
                     extra += 'I found <strong>' + data.suggestions.length + ' thing' + (data.suggestions.length > 1 ? 's' : '') + '</strong> you can improve:';
                     self.greeting.innerHTML = timeGreeting + '! ' + extra;
-                    // Show suggestions as clickable chips that ask Frankie about them
+                    // Show suggestions as clickable chips that ask AI Assistant about them
                     self.suggestions.innerHTML = '';
                     data.suggestions.forEach(function(s) {
                         var btn = document.createElement('button');
                         btn.className = 'suggestion-chip';
                         btn.textContent = escapeHtml(s.substring(0, 60)) + '...';
-                        btn.addEventListener('click', function() { frankie.ask('Can you help me fix: ' + encodeURIComponent(s.substring(0, 120))); });
+                        btn.addEventListener('click', function() { chatWidget.ask('Can you help me fix: ' + encodeURIComponent(s.substring(0, 120))); });
                         self.suggestions.appendChild(btn);
                     });
                     // Also add standard chips
-                    frankie.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
-                    if (pending > 0) frankie.addChip(self.suggestions, '📋 Approve', 'Review pending approvals');
-                    frankie.addChip(self.suggestions, '📱 Create post', 'Write a social media post');
-                    frankie.addChip(self.suggestions, '🔍 SEO audit', 'Run an SEO audit');
+                    chatWidget.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
+                    if (pending > 0) chatWidget.addChip(self.suggestions, '📋 Approve', 'Review pending approvals');
+                    chatWidget.addChip(self.suggestions, '📱 Create post', 'Write a social media post');
+                    chatWidget.addChip(self.suggestions, '🔍 SEO audit', 'Run an SEO audit');
                 } else {
                     self.greeting.innerHTML = timeGreeting + '! ' + (data.site && data.site.business ? 'I checked <strong>' + escapeHtml(data.site.url) + '</strong> — looks good! ' : '') + 'How can I help?';
                     self.suggestions.innerHTML = '';
-                    frankie.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
-                    if (pending > 0) frankie.addChip(self.suggestions, '📋 Approve', 'Review pending approvals');
-                    frankie.addChip(self.suggestions, '📱 Create post', 'Write a social media post');
-                    frankie.addChip(self.suggestions, '🔍 SEO audit', 'Run an SEO audit');
+                    chatWidget.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
+                    if (pending > 0) chatWidget.addChip(self.suggestions, '📋 Approve', 'Review pending approvals');
+                    chatWidget.addChip(self.suggestions, '📱 Create post', 'Write a social media post');
+                    chatWidget.addChip(self.suggestions, '🔍 SEO audit', 'Run an SEO audit');
                 }
             }).catch(function() {
                 self.greeting.innerHTML = timeGreeting + '! How can I help?';
                 self.suggestions.innerHTML = '';
-                frankie.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
-                if (pending > 0) frankie.addChip(self.suggestions, '📋 Approve', 'Review pending approvals');
-                frankie.addChip(self.suggestions, '🔍 SEO audit', 'Run an SEO audit');
+                chatWidget.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
+                if (pending > 0) chatWidget.addChip(self.suggestions, '📋 Approve', 'Review pending approvals');
+                chatWidget.addChip(self.suggestions, '🔍 SEO audit', 'Run an SEO audit');
             });
         }).catch(function() {
-            self.greeting.textContent = 'Hi! I\'m Frankie. I\'m here to help.';
+            self.greeting.textContent = 'Hi! I\'m AI Assistant. I\'m here to help.';
             self.suggestions.innerHTML = '';
-            frankie.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
+            chatWidget.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
         });
     },
 
@@ -404,7 +404,7 @@ window.frankie = {
         var btn = document.createElement('button');
         btn.className = 'suggestion-chip';
         btn.textContent = label;
-        btn.addEventListener('click', function() { frankie.ask(query); });
+        btn.addEventListener('click', function() { chatWidget.ask(query); });
         container.appendChild(btn);
     },
 
@@ -424,7 +424,7 @@ window.frankie = {
 
         var self = this;
         this.input.value = '';
-        var btn = document.getElementById('frankie-send-btn');
+        var btn = document.getElementById('widget-send-btn');
         btn.disabled = true; btn.textContent = '...';
 
         // Add user message
@@ -504,20 +504,20 @@ window.frankie = {
 
     addMessage: function(text, role) {
         var div = document.createElement('div');
-        div.className = 'frankie-msg frankie-' + role;
+        div.className = 'widget-msg widget-' + role;
         var avatar = document.createElement('div');
-        avatar.className = 'frankie-avatar';
+        avatar.className = 'widget-avatar';
         if (role === 'user') {
             avatar.textContent = '\uD83D\uDC64';
         } else {
             var _fi = document.createElement('img');
-            _fi.src = '/static/frankie.svg';
-            _fi.alt = 'Frankie';
+            _fi.src = '/static/agent-icon.svg';
+            _fi.alt = 'AI Assistant';
             _fi.style.cssText = 'width:28px;height:28px;';
             avatar.appendChild(_fi);
         }
         var bubble = document.createElement('div');
-        bubble.className = 'frankie-bubble';
+        bubble.className = 'widget-bubble';
         bubble.textContent = text;
         div.appendChild(avatar);
         div.appendChild(bubble);
@@ -527,20 +527,20 @@ window.frankie = {
 
     addMessageWithNode: function(text, role, extraNode) {
         var div = document.createElement('div');
-        div.className = 'frankie-msg frankie-' + role;
+        div.className = 'widget-msg widget-' + role;
         var avatar = document.createElement('div');
-        avatar.className = 'frankie-avatar';
+        avatar.className = 'widget-avatar';
         if (role === 'user') {
             avatar.textContent = '\uD83D\uDC64';
         } else {
             var _fi = document.createElement('img');
-            _fi.src = '/static/frankie.svg';
-            _fi.alt = 'Frankie';
+            _fi.src = '/static/agent-icon.svg';
+            _fi.alt = 'AI Assistant';
             _fi.style.cssText = 'width:28px;height:28px;';
             avatar.appendChild(_fi);
         }
         var bubble = document.createElement('div');
-        bubble.className = 'frankie-bubble';
+        bubble.className = 'widget-bubble';
         bubble.textContent = text;
         div.appendChild(avatar);
         div.appendChild(bubble);
@@ -551,31 +551,31 @@ window.frankie = {
 
     showTyping: function() {
         var div = document.createElement('div');
-        div.className = 'frankie-msg frankie-bot';
-        div.id = 'frankie-typing';
-        div.innerHTML = '<div class="frankie-avatar"><img src="/static/frankie.svg" alt="Frankie" style="width:28px;height:28px;"></div><div class="frankie-bubble"><div class="frankie-typing"><span></span><span></span><span></span></div></div>';
+        div.className = 'widget-msg widget-bot';
+        div.id = 'widget-typing';
+        div.innerHTML = '<div class="widget-avatar"><img src="/static/agent-icon.svg" alt="AI Assistant" style="width:28px;height:28px;"></div><div class="widget-bubble"><div class="widget-typing"><span></span><span></span><span></span></div></div>';
         this.messages.appendChild(div);
         this.messages.scrollTop = this.messages.scrollHeight;
     },
 
     hideTyping: function() {
-        var el = document.getElementById('frankie-typing');
+        var el = document.getElementById('widget-typing');
         if (el) el.remove();
     }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (!window.frankie) return;
-    frankie.init();
+    if (!window.chatWidget) return;
+    chatWidget.init();
 
-    document.getElementById('frankie-bubble').addEventListener('click', function() { frankie.toggle(); });
-    document.getElementById('frankie-close-btn').addEventListener('click', function() { frankie.toggle(); });
-    document.getElementById('frankie-connect-toggle').addEventListener('click', function() { frankie.toggleConnect(); });
-    document.getElementById('frankie-config-key').addEventListener('input', function() { frankie.onKeyInput(); });
-    document.getElementById('frankie-detect-btn').addEventListener('click', function() { frankie.detectModels(); });
-    document.getElementById('frankie-save-config-btn').addEventListener('click', function() { frankie.saveConfig(); });
-    document.getElementById('frankie-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') frankie.ask(); });
-    document.getElementById('frankie-voice-btn').addEventListener('click', function() { frankie.toggleVoice(); });
-    document.getElementById('frankie-send-btn').addEventListener('click', function() { frankie.ask(); });
+    document.getElementById('widget-bubble').addEventListener('click', function() { chatWidget.toggle(); });
+    document.getElementById('widget-close-btn').addEventListener('click', function() { chatWidget.toggle(); });
+    document.getElementById('widget-connect-toggle').addEventListener('click', function() { chatWidget.toggleConnect(); });
+    document.getElementById('widget-config-key').addEventListener('input', function() { chatWidget.onKeyInput(); });
+    document.getElementById('widget-detect-btn').addEventListener('click', function() { chatWidget.detectModels(); });
+    document.getElementById('widget-save-config-btn').addEventListener('click', function() { chatWidget.saveConfig(); });
+    document.getElementById('widget-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') chatWidget.ask(); });
+    document.getElementById('widget-voice-btn').addEventListener('click', function() { chatWidget.toggleVoice(); });
+    document.getElementById('widget-send-btn').addEventListener('click', function() { chatWidget.ask(); });
 });
 </script>
