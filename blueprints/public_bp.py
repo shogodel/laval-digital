@@ -26,11 +26,10 @@ from core.app_state import (
 )
 from core.auth import (
     User,
-    _check_rate_limit,
     _record_attempt,
     validate_password,
 )
-from core.rate_limiter import ip_rate_limit
+from core.rate_limiter import RateLimitExceededError, check_ip_rate_limit, ip_rate_limit
 
 logger = logging.getLogger(__name__)
 public_bp = Blueprint("public", __name__)
@@ -58,10 +57,8 @@ def health():
 
 
 @public_bp.route("/api/contact", methods=["POST"])
+@ip_rate_limit(max_request=5, window_seconds=60)
 def api_contact():
-    if not _check_rate_limit("contact"):
-        return api_error("Too many submissions. Please try again later.", 429)
-    _record_attempt(False, "contact")
     data = request.json or {}
     if not data:
         return api_error("No data provided", 400)
@@ -125,8 +122,10 @@ def login_redirect():
 def handle_leads():
     conn = database._get_conn()
     if request.method == "POST":
-        if not _check_rate_limit("leads"):
-            return api_error("Too many attempts. Please try again later.", 429)
+        try:
+            check_ip_rate_limit(10, 60)
+        except RateLimitExceededError as e:
+            return api_error(str(e), 429)
         data = request.json or {}
         name = data.get("name", "")
         phone = data.get("phone", "")

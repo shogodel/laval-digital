@@ -249,6 +249,7 @@ def check_ip_rate_limit(max_request: int = 60, window_seconds: int = 60) -> None
     the window.  This is acceptable because the primary goal is to
     prevent a single abusive IP from saturating one worker.
     """
+    global _ip_request_log
     ip = _get_client_ip()
     now = time.monotonic()
     cutoff = now - window_seconds
