@@ -1146,8 +1146,10 @@ class EcommerceMCPServer(MCPServer):
         for o in orders:
             email = o.get("email", "unknown")
             amount = float(o.get("totalPriceSet", {}).get("shopMoney", {}).get("amount", 0))
-            try: order_date = datetime.fromisoformat(o.get("createdAt", "").replace('Z', '+00:00'))
-            except: order_date = now
+            try:
+                order_date = datetime.fromisoformat(o.get("createdAt", "").replace('Z', '+00:00'))
+            except (ValueError, TypeError):
+                order_date = now
 
             if email not in customers:
                 customers[email] = {"orders": 0, "total_spent": 0, "last_order": order_date, "name": o.get("customer", {}).get("displayName", "")}
