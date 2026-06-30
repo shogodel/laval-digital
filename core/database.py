@@ -957,8 +957,8 @@ def export_user_data(uid: int) -> dict:
         rows = conn.execute(f"SELECT * FROM {table} WHERE user_id = ?", (uid,)).fetchall()
         data[table] = [dict(r) for r in rows]
 
-    shops = conn.execute("SELECT * FROM shops WHERE user_id = ?", (uid,)).fetchall()
-    data["shops"] = [dict(s) for s in shops]
+    shops = [dict(s) for s in conn.execute("SELECT * FROM shops WHERE user_id = ?", (uid,)).fetchall()]
+    data["shops"] = shops
     shop_domains = [s["shop"] for s in shops if s.get("shop")]
 
     webhook_events = []
@@ -974,7 +974,7 @@ def export_user_data(uid: int) -> dict:
 def delete_user(uid: int) -> None:
     conn = _get_conn()
     try:
-        shops = conn.execute("SELECT shop FROM shops WHERE user_id = ?", (uid,)).fetchall()
+        shops = [dict(s) for s in conn.execute("SELECT shop FROM shops WHERE user_id = ?", (uid,)).fetchall()]
         shop_domains = [s["shop"] for s in shops if s.get("shop")]
 
         conn.execute("BEGIN")
