@@ -179,6 +179,9 @@ def create_app(config_name: str | None = None):
     app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
     if os.getenv("DEV_MODE", "").lower() not in ("true", "1"):
         app.config["SESSION_COOKIE_SECURE"] = True
+    else:
+        # Disable template caching so edits take effect without restart
+        app.config["TEMPLATES_AUTO_RELOAD"] = True
 
     app.config["CONTACT_PHONE"] = os.getenv("CONTACT_PHONE", "(514) 243-1580")
     app.config["CONTACT_EMAIL"] = os.getenv("CONTACT_EMAIL", "lavaldigital@gmail.com")
