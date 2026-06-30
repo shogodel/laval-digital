@@ -1,3 +1,17 @@
+# Monkey-patch gevent before any other imports
+try:
+    import gevent.monkey
+    gevent.monkey.patch_all()
+except ImportError:
+    pass
+
+# Make psycopg2 gevent-compatible via psycogreen
+try:
+    from psycogreen.gevent import patch_psycopg
+    patch_psycopg()
+except ImportError:
+    pass
+
 import base64 as _b64
 import logging
 import logging.handlers

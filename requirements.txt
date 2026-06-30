@@ -95,5 +95,9 @@ dnspython==2.7.0
 # SQLAlchemy is required by Alembic (already installed transitively)
 psycopg2-binary==2.9.10
 
+# Async / cooperative concurrency
+gevent==24.11.1
+psycogreen==1.0.2
+
 # Database migrations
 alembic==1.18.5
