@@ -502,10 +502,23 @@ def create_app():
 
     # ── Context processor for globals ──────────────────────────────
 
+    def _resolve_agent_name() -> str:
+        shop = session.get("shop") or getattr(g, "shop", "")
+        if shop:
+            try:
+                conn = database._get_conn()
+                row = conn.execute("SELECT agent_name FROM shops WHERE shop = ?", (shop,)).fetchone()
+                if row and row["agent_name"]:
+                    return row["agent_name"]
+            except Exception:
+                pass
+        return "AI Assistant"
+
     @app.context_processor
     def inject_globals():
         phone = app.config["CONTACT_PHONE"]
         return dict(
+            agent_name=_resolve_agent_name(),
             logo_file="logo.svg",
             CONTACT_PHONE=phone,
             CONTACT_PHONE_CLEAN=phone.replace("(", "").replace(")", "").replace(" ", "").replace("-", ""),

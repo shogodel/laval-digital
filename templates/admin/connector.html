@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Connector Setup — AI Assistant</title>
+    <title>Connector Setup — {{ agent_name }}</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,7 +45,7 @@
 <body>
 <div class="wrapper">
     <h1>&#128279; Connector Setup</h1>
-    <p class="sub">Connect your browser and email so AI Assistant can publish content on your behalf — no API keys needed.</p>
+    <p class="sub">Connect your browser and email so {{ agent_name }} can publish content on your behalf — no API keys needed.</p>
 
     <!-- Method 1: Bookmarklet -->
     <div class="card">
@@ -57,7 +57,7 @@
             <div class="step-content"><strong>Drag this to your bookmarks bar:</strong></div>
         </div>
         <div style="text-align:center;">
-            <a class="bookmarklet-link" href="{{ bookmarklet_code }}">&#9889; AI Assistant</a>
+            <a class="bookmarklet-link" href="{{ bookmarklet_code }}">&#9889; {{ agent_name }}</a>
         </div>
         <div class="bookmarklet-hint">&#8593; Drag this into your bookmarks bar</div>
 

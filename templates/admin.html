@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#D42B2B">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <title>{% if locale == 'fr' %}Centre de Contrôle AI Assistant{% else %}AI Assistant Control Center{% endif %}</title>
+    <title>{% if locale == 'fr' %}Centre de Contrôle {{ agent_name }}{% else %}{{ agent_name }} Control Center{% endif %}</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +21,7 @@
 
 {% set t = {
     'nav_dashboard': 'Dashboard' if locale == 'en' else 'Tableau de Bord',
-    'nav_workers': "AI Assistant's Workers" if locale == 'en' else 'Agents',
+    'nav_workers': agent_name ~ "'s Workers" if locale == 'en' else 'Agents',
     'nav_tasks': 'Tasks &amp; Approvals' if locale == 'en' else 'Tâches &amp; Approbations',
     'nav_settings': 'Settings' if locale == 'en' else 'Paramètres',
     'nav_users': 'Users' if locale == 'en' else 'Utilisateurs',
@@ -29,7 +29,7 @@
     'nav_reports': 'Reports' if locale == 'en' else 'Rapports',
     'nav_managed': 'Managed' if locale == 'en' else 'Gérés',
     'nav_mcp': 'MCP Servers' if locale == 'en' else 'Serveurs MCP',
-    'sidebar_brand': 'AI Assistant Control Center',
+    'sidebar_brand': agent_name ~ ' Control Center',
     'install_app': 'Install App' if locale == 'en' else "Installer l'App",
     'sign_out': 'Sign out' if locale == 'en' else 'Déconnexion',
     'page_title': 'Dashboard' if locale == 'en' else 'Tableau de Bord',
@@ -63,8 +63,8 @@
     'api_key': 'API Key' if locale == 'en' else 'Cl\u00e9 API',
     'detect': 'Detect' if locale == 'en' else 'D\u00e9tecter',
     'save': 'Save' if locale == 'en' else 'Sauvegarder',
-    'talk_to_agent': 'AI Assistant handles all tasks now. Click the AI Assistant bubble in the bottom-right corner to chat.' if locale == 'en' else 'AI Assistant g\u00e8re toutes les t\u00e2ches maintenant. Cliquez sur la bulle AI Assistant pour discuter.',
-    'talk_to_agent_btn': 'Talk to AI Assistant' if locale == 'en' else 'Parler \u00e0 AI Assistant',
+    'talk_to_agent': agent_name ~ ' handles all tasks now. Click the ' ~ agent_name ~ ' bubble in the bottom-right corner to chat.' if locale == 'en' else agent_name ~ ' g\u00e8re toutes les t\u00e2ches maintenant. Cliquez sur la bulle ' ~ agent_name ~ ' pour discuter.',
+    'talk_to_agent_btn': 'Talk to ' ~ agent_name if locale == 'en' else 'Parler \u00e0 ' ~ agent_name,
     'submit_task': 'Submit a Task' if locale == 'en' else 'Soumettre une T\u00e2che',
     'submit_task_desc': 'Send a request to the AI orchestrator' if locale == 'en' else 'Envoyer une requ\u00eate \u00e0 l\'orchestrateur IA',
     'task_desc': 'Task description' if locale == 'en' else 'Description de la t\u00e2che',
@@ -81,8 +81,8 @@
     'add_user': '+ Add User' if locale == 'en' else '+ Ajouter',
     'loading_users': 'Loading users...' if locale == 'en' else 'Chargement des utilisateurs...',
     'conn_platforms': 'Connected Platforms' if locale == 'en' else 'Plateformes Connect\u00e9es',
-    'conn_platforms_desc': 'Connect your existing accounts so AI Assistant can publish directly' if locale == 'en' else 'Connectez vos comptes existants pour que AI Assistant puisse publier directement',
-    'conn_platforms_help': 'Click any platform below to connect it. AI Assistant will guide you through a simple setup \u2014 no technical knowledge required.' if locale == 'en' else 'Cliquez sur une plateforme ci-dessous pour la connecter. AI Assistant vous guidera \u00e0 travers une configuration simple \u2014 aucune connaissance technique requise.',
+    'conn_platforms_desc': 'Connect your existing accounts so ' ~ agent_name ~ ' can publish directly' if locale == 'en' else 'Connectez vos comptes existants pour que ' ~ agent_name ~ ' puisse publier directement',
+    'conn_platforms_help': 'Click any platform below to connect it. ' ~ agent_name ~ ' will guide you through a simple setup \u2014 no technical knowledge required.' if locale == 'en' else 'Cliquez sur une plateforme ci-dessous pour la connecter. ' ~ agent_name ~ ' vous guidera \u00e0 travers une configuration simple \u2014 aucune connaissance technique requise.',
     'exec_settings': 'Execution Settings' if locale == 'en' else 'Param\u00e8tres d\'Ex\u00e9cution',
     'exec_settings_desc': 'SMTP credentials and social API key' if locale == 'en' else 'Identifiants SMTP et API des m\u00e9dias sociaux',
     'mcp_title': 'MCP Servers' if locale == 'en' else 'Serveurs MCP',
@@ -136,7 +136,7 @@
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
             {% if locale == 'fr' %}
             <a href="{{ url_for('admin.dashboard') }}" style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:12px 16px;border-radius:10px;font-size:0.9rem;font-weight:700;text-decoration:none;transition:all 0.2s;box-shadow:0 4px 12px rgba(5,150,105,0.3);">
-                <img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="" style="width:20px;height:20px;vertical-align:middle;"> Ouvrir AI Assistant
+                <img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="" style="width:20px;height:20px;vertical-align:middle;"> Ouvrir {{ agent_name }}
             </a>
             {% endif %}
             <button id="sidebar-install-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.12);padding:8px 12px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;width:100%;">📲 {{ t.install_app }}</button>
@@ -323,7 +323,7 @@
                             </select>
                             <label for="website-url" style="font-size:0.85rem;margin-bottom:8px;display:block;">{% if locale == 'fr' %}URL du site{% else %}Your website URL{% endif %}</label>
                             <input type="text" id="website-url" placeholder="{% if locale == 'fr' %}https://votresite.com{% else %}https://yoursite.com{% endif %}" style="margin-bottom:8px;">
-                            <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:8px;">{% if locale == 'fr' %}AI Assistant analysera et optimisera votre site. Aucun mot de passe requis pour les fonctions de base.{% else %}AI Assistant will analyze your site and optimize it. No password needed for basic features.{% endif %}</p>
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:8px;">{% if locale == 'fr' %}{{ agent_name }} analysera et optimisera votre site. Aucun mot de passe requis pour les fonctions de base.{% else %}{{ agent_name }} will analyze your site and optimize it. No password needed for basic features.{% endif %}</p>
                             <button class="btn btn-green btn-sm" id="save-website-btn">{{ t.save_connect }}</button>
                             <span id="connect-website-result"></span>
                         </div>
@@ -338,9 +338,9 @@
                             <button class="btn btn-gray btn-sm" id="connect-facebook-btn">{{ t.connect }}</button>
                         </div>
                         <div id="connect-facebook" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
-                            <p style="font-size:0.85rem;margin-bottom:8px;">{% if locale == 'fr' %}Cliquez sur le bouton ci-dessous pour connecter votre Page Facebook. Vous serez redirig&eacute; vers Facebook pour autoriser AI Assistant. Cela prend environ 30 secondes.{% else %}Click the button below to connect your Facebook Page. You'll be redirected to Facebook to authorize AI Assistant. It takes about 30 seconds.{% endif %}</p>
+                            <p style="font-size:0.85rem;margin-bottom:8px;">{% if locale == 'fr' %}Cliquez sur le bouton ci-dessous pour connecter votre Page Facebook. Vous serez redirig&eacute; vers Facebook pour autoriser {{ agent_name }}. Cela prend environ 30 secondes.{% else %}Click the button below to connect your Facebook Page. You'll be redirected to Facebook to authorize {{ agent_name }}. It takes about 30 seconds.{% endif %}</p>
                             <button class="btn btn-green btn-sm" id="connect-fb-page-btn">🔗 {% if locale == 'fr' %}Connecter la Page Facebook{% else %}Connect Facebook Page{% endif %}</button>
-                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">{% if locale == 'fr' %}AI Assistant pourra : cr&eacute;er des publications, lire l'engagement et g&eacute;rer votre page.{% else %}AI Assistant will be able to: create posts, read engagement, and manage your page.{% endif %}</p>
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">{% if locale == 'fr' %}{{ agent_name }} pourra : cr&eacute;er des publications, lire l'engagement et g&eacute;rer votre page.{% else %}{{ agent_name }} will be able to: create posts, read engagement, and manage your page.{% endif %}</p>
                         </div>
                     </div>
 
@@ -360,7 +360,7 @@
                             <input type="password" id="email-password" placeholder="{% if locale == 'fr' %}Mot de passe d'application{% else %}App Password (not your regular password){% endif %}" style="margin-bottom:8px;">
                             <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:8px;">
                                 <strong>{% if locale == 'fr' %}Vous utilisez Gmail ?{% else %}Using Gmail?{% endif %}</strong> 
-                                <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--blue);">{% if locale == 'fr' %}Cr&eacute;ez un mot de passe d'application ici{% else %}Create an App Password here{% endif %}</a> {% if locale == 'fr' %}&mdash; cela prend 30 secondes. S&eacute;lectionnez &laquo; Courriel &raquo; et &laquo; Autre &raquo;, nommez-le &laquo; AI Assistant &raquo;, et collez le code &agrave; 16 caract&egrave;res ci-dessus.{% else %}&mdash; it takes 30 seconds. Select "Mail" and "Other", name it "AI Assistant", and paste the 16-character code above.{% endif %}
+                                <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--blue);">{% if locale == 'fr' %}Cr&eacute;ez un mot de passe d'application ici{% else %}Create an App Password here{% endif %}</a> {% if locale == 'fr' %}&mdash; cela prend 30 secondes. S&eacute;lectionnez &laquo; Courriel &raquo; et &laquo; Autre &raquo;, nommez-le &laquo; {{ agent_name }} &raquo;, et collez le code &agrave; 16 caract&egrave;res ci-dessus.{% else %}&mdash; it takes 30 seconds. Select "Mail" and "Other", name it "{{ agent_name }}", and paste the 16-character code above.{% endif %}
                             </p>
                             <button class="btn btn-green btn-sm" id="save-email-btn">{{ t.save_connect }}</button>
                             <span id="connect-email-result"></span>
@@ -376,14 +376,14 @@
                             <button class="btn btn-gray btn-sm" id="connect-google-toggle-btn">{{ t.connect }}</button>
                         </div>
                         <div id="connect-google" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
-                            <p style="font-size:0.85rem;margin-bottom:8px;">{% if locale == 'fr' %}Pour connecter Google Business Profile, nous avons besoin que vous ajoutiez AI Assistant comme gestionnaire.{% else %}To connect Google Business Profile, we need you to add AI Assistant as a manager.{% endif %}</p>
+                            <p style="font-size:0.85rem;margin-bottom:8px;">{% if locale == 'fr' %}Pour connecter Google Business Profile, nous avons besoin que vous ajoutiez {{ agent_name }} comme gestionnaire.{% else %}To connect Google Business Profile, we need you to add {{ agent_name }} as a manager.{% endif %}</p>
                             <ol style="font-size:0.82rem;color:var(--gray-600);padding-left:20px;line-height:1.8;">
                                 <li>{% if locale == 'fr' %}Allez sur{% else %}Go to{% endif %} <a href="https://business.google.com" target="_blank" style="color:var(--blue);">business.google.com</a></li>
                                 <li>{% if locale == 'fr' %}Cliquez sur &laquo; Utilisateurs &raquo; dans le menu de gauche{% else %}Click "Users" in the left menu{% endif %}</li>
                                 <li>{% if locale == 'fr' %}Cliquez sur &laquo; Ajouter &raquo; et entrez :{% else %}Click "Add" and enter:{% endif %} <strong>{{ CONTACT_EMAIL }}</strong></li>
                                 <li>{% if locale == 'fr' %}S&eacute;lectionnez le r&ocirc;le &laquo; Gestionnaire &raquo; et cliquez sur &laquo; Inviter &raquo;{% else %}Select "Manager" role and click "Invite"{% endif %}</li>
                             </ol>
-                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">{% if locale == 'fr' %}Une fois l'invitation envoy&eacute;e, AI Assistant pourra commencer &agrave; g&eacute;rer votre profil dans les 24 heures.{% else %}Once you've sent the invite, AI Assistant can start managing your profile within 24 hours.{% endif %}</p>
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">{% if locale == 'fr' %}Une fois l'invitation envoy&eacute;e, {{ agent_name }} pourra commencer &agrave; g&eacute;rer votre profil dans les 24 heures.{% else %}Once you've sent the invite, {{ agent_name }} can start managing your profile within 24 hours.{% endif %}</p>
                         </div>
                     </div>
 
@@ -396,7 +396,7 @@
                             <button class="btn btn-gray btn-sm" id="connect-tiktok-toggle-btn">{{ t.connect }}</button>
                         </div>
                         <div id="connect-tiktok" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
-                            <p style="font-size:0.85rem;margin-bottom:8px;">{% if locale == 'fr' %}La connexion TikTok sera bient&ocirc;t disponible. Pour l'instant, AI Assistant r&eacute;digera votre contenu et vous pourrez le publier manuellement.{% else %}TikTok connection coming soon. For now, AI Assistant will draft your content and you can post it manually.{% endif %}</p>
+                            <p style="font-size:0.85rem;margin-bottom:8px;">{% if locale == 'fr' %}La connexion TikTok sera bient&ocirc;t disponible. Pour l'instant, {{ agent_name }} r&eacute;digera votre contenu et vous pourrez le publier manuellement.{% else %}TikTok connection coming soon. For now, {{ agent_name }} will draft your content and you can post it manually.{% endif %}</p>
                         </div>
                     </div>
                 </div>
@@ -498,6 +498,7 @@ window.ADMIN_CONFIG = {
     defaultTab: "{{ default_tab|default('') }}",
     locale: '{{ locale }}',
     agentChatUrl: '{% if locale == 'fr' %}{{ url_for('admin_fr.agent_chat_fr', agent_id='') }}{% else %}/admin/agent/{% endif %}',
+    agentName: '{{ agent_name }}',
 };
 </script>
 <script src="{{ url_for('static', filename='admin.js') }}?v={{ static_versions.get('admin.js', '0') }}"></script>

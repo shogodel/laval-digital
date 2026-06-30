@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>AI Assistant — Centre de Commande Marketing IA</title>
+    <title>{{ agent_name }} — Centre de Commande Marketing IA</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -165,7 +165,7 @@
 
 <div class="chat-layout">
     <div class="left-panel" id="panel-left">
-        <div class="agent-brand"><img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:4px;"> AI Assistant</div>
+        <div class="agent-brand"><img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:4px;"> {{ agent_name }}</div>
         <div class="section-header">
             Fils
             <button id="new-thread-btn">+ Nouveau</button>
@@ -183,12 +183,12 @@
 
     <div class="chat-main">
         <div class="chat-header">
-            <div class="agent-label">AI Assistant <span>&mdash; Centre de Commande Marketing IA</span></div>
+            <div class="agent-label">{{ agent_name }} <span>&mdash; Centre de Commande Marketing IA</span></div>
         </div>
         <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
             <div class="empty-chat" id="empty-chat">
                 <div class="big-icon"><img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="" style="width:64px;height:64px;"></div>
-                <h3>Je suis AI Assistant — votre centre de commande marketing IA.</h3>
+                <h3>Je suis {{ agent_name }} — votre centre de commande marketing IA.</h3>
                 <p>Je peux rédiger du contenu, gérer votre SEO, lancer des annonces, publier sur les réseaux sociaux, gérer des campagnes courriel, et plus encore. Dites-moi simplement ce dont vous avez besoin.</p>
                 <div class="example-chips">
                     <button class="example-chip" data-query="Rédige un article de blog pour mon entreprise sur les questions courantes des clients">📝 Rédiger un article de blog</button>
@@ -199,11 +199,11 @@
         </div>
         <div class="chat-input-area">
             <div class="chat-input-row">
-                <textarea id="msg-input" rows="1" placeholder="Parlez à AI Assistant... (ou écrivez)"></textarea>
+                <textarea id="msg-input" rows="1" placeholder="Parlez à {{ agent_name }}... (ou écrivez)"></textarea>
                 <button id="mic-btn" class="mic-btn" title="Entrée vocale">&#127908;</button>
                 <button id="send-btn">Envoyer</button>
             </div>
-            <div class="chat-input-hint">Essayez : « AI Assistant, rédige un article de blog sur les conseils de plomberie d'hiver »</div>
+            <div class="chat-input-hint">Essayez : « {{ agent_name }}, rédige un article de blog sur les conseils de plomberie d'hiver »</div>
         </div>
     </div>
 
@@ -246,7 +246,7 @@
 </div>
 
 <div id="voice-toast" class="voice-toast">
-    <span>👋 Salut ! Je suis AI Assistant. Vous pouvez écrire ou me parler. Activez la voix pour l'expérience Jarvis complète.</span>
+    <span>👋 Salut ! Je suis {{ agent_name }}. Vous pouvez écrire ou me parler. Activez la voix pour l'expérience Jarvis complète.</span>
     <button class="close-toast" id="close-toast-btn">&times;</button>
 </div>
 

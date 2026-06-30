@@ -159,7 +159,7 @@ var S = LOCALE === 'fr' ? {
     connectionFailed: 'Connection failed: ',
     connected: 'Connected',
     saving: 'Saving...',
-    connectSuccess: '\u2713 Connected! AI Assistant can now publish to your ',
+    connectSuccess: '\u2713 Connected! ' + (CFG.agentName || 'AI Assistant') + ' can now publish to your ',
     connectError: 'Error: ',
     connectFail: 'Connection failed. Please try again.',
     noMCPServers: 'No MCP servers available.',

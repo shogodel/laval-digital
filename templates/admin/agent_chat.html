@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>AI Assistant — AI Marketing Command Center</title>
+    <title>{{ agent_name }} — AI Marketing Command Center</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -180,7 +180,7 @@
 <div class="chat-layout">
     <!-- LEFT COLUMN: Threads + Tools -->
     <div class="left-panel" id="panel-left">
-        <div class="agent-brand"><img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:4px;"> AI Assistant</div>
+        <div class="agent-brand"><img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:4px;"> {{ agent_name }}</div>
         <div class="section-header">
             Threads
             <button id="new-thread-btn">+ New</button>
@@ -199,12 +199,12 @@
     <!-- CENTER COLUMN: Chat -->
     <div class="chat-main">
         <div class="chat-header">
-            <div class="agent-label">AI Assistant <span>&mdash; AI Marketing Command Center</span></div>
+            <div class="agent-label">{{ agent_name }} <span>&mdash; AI Marketing Command Center</span></div>
         </div>
         <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
             <div class="empty-chat" id="empty-chat">
                 <div class="big-icon"><img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="" style="width:64px;height:64px;"></div>
-                <h3>I'm AI Assistant — your AI marketing command center.</h3>
+                <h3>I'm {{ agent_name }} — your AI marketing command center.</h3>
                 <p>I can write content, manage your SEO, run ads, post to social media, handle email campaigns, and more. Just tell me what you need.</p>
                 <div class="example-chips">
                     <button class="example-chip" data-query="Write a blog post for my business about common customer questions">📝 Write a blog post for my business</button>
@@ -215,11 +215,11 @@
         </div>
         <div class="chat-input-area">
             <div class="chat-input-row">
-                <textarea id="msg-input" rows="1" placeholder="Talk to AI Assistant... (or type)"></textarea>
+                <textarea id="msg-input" rows="1" placeholder="Talk to {{ agent_name }}... (or type)"></textarea>
                 <button id="mic-btn" class="mic-btn" title="Voice input">&#127908;</button>
                 <button id="send-btn">Send</button>
             </div>
-            <div class="chat-input-hint">Try: "AI Assistant, write a blog post about winter plumbing tips"</div>
+            <div class="chat-input-hint">Try: "{{ agent_name }}, write a blog post about winter plumbing tips"</div>
         </div>
     </div>
 
@@ -263,7 +263,7 @@
 </div>
 
 <div id="voice-toast" class="voice-toast">
-    <span>👋 Hi! I'm AI Assistant. You can type or talk to me. Enable voice for the full Jarvis experience.</span>
+    <span>👋 Hi! I'm {{ agent_name }}. You can type or talk to me. Enable voice for the full Jarvis experience.</span>
     <button class="close-toast" id="close-toast-btn">&times;</button>
 </div>
 

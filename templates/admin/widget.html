@@ -1,19 +1,19 @@
 <div id="widget-container">
-    <button id="widget-bubble" aria-label="Open AI Assistant" title="AI Assistant">
-        <img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="AI Assistant" id="widget-bubble-icon" style="width:36px;height:36px;">
+    <button id="widget-bubble" aria-label="Open {{ agent_name }}" title="{{ agent_name }}">
+        <img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="{{ agent_name }}" id="widget-bubble-icon" style="width:36px;height:36px;">
         <span id="widget-status-dot"></span>
     </button>
 
     <div id="widget-panel">
         <div id="widget-header">
             <div style="display:flex;align-items:center;gap:10px;">
-                <img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="AI Assistant" style="width:32px;height:32px;vertical-align:middle;">
+                <img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="{{ agent_name }}" style="width:32px;height:32px;vertical-align:middle;">
                 <div>
-                    <strong style="font-size:1rem;color:var(--white);">AI Assistant</strong>
+                    <strong style="font-size:1rem;color:var(--white);">{{ agent_name }}</strong>
                     <div style="font-size:0.7rem;color:rgba(255,255,255,0.6);" id="widget-status">Online</div>
                 </div>
             </div>
-                <button id="widget-close-btn" aria-label="Close AI Assistant panel" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:1.4rem;cursor:pointer;">&times;</button>
+                <button id="widget-close-btn" aria-label="Close {{ agent_name }} panel" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:1.4rem;cursor:pointer;">&times;</button>
         </div>
         <div id="widget-connect-bar">
             <button id="widget-connect-toggle" style="display:flex;align-items:center;gap:6px;width:100%;padding:8px 14px;background:var(--gray-50);border:none;border-bottom:1px solid var(--gray-200);cursor:pointer;font-size:0.82rem;font-weight:500;color:var(--gray-700);font-family:inherit;transition:background 0.15s;">
@@ -42,7 +42,7 @@
                         <div id="widget-detect-result" style="font-size:0.7rem;margin-top:2px;"></div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
-                        <button id="widget-save-config-btn" style="padding:7px 14px;font-size:0.78rem;font-weight:600;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">Connect AI Assistant to AI</button>
+                        <button id="widget-save-config-btn" style="padding:7px 14px;font-size:0.78rem;font-weight:600;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">Connect {{ agent_name }} to AI</button>
                         <span id="widget-config-result" style="font-size:0.75rem;"></span>
                     </div>
                 </div>
@@ -51,7 +51,7 @@
         <div id="widget-body">
             <div id="widget-messages">
                 <div class="widget-msg widget-bot" id="widget-greeting">
-<div class="widget-avatar"><img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="AI Assistant" style="width:28px;height:28px;"></div>
+<div class="widget-avatar"><img src="{{ url_for('static', filename='agent-icon.svg') }}" alt="{{ agent_name }}" style="width:28px;height:28px;"></div>
                     <div class="widget-bubble">
                         <div id="widget-greeting-text">Loading...</div>
                         <div id="widget-suggestions" style="margin-top:10px;"></div>
@@ -59,9 +59,9 @@
                 </div>
             </div>
             <div id="widget-input-area">
-                <input type="text" id="widget-input" placeholder="Ask AI Assistant anything..." aria-label="Type your question to AI Assistant">
+                <input type="text" id="widget-input" placeholder="Ask {{ agent_name }} anything..." aria-label="Type your question to {{ agent_name }}">
                 <button id="widget-voice-btn" title="Toggle voice input" aria-label="Toggle voice input" style="background:none;border:1px solid var(--gray-300);border-radius:10px;padding:9px 10px;font-size:1rem;cursor:pointer;flex-shrink:0;transition:0.15s;">🎤</button>
-                <button id="widget-send-btn" aria-label="Send message to AI Assistant">Send</button>
+                <button id="widget-send-btn" aria-label="Send message to {{ agent_name }}">Send</button>
             </div>
         </div>
     </div>
@@ -84,7 +84,7 @@
     outline-offset: 3px;
 }
 #widget-bubble::after {
-    content: '🤖 AI Assistant'; position: absolute; right: 72px;
+    content: '🤖 {{ agent_name }}'; position: absolute; right: 72px;
     background: var(--navy, #0f2b45); color: #fff;
     padding: 6px 14px; border-radius: 20px; font-size: 0.78rem;
     font-weight: 600; white-space: nowrap;
@@ -315,7 +315,7 @@ window.chatWidget = {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success || data.message) {
-                resultDiv.innerHTML = '<span style="color:var(--green);font-weight:700;">AI Assistant is now connected and ready!</span>';
+                resultDiv.innerHTML = '<span style="color:var(--green);font-weight:700;">{{ agent_name }} is now connected and ready!</span>';
                 self.checkConnect();
             } else {
                 var span = document.createElement('span');
@@ -345,7 +345,7 @@ window.chatWidget = {
             var hour = new Date().getHours();
             var timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-            var msg = timeGreeting + '! I\'m AI Assistant, your AI command center. ';
+            var msg = timeGreeting + '! I\'m {{ agent_name }}, your AI command center. ';
             if (pending > 0) {
                 msg += 'You have <strong>' + pending + ' pending approval' + (pending > 1 ? 's' : '') + '</strong> waiting. ';
             } else {
@@ -364,7 +364,7 @@ window.chatWidget = {
                 if (data.suggestions && data.suggestions.length > 0) {
                     extra += 'I found <strong>' + data.suggestions.length + ' thing' + (data.suggestions.length > 1 ? 's' : '') + '</strong> you can improve:';
                     self.greeting.innerHTML = timeGreeting + '! ' + extra;
-                    // Show suggestions as clickable chips that ask AI Assistant about them
+                    // Show suggestions as clickable chips that ask {{ agent_name }} about them
                     self.suggestions.innerHTML = '';
                     data.suggestions.forEach(function(s) {
                         var btn = document.createElement('button');
@@ -394,7 +394,7 @@ window.chatWidget = {
                 chatWidget.addChip(self.suggestions, '🔍 SEO audit', 'Run an SEO audit');
             });
         }).catch(function() {
-            self.greeting.textContent = 'Hi! I\'m AI Assistant. I\'m here to help.';
+            self.greeting.textContent = 'Hi! I\'m {{ agent_name }}. I\'m here to help.';
             self.suggestions.innerHTML = '';
             chatWidget.addChip(self.suggestions, '📊 Agent status', 'How are my agents doing?');
         });
@@ -512,7 +512,7 @@ window.chatWidget = {
         } else {
             var _fi = document.createElement('img');
             _fi.src = '/static/agent-icon.svg';
-            _fi.alt = 'AI Assistant';
+            _fi.alt = '{{ agent_name }}';
             _fi.style.cssText = 'width:28px;height:28px;';
             avatar.appendChild(_fi);
         }
@@ -535,7 +535,7 @@ window.chatWidget = {
         } else {
             var _fi = document.createElement('img');
             _fi.src = '/static/agent-icon.svg';
-            _fi.alt = 'AI Assistant';
+            _fi.alt = '{{ agent_name }}';
             _fi.style.cssText = 'width:28px;height:28px;';
             avatar.appendChild(_fi);
         }
@@ -553,7 +553,7 @@ window.chatWidget = {
         var div = document.createElement('div');
         div.className = 'widget-msg widget-bot';
         div.id = 'widget-typing';
-        div.innerHTML = '<div class="widget-avatar"><img src="/static/agent-icon.svg" alt="AI Assistant" style="width:28px;height:28px;"></div><div class="widget-bubble"><div class="widget-typing"><span></span><span></span><span></span></div></div>';
+        div.innerHTML = '<div class="widget-avatar"><img src="/static/agent-icon.svg" alt="{{ agent_name }}" style="width:28px;height:28px;"></div><div class="widget-bubble"><div class="widget-typing"><span></span><span></span><span></span></div></div>';
         this.messages.appendChild(div);
         this.messages.scrollTop = this.messages.scrollHeight;
     },
