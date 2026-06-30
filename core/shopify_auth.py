@@ -63,6 +63,23 @@ def _decrypt_token(ciphertext: str) -> str:
     return _derive_fernet_key().decrypt(ciphertext.encode()).decode()
 
 
+def shopify_credential_health() -> dict[str, object]:
+    """Verify Shopify token cipher is functional — tests round-trip encrypt/decrypt."""
+    result: dict[str, object] = {"status": "ok", "kdf": "HKDF" if not os.getenv("CREDENTIAL_SALT") else "PBKDF2"}
+    try:
+        test = "health-check-shopify-verification"
+        cipher = _derive_fernet_key()
+        encrypted = cipher.encrypt(test.encode())
+        decrypted = cipher.decrypt(encrypted).decode()
+        if decrypted != test:
+            result["status"] = "error"
+            result["detail"] = "round-trip mismatch"
+    except Exception as e:
+        result["status"] = "error"
+        result["detail"] = str(e)
+    return result
+
+
 def validate_hmac(query_params: dict[str, str]) -> bool:
     """Validate HMAC from Shopify's OAuth redirect or App Proxy request."""
     hmac_param = query_params.pop("hmac", None)

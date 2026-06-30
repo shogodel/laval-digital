@@ -63,6 +63,16 @@ def health():
         status["llm"] = "unhealthy"
         logger.error("Health check LLM error: %s", e)
         status["status"] = "degraded"
+    try:
+        from core.settings import credential_health
+        from core.shopify_auth import shopify_credential_health
+        status["encryption"] = credential_health()
+        status["encryption"]["shopify"] = shopify_credential_health()
+        if status["encryption"]["status"] != "ok" or status["encryption"]["shopify"]["status"] != "ok":
+            status["status"] = "degraded"
+    except Exception as e:
+        status["encryption"] = {"status": "error", "detail": str(e)}
+        status["status"] = "degraded"
     http_code = 200 if status["status"] == "ok" else 503
     return jsonify(status), http_code
 

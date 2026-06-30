@@ -214,6 +214,33 @@ def derive_fernet_key() -> Fernet:
     return Fernet(key)
 
 
+def _key_fingerprint() -> str:
+    """Return a short fingerprint of the current credential cipher key for rotation detection."""
+    secret = os.getenv("FLASK_SECRET_KEY", "").encode()
+    return _b64.urlsafe_b64encode(secret[:6]).decode().rstrip("=")
+
+
+def credential_health() -> dict[str, object]:
+    """Verify credential cipher is functional — tests round-trip encrypt/decrypt."""
+    result: dict[str, object] = {
+        "status": "ok",
+        "kdf": "HKDF" if not os.getenv("CREDENTIAL_SALT") else "PBKDF2",
+        "key_fingerprint": _key_fingerprint(),
+    }
+    try:
+        test = "health-check-credential-verification"
+        cipher = derive_fernet_key()
+        encrypted = cipher.encrypt(test.encode())
+        decrypted = cipher.decrypt(encrypted).decode()
+        if decrypted != test:
+            result["status"] = "error"
+            result["detail"] = "round-trip mismatch"
+    except Exception as e:
+        result["status"] = "error"
+        result["detail"] = str(e)
+    return result
+
+
 def encrypt_credential(plaintext: str) -> str:
     from core.app_state import get_credential_cipher
     return get_credential_cipher().encrypt(plaintext.encode()).decode()
