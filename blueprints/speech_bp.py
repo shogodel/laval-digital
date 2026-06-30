@@ -6,20 +6,18 @@ from flask import Blueprint, request
 
 from core.api_helpers import api_error, api_success
 from core.app_state import get_speech_engine
-from core.auth import admin_required
+
 
 logger = logging.getLogger(__name__)
 speech_bp = Blueprint("speech", __name__)
 
 
 @speech_bp.route("/api/speech/settings", methods=["GET"])
-@admin_required
 def get_speech_settings():
     return api_success(get_speech_engine().get_public_settings())
 
 
 @speech_bp.route("/api/speech/settings", methods=["PUT"])
-@admin_required
 def update_speech_settings():
     data = request.json
     if not data:
@@ -29,7 +27,6 @@ def update_speech_settings():
 
 
 @speech_bp.route("/api/speech/stt", methods=["POST"])
-@admin_required
 def speech_to_text():
     if "audio" not in request.files:
         return api_error("No audio file provided", 400)
@@ -47,7 +44,6 @@ def speech_to_text():
 
 
 @speech_bp.route("/api/speech/tts", methods=["POST"])
-@admin_required
 def text_to_speech():
     data = request.json
     if not data or not data.get("text"):
@@ -66,7 +62,6 @@ def text_to_speech():
 
 
 @speech_bp.route("/api/speech/voices", methods=["GET"])
-@admin_required
 def get_speech_voices():
     provider = get_speech_engine().get_settings().get("tts_provider", "browser")
     if provider == "openai":

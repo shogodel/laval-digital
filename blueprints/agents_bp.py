@@ -17,7 +17,7 @@ from core.app_state import (
     safe_int,
     update_agent_activity,
 )
-from core.auth import admin_required
+
 from core.llm_adapter import LLMAdapter
 
 logger = logging.getLogger(__name__)
@@ -88,7 +88,6 @@ def get_agent_stats(agent_id):
 
 
 @agents_bp.route("/api/agents/<agent_id>/toggle", methods=["POST"])
-@admin_required
 def toggle_agent(agent_id):
     if agent_id not in get_agent_registry():
         return api_error("Agent not found", 404)
@@ -124,7 +123,6 @@ def toggle_agent(agent_id):
 
 
 @agents_bp.route("/api/agents/<agent_id>/config", methods=["GET"])
-@admin_required
 def get_agent_config(agent_id):
     if agent_id not in get_agent_configs():
         return api_error("Agent not found", 404)
@@ -166,7 +164,6 @@ def detect_models():
 
 
 @agents_bp.route("/api/executions", methods=["GET"])
-@admin_required
 def get_executions():
     limit = request.args.get("limit", 50, type=int)
     from core.app_state import get_executioner
@@ -175,7 +172,6 @@ def get_executions():
 
 
 @agents_bp.route("/api/agents/<agent_id>/autonomy", methods=["GET", "PUT"])
-@admin_required
 def api_agent_autonomy(agent_id):
     user_id = get_current_user_id()
     if not user_id:
@@ -212,7 +208,6 @@ def api_agent_autonomy(agent_id):
 
 
 @agents_bp.route("/api/agents/autonomy/bulk", methods=["GET"])
-@admin_required
 def api_all_agent_autonomy():
     user_id = get_current_user_id()
     if not user_id:
@@ -227,7 +222,6 @@ def api_all_agent_autonomy():
 
 
 @agents_bp.route("/api/agents/<agent_id>/invoke", methods=["POST"])
-@admin_required
 def invoke_agent(agent_id):
     if agent_id not in get_agent_registry():
         return api_error("Agent not found", 404)
@@ -278,7 +272,6 @@ def invoke_agent(agent_id):
 
 
 @agents_bp.route("/api/agents/<agent_id>/chat", methods=["POST"])
-@admin_required
 def agent_chat(agent_id):
     if agent_id not in get_agent_registry():
         return api_error(f"Agent '{agent_id}' not found", 404)

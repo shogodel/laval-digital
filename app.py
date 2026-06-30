@@ -40,7 +40,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from agents.executioner_agent import ExecutionerAgent
 from core import database
 from core.api_helpers import api_error, api_success
-from core.auth import SESSION_TIMEOUT, admin_required, init_auth
+from core.auth import SESSION_TIMEOUT, init_auth
 from core.base_agent import BaseAgent
 from core.email_bridge import EmailBridge
 from core.llm_adapter import LLMAdapter
@@ -378,8 +378,6 @@ def create_app(config_name: str | None = None):
             return
         if current_user.is_authenticated and current_user.role == "admin":
             return
-        if current_user.is_authenticated:
-            return
         # Shopify auth: resolve shop from session (set during OAuth or admin_embedded)
         shop = session.get("shop") or request.args.get("shop") or request.headers.get("X-Shopify-Shop-Domain")
         if shop:
@@ -466,10 +464,6 @@ def create_app(config_name: str | None = None):
             shop_data = get_shop_by_domain(shop)
             if shop_data and shop_data.get("user_id"):
                 return str(shop_data["user_id"])
-        return None
-
-    @login_manager.request_loader
-    def load_user_from_request(request):
         return None
 
     @app.before_request
@@ -619,7 +613,6 @@ def create_app(config_name: str | None = None):
         )
 
     @app.route("/api/agents/<agent_id>/config", methods=["POST"])
-    @admin_required
     def update_agent_config(agent_id):
         nonlocal orchestrator
         if agent_id not in agent_configs:
@@ -644,7 +637,6 @@ def create_app(config_name: str | None = None):
         })
 
     @app.route("/api/agents/bulk/config", methods=["POST"])
-    @admin_required
     def update_all_agents_config():
         nonlocal orchestrator
         data = request.json

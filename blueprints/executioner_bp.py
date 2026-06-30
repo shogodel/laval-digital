@@ -8,7 +8,7 @@ from flask import Blueprint, request
 
 from core.api_helpers import api_error, api_success
 from core.app_state import get_executioner
-from core.auth import admin_required
+
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,6 @@ executioner_bp = Blueprint("executioner", __name__, url_prefix="/api/executioner
 
 
 @executioner_bp.route("/settings", methods=["GET", "PUT"])
-@admin_required
 def handle_executioner_settings():
     exe = get_executioner()
     if request.method == "PUT":
@@ -28,7 +27,6 @@ def handle_executioner_settings():
 
 
 @executioner_bp.route("/test-smtp", methods=["POST"])
-@admin_required
 def test_smtp():
     data = request.json
     if not data:
@@ -79,7 +77,6 @@ def test_smtp():
 
 
 @executioner_bp.route("/validate-social-key", methods=["POST"])
-@admin_required
 def validate_social_key():
     data = request.json
     if not data:
@@ -109,7 +106,6 @@ def validate_social_key():
 
 
 @executioner_bp.route("/social-settings", methods=["POST"])
-@admin_required
 def save_social_settings():
     data = request.json or {}
     exe = get_executioner()
@@ -121,14 +117,12 @@ def save_social_settings():
 
 
 @executioner_bp.route("/pending", methods=["GET"])
-@admin_required
 def get_pending_executions():
     exe = get_executioner()
     return api_success({"pending": exe.get_pending_executions()})
 
 
 @executioner_bp.route("/confirm/<execution_id>", methods=["POST"])
-@admin_required
 def confirm_execution(execution_id):
     exe = get_executioner()
     try:
@@ -140,7 +134,6 @@ def confirm_execution(execution_id):
 
 
 @executioner_bp.route("/reject/<execution_id>", methods=["POST"])
-@admin_required
 def reject_execution(execution_id):
     exe = get_executioner()
     try:
@@ -152,7 +145,6 @@ def reject_execution(execution_id):
 
 
 @executioner_bp.route("/execute-chat", methods=["POST"])
-@admin_required
 def execute_chat_response():
     data = request.json
     if not data:

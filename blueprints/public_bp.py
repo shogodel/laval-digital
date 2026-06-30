@@ -9,7 +9,7 @@ from email.mime.text import MIMEText
 from html import escape
 
 from flask import Blueprint, jsonify, redirect, request, session, url_for
-from flask_login import current_user, login_user
+from flask_login import current_user
 from werkzeug.security import generate_password_hash
 
 from blueprints._shared import AGENT_PERSONALITIES
@@ -100,12 +100,11 @@ def api_contact():
             display_name=user_row["display_name"],
             status="trial", trial_ends_at=trial_ends,
         )
-        login_user(temp_user)
         session["last_active"] = datetime.now(UTC).isoformat()
 
         logger.info("New trial user created: %s (id=%s)", email, uid)
         _record_attempt(True, "signup")
-        return api_success({"redirect": url_for("client.client_dashboard")}, status_code=201)
+        return api_success({"redirect": url_for("shopify.admin_embedded")}, status_code=201)
 
     except ValueError as e:
         _record_attempt(False, "signup")
@@ -119,7 +118,7 @@ def api_contact():
 
 @public_bp.route("/login")
 def login_redirect():
-    return redirect(url_for("client.client_login"))
+    return redirect(url_for("admin.login"))
 
 
 @public_bp.route("/api/leads", methods=["GET", "POST"])

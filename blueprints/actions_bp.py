@@ -25,7 +25,7 @@ from core.app_state import (
     safe_error,
     safe_int,
 )
-from core.auth import admin_required
+
 
 logger = logging.getLogger(__name__)
 actions_bp = Blueprint("actions", __name__)
@@ -41,7 +41,6 @@ def api_pending_actions():
 
 
 @actions_bp.route("/api/actions/sms-pending", methods=["GET"])
-@admin_required
 def api_sms_pending():
     sms_file = Path(__file__).parent / "content" / "sms" / "sms.jsonl"
     if not sms_file.exists():
@@ -68,7 +67,6 @@ def api_confirm_action(action_id):
 
 
 @actions_bp.route("/api/actions/sms-sent", methods=["POST"])
-@admin_required
 def api_sms_mark_sent():
     data = request.json
     timestamp = (data or {}).get("timestamp", "")

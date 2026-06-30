@@ -7,7 +7,7 @@ from flask import Blueprint, request
 from core import database
 from core.api_helpers import api_error, api_success
 from core.app_state import get_credential_cipher, get_current_user_id, safe_error
-from core.auth import admin_required
+
 from mcp import AGENT_MCP_ROUTING, get_all_mcp_servers, get_mcp_server
 
 logger = logging.getLogger(__name__)
@@ -22,9 +22,6 @@ mcp_bp = Blueprint("mcp", __name__, url_prefix="")
 
 @mcp_bp.route("/api/mcp/servers", methods=["GET"])
 def list_mcp_servers():
-    auth_check = admin_required()
-    if auth_check:
-        return auth_check
     servers = {}
     for name, server in get_all_mcp_servers().items():
         servers[name] = server.get_status()
@@ -33,9 +30,6 @@ def list_mcp_servers():
 
 @mcp_bp.route("/api/mcp/servers/<server_name>/tools", methods=["GET"])
 def list_mcp_tools(server_name):
-    auth_check = admin_required()
-    if auth_check:
-        return auth_check
     server = get_mcp_server(server_name)
     if not server:
         return api_error(f"MCP server '{server_name}' not found", 404)
@@ -44,9 +38,6 @@ def list_mcp_tools(server_name):
 
 @mcp_bp.route("/api/mcp/call", methods=["POST"])
 def call_mcp_tool():
-    auth_check = admin_required()
-    if auth_check:
-        return auth_check
     data = request.json
     if not data:
         return api_error("No data provided", 400)
@@ -68,9 +59,6 @@ def call_mcp_tool():
 
 @mcp_bp.route("/api/mcp/credentials", methods=["GET"])
 def get_mcp_credentials():
-    auth_check = admin_required()
-    if auth_check:
-        return auth_check
     tenant_id = get_current_user_id()
     if not tenant_id:
         return api_error("No tenant selected", 400, data={"credentials": {}})
@@ -90,9 +78,6 @@ def get_mcp_credentials():
 
 @mcp_bp.route("/api/mcp/credentials", methods=["POST"])
 def save_mcp_credentials():
-    auth_check = admin_required()
-    if auth_check:
-        return auth_check
     tenant_id = get_current_user_id()
     if not tenant_id:
         return api_error("No tenant selected", 400)
@@ -137,9 +122,6 @@ def save_mcp_credentials():
 
 @mcp_bp.route("/api/mcp/credentials/<server_name>", methods=["DELETE"])
 def delete_mcp_credentials(server_name):
-    auth_check = admin_required()
-    if auth_check:
-        return auth_check
     tenant_id = get_current_user_id()
     if not tenant_id:
         return api_error("No tenant selected", 400)
@@ -156,9 +138,6 @@ def delete_mcp_credentials(server_name):
 
 @mcp_bp.route("/api/mcp/execute", methods=["POST"])
 def execute_via_mcp():
-    auth_check = admin_required()
-    if auth_check:
-        return auth_check
     data = request.json
     if not data:
         return api_error("No data provided", 400)

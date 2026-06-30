@@ -19,7 +19,7 @@ from core import database
 from core.analytics import AnalyticsEngine
 from core.api_helpers import api_error, api_success
 from core.app_state import get_current_user_id, get_executioner
-from core.auth import admin_required
+
 
 logger = logging.getLogger(__name__)
 
@@ -235,7 +235,6 @@ def api_analytics_summary():
 
 
 @analytics_bp.route("/api/analytics/leads")
-@admin_required
 def api_analytics_leads():
     user_id = request.args.get("client", "").strip() or session.get("active_user_id") or get_current_user_id()
     start = request.args.get("start")
@@ -247,7 +246,6 @@ def api_analytics_leads():
 
 
 @analytics_bp.route("/api/analytics/agents")
-@admin_required
 def api_analytics_agents():
     user_id = request.args.get("client", "").strip() or session.get("active_user_id") or get_current_user_id()
     start = request.args.get("start")
@@ -259,7 +257,6 @@ def api_analytics_agents():
 
 
 @analytics_bp.route("/api/analytics/executions")
-@admin_required
 def api_analytics_executions():
     user_id = request.args.get("client", "").strip() or session.get("active_user_id") or get_current_user_id()
     start = request.args.get("start")
@@ -271,7 +268,6 @@ def api_analytics_executions():
 
 
 @analytics_bp.route("/api/analytics/report/generate", methods=["POST"])
-@admin_required
 def api_analytics_generate_report():
     data = request.json or {}
     user_id = data.get("user_id") or session.get("active_user_id")
@@ -285,7 +281,6 @@ def api_analytics_generate_report():
 
 
 @analytics_bp.route("/api/analytics/report/save", methods=["POST"])
-@admin_required
 def api_analytics_save_report():
     data = request.json or {}
     report_id = uuid.uuid4().hex[:12]
@@ -311,7 +306,6 @@ def api_analytics_save_report():
 
 
 @analytics_bp.route("/api/analytics/reports/history", methods=["GET"])
-@admin_required
 def api_analytics_report_history():
     user_id = request.args.get("user_id", "")
     with _report_history_lock:
@@ -321,7 +315,6 @@ def api_analytics_report_history():
 
 
 @analytics_bp.route("/api/analytics/report/<report_id>", methods=["GET"])
-@admin_required
 def api_analytics_get_report(report_id):
     with _report_history_lock:
         for r in _report_history:
@@ -331,7 +324,6 @@ def api_analytics_get_report(report_id):
 
 
 @analytics_bp.route("/api/analytics/report/<report_id>/email", methods=["POST"])
-@admin_required
 def api_analytics_email_saved_report(report_id):
     with _report_history_lock:
         report = None
@@ -345,7 +337,6 @@ def api_analytics_email_saved_report(report_id):
 
 
 @analytics_bp.route("/api/analytics/report/email", methods=["POST"])
-@admin_required
 def api_analytics_email_report():
     data = request.json or {}
     user_id = data.get("user_id")

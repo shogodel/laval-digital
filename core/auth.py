@@ -1,9 +1,8 @@
 import logging
 import re
 from datetime import UTC, datetime, timedelta
-from functools import wraps
 
-from flask import flash, g, jsonify, redirect, request, url_for
+from flask import g, redirect, request, url_for
 from flask_login import LoginManager, UserMixin, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -203,30 +202,6 @@ def validate_password(password: str) -> tuple[bool, str]:
         return False, str(e)
 
 
-# ---------------------------------------------------------------------------
-# Decorators
-# ---------------------------------------------------------------------------
-
-def login_required(f):
-    """Decorator that requires the user to be authenticated (any role)."""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not current_user.is_authenticated:
-            flash("Please log in to continue.")
-            return redirect(url_for("admin.login"))
-        return f(*args, **kwargs)
-    return decorated
-
-
-def _is_admin() -> bool:
-    """True for platform admins (Flask-Login) OR shop-authenticated users (via require_api_auth middleware)."""
-    if current_user.is_authenticated and current_user.role == "admin":
-        return True
-    if hasattr(g, "shop") and g.shop:
-        return True
-    return False
-
-
 def _is_platform_admin() -> bool:
     """True for platform admins — either Flask-Login admin or designated admin shop."""
     if current_user.is_authenticated and current_user.role == "admin":
@@ -239,26 +214,6 @@ def _is_platform_admin() -> bool:
         except Exception:
             pass
     return False
-
-
-def admin_required(f=None):
-    """Can be used as a decorator (``@admin_required``) or middleware (``admin_required()``).
-
-    As a decorator, wraps the route function and returns 401 if not logged in.
-    As middleware, returns a 401 response tuple if not logged in, else None.
-    """
-    if f is None:
-        if not _is_admin():
-            return jsonify({"error": "Unauthorized"}), 401
-        return None
-
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        check = admin_required()
-        if check:
-            return check
-        return f(*args, **kwargs)
-    return decorated
 
 
 def admin_page_required(f=None):

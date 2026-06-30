@@ -18,7 +18,7 @@ from core.app_state import (
     safe_error,
     safe_int,
 )
-from core.auth import admin_required
+
 from core.events import get_event_bus
 
 
@@ -42,7 +42,6 @@ orchestrator_bp = Blueprint("orchestrator", __name__)
 
 
 @orchestrator_bp.route("/api/tasks", methods=["POST"])
-@admin_required
 def submit_task():
     data = request.json or {}
     user_request = data.get("request", "").strip()
@@ -103,7 +102,6 @@ def submit_task():
 
 
 @orchestrator_bp.route("/api/approvals", methods=["GET"])
-@admin_required
 def get_approvals():
     orch = get_orchestrator()
     user_id = get_current_user_id()
@@ -206,7 +204,6 @@ def respond_approval(thread_id):
 
 
 @orchestrator_bp.route("/api/orchestrator/panic", methods=["POST"])
-@admin_required
 def api_panic():
     orch = get_orchestrator()
     orch.panic()
@@ -214,7 +211,6 @@ def api_panic():
 
 
 @orchestrator_bp.route("/api/orchestrator/resume", methods=["POST"])
-@admin_required
 def api_resume():
     orch = get_orchestrator()
     orch.clear_panic()
@@ -222,7 +218,6 @@ def api_resume():
 
 
 @orchestrator_bp.route("/api/orchestrator/status", methods=["GET"])
-@admin_required
 def api_orchestrator_status():
     orch = get_orchestrator()
     user_id = get_current_user_id()
@@ -234,7 +229,6 @@ def api_orchestrator_status():
 
 
 @orchestrator_bp.route("/api/orchestrator/activity", methods=["GET"])
-@admin_required
 def api_activity():
     limit = request.args.get("limit", 50, type=int)
     orch = get_orchestrator()
@@ -242,7 +236,6 @@ def api_activity():
 
 
 @orchestrator_bp.route("/api/orchestrator/undo", methods=["POST"])
-@admin_required
 def api_undo():
     orch = get_orchestrator()
     result = orch.undo_last()
@@ -250,7 +243,6 @@ def api_undo():
 
 
 @orchestrator_bp.route("/api/dashboard/ask", methods=["POST"])
-@admin_required
 def api_dashboard_ask():
     data = request.json
     query = (data or {}).get("query", "").strip()
@@ -313,7 +305,6 @@ def api_dashboard_ask():
 
 
 @orchestrator_bp.route("/api/inbox", methods=["GET"])
-@admin_required
 def api_inbox():
     limit = request.args.get("limit", 50, type=int)
     orch = get_orchestrator()
@@ -346,7 +337,6 @@ def api_inbox():
 
 
 @orchestrator_bp.route("/api/events/stream")
-@admin_required
 def api_events_stream():
     event_bus = get_event_bus()
     q = event_bus.subscribe()
@@ -376,7 +366,6 @@ def api_events_stream():
 
 
 @orchestrator_bp.route("/api/events/history", methods=["GET"])
-@admin_required
 def api_events_history():
     limit = request.args.get("limit", 100, type=int)
     event_type = request.args.get("type", "").strip() or None
@@ -386,7 +375,6 @@ def api_events_history():
 
 
 @orchestrator_bp.route("/api/events/stats", methods=["GET"])
-@admin_required
 def api_events_stats():
     return api_success(get_event_bus().get_stats())
 

@@ -5,14 +5,13 @@ from flask import Blueprint, request
 
 from core.api_helpers import api_error, api_success
 from core.app_state import get_scheduler_manager, safe_int
-from core.auth import admin_required
+
 
 logger = logging.getLogger(__name__)
 schedules_bp = Blueprint("schedules", __name__)
 
 
 @schedules_bp.route("/api/schedules", methods=["GET"])
-@admin_required
 def api_list_schedules():
     tenant_id = request.args.get("tenant_id", "")
     schedules = get_scheduler_manager().get_schedules(user_id=safe_int(tenant_id) if tenant_id else None)
@@ -20,7 +19,6 @@ def api_list_schedules():
 
 
 @schedules_bp.route("/api/schedules", methods=["POST"])
-@admin_required
 def api_create_schedule():
     data = request.json
     if not data:
@@ -37,14 +35,12 @@ def api_create_schedule():
 
 
 @schedules_bp.route("/api/schedules/<schedule_id>", methods=["DELETE"])
-@admin_required
 def api_delete_schedule(schedule_id):
     ok = get_scheduler_manager().delete_schedule(schedule_id)
     return api_success({"success": ok})
 
 
 @schedules_bp.route("/api/schedules/<schedule_id>/toggle", methods=["POST"])
-@admin_required
 def api_toggle_schedule(schedule_id):
     data = request.json
     enabled = (data or {}).get("enabled", True)
