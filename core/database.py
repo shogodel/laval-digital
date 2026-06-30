@@ -942,9 +942,41 @@ def update_user(uid: int, **kwargs) -> None:
     conn.commit()
 
 
+def export_user_data(uid: int) -> dict:
+    """Collect all personal data for a user across every table (GDPR/CCPA)."""
+    conn = _get_conn()
+    data: dict = {}
+
+    user = get_user_by_id(uid)
+    data["user"] = dict(user) if user else None
+
+    for table in ("agent_configs", "threads", "leads", "execution_log",
+                  "pending_actions", "mcp_credentials", "agent_feedback",
+                  "agent_preferences", "agent_findings", "agent_schedules",
+                  "llm_usage_log", "user_llm_quotas"):
+        rows = conn.execute(f"SELECT * FROM {table} WHERE user_id = ?", (uid,)).fetchall()
+        data[table] = [dict(r) for r in rows]
+
+    shops = conn.execute("SELECT * FROM shops WHERE user_id = ?", (uid,)).fetchall()
+    data["shops"] = [dict(s) for s in shops]
+    shop_domains = [s["shop"] for s in shops if s.get("shop")]
+
+    webhook_events = []
+    for shop in shop_domains:
+        rows = conn.execute("SELECT * FROM webhook_events WHERE shop = ?", (shop,)).fetchall()
+        for r in rows:
+            webhook_events.append(dict(r))
+    data["webhook_events"] = webhook_events
+
+    return data
+
+
 def delete_user(uid: int) -> None:
     conn = _get_conn()
     try:
+        shops = conn.execute("SELECT shop FROM shops WHERE user_id = ?", (uid,)).fetchall()
+        shop_domains = [s["shop"] for s in shops if s.get("shop")]
+
         conn.execute("BEGIN")
         conn.execute("DELETE FROM agent_configs WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM threads WHERE user_id = ?", (uid,))
@@ -958,6 +990,9 @@ def delete_user(uid: int) -> None:
         conn.execute("DELETE FROM agent_schedules WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM llm_usage_log WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM user_llm_quotas WHERE user_id = ?", (uid,))
+        for shop in shop_domains:
+            conn.execute("DELETE FROM webhook_events WHERE shop = ?", (shop,))
+        conn.execute("DELETE FROM shops WHERE user_id = ?", (uid,))
         conn.execute("UPDATE users SET tenant_id = NULL WHERE tenant_id = ?", (uid,))
         conn.execute("DELETE FROM users WHERE id = ?", (uid,))
         conn.commit()

@@ -1,13 +1,15 @@
 """Blueprint for user and tenant management (admin-only)."""
 import logging
 import re
+from datetime import UTC, datetime
 
 from flask import Blueprint, request, session
 from flask_login import current_user
 
 from core import database
 from core.api_helpers import api_error, api_success
-from core.app_state import safe_error, safe_int
+from core.database import export_user_data
+from core.app_state import get_current_user_id, safe_error, safe_int
 from core.auth import add_user_to_tenant, validate_password
 
 logger = logging.getLogger(__name__)
@@ -113,6 +115,32 @@ def list_tenants():
         "direct_clients": direct,
         "active_tenant": session.get("active_user_id"),
     })
+
+
+@users_bp.route("/api/user/export", methods=["GET"])
+def api_export_user_data():
+    """Return all personal data for the current user (GDPR/CCPA data portability)."""
+    uid = get_current_user_id()
+    if not uid:
+        return api_error("Not authenticated", 401)
+    try:
+        data = export_user_data(int(uid))
+        return api_success({"exported_at": datetime.now(UTC).isoformat(), "data": data})
+    except Exception as e:
+        return safe_error(e, 500)
+
+
+@users_bp.route("/api/user/export", methods=["DELETE"])
+def api_delete_user_data():
+    """Delete all personal data for the current user (GDPR right to erasure)."""
+    uid = get_current_user_id()
+    if not uid:
+        return api_error("Not authenticated", 401)
+    try:
+        database.delete_user(int(uid))
+        return api_success({"message": "All personal data has been deleted"})
+    except Exception as e:
+        return safe_error(e, 500)
 
 
 @users_bp.route("/api/tenants/switch", methods=["POST"])
