@@ -35,6 +35,17 @@ logger = logging.getLogger(__name__)
 public_bp = Blueprint("public", __name__)
 
 
+@public_bp.route("/api/health")
+def api_health():
+    try:
+        conn = database._get_conn()
+        conn.execute("SELECT 1")
+        return jsonify({"status": "healthy", "database": "ok"})
+    except Exception as e:
+        logger.error("Health check failed: %s", e)
+        return jsonify({"status": "unhealthy", "database": "error"}), 503
+
+
 @public_bp.route("/health")
 def health():
     status = {"status": "ok", "timestamp": datetime.now(UTC).isoformat()}
@@ -278,3 +289,6 @@ def api_site_inspect():
         })
     except Exception:
         return api_success({"suggestions": [f"Could not reach {site_url}. Make sure the site is live."], "site": None})
+
+
+

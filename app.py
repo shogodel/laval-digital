@@ -12,27 +12,15 @@ try:
 except ImportError:
     pass
 
-import base64 as _b64
 import logging
 import logging.handlers
 import os
-import re
-import secrets
 import sys
 import threading
-import uuid
-import warnings
 from datetime import UTC, datetime, timedelta
-from typing import Any
-from urllib.parse import urlparse
 
-import requests
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from dotenv import load_dotenv
-from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, flash, g, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, logout_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -41,7 +29,6 @@ from agents.executioner_agent import ExecutionerAgent
 from core import database
 from core.api_helpers import api_error, api_success
 from core.auth import SESSION_TIMEOUT, init_auth
-from core.base_agent import BaseAgent
 from core.email_bridge import EmailBridge
 from core.llm_adapter import LLMAdapter
 from core.memory import AgentMemory
@@ -49,99 +36,19 @@ from core.monitor import monitor as proactive_monitor
 from core.orchestrator import Orchestrator
 from core.push import PushManager
 from core.scheduler import SchedulerManager
+from core.settings import (
+    AGENTS_META, AGENT_CLASSES, API_PUBLIC, BASE_AGENT_CONFIG,
+    CorrelationIDFilter, PIIRedactFormatter, PIIRedactJSONFormatter,
+    decrypt_credential, derive_fernet_key,
+    encrypt_credential, safe_error, safe_int, safe_url,
+)
 from core.speech import SpeechEngine
 from mcp import init_mcp_servers
-from mcp._safe_url import is_safe_url as _is_safe_url
 
 logger = logging.getLogger(__name__)
 
-_PII_PATTERNS = [
-    (re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'), '[EMAIL]'),
-    (re.compile(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b'), '[PHONE]'),
-    (re.compile(r'\(\d{3}\)\s*\d{3}[-.]?\d{4}'), '[PHONE]'),
-    (re.compile(r'\+\d{1,3}\s\d{3}[-.\s]?\d{3}[-.\s]?\d{4}'), '[PHONE]'),
-    (re.compile(r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b'), '[CCARD]'),
-    (re.compile(r'\b\d{4}[-\s]?\d{6}[-\s]?\d{5}\b'), '[CCARD]'),
-    (re.compile(r'\b\d{4}[-\s]?\d{6}[-\s]?\d{4}\b'), '[CCARD]'),
-]
 
-
-class PIIRedactFilter(logging.Filter):
-    def filter(self, record):
-        if record.getMessage():
-            msg = record.getMessage()
-            for pattern, replacement in _PII_PATTERNS:
-                msg = pattern.sub(replacement, msg)
-            record.msg = msg
-            record.args = ()
-        if record.exc_text:
-            for pattern, replacement in _PII_PATTERNS:
-                record.exc_text = pattern.sub(replacement, record.exc_text)
-        return True
-
-
-def _safe_url(url: str, timeout: int = 10) -> requests.Response:
-    parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https"):
-        raise ValueError(f"Blocked URL scheme: {parsed.scheme}")
-    if not _is_safe_url(url):
-        raise ValueError(f"Blocked request to private/reserved IP: {parsed.hostname}")
-    resp = requests.get(url, timeout=timeout, headers={"User-Agent": "LavalDigital/1.0 (Security Scanner)"}, allow_redirects=False)
-    try:
-        return resp
-    finally:
-        resp.close()
-
-
-def _safe_error(e: Exception, status: int = 500):
-    logger.error("Internal error: %s", e, exc_info=True)
-    return api_error("An internal error occurred.", status)
-
-
-def _safe_int(val, default=0):
-    if val is None:
-        return default
-    try:
-        return int(val)
-    except (ValueError, TypeError):
-        return default
-
-
-warnings.filterwarnings("ignore", module="langgraph")
-warnings.filterwarnings("ignore", module="langchain")
-
-AGENT_CLASSES = dict.fromkeys(
-    ["local_seo", "social_media", "lead_conversion", "paid_ads",
-     "growth_hacker", "reputation", "email_marketing", "tiktok",
-     "outreach", "backlinks", "content_strategy", "technical_seo",
-     "reporting", "cro", "video", "sms_marketing"],
-    BaseAgent,
-)
-
-
-def _derive_fernet_key() -> Fernet:
-    secret = os.getenv("FLASK_SECRET_KEY", "").encode()
-    salt_str = os.getenv("CREDENTIAL_SALT")
-    if salt_str:
-        salt = salt_str.encode()[:16].ljust(16, b'\0')
-        kdf: Any = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100_000)
-    else:
-        kdf = HKDF(algorithm=hashes.SHA256(), length=32, info=b"laval-credential-encryption-v2", salt=None)
-    key = _b64.urlsafe_b64encode(kdf.derive(secret))
-    return Fernet(key)
-
-
-def _encrypt_credential(plaintext: str) -> str:
-    from core.app_state import get_credential_cipher
-    return get_credential_cipher().encrypt(plaintext.encode()).decode()
-
-
-def _decrypt_credential(ciphertext: str) -> str:
-    from core.app_state import get_credential_cipher
-    return get_credential_cipher().decrypt(ciphertext.encode()).decode()
-
-
-def create_app(config_name: str | None = None):
+def create_app():
     load_dotenv()
 
     import sentry_sdk
@@ -166,7 +73,7 @@ def create_app(config_name: str | None = None):
         )
     if not os.getenv("CREDENTIAL_SALT"):
         logger.warning(
-            "CREDENTIAL_SALT not set — using HKDF domain separation (recommended). "
+            "CREDENTIAL_SALT not set \u2014 using HKDF domain separation (recommended). "
             "To use a legacy custom salt, set CREDENTIAL_SALT in .env."
         )
 
@@ -180,60 +87,33 @@ def create_app(config_name: str | None = None):
     if os.getenv("DEV_MODE", "").lower() not in ("true", "1"):
         app.config["SESSION_COOKIE_SECURE"] = True
     else:
-        # Disable template caching so edits take effect without restart
         app.config["TEMPLATES_AUTO_RELOAD"] = True
-
     app.config["CONTACT_PHONE"] = os.getenv("CONTACT_PHONE", "(514) 243-1580")
     app.config["CONTACT_EMAIL"] = os.getenv("CONTACT_EMAIL", "lavaldigital@gmail.com")
     app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)  # type: ignore[method-assign]
-
-    _api_public: set = {
-        "/api/contact",
-        "/api/push/vapid-key",
-        "/api/personalities",
-        "/api/models",
-        "/api/signup",
-        "/api/leads",
-        "/api/orchestrator/welcome",
-        "/api/orchestrator/suggestions",
-        "/api/push/subscribe",
-        "/api/push/unsubscribe",
-        "/api/training/articles",
-        "/api/training/feedback",
-        "/api/health",
-        # Shopify public routes
-        "/api/auth/install",
-        "/api/auth/callback",
-        "/api/webhooks",
-        "/api/shopify/register-webhooks",
-    }
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 
     csrf = CSRFProtect(app)
 
     _log_handler = logging.handlers.RotatingFileHandler(
         "logs/app.log", maxBytes=10 * 1024 * 1024, backupCount=5,
     )
-    _log_handler.setFormatter(logging.Formatter(
-        "[%(asctime)s] %(levelname)s in %(name)s: %(message)s"
-    ))
     _log_handler.setLevel(logging.INFO)
-    _log_handler.addFilter(PIIRedactFilter())
+    _log_handler.addFilter(CorrelationIDFilter())
+    _log_handler.setFormatter(PIIRedactJSONFormatter())
     logging.getLogger().addHandler(_log_handler)
 
     _console_handler = logging.StreamHandler()
-    _console_handler.setFormatter(logging.Formatter(
+    _console_handler.addFilter(CorrelationIDFilter())
+    _console_handler.setFormatter(PIIRedactFormatter(
         "[%(asctime)s] %(levelname)s %(name)s: %(message)s"
     ))
-    _console_handler.setLevel(logging.WARNING)
-    _console_handler.addFilter(PIIRedactFilter())
     logging.getLogger().addHandler(_console_handler)
 
     logging.getLogger().setLevel(logging.INFO)
 
     database.init_db()
-    # Shop/webhook tables are created by Alembic migrations inside init_db()
 
     push_manager = PushManager()
     agent_memory = AgentMemory()
@@ -243,7 +123,6 @@ def create_app(config_name: str | None = None):
     from blueprints.admin_bp import admin_bp, admin_fr_bp
     app.register_blueprint(admin_bp)
     app.register_blueprint(admin_fr_bp)
-
     from blueprints.mcp_bp import mcp_bp
     app.register_blueprint(mcp_bp)
     from blueprints.training_bp import training_bp
@@ -270,66 +149,69 @@ def create_app(config_name: str | None = None):
     app.register_blueprint(shopify_bp)
 
     for rule in app.url_map.iter_rules():
-        if rule.rule in _api_public and rule.methods and not {'GET', 'HEAD', 'OPTIONS'}.issuperset(rule.methods):
+        if rule.rule in API_PUBLIC and rule.methods and not {'GET', 'HEAD', 'OPTIONS'}.issuperset(rule.methods):
             csrf._exempt_views.add(rule.endpoint)
+
+    # ── Context processors ──────────────────────────────────────────
 
     @app.context_processor
     def inject_csrf_token():
-        return dict(csrf_token=lambda: generate_csrf())
+        return {"csrf_token": generate_csrf}
 
     @app.before_request
     def generate_request_id():
-        g.request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
-        g.csp_nonce = secrets.token_urlsafe(16)
+        import uuid
+        g.request_id = uuid.uuid4().hex[:12]
+        g.csp_nonce = uuid.uuid4().hex[:16]
 
     @app.context_processor
     def inject_csp_nonce():
-        return dict(csp_nonce=getattr(g, "csp_nonce", ""))
+        return {"csp_nonce": getattr(g, "csp_nonce", "")}
 
     @app.context_processor
     def inject_static_versions():
-        import os as _os
-        _static_dir = _os.path.join(app.root_path, "static")
+        import hashlib, os as _os
         versions = {}
-        for _f in ("admin.js", "admin.css"):
-            _path = _os.path.join(_static_dir, _f)
+        static_dir = _os.path.join(app.root_path, "static")
+        for fname in ("app.css", "app.js", "admin.css", "admin.js"):
+            fpath = _os.path.join(static_dir, fname)
             try:
-                versions[_f] = int(_os.path.getmtime(_path))
-            except OSError:
-                versions[_f] = "0"
-        return dict(static_versions=versions)
+                with open(fpath, "rb") as f:
+                    versions[fname] = hashlib.md5(f.read()).hexdigest()[:8]
+            except FileNotFoundError:
+                versions[fname] = "0"
+        return {"static_versions": versions}
+
+    # ── Security headers ────────────────────────────────────────────
 
     @app.after_request
     def add_security_headers(response):
-        if response.content_type and response.content_type.startswith("application/json"):
-            response.content_type = "application/json; charset=utf-8"
-        response.headers["X-Request-ID"] = getattr(g, "request_id", "")
-        if response.content_type and response.content_type.startswith("text/html"):
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-            response.headers["Pragma"] = "no-cache"
-            response.headers["Expires"] = "0"
+        nonce = getattr(g, "csp_nonce", "")
+        script_src = f"'self' 'nonce-{nonce}' https://cdn.jsdelivr.net https://cdn.shopify.com"
+        style_src = "'self' https://cdn.shopify.com https://fonts.googleapis.com https://cdn.jsdelivr.net"
+        style_src_attr = "'unsafe-inline'"
+        img_src = "'self' data: blob: https://cdn.shopify.com https://*.shopify.com https://cdn.jsdelivr.net"
+        font_src = "'self' https://fonts.gstatic.com data:"
+        frame_src = "'self' https://*.shopify.com https://admin.shopify.com"
+        connect_src = "'self' https://*.shopify.com https://admin.shopify.com https://cdn.shopify.com"
+        csp = (
+            f"default-src 'self';"
+            f"script-src {script_src};"
+            f"style-src {style_src};"
+            f"style-src-attr {style_src_attr};"
+            f"img-src {img_src};"
+            f"font-src {font_src};"
+            f"frame-src {frame_src};"
+            f"connect-src {connect_src};"
+            f"object-src 'none';"
+            f"base-uri 'self'"
+        )
+        response.headers["Content-Security-Policy"] = csp
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        if not request.headers.get("X-Shopify-Shop-Domain") and not request.args.get("shop"):
-            response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        nonce = getattr(g, "csp_nonce", "")
-        csp_directives = [
-            "default-src 'self'",
-            f"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net https://cdn.shopify.com",
-            f"style-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net https://fonts.googleapis.com https://cdn.shopify.com https://*.shopify.com",
-            "style-src-attr 'unsafe-inline'",
-            "font-src 'self' https://fonts.gstatic.com https://cdn.shopify.com",
-            "img-src 'self' data: https://cdn.shopify.com https://*.shopify.com",
-            "connect-src 'self' https://api.deepseek.com https://*.shopify.com",
-            "frame-ancestors https://*.myshopify.com https://admin.shopify.com",
-            "form-action 'self'",
-            "base-uri 'self'",
-            "object-src 'none'",
-            "upgrade-insecure-requests",
-        ]
-        response.headers["Content-Security-Policy"] = "; ".join(csp_directives)
         allowed_origins = {
             "https://lavaldigital.ca", "https://www.lavaldigital.ca",
             "http://127.0.0.1:5000", "http://localhost:5000",
@@ -343,15 +225,7 @@ def create_app(config_name: str | None = None):
             response.headers["Vary"] = "Origin"
         return response
 
-    @app.route("/api/health")
-    def health_check():
-        try:
-            conn = database._get_conn()
-            conn.execute("SELECT 1")
-            return jsonify({"status": "healthy", "database": "ok"})
-        except Exception as e:
-            logger.error("Health check failed: %s", e)
-            return jsonify({"status": "unhealthy", "database": "error"}), 503
+    # ── Error handlers ──────────────────────────────────────────────
 
     @app.errorhandler(404)
     def not_found(e):
@@ -366,19 +240,16 @@ def create_app(config_name: str | None = None):
             return jsonify({"error": "Internal server error"}), 500
         return render_template("500.html"), 500
 
-    @app.route("/favicon.ico")
-    def favicon():
-        return redirect(url_for("static", filename="favicon.svg"))
+    # ── API auth middleware ─────────────────────────────────────────
 
     @app.before_request
     def require_api_auth():
         if not request.path.startswith("/api/"):
             return
-        if request.path in _api_public:
+        if request.path in API_PUBLIC:
             return
         if current_user.is_authenticated and current_user.role == "admin":
             return
-        # Shopify auth: resolve shop from session (set during OAuth or admin_embedded)
         shop = session.get("shop") or request.args.get("shop") or request.headers.get("X-Shopify-Shop-Domain")
         if shop:
             from core.shopify_auth import get_shop_by_domain, verify_session_token
@@ -388,12 +259,10 @@ def create_app(config_name: str | None = None):
                 if payload and shop in payload.get("dest", ""):
                     g.shop = shop
                     return
-            # Allow requests from the embedded admin (shop in session or valid query param)
             session_shop = session.get("shop")
             if session_shop and session_shop == shop:
                 g.shop = shop
                 return
-            # Fallback: validate shop exists in DB
             shop_data = get_shop_by_domain(shop)
             if shop_data and shop_data.get("is_active"):
                 g.shop = shop
@@ -402,69 +271,7 @@ def create_app(config_name: str | None = None):
             return
         return api_error("Authentication required", 401)
 
-    def get_tenant_agent_activity(user_id: str) -> dict:
-        try:
-            uid = _safe_int(user_id)
-            conn = database._get_conn()
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT agent_id, enabled, status, last_invoked, task_count, "
-                "success_count, failure_count, last_draft_preview "
-                "FROM agent_configs WHERE user_id = ?",
-                (uid,),
-            )
-            rows = cursor.fetchall()
-            return {row["agent_id"]: dict(row) for row in rows}
-        except Exception as e:
-            logger.error("Failed to get agent activity for user %s: %s", user_id, e)
-            return {}
-
-    def update_tenant_agent_activity(
-        user_id: str, agent_id: str, **kwargs
-    ) -> None:
-        _column_updates = {
-            "status": "UPDATE agent_configs SET status = ? WHERE agent_id = ? AND user_id = ?",
-            "last_invoked": "UPDATE agent_configs SET last_invoked = ? WHERE agent_id = ? AND user_id = ?",
-            "task_count": "UPDATE agent_configs SET task_count = ? WHERE agent_id = ? AND user_id = ?",
-            "success_count": "UPDATE agent_configs SET success_count = ? WHERE agent_id = ? AND user_id = ?",
-            "failure_count": "UPDATE agent_configs SET failure_count = ? WHERE agent_id = ? AND user_id = ?",
-            "last_draft_preview": "UPDATE agent_configs SET last_draft_preview = ? WHERE agent_id = ? AND user_id = ?",
-            "enabled": "UPDATE agent_configs SET enabled = ? WHERE agent_id = ? AND user_id = ?",
-            "model": "UPDATE agent_configs SET model = ? WHERE agent_id = ? AND user_id = ?",
-            "autonomy": "UPDATE agent_configs SET autonomy = ? WHERE agent_id = ? AND user_id = ?",
-            "confidence_threshold": "UPDATE agent_configs SET confidence_threshold = ? WHERE agent_id = ? AND user_id = ?",
-        }
-        try:
-            uid = _safe_int(user_id)
-            conn = database._get_conn()
-            cursor = conn.cursor()
-            for key, value in kwargs.items():
-                sql = _column_updates.get(key)
-                if sql is None:
-                    raise ValueError(f"Invalid column name: {key}")
-                cursor.execute(sql, (value, agent_id, uid))
-            conn.commit()
-        except Exception as e:
-            logger.error(
-                "Failed to update agent activity for %s for user %s: %s", agent_id, user_id, e
-            )
-
-    def get_current_user_id() -> str | None:
-        if current_user.is_authenticated and current_user.role == "admin":
-            active = session.get("active_user_id")
-            if active:
-                logger.info("Admin acting on behalf of user %s", active)
-            return active
-        if current_user.is_authenticated:
-            return str(current_user.id)
-        # Shopify shop context set by require_api_auth
-        shop = getattr(g, "shop", None)
-        if shop:
-            from core.shopify_auth import get_shop_by_domain
-            shop_data = get_shop_by_domain(shop)
-            if shop_data and shop_data.get("user_id"):
-                return str(shop_data["user_id"])
-        return None
+    # ── Session timeout ─────────────────────────────────────────────
 
     @app.before_request
     def check_session_timeout():
@@ -492,33 +299,16 @@ def create_app(config_name: str | None = None):
             if request.path not in ("/trial-expired", "/logout", "/static/bookmarklet.js"):
                 from flask import flash as _flash
                 _flash("Your free trial has ended. Subscribe to regain access.", "error")
-                return redirect(url_for("trial_expired"))
+                return redirect(url_for("public.trial_expired"))
 
-    _agents = [
-        ("local_seo", "local_seo.md", "Local SEO", "Google Business Profile optimization, local citations, local keyword content, review management"),
-        ("social_media", "social_media.md", "Social Media", "Social media posts, content creation, content calendars, engagement strategies"),
-        ("lead_conversion", "lead_conversion.md", "Lead Conversion", "Lead follow-up sequences, CRM integration, conversion optimization, email campaigns"),
-        ("paid_ads", "paid_ads_v2.md", "Paid Ads", "Google & Meta ad campaigns, ad copy creation, keyword strategy, budget allocation, A/B testing, audience targeting"),
-        ("growth_hacker", "growth_hacker.md", "Growth Hacker", "Growth audits, viral loops, conversion rate optimization, partnership strategies, data-driven experiments, creative low-cost tactics"),
-        ("reputation", "reputation.md", "Reputation", "Online review monitoring, review response generation, review generation campaigns, reputation audits, crisis response"),
-        ("email_marketing", "email_marketing.md", "Email Marketing", "Newsletter campaigns, promotional emails, lead nurture sequences, reactivation campaigns, post-service follow-ups"),
-        ("tiktok", "tiktok_agent.md", "TikTok", "Short-form video content for TikTok, Instagram Reels, YouTube Shorts, content calendars, video scripts, trend adaptation"),
-        ("outreach", "outreach.md", "Outreach", "Prospecting emails, lead finding, campaign sequences, follow-up automation, personalized outreach at scale"),
-        ("backlinks", "backlinks.md", "Backlinks", "Link building, guest post prospecting, citation building, backlink gap analysis, broken link building, directory submissions"),
-        ("content_strategy", "content_strategy.md", "Content Strategist", "Editorial calendars, multi-channel content repurposing, content briefs, topic clusters, seasonal planning, voice and tone guidelines"),
-        ("technical_seo", "technical_seo.md", "Technical SEO", "Schema markup, site speed optimization, crawl audits, XML sitemaps, core web vitals, mobile optimization, hreflang tags"),
-        ("reporting", "reporting.md", "Analytics & Reports", "Cross-channel performance summaries, trend analysis, ROI calculations, executive briefs, monthly client reports"),
-        ("cro", "cro.md", "CRO & Landing Pages", "Conversion rate optimization, A/B testing analysis, funnel optimization, landing page copy, heatmap interpretation, CTA strategy"),
-        ("video", "video.md", "Video Production", "YouTube scripts, explainer videos, ad video scripts, video SEO, content series planning, thumbnail strategy"),
-        ("sms_marketing", "sms_marketing.md", "SMS Marketing", "SMS campaign planning, sequence design, CASL compliance, concise copywriting, timing strategy, list segmentation"),
-    ]
-    _base_agent_config = {
-        "enabled": True,
-        "model": "deepseek-chat",
-        "credentials": {"api_key": "", "api_base": "https://api.deepseek.com/v1"},
+    # ── Agent configuration ─────────────────────────────────────────
+
+    _base_agent_config = dict(BASE_AGENT_CONFIG)
+    agent_configs = {
+        aid: {**_base_agent_config, "agent_id": aid, "system_prompt_file": f"prompts/{pf}"}
+        for aid, pf, _, _ in AGENTS_META
     }
-    agent_configs = {aid: {**_base_agent_config, "agent_id": aid, "system_prompt_file": f"prompts/{pf}"} for aid, pf, _, _ in _agents}
-    agent_meta: dict[str, dict[str, str]] = {aid: {"name": nm, "desc": dc} for aid, _, nm, dc in _agents}
+    agent_meta: dict[str, dict[str, str]] = {aid: {"name": nm, "desc": dc} for aid, _, nm, dc in AGENTS_META}
 
     llm_adapter = LLMAdapter(
         model="deepseek-chat",
@@ -544,7 +334,7 @@ def create_app(config_name: str | None = None):
     speech_engine = SpeechEngine()
 
     import core.app_state as _app_state
-    _app_state.init_credential_cipher(_derive_fernet_key())
+    _app_state.init_credential_cipher(derive_fernet_key())
 
     orchestrator = None
     _orchestrator_lock = threading.Lock()
@@ -560,57 +350,7 @@ def create_app(config_name: str | None = None):
             orchestrator = Orchestrator(llm_adapter, agent_registry, executioner=executioner, push_manager=push_manager, memory=agent_memory)
         return orchestrator
 
-    @app.route("/")
-    def home():
-        return render_template("home.html")
-
-    @app.route("/fr/")
-    def home_fr():
-        return render_template("home_fr.html")
-
-    @app.route("/demo")
-    def demo():
-        return render_template("demo.html")
-
-    @app.route("/fr/demo")
-    def demo_fr():
-        return render_template("demo_fr.html")
-
-    @app.route("/free-trial")
-    def free_trial():
-        return render_template("free_trial.html")
-
-    @app.route("/fr/essai-gratuit")
-    def free_trial_fr():
-        return render_template("free_trial_fr.html")
-
-    @app.route("/contact")
-    def contact():
-        return render_template("contact.html")
-
-    @app.route("/fr/contact")
-    def contact_fr():
-        return render_template("contact_fr.html")
-
-    @app.route("/trial-expired")
-    def trial_expired():
-        return render_template("trial_expired.html")
-
-    @app.route("/logout")
-    def logout():
-        logout_user()
-        session.clear()
-        return redirect(url_for("home"))
-
-    @app.context_processor
-    def inject_globals():
-        phone = app.config["CONTACT_PHONE"]
-        return dict(
-            logo_file="logo.svg",
-            CONTACT_PHONE=phone,
-            CONTACT_PHONE_CLEAN=phone.replace("(", "").replace(")", "").replace(" ", "").replace("-", ""),
-            CONTACT_EMAIL=app.config["CONTACT_EMAIL"],
-        )
+    # ── Agent config API routes ─────────────────────────────────────
 
     @app.route("/api/agents/<agent_id>/config", methods=["POST"])
     def update_agent_config(agent_id):
@@ -685,17 +425,19 @@ def create_app(config_name: str | None = None):
         if cls:
             agent_registry[agent_id] = cls(agent_id, config)
 
+    # ── Email bridge ────────────────────────────────────────────────
+
     from blueprints._shared import _email_bridge_handler
     if os.getenv("EMAIL_BRIDGE_USER") and os.getenv("EMAIL_BRIDGE_PASS"):
         tenant_for_bridge = os.getenv("EMAIL_BRIDGE_TENANT_ID", "")
         if not tenant_for_bridge:
-            logger.warning("EMAIL_BRIDGE_TENANT_ID not set — email bridge not started (no tenant context)")
+            logger.warning("EMAIL_BRIDGE_TENANT_ID not set \u2014 email bridge not started (no tenant context)")
         else:
             _bridge = EmailBridge(
                 imap_host=os.getenv("EMAIL_BRIDGE_HOST", "imap.gmail.com"),
                 imap_port=int(os.getenv("EMAIL_BRIDGE_PORT", "993")),
                 username=os.getenv("EMAIL_BRIDGE_USER", ""),
-                password=_decrypt_credential(os.getenv("EMAIL_BRIDGE_PASS", "")),
+                password=decrypt_credential(os.getenv("EMAIL_BRIDGE_PASS", "")),
             )
             _bridge.set_handler(lambda a, s, b: _email_bridge_handler(a, s, b, tenant_for_bridge))
             threading.Thread(target=_bridge.start, daemon=True).start()
@@ -705,7 +447,68 @@ def create_app(config_name: str | None = None):
     scheduler_manager = SchedulerManager(get_orchestrator)
     scheduler_manager.start()
 
-    import core.app_state as _app_state
+    # ── Page routes ────────────────────────────────────────────────
+
+    @app.route("/")
+    def home():
+        return render_template("home.html")
+
+    @app.route("/fr/")
+    def home_fr():
+        return render_template("home_fr.html")
+
+    @app.route("/demo")
+    def demo():
+        return render_template("demo.html")
+
+    @app.route("/fr/demo")
+    def demo_fr():
+        return render_template("demo_fr.html")
+
+    @app.route("/free-trial")
+    def free_trial():
+        return render_template("free_trial.html")
+
+    @app.route("/fr/essai-gratuit")
+    def free_trial_fr():
+        return render_template("free_trial_fr.html")
+
+    @app.route("/contact")
+    def contact():
+        return render_template("contact.html")
+
+    @app.route("/fr/contact")
+    def contact_fr():
+        return render_template("contact_fr.html")
+
+    @app.route("/trial-expired")
+    def trial_expired():
+        return render_template("trial_expired.html")
+
+    @app.route("/logout")
+    def logout():
+        logout_user()
+        session.clear()
+        return redirect(url_for("home"))
+
+    @app.route("/favicon.ico")
+    def favicon():
+        return redirect(url_for("static", filename="favicon.svg"))
+
+    # ── Context processor for globals ──────────────────────────────
+
+    @app.context_processor
+    def inject_globals():
+        phone = app.config["CONTACT_PHONE"]
+        return dict(
+            logo_file="logo.svg",
+            CONTACT_PHONE=phone,
+            CONTACT_PHONE_CLEAN=phone.replace("(", "").replace(")", "").replace(" ", "").replace("-", ""),
+            CONTACT_EMAIL=app.config["CONTACT_EMAIL"],
+        )
+
+    # ── Inject singletons into app_state ────────────────────────────
+
     _app_state.init_agent_registry(agent_registry)
     _app_state.init_llm_adapter(llm_adapter)
     _app_state.init_orchestrator_fn(get_orchestrator)
@@ -716,16 +519,80 @@ def create_app(config_name: str | None = None):
     _app_state.init_scheduler_manager(scheduler_manager)
     _app_state.init_agent_meta(agent_meta)
     _app_state.init_agent_configs(agent_configs)
-    _app_state.init_credential_cipher(_derive_fernet_key())
+    _app_state.init_credential_cipher(derive_fernet_key())
     _app_state.init_current_user_id_fn(get_current_user_id)
-    _app_state.init_safe_int_fn(_safe_int)
-    _app_state.init_safe_error_fn(_safe_error)
-    _app_state.init_safe_url_fn(_safe_url)
-    _app_state.init_encrypt_credential_fn(_encrypt_credential)
+    _app_state.init_safe_int_fn(safe_int)
+    _app_state.init_safe_error_fn(safe_error)
+    _app_state.init_safe_url_fn(safe_url)
+    _app_state.init_encrypt_credential_fn(encrypt_credential)
     _app_state.init_get_tenant_agent_activity_fn(get_tenant_agent_activity)
     _app_state.init_update_agent_activity_fn(update_tenant_agent_activity)
 
     return app
+
+
+def get_tenant_agent_activity(user_id: str) -> dict:
+    try:
+        uid = safe_int(user_id)
+        conn = database._get_conn()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT agent_id, enabled, status, last_invoked, task_count, "
+            "success_count, failure_count, last_draft_preview "
+            "FROM agent_configs WHERE user_id = ?",
+            (uid,),
+        )
+        rows = cursor.fetchall()
+        return {row["agent_id"]: dict(row) for row in rows}
+    except Exception as e:
+        logger.error("Failed to get agent activity for user %s: %s", user_id, e)
+        return {}
+
+
+def update_tenant_agent_activity(user_id: str, agent_id: str, **kwargs) -> None:
+    _column_updates = {
+        "status": "UPDATE agent_configs SET status = ? WHERE agent_id = ? AND user_id = ?",
+        "last_invoked": "UPDATE agent_configs SET last_invoked = ? WHERE agent_id = ? AND user_id = ?",
+        "task_count": "UPDATE agent_configs SET task_count = ? WHERE agent_id = ? AND user_id = ?",
+        "success_count": "UPDATE agent_configs SET success_count = ? WHERE agent_id = ? AND user_id = ?",
+        "failure_count": "UPDATE agent_configs SET failure_count = ? WHERE agent_id = ? AND user_id = ?",
+        "last_draft_preview": "UPDATE agent_configs SET last_draft_preview = ? WHERE agent_id = ? AND user_id = ?",
+        "enabled": "UPDATE agent_configs SET enabled = ? WHERE agent_id = ? AND user_id = ?",
+        "model": "UPDATE agent_configs SET model = ? WHERE agent_id = ? AND user_id = ?",
+        "autonomy": "UPDATE agent_configs SET autonomy = ? WHERE agent_id = ? AND user_id = ?",
+        "confidence_threshold": "UPDATE agent_configs SET confidence_threshold = ? WHERE agent_id = ? AND user_id = ?",
+    }
+    try:
+        uid = safe_int(user_id)
+        conn = database._get_conn()
+        cursor = conn.cursor()
+        for key, value in kwargs.items():
+            sql = _column_updates.get(key)
+            if sql is None:
+                raise ValueError(f"Invalid column name: {key}")
+            cursor.execute(sql, (value, agent_id, uid))
+        conn.commit()
+    except Exception as e:
+        logger.error(
+            "Failed to update agent activity for %s for user %s: %s", agent_id, user_id, e,
+        )
+
+
+def get_current_user_id() -> str | None:
+    if current_user.is_authenticated and current_user.role == "admin":
+        active = session.get("active_user_id")
+        if active:
+            logger.info("Admin acting on behalf of user %s", active)
+        return active
+    if current_user.is_authenticated:
+        return str(current_user.id)
+    shop = getattr(g, "shop", None)
+    if shop:
+        from core.shopify_auth import get_shop_by_domain
+        shop_data = get_shop_by_domain(shop)
+        if shop_data and shop_data.get("user_id"):
+            return str(shop_data["user_id"])
+    return None
 
 
 app = create_app()
