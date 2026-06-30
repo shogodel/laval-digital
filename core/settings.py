@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from flask import jsonify
 
 from core.api_helpers import api_error
-from core.base_agent import BaseAgent
+from core.base_agent import AnalyticalAgent, BaseAgent, CreativeAgent, SalesAgent
 from mcp._safe_url import is_safe_url as _is_safe_url
 
 logger = logging.getLogger(__name__)
@@ -148,13 +148,30 @@ warnings.filterwarnings("ignore", module="langchain")
 
 # ── Agent definitions ───────────────────────────────────────────────
 
-AGENT_CLASSES = dict.fromkeys(
-    ["local_seo", "social_media", "lead_conversion", "paid_ads",
-     "growth_hacker", "reputation", "email_marketing", "tiktok",
-     "outreach", "backlinks", "content_strategy", "technical_seo",
-     "reporting", "cro", "video", "sms_marketing"],
-    BaseAgent,
-)
+AGENT_CLASSES: dict[str, type] = {
+    "local_seo": BaseAgent,
+    "social_media": CreativeAgent,
+    "lead_conversion": SalesAgent,
+    "paid_ads": BaseAgent,
+    "growth_hacker": CreativeAgent,
+    "reputation": SalesAgent,
+    "email_marketing": SalesAgent,
+    "tiktok": CreativeAgent,
+    "outreach": SalesAgent,
+    "backlinks": AnalyticalAgent,
+    "content_strategy": CreativeAgent,
+    "technical_seo": AnalyticalAgent,
+    "reporting": AnalyticalAgent,
+    "cro": AnalyticalAgent,
+    "video": CreativeAgent,
+    "sms_marketing": SalesAgent,
+}
+
+# Per-agent temperature overrides (agents not listed use their class default)
+AGENT_TEMPERATURES: dict[str, float] = {
+    "paid_ads": 0.8,
+    "local_seo": 0.6,
+}
 
 AGENTS_META = [
     ("local_seo", "local_seo.md", "Local SEO", "Google Business Profile optimization, local citations, local keyword content, review management"),
@@ -179,6 +196,7 @@ BASE_AGENT_CONFIG = {
     "enabled": True,
     "model": "deepseek-chat",
     "credentials": {"api_key": "", "api_base": "https://api.deepseek.com/v1"},
+    "temperature": 0.7,
 }
 
 

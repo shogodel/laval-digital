@@ -37,9 +37,9 @@ from core.orchestrator import Orchestrator
 from core.push import PushManager
 from core.scheduler import SchedulerManager
 from core.settings import (
-    AGENTS_META, AGENT_CLASSES, API_PUBLIC, BASE_AGENT_CONFIG,
-    CorrelationIDFilter, PIIRedactFormatter, PIIRedactJSONFormatter,
-    decrypt_credential, derive_fernet_key,
+    AGENTS_META, AGENT_CLASSES, AGENT_TEMPERATURES, API_PUBLIC,
+    BASE_AGENT_CONFIG, CorrelationIDFilter, PIIRedactFormatter,
+    PIIRedactJSONFormatter, decrypt_credential, derive_fernet_key,
     encrypt_credential, safe_error, safe_int, safe_url,
 )
 from core.speech import SpeechEngine
@@ -305,7 +305,12 @@ def create_app():
 
     _base_agent_config = dict(BASE_AGENT_CONFIG)
     agent_configs = {
-        aid: {**_base_agent_config, "agent_id": aid, "system_prompt_file": f"prompts/{pf}"}
+        aid: {
+            **_base_agent_config,
+            "agent_id": aid,
+            "system_prompt_file": f"prompts/{pf}",
+            "temperature": AGENT_TEMPERATURES.get(aid, _base_agent_config.get("temperature", 0.7)),
+        }
         for aid, pf, _, _ in AGENTS_META
     }
     agent_meta: dict[str, dict[str, str]] = {aid: {"name": nm, "desc": dc} for aid, _, nm, dc in AGENTS_META}

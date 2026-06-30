@@ -108,7 +108,7 @@ class BaseAgent:
             model=self._model,
             api_key=api_key,
             api_base=self._credentials.get("api_base"),
-            temperature=0.7,
+            temperature=self._config.get("temperature", 0.7),
         )
         return self._llm_adapter
 
@@ -247,3 +247,49 @@ class BaseAgent:
         return str(fp)
 
 
+class CreativeAgent(BaseAgent):
+    """Specialized agent for content creation (social media, video, tiktok, growth_hacker, content_strategy).
+    Uses higher temperature for creative output and adds format constraints."""
+
+    def _build_system_content(self, task: str) -> str:
+        base = super()._build_system_content(task)
+        return (
+            f"{base}\n\n"
+            "## Creative Formatting Requirements\n"
+            "- Use engaging, conversational language\n"
+            "- Include hooks, calls-to-action, and emotional triggers\n"
+            "- For social/video content: respect platform character limits and best practices\n"
+            "- Structure your response with clear sections"
+        )
+
+
+class AnalyticalAgent(BaseAgent):
+    """Specialized agent for analytical tasks (technical_seo, reporting, backlinks, cro).
+    Uses lower temperature for precision and adds structured output requirements."""
+
+    def _build_system_content(self, task: str) -> str:
+        base = super()._build_system_content(task)
+        return (
+            f"{base}\n\n"
+            "## Analytical Output Requirements\n"
+            "- Present data in structured formats (tables, lists, numbered steps)\n"
+            "- Include specific metrics, benchmarks, and quantifiable results\n"
+            "- Prioritize accuracy and precision over creativity\n"
+            "- Cite specific tools, methods, or data sources where applicable"
+        )
+
+
+class SalesAgent(BaseAgent):
+    """Specialized agent for sales/persuasion tasks (lead_conversion, outreach, email_marketing, sms_marketing, reputation).
+    Uses medium-high temperature and adds persuasion-focused instructions."""
+
+    def _build_system_content(self, task: str) -> str:
+        base = super()._build_system_content(task)
+        return (
+            f"{base}\n\n"
+            "## Sales & Persuasion Requirements\n"
+            "- Focus on benefits, not just features\n"
+            "- Include personalization hooks and audience segmentation cues\n"
+            "- Write with a persuasive but professional tone\n"
+            "- Include clear calls-to-action and next steps"
+        )
