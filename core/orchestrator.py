@@ -850,7 +850,10 @@ class Orchestrator:
                         logger.warning("Failed to record feedback for approved draft: %s", e)
 
                 with self._findings_lock:
-                    self._findings_board.setdefault(agent_name, []).append({"summary": f"Approved draft: {draft[:80]}...", "ts": now_iso})
+                    board = self._findings_board.setdefault(agent_name, [])
+                    board.append({"summary": f"Approved draft: {draft[:80]}...", "ts": now_iso})
+                    if len(board) > 1000:
+                        board[:] = board[-1000:]
 
                 # Track for undo
                 self._last_executions.append({

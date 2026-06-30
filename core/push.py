@@ -132,11 +132,16 @@ class PushManager:
         except Exception as e:
             logger.warning("Failed to save push subscriptions: %s", e)
 
+    MAX_SUBSCRIPTIONS = 10000
+
     def subscribe(self, subscription: dict[str, Any]) -> bool:
         endpoint = subscription.get("endpoint", "")
         if not endpoint:
             return False
         with self._lock:
+            if len(self._subscriptions) >= self.MAX_SUBSCRIPTIONS:
+                logger.warning("Subscription cap reached (%s), refusing new subscription", self.MAX_SUBSCRIPTIONS)
+                return False
             if not any(s.get("endpoint") == endpoint for s in self._subscriptions):
                 self._subscriptions.append(subscription)
                 self._save_subscriptions()

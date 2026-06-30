@@ -54,6 +54,8 @@ _CB_THRESHOLD = 3
 _CB_RECOVERY_TIMEOUT = 60.0
 _CB_STATE: dict[str, dict[str, Any]] = {}
 _CB_LOCK = threading.Lock()
+_CB_MAX_ENTRIES = 100
+_CB_ACCESS_ORDER: list[str] = []  # LRU tracking, oldest first
 
 
 def _circuit_allowed(model: str) -> bool:
@@ -96,6 +98,14 @@ def _circuit_record_failure(model: str) -> None:
             "consecutive_failures": 0,
             "last_failure_ts": 0.0,
         })
+        # LRU bookkeeping — remove stale entry from order list, append at end
+        if model in _CB_ACCESS_ORDER:
+            _CB_ACCESS_ORDER.remove(model)
+        _CB_ACCESS_ORDER.append(model)
+        # Evict oldest entries when over cap
+        while len(_CB_STATE) > _CB_MAX_ENTRIES:
+            oldest = _CB_ACCESS_ORDER.pop(0)
+            _CB_STATE.pop(oldest, None)
         state["consecutive_failures"] += 1
         state["last_failure_ts"] = now
         if state["consecutive_failures"] >= _CB_THRESHOLD:

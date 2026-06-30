@@ -18,6 +18,10 @@ class AnalyticsEngine:
     def _cached(self, key: str, fn, *args, **kwargs):
         now = datetime.now(UTC)
         with self._lock:
+            # Prune expired entries
+            stale = [k for k, (_, ts) in self._cache.items() if now - ts >= self._cache_ttl]
+            for k in stale:
+                del self._cache[k]
             if key in self._cache:
                 val, ts = self._cache[key]
                 if now - ts < self._cache_ttl:

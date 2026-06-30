@@ -62,10 +62,15 @@ class EventBus:
                 with contextlib.suppress(ValueError):
                     self._subscribers.remove(q)
 
+    MAX_SUBSCRIBERS = 1000
+
     def subscribe(self) -> Queue:
         """Return a Queue that receives all future events."""
         q: Queue = Queue(maxsize=1000)
         with self._lock:
+            if len(self._subscribers) >= self.MAX_SUBSCRIBERS:
+                logger.warning("Subscriber cap reached (%s), refusing new subscriber", self.MAX_SUBSCRIBERS)
+                return q  # still return a functional queue, just not subscribed
             self._subscribers.append(q)
         return q
 

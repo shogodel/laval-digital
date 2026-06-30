@@ -6,7 +6,7 @@ import threading
 import time
 import uuid
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any
@@ -571,6 +571,16 @@ class ExecutionerAgent:
             "execution_id": execution_id,
         }
 
+    _PENDING_TTL = timedelta(hours=24)
+
+    def _evict_stale_pending(self):
+        cutoff = datetime.now(UTC) - self._PENDING_TTL
+        stale = [eid for eid, e in self._pending.items()
+                 if datetime.fromisoformat(e.get("created_at", "2000-01-01")) < cutoff]
+        for eid in stale:
+            logger.info("Evicting stale pending execution %s (older than 24h)", eid)
+            self._pending.pop(eid, None)
+
     def get_pending_executions(self) -> list[dict[str, Any]]:
         """Return all executions waiting for confirmation.
 
@@ -578,6 +588,7 @@ class ExecutionerAgent:
             List of pending execution dicts.
         """
         with self._pending_lock:
+            self._evict_stale_pending()
             return [
                 {
                     "execution_id": e["execution_id"],
