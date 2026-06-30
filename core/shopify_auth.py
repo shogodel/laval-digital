@@ -133,45 +133,7 @@ def get_shop_data(shop: str, access_token: str) -> dict[str, Any] | None:
 
 
 def ensure_shop_tables():
-    """Create shops and webhook_events tables if they don't exist.
-
-    NOTE: This mirrors the schema in database.py migration v10.
-    Keep both in sync if columns change.
-    """
-    conn = database._get_conn()
-    conn.executescript("""
-        CREATE TABLE IF NOT EXISTS shops (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            shop TEXT NOT NULL UNIQUE,
-            access_token TEXT NOT NULL,
-            user_id INTEGER REFERENCES users(id),
-            myshopify_domain TEXT,
-            name TEXT,
-            email TEXT,
-            domain TEXT,
-            province TEXT,
-            country TEXT,
-            currency TEXT,
-            plan_name TEXT,
-            installed_at TEXT NOT NULL,
-            uninstalled_at TEXT,
-            scopes TEXT NOT NULL,
-            is_active INTEGER DEFAULT 1,
-            trial_expires_at TEXT,
-            billing_plan TEXT DEFAULT 'free',
-            last_webhook_at TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS webhook_events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            shop TEXT NOT NULL,
-            topic TEXT NOT NULL,
-            body TEXT NOT NULL,
-            received_at TEXT NOT NULL,
-            processed INTEGER DEFAULT 0
-        );
-    """)
-    conn.commit()
+    """No-op: shops and webhook_events tables are now created by Alembic migrations (via init_db)."""
 
 
 def _ensure_shop_user(shop: str) -> int:
@@ -180,16 +142,27 @@ def _ensure_shop_user(shop: str) -> int:
     row = conn.execute("SELECT id FROM users WHERE email = ? AND role = 'shop'", (shop,)).fetchone()
     if row:
         return row["id"]
-    from werkzeug.security import generate_password_hash
     import secrets
+
+    from werkzeug.security import generate_password_hash
     now = datetime.now(UTC).isoformat()
-    conn.execute("PRAGMA ignore_check_constraints = ON")
-    cur = conn.execute(
-        """INSERT INTO users (email, password_hash, role, display_name, created_at)
-           VALUES (?, ?, 'shop', ?, ?)""",
-        (shop, generate_password_hash(secrets.token_hex(32)), shop, now),
-    )
-    conn.execute("PRAGMA ignore_check_constraints = OFF")
+    is_pg = database.get_backend() == "postgresql"
+    if not is_pg:
+        conn.execute("PRAGMA ignore_check_constraints = ON")
+    if is_pg:
+        cur = conn.execute(
+            """INSERT INTO users (email, password_hash, role, display_name, created_at)
+               VALUES (?, ?, 'shop', ?, ?) RETURNING id""",
+            (shop, generate_password_hash(secrets.token_hex(32)), shop, now),
+        )
+    else:
+        cur = conn.execute(
+            """INSERT INTO users (email, password_hash, role, display_name, created_at)
+               VALUES (?, ?, 'shop', ?, ?)""",
+            (shop, generate_password_hash(secrets.token_hex(32)), shop, now),
+        )
+    if not is_pg:
+        conn.execute("PRAGMA ignore_check_constraints = OFF")
     conn.commit()
     uid = cur.lastrowid
     if uid is None:
@@ -204,12 +177,21 @@ def _seed_shop_agent_configs(conn, user_id: int) -> None:
     now = datetime.now(UTC).isoformat()
     for agent_id in DEFAULT_AGENTS:
         try:
-            conn.execute(
-                """INSERT OR IGNORE INTO agent_configs
-                   (user_id, agent_id, enabled, model, status, last_invoked)
-                   VALUES (?, ?, 1, 'deepseek-chat', 'idle', ?)""",
-                (user_id, agent_id, now),
-            )
+            if database.get_backend() == "postgresql":
+                conn.execute(
+                    """INSERT INTO agent_configs
+                       (user_id, agent_id, enabled, model, status, last_invoked)
+                       VALUES (?, ?, 1, 'deepseek-chat', 'idle', ?)
+                       ON CONFLICT (user_id, agent_id) DO NOTHING""",
+                    (user_id, agent_id, now),
+                )
+            else:
+                conn.execute(
+                    """INSERT OR IGNORE INTO agent_configs
+                       (user_id, agent_id, enabled, model, status, last_invoked)
+                       VALUES (?, ?, 1, 'deepseek-chat', 'idle', ?)""",
+                    (user_id, agent_id, now),
+                )
         except Exception as e:
             logger.warning("Failed to seed agent %s for shop user %d: %s", agent_id, user_id, e)
     conn.commit()
@@ -222,8 +204,10 @@ def register_shop(shop: str, access_token: str, scopes: str) -> int | None:
     try:
         user_id = _ensure_shop_user(shop)
         is_admin = 1 if ADMIN_SHOP_DOMAIN and shop == ADMIN_SHOP_DOMAIN else 0
+        is_pg = database.get_backend() == "postgresql"
+        returning = " RETURNING id" if is_pg else ""
         cur = conn.execute(
-            """INSERT INTO shops (shop, access_token, user_id, scopes, installed_at, is_platform_admin)
+            f"""INSERT INTO shops (shop, access_token, user_id, scopes, installed_at, is_platform_admin)
                VALUES (?, ?, ?, ?, ?, ?)
                ON CONFLICT(shop) DO UPDATE SET
                    access_token = excluded.access_token,
@@ -231,7 +215,7 @@ def register_shop(shop: str, access_token: str, scopes: str) -> int | None:
                    scopes = excluded.scopes,
                    is_active = 1,
                    uninstalled_at = NULL,
-                   is_platform_admin = MAX(is_platform_admin, excluded.is_platform_admin)""",
+                   is_platform_admin = MAX(is_platform_admin, excluded.is_platform_admin){returning}""",
             (shop, _encrypt_token(access_token), user_id, scopes, now, is_admin),
         )
         conn.commit()

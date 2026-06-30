@@ -113,11 +113,21 @@ def save_mcp_credentials():
 
         for key, value in credentials.items():
             encrypted = cipher.encrypt(str(value).encode()).decode()
-            cursor.execute("""
-                INSERT OR REPLACE INTO mcp_credentials
-                (user_id, server_name, platform, credential_key, credential_value, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM mcp_credentials WHERE server_name=? AND platform=? AND credential_key=?), ?), ?)
-            """, (int(tenant_id), server_name, platform, key, encrypted, server_name, platform, key, now, now))
+            if database.get_backend() == "postgresql":
+                cursor.execute("""
+                    INSERT INTO mcp_credentials
+                    (user_id, server_name, platform, credential_key, credential_value, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM mcp_credentials WHERE server_name=? AND platform=? AND credential_key=?), ?), ?)
+                    ON CONFLICT (user_id, server_name, platform, credential_key) DO UPDATE SET
+                        credential_value = EXCLUDED.credential_value,
+                        updated_at = EXCLUDED.updated_at
+                """, (int(tenant_id), server_name, platform, key, encrypted, server_name, platform, key, now, now))
+            else:
+                cursor.execute("""
+                    INSERT OR REPLACE INTO mcp_credentials
+                    (user_id, server_name, platform, credential_key, credential_value, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM mcp_credentials WHERE server_name=? AND platform=? AND credential_key=?), ?), ?)
+                """, (int(tenant_id), server_name, platform, key, encrypted, server_name, platform, key, now, now))
 
         conn.commit()
         return api_success(message=f"Credentials saved for {server_name}")

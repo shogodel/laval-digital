@@ -19,7 +19,6 @@ from core.shopify_auth import (
     SHOPIFY_APP_SCOPES,
     build_install_url,
     deactivate_shop,
-    ensure_shop_tables,
     exchange_code_for_token,
     get_shop_by_domain,
     get_shop_data,
@@ -91,7 +90,7 @@ def callback():
     access_token = token_data.get("access_token", "")
     scopes = token_data.get("scope", SHOPIFY_APP_SCOPES)
 
-    row_id = register_shop(shop, access_token, scopes)
+    register_shop(shop, access_token, scopes)
 
     shop_info = get_shop_data(shop, access_token)
     if shop_info:
@@ -130,10 +129,20 @@ def callback():
                 old_uid = our_row["user_id"]
                 if old_uid != new_uid:
                     conn.execute("UPDATE shops SET user_id = ? WHERE shop = ?", (new_uid, shop))
-                    conn.execute(
-                        "UPDATE OR IGNORE agent_configs SET user_id = ? WHERE user_id = ?",
-                        (new_uid, old_uid),
-                    )
+                    if database.get_backend() == "postgresql":
+                        conn.execute(
+                            """UPDATE agent_configs SET user_id = ?
+                               WHERE user_id = ? AND NOT EXISTS (
+                                   SELECT 1 FROM agent_configs AS existing
+                                   WHERE existing.user_id = ? AND existing.agent_id = agent_configs.agent_id
+                               )""",
+                            (new_uid, old_uid, new_uid),
+                        )
+                    else:
+                        conn.execute(
+                            "UPDATE OR IGNORE agent_configs SET user_id = ? WHERE user_id = ?",
+                            (new_uid, old_uid),
+                        )
 
         conn.commit()
 
@@ -239,7 +248,7 @@ def _handle_orders_create(shop: str, data: dict):
 
 def _handle_orders_updated(shop: str, data: dict):
     """Order status or fulfillment changes; could trigger notifications."""
-    order_id = data.get("id", "")
+    data.get("id", "")
     order_name = data.get("name", "")
     fulfillment = data.get("fulfillment_status", "")
     financial = data.get("financial_status", "")
@@ -518,13 +527,6 @@ def api_agent_name():
         return api_error("No shop", 400)
 
     conn = database._get_conn()
-
-    # Ensure column exists (migration safety)
-    try:
-        conn.execute("SELECT agent_name FROM shops LIMIT 1")
-    except Exception:
-        conn.execute("ALTER TABLE shops ADD COLUMN agent_name TEXT DEFAULT NULL")
-        conn.commit()
 
     if request.method == "PUT":
         data = request.json or {}

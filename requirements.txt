@@ -90,3 +90,10 @@ apscheduler==3.11.0
 pywebpush==1.14.1
 python-whois==0.9.5
 dnspython==2.7.0
+
+# Database backends
+# SQLAlchemy is required by Alembic (already installed transitively)
+psycopg2-binary==2.9.10
+
+# Database migrations
+alembic==1.18.5

@@ -216,8 +216,7 @@ def create_app(config_name: str | None = None):
     logging.getLogger().setLevel(logging.INFO)
 
     database.init_db()
-    from core.shopify_auth import ensure_shop_tables
-    ensure_shop_tables()
+    # Shop/webhook tables are created by Alembic migrations inside init_db()
 
     push_manager = PushManager()
     agent_memory = AgentMemory()

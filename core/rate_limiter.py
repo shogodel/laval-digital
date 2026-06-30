@@ -93,13 +93,23 @@ def get_or_create_quota(user_id: int) -> dict:
     ).fetchone()
     if row:
         return dict(row)
-    conn.execute(
-        """INSERT OR IGNORE INTO user_llm_quotas
-           (user_id, requests_per_hour, requests_per_day, tokens_per_day, cost_per_day, cost_per_month)
-           VALUES (?, ?, ?, ?, ?, ?)""",
-        (user_id, DEFAULT_QUOTAS["requests_per_hour"], DEFAULT_QUOTAS["requests_per_day"],
-         DEFAULT_QUOTAS["tokens_per_day"], DEFAULT_QUOTAS["cost_per_day"], DEFAULT_QUOTAS["cost_per_month"]),
-    )
+    if database.get_backend() == "postgresql":
+        conn.execute(
+            """INSERT INTO user_llm_quotas
+               (user_id, requests_per_hour, requests_per_day, tokens_per_day, cost_per_day, cost_per_month)
+               VALUES (?, ?, ?, ?, ?, ?)
+               ON CONFLICT (user_id) DO NOTHING""",
+            (user_id, DEFAULT_QUOTAS["requests_per_hour"], DEFAULT_QUOTAS["requests_per_day"],
+             DEFAULT_QUOTAS["tokens_per_day"], DEFAULT_QUOTAS["cost_per_day"], DEFAULT_QUOTAS["cost_per_month"]),
+        )
+    else:
+        conn.execute(
+            """INSERT OR IGNORE INTO user_llm_quotas
+               (user_id, requests_per_hour, requests_per_day, tokens_per_day, cost_per_day, cost_per_month)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (user_id, DEFAULT_QUOTAS["requests_per_hour"], DEFAULT_QUOTAS["requests_per_day"],
+             DEFAULT_QUOTAS["tokens_per_day"], DEFAULT_QUOTAS["cost_per_day"], DEFAULT_QUOTAS["cost_per_month"]),
+        )
     conn.commit()
     row = conn.execute(
         "SELECT * FROM user_llm_quotas WHERE user_id = ?", (user_id,)
