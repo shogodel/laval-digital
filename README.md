@@ -1,91 +1,79 @@
-# Shopify AI Marketing Specialist — AI Marketing Command Center
+# Laval Digital — AI Marketing Command Center for Shopify
 
-An AI marketing command center that connects to your existing website, social accounts, email, and ad platforms. 16 specialized AI agents work 24/7 to grow your business. One product. One price. No website builder, no subdomain, no payment schedules.
+AI-powered marketing automation for Shopify stores. 16 specialized AI agents work 24/7 to grow your business. One product. One price. **$23.99/month**.
 
 ## Architecture
 
-- **Multi-Agent System**: 16 specialized agents (Local SEO, Social Media, Lead Conversion, Paid Ads, Growth Hacker, Reputation, Email Marketing, TikTok, Outreach, Backlinks, Content Strategy, Technical SEO, CRO, Video, SMS Marketing, Analytics & Reports)
-- **AI Orchestrator**: Agent workflow routing with LLM-based agent selection, draft generation, approval, and execution
+- **Multi-Agent System**: 16 specialized agents (Local SEO, Social Media, Lead Conversion, Paid Ads, Growth Hacker, Reputation, Email Marketing, TikTok, Outreach, Backlinks, Content Strategy, Technical SEO, CRO, Video, SMS Marketing, Analytics & Reports) with specialized subclasses (`CreativeAgent`, `AnalyticalAgent`, `SalesAgent`, `BaseAgent`) and per-agent temperature control
+- **AI Orchestrator**: Agent workflow routing with LLM-based agent selection, draft generation, approval, and execution — source-aware prompts (`widget` vs `chat`)
 - **MCP Server Layer**: 8 MCP servers (111 tools) for real platform execution — SEO, Social, Email, GMB, Ads, Analytics, Website, E-Commerce
 - **MCP-First Execution**: Every execution path (chat, approvals, direct invoke, executioner) tries MCP servers first, falls back to file-based tools
-- **Single Database**: Shared SQLite at `data/shopify.db` with `user_id` column for data scoping
+- **Database**: SQLite (dev) or PostgreSQL (prod) via `DATABASE_URL` env var with Alembic migrations, connection pooling (`DB_POOL_MIN`/`DB_POOL_MAX`), and gevent-compatible psycopg2
+- **Multi-Store**: Multiple Shopify stores linked by owner email, with store switcher in admin UI
+- **Custom Agent Name**: Every store can name their AI assistant (stored in `shops.agent_name`)
 - **Bilingual**: All public pages served in English and French (`/fr/` routes)
-- **Admin Panel**: Tabbed sidebar layout (Dashboard, Agents, Tasks & Approvals, Settings, Users, Analytics, Reports, MCP Servers) with tenant selector, inline agent toggle, agent config, MCP credential management, and execution management
-- **Affiliate Referrals**: Lightweight 20% commission tracking with session-based referral cookies
+- **Admin Panel**: Shopify Embedded App with dashboard, agent management, approvals, settings, analytics, MCP credential management
+- **Event Bus**: Pub/sub event system for real-time UI updates via SSE
+- **Structured Logging**: JSON log format with correlation IDs (`request_id`), PII redaction, and key rotation fingerprint
 
 ## Tech Stack
 
-- **Backend**: Python 3.12+, Flask, gunicorn (`-w 2 --threads 4`)
-- **AI Framework**: LangChain + LangGraph
-- **LLM Providers**: DeepSeek, OpenAI, Anthropic (via LiteLLM)
-- **MCP Protocol**: Custom MCP server implementation with tool registry, credential management, and auto-routing
-- **Database**: SQLite (database-per-tenant)
-- **Templating**: Jinja2
-- **Frontend**: PWA dashboard (installable on any device)
+- **Backend**: Python 3.12+, Flask, gunicorn (`-w 1 --worker-class gevent --worker-connections 1000`)
+- **AI Framework**: LangChain + LiteLLM (DeepSeek, OpenAI, Anthropic, Gemini, Mistral)
+- **Database**: SQLite (dev) / PostgreSQL 15+ (prod) via Alembic migrations
+- **Async**: Gevent (monkey-patched at bootstrap) with psycogreen for cooperative psycopg2
+- **Encryption**: Fernet (cryptography) with HKDF/PBKDF2 domain separation (credential, Shopify token, VAPID subsystems)
+- **Templating**: Jinja2 with CSP nonces
+- **Frontend**: PWA dashboard (installable on any device), WebSocket-free SSE event streaming
 
 ## Project Structure
 
 ```
 laval-digital/
-├── app.py                    # Flask application — all routes, API endpoints, agent registry, MCP wiring
+├── app.py                    # Flask application factory, routes, agent registry, MCP wiring
 ├── core/
-│   ├── base_agent.py         # BaseAgent abstract class
+│   ├── settings.py           # App-wide config, agent definitions, PII redaction, encryption helpers
+│   ├── base_agent.py         # BaseAgent + CreativeAgent, AnalyticalAgent, SalesAgent subclasses
+│   ├── app_state.py          # Module-level singletons populated at boot time
+│   ├── database.py           # Dual-backend (SQLite/PostgreSQL) with connection pool
 │   ├── orchestrator.py       # LangGraph orchestration engine
-│   ├── llm_adapter.py        # Multi-LLM adapter (DeepSeek/OpenAI/Anthropic)
-│   ├── auth.py               # Authentication, user management, role handling
-│   ├── tenant_manager.py     # Database-per-tenant lifecycle + MCP credentials table
-│   └── analytics.py          # Per-tenant analytics and reporting
+│   ├── llm_adapter.py        # Multi-LLM adapter with circuit breaker and rate limiting
+│   ├── auth.py               # Authentication, User/AdminUser models, session management
+│   ├── shopify_auth.py       # Shopify OAuth, session tokens, HMAC validation
+│   ├── analytics.py          # Per-tenant analytics and reporting
+│   ├── events.py             # Pub/sub event bus with SSE streaming
+│   ├── push.py               # Web push notification manager
+│   ├── monitor.py            # Proactive monitoring agent
+│   ├── scheduler.py          # Scheduled task manager
+│   ├── memory.py             # Agent memory and findings board
+│   ├── rate_limiter.py       # IP-based and user-based rate limiting
+│   ├── email_bridge.py       # Email sending via SMTP
+│   └── speech.py             # TTS/STT speech engine
+├── agents/
+│   └── executioner_agent.py  # MCP-first execution engine with file-based fallback
 ├── mcp/                      # 8 MCP servers (111 tools total)
 │   ├── base_server.py        # MCPServer base class with tool registry
 │   ├── __init__.py           # Server registry and initialization
-│   ├── seo_server.py         # SEO & Content — blog publishing, site audit, schema, backlinks (13 tools)
-│   ├── social_server.py      # Social Media — Facebook, Instagram, TikTok, LinkedIn, X (18 tools)
-│   ├── email_server.py       # Email Marketing — campaigns, sequences, automation (16 tools)
-│   ├── gmb_server.py         # Google Business Profile — posts, reviews, Q&A (16 tools)
-│   ├── ads_server.py         # Paid Advertising — Google Ads, Meta Ads, TikTok Ads (18 tools)
-│   ├── analytics_server.py   # Analytics & Reporting — ROI, trends, dashboards, executive summary (12 tools)
-│   ├── website_server.py     # Website Technical — uptime, SSL, DNS, security, SEO scanning (18 tools)
-│   └── ecommerce_server.py   # E-Commerce — products, inventory, pricing, RFM, Shopify (15 tools)
-├── agents/                   # 16 specialized agent implementations
-│   ├── local_seo_agent.py
-│   ├── social_media_agent.py
-│   ├── lead_conversion_agent.py
-│   ├── paid_ads_agent.py
-│   ├── growth_hacker_agent.py
-│   ├── reputation_agent.py
-│   ├── email_marketing_agent.py
-│   ├── tiktok_agent.py
-│   ├── outreach_agent.py
-│   ├── backlinks_agent.py
-│   ├── content_strategy_agent.py
-│   ├── technical_seo_agent.py
-│   ├── reporting_agent.py
-│   ├── cro_agent.py
-│   ├── video_agent.py
-│   ├── sms_marketing_agent.py
-│   └── executioner_agent.py  # MCP-first execution engine with file-based fallback
-├── tools/
-│   └── prospect_scraper.py   # Google Maps Places API prospect scraper + CSV export
+│   ├── seo_server.py         # SEO & Content (13 tools)
+│   ├── social_server.py      # Social Media (18 tools)
+│   ├── email_server.py       # Email Marketing (16 tools)
+│   ├── gmb_server.py         # Google Business Profile (16 tools)
+│   ├── ads_server.py         # Paid Advertising (18 tools)
+│   ├── analytics_server.py   # Analytics & Reporting (12 tools)
+│   ├── website_server.py     # Website Technical (18 tools)
+│   └── ecommerce_server.py   # E-Commerce / Shopify (15 tools)
+├── blueprints/               # Flask blueprints for all route groups
+├── migrations/               # Alembic migrations
 ├── prompts/                  # System prompt templates for each agent
 ├── templates/                # Jinja2 templates
-│   ├── home.html / home_fr.html
-│   ├── admin.html / admin_fr.html
-│   ├── demo.html / demo_fr.html
-│   ├── blog.html / blog_fr.html
-│   ├── login.html / login_fr.html
-│   ├── affiliate.html / affiliate_fr.html
-│   ├── admin/
-│   │   ├── agent_chat.html / agent_chat_fr.html
-│   │   └── connector.html
-│   └── client/
-│       ├── agent_chat.html / agent_chat_fr.html
-│       ├── dashboard.html
-│       └── login.html
 ├── static/                   # Static assets (CSS, JS, logos, PWA)
-├── tenants/direct/           # Per-tenant SQLite databases
-├── data/
-│   └── vapid_keys.json       # Web push notification keys
-└── requirements.txt
+├── tests/                    # 188 tests across 11 test files
+├── tools/
+│   └── prospect_scraper.py   # Google Maps Places API prospect scraper
+├── Dockerfile                # Gevent worker config
+├── alembic.ini               # Alembic configuration
+├── .env.example
+└── pyproject.toml
 ```
 
 ## Quick Start
@@ -97,96 +85,135 @@ laval-digital/
    pip install -r requirements.txt
    ```
 
-2. **Configure environment** (create `.env`):
-    ```
-    FLASK_SECRET_KEY=<your-random-secret>
-    ADMIN_USERNAME=<your-admin-username>
-    ADMIN_PASSWORD=<generate-a-strong-password>
-    GOOGLE_MAPS_API_KEY=<your-maps-key>
-    ```
-
-3. **Run the server**:
-   ```bash
-   gunicorn -w 2 --threads 4 --daemon app:app
+2. **Configure environment** (copy `.env.example` to `.env`):
    ```
-   Access at `http://127.0.0.1:5000`. Admin panel at `/admin`.
+   FLASK_SECRET_KEY=<generate-with: python -c "import secrets; print(secrets.token_hex(32))">
+   SHOPIFY_API_KEY=<your-shopify-api-key>
+   SHOPIFY_API_SECRET=<your-shopify-api-secret>
+   SHOPIFY_APP_HOME=https://your-domain.com
+   ```
 
-   > **Note:** Jinja2 template caching is active in gunicorn production mode. Kill the gunicorn master process (`pkill -f gunicorn`) and restart for template changes to take effect.
+3. **Initialize the database**:
+   ```bash
+   python -c "from core import database; database.init_db()"
+   ```
+
+4. **Run the server** (development):
+   ```bash
+   python app.py
+   ```
+   Access at `http://127.0.0.1:5000`.
+
+   **Production** (Docker):
+   ```bash
+   docker build -t laval-digital .
+   docker run -p 5000:5000 --env-file .env laval-digital
+   ```
+
+## Database Backends
+
+Set `DATABASE_URL` to switch between SQLite and PostgreSQL:
+
+| `DATABASE_URL` | Backend |
+|---|---|
+| `sqlite:///data/shopify.db` | SQLite (dev default) |
+| `postgresql://user:pass@host:5432/dbname` | PostgreSQL (production) |
+
+Optional pool config for PostgreSQL: `DB_POOL_MIN=1`, `DB_POOL_MAX=10`.
+
+## Pricing
+
+**$23.99/month** — All 16 AI agents + command center. One product. One price.
 
 ## API Endpoints
 
-### Core & Agents
+### Core
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/api/affiliate/status` | GET | Return affiliate discount status for current session |
-| `/api/affiliate/signup` | POST | Register a new affiliate, return referral code |
-| `/api/leads` | GET/POST | List or create lead form submissions |
-| `/api/agents` | GET | List all agents with activity telemetry |
-| `/api/agents/<id>/toggle` | POST | Enable/disable an agent |
-| `/api/agents/<id>/config` | GET/POST | Get or update agent configuration |
-| `/api/agents/<id>/invoke` | POST | Directly invoke an agent (bypass orchestrator) |
-| `/api/agents/<id>/chat` | POST | Send a message directly to a specific agent |
+| `/api/health` | GET | Health check (DB, LLM, encryption) |
 | `/api/tasks` | POST | Submit a task to the orchestrator |
 | `/api/approvals` | GET | Get pending approvals |
 | `/api/approvals/<id>/respond` | POST | Approve or reject a pending approval |
+| `/api/agents` | GET | List all agents with activity telemetry |
+| `/api/agents/<id>/toggle` | POST | Enable/disable an agent |
+| `/api/agents/<id>/config` | GET/POST | Get or update agent configuration |
+| `/api/agents/<id>/autonomy` | GET/PUT | Get/set autonomy level |
+| `/api/agents/<id>/invoke` | POST | Directly invoke an agent |
+| `/api/agents/<id>/chat` | POST | Chat with an agent (SSE streaming) |
+| `/api/agents/bulk/config` | POST | Bulk update all agent configurations |
 | `/api/models` | GET | List available LLM models |
 | `/api/models/detect` | POST | Detect provider from API key |
-| `/api/tenants` | GET | List all tenants (admin only) |
-| `/api/tenants/switch` | POST | Switch admin active tenant context |
-| `/api/users` | GET/POST | List or create users for active tenant |
-| `/api/users/<id>` | DELETE | Delete a user |
 | `/api/personalities` | GET | Get agent personalities/emojis |
-| `/api/agents/bulk/config` | POST | Bulk update agent configurations |
+
+### Chat & Dashboard
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/dashboard/ask` | POST | Widget-style quick ask (source="widget") |
+| `/api/orchestrator/welcome` | POST | Get welcome message |
+| `/api/orchestrator/suggestions` | POST | Get task suggestions |
+| `/api/orchestrator/status` | GET | Panic status, pending count |
+| `/api/orchestrator/activity` | GET | Activity feed |
+| `/api/orchestrator/panic` | POST | Emergency stop all agents |
+| `/api/orchestrator/resume` | POST | Resume agents after panic |
+| `/api/orchestrator/undo` | POST | Undo last execution |
+| `/api/inbox` | GET | Combined approvals + activity |
+| `/api/threads` | GET | List conversation threads |
+| `/api/threads/<tid>/messages` | GET | Get thread messages |
+| `/api/executions` | GET | Recent execution history |
 
 ### MCP Servers
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/api/mcp/servers` | GET | List all MCP servers and their status |
-| `/api/mcp/servers/<name>/tools` | GET | List all tools for a specific MCP server |
-| `/api/mcp/call` | POST | Call a tool on an MCP server directly |
-| `/api/mcp/execute` | POST | Execute via MCP with auto agent-to-server routing |
-| `/api/mcp/credentials` | GET | Get stored MCP credentials for current tenant |
-| `/api/mcp/credentials` | POST | Save MCP credentials for current tenant |
-| `/api/mcp/credentials/<server>` | DELETE | Delete credentials for an MCP server |
+| `/api/mcp/servers` | GET | List all MCP servers |
+| `/api/mcp/servers/<name>/tools` | GET | List tools for an MCP server |
+| `/api/mcp/call` | POST | Call an MCP tool directly |
+| `/api/mcp/execute` | POST | Execute via MCP with auto-routing |
+| `/api/mcp/credentials` | GET/POST | Get or save MCP credentials |
+| `/api/mcp/credentials/<server>` | DELETE | Delete MCP credentials |
 
-### Executioner (Fallback)
+### Shopify
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/api/executioner/settings` | GET/PUT | Get or update executioner settings |
-| `/api/executioner/pending` | GET | Get executions awaiting confirmation |
-| `/api/executioner/confirm/<id>` | POST | Confirm and execute a queued execution |
-| `/api/executioner/reject/<id>` | POST | Reject a queued execution |
-| `/api/executioner/execute-chat` | POST | Execute via file-based tools (legacy) |
-| `/api/executions` | GET | Get recent execution history |
+| `/api/auth/install` | GET | Shopify OAuth install redirect |
+| `/api/auth/callback` | GET | Shopify OAuth callback |
+| `/api/webhooks` | POST | Shopify webhook receiver |
+| `/api/shopify/register-webhooks` | POST | Register webhook subscriptions |
+| `/api/shopify/products` | GET | List Shopify products |
+| `/api/shopify/orders` | GET | List Shopify orders |
 
 ### Analytics & Speech
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/api/analytics/summary` | GET | Summary analytics for tenant or all tenants |
-| `/api/analytics/leads` | GET | Lead metrics for date range |
+| `/api/analytics/summary` | GET | Summary analytics |
+| `/api/analytics/leads` | GET | Lead metrics |
 | `/api/analytics/agents` | GET | Agent performance metrics |
 | `/api/analytics/executions` | GET | Execution metrics |
-| `/api/analytics/report/generate` | POST | Generate monthly report HTML |
-| `/api/speech/stt` | POST | Transcribe audio to text |
-| `/api/speech/tts` | POST | Synthesize speech from text |
-| `/api/speech/voices` | GET | List available TTS voices |
+| `/api/analytics/report/generate` | POST | Generate monthly report |
+| `/api/speech/stt` | POST | Transcribe audio |
+| `/api/speech/tts` | POST | Synthesize speech |
+| `/api/speech/voices` | GET | List TTS voices |
 
-## MCP Server Tool Inventory
+### Users & GDPR
 
-| Server | Tools | Key Capabilities |
+| Endpoint | Method | Description |
 |---|---|---|
-| **SEO** (13) | publish_blog_post, run_site_audit, generate_schema, find_backlink_opportunities, ... | Shopify CMS integration, site crawling, schema markup, backlink prospecting |
-| **Social** (18) | post_to_facebook, post_to_instagram, post_to_tiktok, post_to_linkedin, post_to_x, ... | Multi-platform publishing, content calendars, hashtag generation, engagement tracking |
-| **Email** (16) | send_email, send_campaign, create_sequence, design_automation, ... | SMTP/SendGrid/Mailgun integration, campaign management, drip sequences |
-| **GMB** (16) | create_gmb_post, respond_to_review, manage_qa, update_hours, ... | Google Business Profile posts, review management, business info updates |
-| **Ads** (18) | create_google_ads_campaign, create_meta_ads, optimize_bidding, ... | Google Ads, Meta Ads, TikTok Ads campaign creation and optimization |
-| **Analytics** (12) | track_roi, analyze_trends, compare_periods, get_executive_summary, get_chart_data, ... | DB-driven ROI from tenant data, trend analysis, period comparison, executive summaries |
-| **Website** (18) | monitor_uptime, check_page_speed, manage_ssl, security_scan, dns_lookup, ... | Real HTTP scanning, SSL verification, DNS lookups, security header checks, sitemap validation |
-| **E-Commerce** (15) | manage_products, track_inventory, optimize_product_pages, analyze_customers, ... | Shopify API, RFM segmentation, live page auditing, pricing optimization, Canadian taxes |
+| `/api/user/export` | GET | Export all personal data (GDPR) |
+| `/api/user/export` | DELETE | Erase all personal data (right to erasure) |
+| `/api/users` | GET/POST | List or create users |
+| `/api/users/<id>` | DELETE | Delete a user |
+
+### Events (SSE)
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/events/stream` | GET | SSE event stream (real-time) |
+| `/api/events/history` | GET | Event history with filters |
+| `/api/events/stats` | GET | Event bus statistics |
 
 ## Execution Flow
 
@@ -206,42 +233,16 @@ User Request → Orchestrator → Agent generates draft → Human approves
                                               (file-based tools)
 ```
 
-Every execution path — chat Execute button, admin approval flow, direct agent invoke, and the ExecutionerAgent itself — tries MCP servers first before falling back to the original file-based tools.
-
-## Agent-to-MCP Routing
-
-| Agent | MCP Server | Default Tool |
-|---|---|---|
-| local_seo | seo | publish_blog_post |
-| social_media | social | post_to_facebook |
-| lead_conversion | email | send_email |
-| paid_ads | ads | create_google_ads_campaign |
-| growth_hacker | analytics | analyze_trends |
-| reputation | gmb | respond_to_review |
-| email_marketing | email | send_campaign |
-| tiktok | social | post_to_tiktok |
-| outreach | email | send_email |
-| backlinks | seo | find_backlink_opportunities |
-| content_strategist | seo | publish_blog_post |
-| technical_seo | seo | run_site_audit |
-| reporting | analytics | generate_monthly_report |
-| cro | website | audit_seo_health |
-| video | social | post_to_tiktok |
-| sms_marketing | email | send_email |
-
-## Pricing
-
-**$23.99/month** — All 16 AI agents + command center. One product. One price.
-
 ## Agent Configuration
 
-Each agent expects a config in this format:
+Each agent expects a config in this format (set via admin UI or bulk API):
 
 ```json
 {
   "agent_id": "local_seo",
   "enabled": true,
   "model": "deepseek-chat",
+  "temperature": 0.6,
   "system_prompt_file": "prompts/local_seo.md",
   "credentials": {
     "api_key": "sk-...",
