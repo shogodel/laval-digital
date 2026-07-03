@@ -173,7 +173,7 @@ def create_app():
         import hashlib, os as _os
         versions = {}
         static_dir = _os.path.join(app.root_path, "static")
-        for fname in ("app.css", "app.js", "admin.css", "admin.js"):
+        for fname in ("admin.css", "admin.js"):
             fpath = _os.path.join(static_dir, fname)
             try:
                 with open(fpath, "rb") as f:
@@ -188,7 +188,7 @@ def create_app():
     def add_security_headers(response):
         nonce = getattr(g, "csp_nonce", "")
         script_src = f"'self' 'nonce-{nonce}' https://cdn.jsdelivr.net https://cdn.shopify.com"
-        style_src = "'self' https://cdn.shopify.com https://fonts.googleapis.com https://cdn.jsdelivr.net"
+        style_src = f"'self' 'nonce-{nonce}' https://cdn.shopify.com https://fonts.googleapis.com https://cdn.jsdelivr.net"
         style_src_attr = "'unsafe-inline'"
         img_src = "'self' data: blob: https://cdn.shopify.com https://*.shopify.com https://cdn.jsdelivr.net"
         font_src = "'self' https://fonts.gstatic.com data:"
