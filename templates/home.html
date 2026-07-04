@@ -554,15 +554,6 @@
         .pricing-card .price {
             font-size: 3.2rem;
             font-weight: 900;
-            color: var(--orange);
-            letter-spacing: -0.04em;
-            line-height: 1.2;
-            margin-bottom: 4px;
-            text-shadow: 0 2px 8px rgba(212,43,43,0.15);
-        }
-        .pricing-card .price {
-            font-size: 3.2rem;
-            font-weight: 900;
             background: linear-gradient(135deg, var(--orange), #e84040);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -570,6 +561,7 @@
             line-height: 1;
             letter-spacing: -0.03em;
             margin: 16px 0 4px;
+            text-shadow: 0 2px 8px rgba(212,43,43,0.15);
         }
         .pricing-card .price-sub {
             font-size: 0.9rem;
@@ -1086,6 +1078,9 @@
         <button class="hamburger" id="nav-hamburger" aria-label="Menu">&#9776;</button>
         <ul id="nav-menu">
             <li><a href="{{ url_for('demo') }}">Demo</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#faq">FAQ</a></li>
             <li><a href="{{ url_for('free_trial') }}" class="nav-cta">Try Free</a></li>
             <li><a href="{{ url_for('home_fr') }}" class="lang-toggle">FR</a></li>
         </ul>
@@ -1422,7 +1417,9 @@
         <div>
             <h4>Links</h4>
             <p><a href="{{ url_for('demo') }}">Live Demo</a></p>
-
+            <p><a href="#features">Features</a></p>
+            <p><a href="#pricing">Pricing</a></p>
+            <p><a href="#faq">FAQ</a></p>
         </div>
     </div>
     <div class="footer-bottom container">
@@ -1470,10 +1467,22 @@ if (ref) {
     }
 }
 
-/* ── Event listeners (CSP nonce‑safe) ── */
-document.getElementById('nav-hamburger').addEventListener('click', function() {
-    document.getElementById('nav-menu').classList.toggle('open');
-});
+(function() {
+    var h = document.getElementById('nav-hamburger');
+    var m = document.getElementById('nav-menu');
+    if (!h || !m) return;
+    h.addEventListener('click', function(e) {
+        e.stopPropagation();
+        m.classList.toggle('open');
+        h.innerHTML = m.classList.contains('open') ? '&#10005;' : '&#9776;';
+    });
+    document.addEventListener('click', function(e) {
+        if (m.classList.contains('open') && !m.contains(e.target) && e.target !== h) {
+            m.classList.remove('open');
+            h.innerHTML = '&#9776;';
+        }
+    });
+})();
 document.querySelectorAll('.faq-item').forEach(function(item) {
     item.addEventListener('click', function() { toggleFaq(this); });
 });

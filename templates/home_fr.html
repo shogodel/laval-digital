@@ -554,15 +554,6 @@
         .pricing-card .price {
             font-size: 3.2rem;
             font-weight: 900;
-            color: var(--orange);
-            letter-spacing: -0.04em;
-            line-height: 1.2;
-            margin-bottom: 4px;
-            text-shadow: 0 2px 8px rgba(29,78,216,0.15);
-        }
-        .pricing-card .price {
-            font-size: 3.2rem;
-            font-weight: 900;
             background: linear-gradient(135deg, var(--orange), #3B82F6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -570,6 +561,7 @@
             line-height: 1;
             letter-spacing: -0.03em;
             margin: 16px 0 4px;
+            text-shadow: 0 2px 8px rgba(29,78,216,0.15);
         }
         .pricing-card .price-sub {
             font-size: 0.9rem;
@@ -614,7 +606,7 @@
         }
         .pricing-card .btn:hover {
             transform: scale(1.02);
-            box-shadow: 0 8px 28px rgba(212,43,43,0.4);
+            box-shadow: 0 8px 28px rgba(29,78,216,0.4);
         }
         .pricing-card.premium-card {
             border-color: #b8860b;
@@ -1086,6 +1078,9 @@
         <button class="hamburger" id="nav-hamburger" aria-label="Menu">&#9776;</button>
         <ul id="nav-menu">
             <li><a href="{{ url_for('demo_fr') }}">Démo</a></li>
+            <li><a href="#features">Fonctionnalités</a></li>
+            <li><a href="#pricing">Tarifs</a></li>
+            <li><a href="#faq">FAQ</a></li>
             <li><a href="{{ url_for('free_trial_fr') }}" class="nav-cta">Essai Gratuit</a></li>
             <li><a href="{{ url_for('home') }}" class="lang-toggle">EN</a></li>
         </ul>
@@ -1107,7 +1102,7 @@
     </div>
     <div class="container fade-up">
         <h1>Votre <span>Spécialiste Marketing IA</span> — Pour Votre Boutique Shopify</h1>
-        <p>Votre Spécialiste Marketing IA est conçu pour Shopify. Il rédige des descriptions de produits, publications sur les réseaux sociaux, campagnes courriel et articles de blog pour votre boutique. Vous révisez et approuvez. Il publie. Pas de frais d'agence. Seulement 23,99 $US/mois.</p>
+        <p>Votre Spécialiste Marketing IA se connecte à votre boutique Shopify et commercialise vos produits sur tous les canaux — médias sociaux, courriel, recherche et publicités. Il rédige des descriptions de produits, crée des campagnes et suit les résultats. Vous révisez et approuvez. Il publie. Pas de frais d'agence. Seulement 23,99 $US/mois.</p>
         <div class="hero-buttons">
             <a href="{{ url_for('free_trial_fr') }}" class="btn btn-primary">Essai Gratuit — 23,99 $US/mois</a>
             <a href="{{ url_for('demo_fr') }}" class="btn btn-secondary">Voir la Démo</a>
@@ -1422,7 +1417,9 @@
         <div>
             <h4>Liens</h4>
             <p><a href="{{ url_for('demo_fr') }}">Démo en Direct</a></p>
-
+            <p><a href="#features">Fonctionnalités</a></p>
+            <p><a href="#pricing">Tarifs</a></p>
+            <p><a href="#faq">FAQ</a></p>
         </div>
     </div>
     <div class="footer-bottom container">
@@ -1469,9 +1466,22 @@ if (ref) {
         document.title = 'Spécialiste Marketing IA — recommandé par ' + safeRef;
     }
 }
-document.getElementById('nav-hamburger').addEventListener('click', function() {
-    document.getElementById('nav-menu').classList.toggle('open');
-});
+(function() {
+    var h = document.getElementById('nav-hamburger');
+    var m = document.getElementById('nav-menu');
+    if (!h || !m) return;
+    h.addEventListener('click', function(e) {
+        e.stopPropagation();
+        m.classList.toggle('open');
+        h.innerHTML = m.classList.contains('open') ? '&#10005;' : '&#9776;';
+    });
+    document.addEventListener('click', function(e) {
+        if (m.classList.contains('open') && !m.contains(e.target) && e.target !== h) {
+            m.classList.remove('open');
+            h.innerHTML = '&#9776;';
+        }
+    });
+})();
 document.getElementById('cookie-dismiss-btn').addEventListener('click', dismissCookie);
 document.querySelectorAll('.faq-item').forEach(function(item) {
     item.addEventListener('click', function() { toggleFaq(this); });
