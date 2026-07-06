@@ -12,19 +12,34 @@ logger = logging.getLogger(__name__)
 _GOOGLE_ADS_DEFAULT_CUSTOMER = ""
 
 
-def _get_customer_ids(**kwargs: Any) -> list[str]:
-    """Extract customer_id from kwargs or return empty list.
+def _get_customer_id(**kwargs: Any) -> str:
+    """Resolve the Google Ads customer ID to use for this call.
 
-    Supports both ``customer_id`` and ``api_credentials`` dict patterns.
+    Resolution order:
+    1. Explicit ``customer_id`` kwarg
+    2. ``api_credentials.customer_id`` dict
+    3. ``resolve_customer_id()`` — auto-lookup from DB for the current request user
+    4. Empty string (triggers template fallback)
+
+    This is the bridge: user connects their account once in the UI via
+    ``/admin/ads-connector``, and all agent tools automatically use
+    that connection. No need to pass ``customer_id`` per call.
     """
-    cid = kwargs.get("customer_id", "").strip() or _GOOGLE_ADS_DEFAULT_CUSTOMER
+    cid = kwargs.get("customer_id", "").strip()
     if cid:
-        return [cid]
+        return cid.replace("-", "")
     creds = kwargs.get("api_credentials") or {}
     cid = creds.get("customer_id", "").strip()
     if cid:
-        return [cid]
-    return []
+        return cid.replace("-", "")
+    try:
+        from core.ads_auth import resolve_customer_id
+        resolved = resolve_customer_id(kwargs)
+        if resolved:
+            return resolved
+    except Exception:
+        pass
+    return ""
 
 
 def _fmt_cid(cid: str) -> str:
@@ -116,10 +131,10 @@ class AdsMCPServer(MCPServer):
                                    customer_id: str = "", **kwargs) -> dict[str, Any]:
         """Create a Google Ads campaign. Types: search, display, pmax, local, video.
 
-        Requires a connected customer_id (Google Ads account ID under our MCC).
-        Falls back to template if no customer_id or API error.
+        Automatically resolves the connected Google Ads account for the current user.
+        Falls back to template if no account connected.
         """
-        cid = customer_id.replace("-", "") if customer_id else ""
+        cid = _get_customer_id(customer_id=customer_id, **kwargs)
         if not cid:
             return _template_create_google(campaign_name, campaign_type, budget, keywords, location)
 
@@ -128,10 +143,6 @@ class AdsMCPServer(MCPServer):
             return _template_create_google(campaign_name, campaign_type, budget, keywords, location)
 
         try:
-            ga_service = self._ga_service("GoogleAdsService")
-            if not ga_service:
-                return _template_create_google(campaign_name, campaign_type, budget, keywords, location)
-
             kw_list = [k.strip() for k in keywords.split('\n') if k.strip()] if keywords else []
 
             campaign_service = client.get_service("CampaignService", version="v24")
@@ -144,7 +155,7 @@ class AdsMCPServer(MCPServer):
             budget_op = client.get_type("CampaignBudgetOperation", version="v24")
             budget_obj = client.get_type("CampaignBudget", version="v24")
             budget_obj.name = f"Budget for {campaign_name or 'AI Campaign'}"
-            budget_obj.delivery_method = client.enums["BudgetDeliveryMethodEnum"].STANDARD
+            budget_obj.delivery_method = client.enums.BudgetDeliveryMethodEnum.STANDARD
             budget_obj.amount_micros = int(budget * 1_000_000)
             budget_op.create = budget_obj
             budget_response = campaign_budget_service.mutate(customer_id=cid, operations=[budget_op])
@@ -161,7 +172,7 @@ class AdsMCPServer(MCPServer):
                 "local": "LOCAL",
                 "video": "VIDEO",
             }.get(campaign_type, "SEARCH")
-            campaign.status = client.enums["CampaignStatusEnum"].PAUSED
+            campaign.status = client.enums.CampaignStatusEnum.PAUSED
             campaign.start_date = start_date
             campaign.end_date = end_date
 
@@ -203,9 +214,9 @@ class AdsMCPServer(MCPServer):
                               customer_id: str = "", **kwargs) -> dict[str, Any]:
         """Research keywords for Google Ads with real Keyword Planner data.
 
-        Falls back to estimated data if no customer_id or API error.
+        Falls back to estimated data if no connected account or API error.
         """
-        cid = customer_id.replace("-", "") if customer_id else ""
+        cid = _get_customer_id(customer_id=customer_id, **kwargs)
 
         if cid:
             try:
@@ -257,9 +268,9 @@ class AdsMCPServer(MCPServer):
     def get_campaign_stats(self, customer_id: str = "", campaign_id: str = "", **kwargs) -> dict[str, Any]:
         """Get campaign performance stats via Google Ads API.
 
-        Returns real metrics if customer_id is provided, otherwise template.
+        Returns real metrics if a connected account is found, otherwise template.
         """
-        cid = customer_id.replace("-", "") if customer_id else ""
+        cid = _get_customer_id(customer_id=customer_id, **kwargs)
         if not cid:
             return _template_stats()
 
@@ -296,7 +307,7 @@ class AdsMCPServer(MCPServer):
     def update_ad_budget(self, campaign_id: str = "", new_budget: float = 0.0,
                           customer_id: str = "", **kwargs) -> dict[str, Any]:
         """Update campaign budget via Google Ads API."""
-        cid = customer_id.replace("-", "") if customer_id else ""
+        cid = _get_customer_id(customer_id=customer_id, **kwargs)
         if not cid or not campaign_id or new_budget <= 0:
             return {
                 "success": True,
@@ -348,7 +359,7 @@ class AdsMCPServer(MCPServer):
     def manage_ad_extensions(self, action: str = "list", business_name: str = "", phone: str = "",
                               website: str = "", customer_id: str = "", **kwargs) -> dict[str, Any]:
         """Manage Google Ads extensions. Supports listing active extensions via API."""
-        cid = customer_id.replace("-", "") if customer_id else ""
+        cid = _get_customer_id(customer_id=customer_id, **kwargs)
         if cid and action == "list":
             query = """
                 SELECT campaign.id, campaign.name,

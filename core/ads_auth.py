@@ -139,6 +139,64 @@ def search_google_ads(customer_id: str, query: str) -> list[dict[str, Any]]:
         return []
 
 
+def resolve_customer_id(kwargs: dict | None = None) -> str | None:
+    """Auto-resolve the current user's connected Google Ads customer ID.
+
+    Resolution order:
+    1. ``customer_id`` kwarg (explicit per-call override)
+    2. ``api_credentials`` dict in kwargs
+    3. Flask request context — looks up ``shop_ad_connections`` for the authenticated user
+    4. Returns ``None`` if nothing found
+
+    This is the bridge: user connects their account once in the UI, and all
+    agent tools automatically use that connection without manual ``customer_id``.
+    """
+    # 1. Explicit kwarg
+    if kwargs:
+        cid = kwargs.get("customer_id", "").strip()
+        if cid:
+            return cid.replace("-", "")
+        creds = kwargs.get("api_credentials") or {}
+        cid = creds.get("customer_id", "").strip()
+        if cid:
+            return cid.replace("-", "")
+
+    # 2. Flask request context
+    try:
+        from flask import g, session
+        from flask_login import current_user
+        from core.database import list_ad_connections
+
+        cached = getattr(g, "_ads_resolved_cid", None)
+        if cached:
+            return cached
+
+        uid: int | None = None
+        if current_user.is_authenticated:
+            uid = getattr(current_user, "id", None)
+        if not uid:
+            try:
+                uid = session.get("active_user_id") or session.get("_user_id")
+            except Exception:
+                pass
+        if not uid:
+            uid = getattr(g, "shop_user_id", None)
+
+        if uid:
+            try:
+                conns = list_ad_connections(int(uid))
+                if conns:
+                    cid = conns[0]["customer_id"].replace("-", "")
+                    g._ads_resolved_cid = cid
+                    return cid
+            except Exception as exc:
+                logger.debug("Ads customer_id lookup failed: %s", exc)
+    except Exception:
+        pass
+
+    return None
+
+
 def _row_to_dict(row: Any) -> dict[str, Any]:
     """Convert a Google Ads row to a plain dict."""
     result: dict[str, Any] = {}
