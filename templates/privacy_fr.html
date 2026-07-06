@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Politique de Confidentialité — {{ agent_name }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f9fafb; color: #1f2937; padding: 40px 20px; line-height: 1.7; }
+        .wrapper { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 48px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 4px; }
+        .updated { color: #6b7280; font-size: 0.85rem; margin-bottom: 32px; }
+        h2 { font-size: 1.15rem; font-weight: 700; margin: 28px 0 10px; color: #111827; }
+        p { font-size: 0.92rem; color: #4b5563; margin-bottom: 12px; }
+        ul { margin: 8px 0 16px 20px; font-size: 0.92rem; color: #4b5563; }
+        ul li { margin-bottom: 6px; }
+        strong { color: #1f2937; }
+        a { color: #D42B2B; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { display: inline-block; margin-top: 32px; color: #6b7280; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <h1>Politique de Confidentialité</h1>
+    <p class="updated">Dernière mise à jour : 6 juillet 2026</p>
+
+    <h2>1. Qui Sommes-Nous</h2>
+    <p>Laval Digital (« nous », « notre », « nos ») exploite {{ agent_name }}, un assistant marketing IA pour les boutiques Shopify. Nous sommes basés à Laval, Québec, Canada.</p>
+
+    <h2>2. Quelles Données Nous Collectons</h2>
+    <p><strong>Données du compte :</strong> Adresse courriel, nom, domaine de la boutique Shopify, informations de facturation traitées sécuritairement via notre processeur de paiement.</p>
+    <p><strong>Données Shopify :</strong> Avec votre autorisation via OAuth, nous accédons aux produits, commandes, clients, analyses, thèmes, rabais, exécutions et événements marketing de votre boutique Shopify — seulement les données nécessaires pour fournir le service marketing.</p>
+    <p><strong>Données Google Ads :</strong> Lorsque vous ajoutez notre MCC comme partenaire, nous accédons aux données de vos campagnes Google Ads (campagnes, mots-clés, mesures de rendement) via l'API Google Ads pour gérer et optimiser votre publicité.</p>
+    <p><strong>Données d'utilisation :</strong> Historique de conversations avec les agents IA, journaux d'exécution de tâches et préférences de campagne. Ces données sont utilisées uniquement pour améliorer vos résultats marketing.</p>
+    <p><strong>Témoins essentiels :</strong> Nous utilisons uniquement des témoins de session essentiels pour l'authentification. Aucun témoin de suivi, d'analyse ou de marketing tiers.</p>
+
+    <h2>3. Comment Nous Utilisons Vos Données</h2>
+    <p>Nous utilisons vos données exclusivement pour : (a) opérer le service marketing IA, (b) exécuter les tâches marketing que vous demandez, (c) améliorer la qualité du service, et (d) respecter les obligations légales. Nous ne vendons jamais vos données à des tiers.</p>
+
+    <h2>4. Partage des Données</h2>
+    <p>Nous partageons les données uniquement avec :</p>
+    <ul>
+        <li><strong>Shopify</strong> — via API OAuth, uniquement pour exécuter vos tâches marketing</li>
+        <li><strong>Google Ads</strong> — via l'API Google Ads, uniquement pour gérer vos campagnes</li>
+        <li><strong>DeepSeek / LiteLLM</strong> — les fournisseurs de modèles IA traitent vos requêtes pour générer du contenu marketing</li>
+        <li><strong>Processeur de paiement</strong> — pour la facturation (nous ne stockons pas les détails de carte de crédit)</li>
+    </ul>
+
+    <h2>5. Conservation des Données</h2>
+    <p>Nous conservons vos données tant que votre compte est actif. Lors de l'annulation, vos données sont supprimées dans les 30 jours. Les jetons OAuth Shopify sont révoqués immédiatement après la désinstallation.</p>
+
+    <h2>6. Vos Droits (RGPD / LPRPDE)</h2>
+    <p>Vous avez le droit d'accéder, d'exporter, de corriger ou de supprimer vos données personnelles en tout temps. Utilisez l'outil d'exportation RGPD dans votre tableau de bord ou écrivez-nous à <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.</p>
+
+    <h2>7. Sécurité</h2>
+    <p>Toutes les données sont chiffrées en transit (TLS 1.3) et au repos. Les identifiants sont chiffrés à l'aide de Fernet (chiffrement symétrique) avec dérivation de clé PBKDF2.</p>
+
+    <h2>8. Contact</h2>
+    <p>Des questions ? Écrivez-nous à <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a> ou appelez le {{ CONTACT_PHONE }}.</p>
+
+    <a href="{{ url_for('home_fr') }}" class="back-link">&larr; Retour à l'accueil</a>
+</div>
+</body>
+</html>

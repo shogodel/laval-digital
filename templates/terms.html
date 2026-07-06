@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service — {{ agent_name }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f9fafb; color: #1f2937; padding: 40px 20px; line-height: 1.7; }
+        .wrapper { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 48px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 4px; }
+        .updated { color: #6b7280; font-size: 0.85rem; margin-bottom: 32px; }
+        h2 { font-size: 1.15rem; font-weight: 700; margin: 28px 0 10px; color: #111827; }
+        p { font-size: 0.92rem; color: #4b5563; margin-bottom: 12px; }
+        ul { margin: 8px 0 16px 20px; font-size: 0.92rem; color: #4b5563; }
+        ul li { margin-bottom: 6px; }
+        strong { color: #1f2937; }
+        a { color: #D42B2B; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { display: inline-block; margin-top: 32px; color: #6b7280; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <h1>Terms of Service</h1>
+    <p class="updated">Last updated: July 6, 2026</p>
+
+    <h2>1. Service Description</h2>
+    <p>{{ agent_name }} is an AI-powered marketing assistant for Shopify stores. The service provides AI-generated marketing content, campaign management across ad platforms (Google Ads, Meta, TikTok, LinkedIn), social media posting, email marketing, SEO analysis, and related marketing services — all through a unified dashboard and chat interface.</p>
+
+    <h2>2. Accounts & Billing</h2>
+    <p>Service is <strong>$23.99/month</strong> per Shopify store, billed monthly. All prices are in USD. You may cancel at any time. No refunds for partial months. Downgrades take effect at the end of the current billing cycle.</p>
+
+    <h2>3. Shopify Integration</h2>
+    <p>By installing our Shopify app, you authorize us to access your store data via the Shopify API within the scopes you approve during OAuth installation. You may revoke access at any time by uninstalling the app from your Shopify admin.</p>
+
+    <h2>4. Google Ads Partnership</h2>
+    <p>If you use our Google Ads features, you must add our MCC ID (497-231-6864) as a partner in your Google Ads account. This authorizes us to manage campaigns on your behalf through the Google Ads API. You retain full ownership of your Google Ads account and may revoke partner access at any time. We never take ownership of your ad account — we act as a manager under your control.</p>
+
+    <h2>5. AI-Generated Content</h2>
+    <p>All marketing content (ad copy, social posts, emails, blog posts) is AI-generated and should be reviewed before publishing. You are responsible for ensuring content complies with applicable laws and platform policies. We are not liable for losses resulting from published AI-generated content.</p>
+
+    <h2>6. Limitation of Liability</h2>
+    <p>{{ agent_name }} is provided "as is" without warranties of any kind. We are not liable for: (a) losses from ad campaign underperformance, (b) content that violates platform policies, (c) service interruptions beyond our reasonable control, (d) indirect or consequential damages. Our total liability is limited to the fees you paid in the 12 months preceding the claim.</p>
+
+    <h2>7. Data Protection</h2>
+    <p>We process your data as described in our <a href="{{ url_for('privacy') }}">Privacy Policy</a>. We implement industry-standard security measures including encryption in transit and at rest.</p>
+
+    <h2>8. Termination</h2>
+    <p>Either party may terminate at any time. Upon termination, we will delete your data within 30 days. Shopify OAuth tokens are revoked. Google Ads partner access must be removed by you in your Google Ads settings.</p>
+
+    <h2>9. Governing Law</h2>
+    <p>These terms are governed by the laws of the Province of Quebec, Canada. Any disputes shall be resolved in the courts of Laval, Quebec.</p>
+
+    <h2>10. Contact</h2>
+    <p>Laval Digital<br>
+    Email: <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a><br>
+    Phone: {{ CONTACT_PHONE }}<br>
+    Laval, Quebec, Canada</p>
+
+    <a href="{{ url_for('home') }}" class="back-link">&larr; Back to home</a>
+</div>
+</body>
+</html>

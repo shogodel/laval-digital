@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conditions d'Utilisation — {{ agent_name }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f9fafb; color: #1f2937; padding: 40px 20px; line-height: 1.7; }
+        .wrapper { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 48px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 4px; }
+        .updated { color: #6b7280; font-size: 0.85rem; margin-bottom: 32px; }
+        h2 { font-size: 1.15rem; font-weight: 700; margin: 28px 0 10px; color: #111827; }
+        p { font-size: 0.92rem; color: #4b5563; margin-bottom: 12px; }
+        ul { margin: 8px 0 16px 20px; font-size: 0.92rem; color: #4b5563; }
+        ul li { margin-bottom: 6px; }
+        strong { color: #1f2937; }
+        a { color: #D42B2B; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { display: inline-block; margin-top: 32px; color: #6b7280; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <h1>Conditions d'Utilisation</h1>
+    <p class="updated">Dernière mise à jour : 6 juillet 2026</p>
+
+    <h2>1. Description du Service</h2>
+    <p>{{ agent_name }} est un assistant marketing IA pour les boutiques Shopify. Le service fournit du contenu marketing généré par IA, la gestion de campagnes publicitaires (Google Ads, Meta, TikTok, LinkedIn), les publications sur les réseaux sociaux, le marketing par courriel, l'analyse SEO et d'autres services marketing connexes — le tout via un tableau de bord et une interface de clavardage unifiés.</p>
+
+    <h2>2. Comptes et Facturation</h2>
+    <p>Le service est à <strong>23,99 $/mois</strong> par boutique Shopify, facturé mensuellement. Tous les prix sont en USD. Vous pouvez annuler en tout temps. Aucun remboursement pour les mois partiels. Les changements de forfait prennent effet à la fin du cycle de facturation en cours.</p>
+
+    <h2>3. Intégration Shopify</h2>
+    <p>En installant notre application Shopify, vous nous autorisez à accéder aux données de votre boutique via l'API Shopify dans les limites des autorisations que vous approuvez lors de l'installation OAuth. Vous pouvez révoquer l'accès en tout temps en désinstallant l'application.</p>
+
+    <h2>4. Partenariat Google Ads</h2>
+    <p>Si vous utilisez nos fonctionnalités Google Ads, vous devez ajouter notre ID MCC (497-231-6864) comme partenaire dans votre compte Google Ads. Cela nous autorise à gérer les campagnes en votre nom via l'API Google Ads. Vous conservez la pleine propriété de votre compte Google Ads et pouvez révoquer l'accès partenaire en tout temps. Nous ne prenons jamais possession de votre compte publicitaire — nous agissons en tant que gestionnaire sous votre contrôle.</p>
+
+    <h2>5. Contenu Généré par IA</h2>
+    <p>Tout le contenu marketing (textes publicitaires, publications sociales, courriels, articles de blogue) est généré par IA et doit être révisé avant publication. Vous êtes responsable de vous assurer que le contenu respecte les lois applicables et les politiques des plateformes. Nous ne sommes pas responsables des pertes résultant de contenu publié généré par l'IA.</p>
+
+    <h2>6. Limitation de Responsabilité</h2>
+    <p>{{ agent_name }} est fourni « tel quel » sans garanties d'aucune sorte. Nous ne sommes pas responsables : (a) des pertes dues à la sous-performance des campagnes publicitaires, (b) du contenu qui viole les politiques des plateformes, (c) des interruptions de service hors de notre contrôle raisonnable, (d) des dommages indirects ou consécutifs. Notre responsabilité totale est limitée aux frais que vous avez payés dans les 12 mois précédant la réclamation.</p>
+
+    <h2>7. Protection des Données</h2>
+    <p>Nous traitons vos données comme décrit dans notre <a href="{{ url_for('privacy_fr') }}">Politique de Confidentialité</a>.</p>
+
+    <h2>8. Résiliation</h2>
+    <p>Chaque partie peut résilier en tout temps. Après résiliation, nous supprimons vos données dans les 30 jours. Les jetons OAuth Shopify sont révoqués. L'accès partenaire Google Ads doit être retiré par vous dans vos paramètres Google Ads.</p>
+
+    <h2>9. Droit Applicable</h2>
+    <p>Ces conditions sont régies par les lois de la Province de Québec, Canada. Tout litige sera résolu devant les tribunaux de Laval, Québec.</p>
+
+    <h2>10. Contact</h2>
+    <p>Laval Digital<br>
+    Courriel : <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a><br>
+    Téléphone : {{ CONTACT_PHONE }}<br>
+    Laval, Québec, Canada</p>
+
+    <a href="{{ url_for('home_fr') }}" class="back-link">&larr; Retour à l'accueil</a>
+</div>
+</body>
+</html>

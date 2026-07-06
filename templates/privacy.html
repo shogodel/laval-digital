@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — {{ agent_name }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f9fafb; color: #1f2937; padding: 40px 20px; line-height: 1.7; }
+        .wrapper { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 48px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 4px; }
+        .updated { color: #6b7280; font-size: 0.85rem; margin-bottom: 32px; }
+        h2 { font-size: 1.15rem; font-weight: 700; margin: 28px 0 10px; color: #111827; }
+        p { font-size: 0.92rem; color: #4b5563; margin-bottom: 12px; }
+        ul { margin: 8px 0 16px 20px; font-size: 0.92rem; color: #4b5563; }
+        ul li { margin-bottom: 6px; }
+        strong { color: #1f2937; }
+        a { color: #D42B2B; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { display: inline-block; margin-top: 32px; color: #6b7280; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: July 6, 2026</p>
+
+    <h2>1. Who We Are</h2>
+    <p>Laval Digital ("we", "us", "our") operates {{ agent_name }}, an AI marketing assistant for Shopify stores. We are based in Laval, Quebec, Canada.</p>
+
+    <h2>2. What Data We Collect</h2>
+    <p><strong>Account Data:</strong> Email address, name, Shopify store domain, billing information processed securely via our payment processor.</p>
+    <p><strong>Shopify Data:</strong> With your authorization via OAuth, we access your Shopify store's products, orders, customers, analytics, themes, discounts, fulfillment, and marketing events — only data needed to provide the marketing service.</p>
+    <p><strong>Google Ads Data:</strong> When you add our MCC as a partner, we access your Google Ads campaign data (campaigns, keywords, performance metrics) through the Google Ads API to manage and optimize your advertising.</p>
+    <p><strong>Usage Data:</strong> Conversation history with AI agents, task execution logs, and campaign preferences. This data is used solely to improve your marketing results.</p>
+    <p><strong>Essential Cookies:</strong> We use only essential session cookies for authentication. No tracking cookies, no analytics cookies, no third-party marketing cookies.</p>
+
+    <h2>3. How We Use Your Data</h2>
+    <p>We use your data exclusively to: (a) operate the AI marketing service, (b) execute marketing tasks you request, (c) improve service quality, and (d) comply with legal obligations. We never sell your data to third parties.</p>
+
+    <h2>4. Data Sharing</h2>
+    <p>We share data only with:</p>
+    <ul>
+        <li><strong>Shopify</strong> — via OAuth API, solely to execute your marketing tasks</li>
+        <li><strong>Google Ads</strong> — via the Google Ads API, solely to manage your campaigns</li>
+        <li><strong>DeepSeek / LiteLLM</strong> — AI model providers process your prompts to generate marketing content</li>
+        <li><strong>Payment processor</strong> — for billing (we do not store credit card details)</li>
+    </ul>
+
+    <h2>5. Data Retention</h2>
+    <p>We retain your data for as long as your account is active. Upon cancellation, your data is deleted within 30 days. Shopify OAuth tokens are revoked immediately upon uninstall.</p>
+
+    <h2>6. Your Rights (GDPR / CCPA)</h2>
+    <p>You have the right to access, export, correct, or delete your personal data at any time. Use the GDPR Export endpoint in your dashboard or email us at <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a>.</p>
+
+    <h2>7. Security</h2>
+    <p>All data is encrypted in transit (TLS 1.3) and at rest. Credentials are encrypted using Fernet (symmetric encryption) with PBKDF2 key derivation. We follow industry best practices for secure credential storage and API authentication.</p>
+
+    <h2>8. Contact</h2>
+    <p>Questions? Email us at <a href="mailto:{{ CONTACT_EMAIL }}">{{ CONTACT_EMAIL }}</a> or call {{ CONTACT_PHONE }}.</p>
+
+    <a href="{{ url_for('home') }}" class="back-link">&larr; Back to home</a>
+</div>
+</body>
+</html>

@@ -98,25 +98,76 @@
     <!-- How It Works -->
     <div class="card">
         <h2>&#128300; How the Partnership Model Works</h2>
+
+        <p><strong>You add us as a manager — we do the rest.</strong> No API keys, no OAuth flows, no developer tokens needed from you.</p>
+
         <div class="step">
             <div class="step-num">1</div>
-            <div class="step-content"><strong>We own the API access.</strong> Laval Digital has a Google Ads Manager Account (MCC) with developer token — we handle all the OAuth and API credentials.</div>
+            <div class="step-content">
+                <strong>Add our MCC as a partner in Google Ads</strong>
+                <p style="margin-top:6px;">In your Google Ads account:</p>
+                <ol style="margin:6px 0 0 18px;font-size:0.85rem;color:#4b5563;line-height:1.8;">
+                    <li>Click the <strong>tools icon</strong> (wrench) in the top right</li>
+                    <li>Under <strong>"Setup"</strong>, click <strong>"Account access"</strong></li>
+                    <li>Click the <strong>blue "+" button</strong></li>
+                    <li>Select <strong>"Manage account"</strong></li>
+                    <li>Enter our MCC ID: <code style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-size:0.82rem;">{{ mcc_id }}</code></li>
+                    <li>Click <strong>"Send invitation"</strong></li>
+                </ol>
+                <p style="margin-top:8px;font-size:0.82rem;color:#6b7280;">That's it. No API keys, no tokens, no client IDs needed.</p>
+            </div>
         </div>
+
         <div class="step">
             <div class="step-num">2</div>
-            <div class="step-content"><strong>Add us as a partner.</strong> In your Google Ads account, go to <strong>Settings &rarr; Account Access</strong> and add our MCC ID <code>{{ mcc_id }}</code> as a partner.</div>
+            <div class="step-content">
+                <strong>Click "Discover Accounts" above</strong>
+                <p style="margin-top:6px;">We scan all Google Ads accounts that have added us as a partner and list them here. This uses our single API credential — yours is not needed.</p>
+            </div>
         </div>
+
         <div class="step">
             <div class="step-num">3</div>
-            <div class="step-content"><strong>We discover your accounts.</strong> Once you've added us, click "Discover Accounts" above and select which ones to connect.</div>
+            <div class="step-content">
+                <strong>Select and connect your accounts</strong>
+                <p style="margin-top:6px;">Check the boxes next to the accounts you want {{ agent_name }} to manage and click "Connect Selected". We store the connection so our AI agents know which account to use.</p>
+            </div>
         </div>
+
         <div class="step">
             <div class="step-num">4</div>
-            <div class="step-content"><strong>Manage your ads.</strong> Our agents can now create campaigns, keywords, ad copy, and reports across your connected accounts.</div>
+            <div class="step-content">
+                <strong>Tell any AI agent to manage your ads</strong>
+                <p style="margin-top:6px;">Chat with any of your marketing agents (e.g. "Paid Ads", "Growth Hacker", "Social Media") and they can create campaigns, research keywords, generate reports, optimize budgets, and more — all on your connected Google Ads account. Each agent uses its own specialization (e.g. Paid Ads agent for campaign structure, Growth Hacker for budget allocation, Content Strategist for ad copy). You're not locked into one specific agent — use whichever fits the task.</p>
+            </div>
         </div>
+
         <div class="info-box">
-            <strong>&#128274; No per-user OAuth.</strong> You never need to generate API credentials, client IDs, or tokens. Just add our MCC as a partner and you're done.
+            <strong>&#128274; You remain in control.</strong> You retain full ownership of your Google Ads account. Our MCC acts as a <strong>manager</strong>, not an owner. You can revoke access at any time from Google Ads &rarr; Account Access. We never take ownership of your account or ad spend.
         </div>
+    </div>
+
+    <!-- Which Agent Controls My Ads? -->
+    <div class="card">
+        <h2>&#129302; Which AI Agent Handles My Ads?</h2>
+        <p><strong>Any of them, or all of them — it's up to you.</strong> The Google Ads connection is shared across all your agents. Here's how each agent can help with ads:</p>
+        <div class="step">
+            <div class="step-num">&#x1F4E3;</div>
+            <div class="step-content"><strong>Paid Ads Agent</strong> — Campaign creation, keyword research, budget management, A/B testing, ad extensions, Performance Max setup. Best for day-to-day campaign management.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">&#x1F4C8;</div>
+            <div class="step-content"><strong>Growth Hacker</strong> — Budget allocation strategy, growth experiments, scaling winning campaigns, cross-channel optimization. Best for strategic growth.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">&#x270F;&#xFE0F;</div>
+            <div class="step-content"><strong>Content Strategist</strong> — Ad copywriting, headline generation, landing page copy, creative strategy. Best for ad creative.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">&#x1F4CA;</div>
+            <div class="step-content"><strong>Analytics &amp; Reports Agent</strong> — Performance reports, ROAS analysis, trend identification, executive summaries. Best for understanding results.</div>
+        </div>
+        <p style="margin-top:12px;font-size:0.88rem;color:#6b7280;">You can also switch between agents mid-task. For example: ask Paid Ads to create a campaign, Growth Hacker to optimize the budget, and Reports to analyze performance — all on the same connected account.</p>
     </div>
 
     <a href="{{ url_for('admin.panel') }}" class="back-link">&larr; Back to Dashboard</a>
