@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Google Ads Connector — {{ agent_name }}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" nonce="{{ csp_nonce }}">
+    <style nonce="{{ csp_nonce }}">
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; color: #1f2937; padding: 40px 20px; }
+        .wrapper { max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+        .sub { color: #6b7280; font-size: 0.9rem; margin-bottom: 32px; }
+        .card { background: #fff; border-radius: 12px; padding: 28px 32px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .card p { font-size: 0.88rem; color: #6b7280; line-height: 1.6; margin-bottom: 16px; }
+        .badge { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 10px; }
+        .badge.active { background: #ecfdf5; color: #059669; }
+        .badge.inactive { background: #fef2f2; color: #dc2626; }
+        .badge.pending { background: #fffbeb; color: #d97706; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { text-align: left; color: #6b7280; font-weight: 600; padding: 8px 0; border-bottom: 2px solid #e5e7eb; }
+        td { padding: 10px 0; border-bottom: 1px solid #f3f4f6; }
+        .btn { display: inline-block; padding: 8px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; font-family: inherit; cursor: pointer; border: none; text-decoration: none; }
+        .btn-primary { background: #D42B2B; color: #fff; }
+        .btn-primary:hover { background: #A82323; }
+        .btn-secondary { background: #f3f4f6; color: #374151; }
+        .btn-secondary:hover { background: #e5e7eb; }
+        .btn-danger { background: #fef2f2; color: #dc2626; }
+        .btn-danger:hover { background: #fee2e2; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .status-msg { font-size: 0.82rem; padding: 10px; border-radius: 6px; margin: 8px 0; }
+        .status-msg.ok { background: #ecfdf5; color: #059669; }
+        .status-msg.err { background: #fef2f2; color: #dc2626; }
+        .status-msg.info { background: #eff6ff; color: #1e40af; }
+        .back-link { display: inline-block; margin-top: 16px; color: #6b7280; font-size: 0.85rem; text-decoration: none; }
+        .back-link:hover { color: #D42B2B; }
+        .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid #e5e7eb; border-top-color: #D42B2B; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 6px; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .step { display: flex; gap: 14px; margin-bottom: 14px; }
+        .step-num { width: 28px; height: 28px; border-radius: 50%; background: #0f2b45; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+        .step-content { font-size: 0.88rem; line-height: 1.5; }
+        .step-content strong { color: #1f2937; }
+        .info-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 18px; font-size: 0.84rem; color: #1e40af; margin-top: 12px; }
+        .info-box strong { color: #1e3a8a; }
+        .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; cursor: pointer; }
+        .checkbox-row:hover { background: #f9fafb; }
+        .checkbox-row input[type="checkbox"] { width: 18px; height: 18px; }
+        .empty-state { text-align: center; padding: 40px 20px; color: #9ca3af; }
+        .empty-state p { font-size: 0.9rem; margin-bottom: 6px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <h1>&#128200; Google Ads Connector</h1>
+    <p class="sub">Connect your Google Ads accounts through our agency partnership — no API keys needed on your end.</p>
+
+    <!-- Status Card -->
+    <div class="card">
+        <h2>&#9889; Connection Status</h2>
+        <div id="status-area">
+            <span class="loader"></span> Checking connection...
+        </div>
+    </div>
+
+    {% if google_ads_configured %}
+    <!-- Step 1: Discover Accounts -->
+    <div class="card">
+        <h2>&#128269; Step 1: Discover Accounts</h2>
+        <p>Click below to scan for all Google Ads accounts under our agency MCC that you can connect.</p>
+        <button class="btn btn-primary" id="discover-btn">&#128269; Discover Accounts</button>
+        <div id="discover-status"></div>
+    </div>
+
+    <!-- Step 2: Connect (hidden until accounts found) -->
+    <div class="card hidden" id="connect-card">
+        <h2>&#128279; Step 2: Select Accounts to Connect</h2>
+        <p>Choose the Google Ads accounts you want to manage through {{ agent_name }}.</p>
+        <div id="accounts-list"></div>
+        <button class="btn btn-primary hidden" id="connect-btn">&#9989; Connect Selected</button>
+        <div id="connect-status"></div>
+    </div>
+    {% endif %}
+
+    <!-- Connected Accounts -->
+    <div class="card">
+        <h2>&#128203; Connected Accounts</h2>
+        <div id="connected-area">
+            <span class="loader"></span> Loading...
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="card">
+        <h2>&#128300; How the Partnership Model Works</h2>
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content"><strong>We own the API access.</strong> Laval Digital has a Google Ads Manager Account (MCC) with developer token — we handle all the OAuth and API credentials.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content"><strong>Add us as a partner.</strong> In your Google Ads account, go to <strong>Settings &rarr; Account Access</strong> and add our MCC ID <code>{{ mcc_id }}</code> as a partner.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content"><strong>We discover your accounts.</strong> Once you've added us, click "Discover Accounts" above and select which ones to connect.</div>
+        </div>
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content"><strong>Manage your ads.</strong> Our agents can now create campaigns, keywords, ad copy, and reports across your connected accounts.</div>
+        </div>
+        <div class="info-box">
+            <strong>&#128274; No per-user OAuth.</strong> You never need to generate API credentials, client IDs, or tokens. Just add our MCC as a partner and you're done.
+        </div>
+    </div>
+
+    <a href="{{ url_for('admin.panel') }}" class="back-link">&larr; Back to Dashboard</a>
+</div>
+
+<script nonce="{{ csp_nonce }}">
+const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+async function apiFetch(url, opts = {}) {
+    const r = await fetch(url, {
+        ...opts,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': CSRF,
+            ...(opts.headers || {}),
+        },
+    });
+    return r.json();
+}
+
+function showStatus(el, msg, type) {
+    el.className = 'status-msg ' + type;
+    el.textContent = msg;
+}
+
+// Load connection status
+async function loadStatus() {
+    const el = document.getElementById('status-area');
+    const data = await apiFetch('/api/ads/health');
+    if (data.status === 'ok') {
+        el.innerHTML = '<span class="badge active">Connected</span> Agency MCC <code>{{ mcc_id }}</code> — ' + data.detail;
+    } else if (data.status === 'no_accounts') {
+        el.innerHTML = '<span class="badge active">Connected</span> Agency MCC <code>{{ mcc_id }}</code> — ' + data.detail;
+    } else if (data.status === 'missing') {
+        el.innerHTML = '<span class="badge inactive">Not Configured</span> ' + data.detail;
+    } else {
+        el.innerHTML = '<span class="badge inactive">Error</span> ' + (data.detail || data.status);
+    }
+}
+
+// Load connected accounts
+async function loadConnected() {
+    const el = document.getElementById('connected-area');
+    const data = await apiFetch('/api/ads/connections');
+    if (data.success && data.connections.length > 0) {
+        let html = '<table><thead><tr><th>Account</th><th>Customer ID</th><th>Currency</th><th>Actions</th></tr></thead><tbody>';
+        for (const c of data.connections) {
+            html += '<tr><td><strong>' + (c.account_name || 'Unnamed') + '</strong></td><td><code>' + c.customer_id + '</code></td><td>' + (c.currency_code || '-') + '</td>';
+            html += '<td><button class="btn btn-danger btn-sm" onclick="removeConnection(\'' + c.customer_id + '\')">Disconnect</button></td></tr>';
+        }
+        html += '</tbody></table>';
+        el.innerHTML = html;
+    } else if (data.success) {
+        el.innerHTML = '<div class="empty-state"><p>No Google Ads accounts connected yet.</p></div>';
+    } else {
+        el.innerHTML = '<div class="status-msg err">' + (data.error || 'Failed to load') + '</div>';
+    }
+}
+
+// Discover accounts
+document.getElementById('discover-btn')?.addEventListener('click', async function() {
+    const btn = this;
+    const statusEl = document.getElementById('discover-status');
+    btn.disabled = true;
+    showStatus(statusEl, 'Scanning for accessible accounts...', 'info');
+    const data = await apiFetch('/api/ads/discover');
+    if (data.success && data.accounts.length > 0) {
+        showStatus(statusEl, 'Found ' + data.accounts.length + ' account(s)', 'ok');
+        const card = document.getElementById('connect-card');
+        card.classList.remove('hidden');
+        const list = document.getElementById('accounts-list');
+        list.innerHTML = '';
+        for (const a of data.accounts) {
+            const div = document.createElement('div');
+            div.className = 'checkbox-row';
+            div.innerHTML = '<input type="checkbox" class="acct-cb" value="' + a.customer_id + '" data-name="' + (a.descriptive_name || '') + '" data-currency="' + (a.currency_code || '') + '" data-tz="' + (a.time_zone || '') + '"> <strong>' + (a.descriptive_name || 'Account ' + a.customer_id) + '</strong> <code>' + a.customer_id + '</code> <span style="color:#9ca3af;font-size:0.8rem;">' + (a.currency_code || '') + '</span>';
+            list.appendChild(div);
+        }
+        document.getElementById('connect-btn').classList.remove('hidden');
+    } else if (data.success) {
+        showStatus(statusEl, 'No accessible accounts found. Did you add our MCC (' + data.mcc_id + ') as a partner in Google Ads?', 'info');
+        document.getElementById('connect-card')?.classList.add('hidden');
+    } else {
+        showStatus(statusEl, data.error || 'Discovery failed', 'err');
+    }
+    btn.disabled = false;
+});
+
+// Connect selected accounts
+document.getElementById('connect-btn')?.addEventListener('click', async function() {
+    const btn = this;
+    const statusEl = document.getElementById('connect-status');
+    const cbs = document.querySelectorAll('.acct-cb:checked');
+    if (cbs.length === 0) {
+        showStatus(statusEl, 'Please select at least one account.', 'err');
+        return;
+    }
+    btn.disabled = true;
+    showStatus(statusEl, 'Connecting...', 'info');
+    const errors = [];
+    for (const cb of cbs) {
+        const data = await apiFetch('/api/ads/connect', {
+            method: 'POST',
+            body: JSON.stringify({
+                customer_id: cb.value,
+                account_name: cb.dataset.name,
+                currency_code: cb.dataset.currency,
+                time_zone: cb.dataset.tz,
+            }),
+        });
+        if (!data.success) {
+            errors.push(cb.value + ': ' + (data.error || 'Failed'));
+        }
+    }
+    if (errors.length === 0) {
+        showStatus(statusEl, 'All selected accounts connected!', 'ok');
+        document.getElementById('connect-card').classList.add('hidden');
+        loadConnected();
+    } else {
+        showStatus(statusEl, 'Errors: ' + errors.join('; '), 'err');
+    }
+    btn.disabled = false;
+});
+
+async function removeConnection(customerId) {
+    const data = await apiFetch('/api/ads/disconnect', {
+        method: 'POST',
+        body: JSON.stringify({ customer_id: customerId }),
+    });
+    if (data.success) {
+        loadConnected();
+    }
+}
+
+loadStatus();
+loadConnected();
+</script>
+</body>
+</html>

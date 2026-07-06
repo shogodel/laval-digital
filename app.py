@@ -147,6 +147,8 @@ def create_app():
     app.register_blueprint(users_bp)
     from blueprints.shopify_bp import shopify_bp
     app.register_blueprint(shopify_bp)
+    from blueprints.ads_bp import ads_bp
+    app.register_blueprint(ads_bp)
 
     for rule in app.url_map.iter_rules():
         if rule.rule in API_PUBLIC and rule.methods and not {'GET', 'HEAD', 'OPTIONS'}.issuperset(rule.methods):

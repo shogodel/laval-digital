@@ -286,6 +286,22 @@ def upgrade() -> None:
         )
     """)
 
+    op.execute(f"""
+        CREATE TABLE IF NOT EXISTS shop_ad_connections (
+            id {_autoinc()},
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            platform TEXT NOT NULL DEFAULT 'google_ads',
+            customer_id TEXT NOT NULL,
+            account_name TEXT,
+            currency_code TEXT,
+            time_zone TEXT,
+            status TEXT DEFAULT 'active',
+            connected_at TEXT NOT NULL,
+            verified_at TEXT,
+            UNIQUE(user_id, platform, customer_id)
+        )
+    """)
+
     # ── Indexes ─────────────────────────────────────────────────
     for idx_sql in [
         "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
@@ -310,6 +326,8 @@ def upgrade() -> None:
         "CREATE INDEX IF NOT EXISTS idx_shops_domain ON shops(shop)",
         "CREATE INDEX IF NOT EXISTS idx_webhook_events_shop ON webhook_events(shop)",
         "CREATE INDEX IF NOT EXISTS idx_webhook_events_topic ON webhook_events(topic)",
+        "CREATE INDEX IF NOT EXISTS idx_ad_connections_user ON shop_ad_connections(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_ad_connections_platform ON shop_ad_connections(platform)",
     ]:
         op.execute(idx_sql)
 

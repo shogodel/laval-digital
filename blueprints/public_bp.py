@@ -73,6 +73,14 @@ def health():
     except Exception as e:
         status["encryption"] = {"status": "error", "detail": str(e)}
         status["status"] = "degraded"
+    try:
+        from core.ads_auth import ads_credential_health
+        status["google_ads"] = ads_credential_health()
+        if status["google_ads"]["status"] not in ("ok", "no_accounts"):
+            status["status"] = "degraded"
+    except Exception as e:
+        status["google_ads"] = {"status": "error", "detail": str(e)}
+        status["status"] = "degraded"
     http_code = 200 if status["status"] == "ok" else 503
     return jsonify(status), http_code
 

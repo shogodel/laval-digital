@@ -195,6 +195,20 @@ def reports():
     return render_template("admin.html", tenants=tenants, active_tenant=active_tenant, default_tab="reports", locale="en")
 
 
+@admin_bp.route("/ads-connector")
+def ads_connector():
+    """Serve the Google Ads connector setup page."""
+    auth_check = admin_page_required()
+    if auth_check:
+        return auth_check
+    from core.settings import GOOGLE_ADS_MCC_ID, google_ads_configured
+    return render_template(
+        "admin/ads_connector.html",
+        google_ads_configured=google_ads_configured(),
+        mcc_id=GOOGLE_ADS_MCC_ID,
+    )
+
+
 @admin_bp.route("/managed")
 def managed():
     """Serve the managed clients admin page."""

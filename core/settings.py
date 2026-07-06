@@ -200,6 +200,31 @@ BASE_AGENT_CONFIG = {
 }
 
 
+# ── Google Ads credentials ──────────────────────────────────────────
+
+GOOGLE_ADS_DEVELOPER_TOKEN: str = os.getenv("GOOGLE_ADS_DEVELOPER_TOKEN", "")
+GOOGLE_ADS_CLIENT_ID: str = os.getenv("GOOGLE_ADS_CLIENT_ID", "")
+GOOGLE_ADS_CLIENT_SECRET: str = os.getenv("GOOGLE_ADS_CLIENT_SECRET", "")
+GOOGLE_ADS_REFRESH_TOKEN: str = os.getenv("GOOGLE_ADS_REFRESH_TOKEN", "")
+GOOGLE_ADS_MCC_ID: str = os.getenv("GOOGLE_ADS_MCC_ID", "")
+
+GOOGLE_ADS_CONFIG: dict[str, str] = {
+    "developer_token": GOOGLE_ADS_DEVELOPER_TOKEN,
+    "client_id": GOOGLE_ADS_CLIENT_ID,
+    "client_secret": GOOGLE_ADS_CLIENT_SECRET,
+    "refresh_token": GOOGLE_ADS_REFRESH_TOKEN,
+    "login_customer_id": GOOGLE_ADS_MCC_ID.replace("-", ""),
+    "use_proto_plus": "True",
+}
+
+
+def google_ads_configured() -> bool:
+    """Return True if all required Google Ads env vars are set."""
+    return all([GOOGLE_ADS_DEVELOPER_TOKEN, GOOGLE_ADS_CLIENT_ID,
+                GOOGLE_ADS_CLIENT_SECRET, GOOGLE_ADS_REFRESH_TOKEN,
+                GOOGLE_ADS_MCC_ID])
+
+
 # ── Encryption helpers ──────────────────────────────────────────────
 
 def derive_fernet_key() -> Fernet:
@@ -271,4 +296,5 @@ API_PUBLIC: set = {
     "/api/auth/callback",
     "/api/webhooks",
     "/api/shopify/register-webhooks",
+    "/api/ads/health",
 }

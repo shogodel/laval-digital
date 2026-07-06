@@ -493,10 +493,23 @@ def _init_db_sqlite(conn: _SqliteConnection) -> None:
             shop TEXT NOT NULL, topic TEXT NOT NULL,
             body TEXT NOT NULL, received_at TEXT NOT NULL, processed INTEGER DEFAULT 0
         );
+        CREATE TABLE IF NOT EXISTS shop_ad_connections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            platform TEXT NOT NULL DEFAULT 'google_ads',
+            customer_id TEXT NOT NULL,
+            account_name TEXT,
+            currency_code TEXT,
+            time_zone TEXT,
+            status TEXT DEFAULT 'active',
+            connected_at TEXT NOT NULL,
+            verified_at TEXT,
+            UNIQUE(user_id, platform, customer_id)
+        );
     """)
     conn.commit()
-
-
+    
+    
 def _init_db_pg(conn: _PgConnection) -> None:
     """PostgreSQL-specific base table creation."""
     ddl_statements = [
@@ -712,6 +725,20 @@ def _init_db_pg(conn: _PgConnection) -> None:
             received_at TEXT NOT NULL,
             processed INTEGER DEFAULT 0
         )""",
+        """
+        CREATE TABLE IF NOT EXISTS shop_ad_connections (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            platform TEXT NOT NULL DEFAULT 'google_ads',
+            customer_id TEXT NOT NULL,
+            account_name TEXT,
+            currency_code TEXT,
+            time_zone TEXT,
+            status TEXT DEFAULT 'active',
+            connected_at TEXT NOT NULL,
+            verified_at TEXT,
+            UNIQUE(user_id, platform, customer_id)
+        )""",
     ]
     for ddl in ddl_statements:
         conn.execute(ddl)
@@ -741,6 +768,8 @@ def _init_db_pg(conn: _PgConnection) -> None:
         "CREATE INDEX IF NOT EXISTS idx_shops_domain ON shops(shop)",
         "CREATE INDEX IF NOT EXISTS idx_webhook_events_shop ON webhook_events(shop)",
         "CREATE INDEX IF NOT EXISTS idx_webhook_events_topic ON webhook_events(topic)",
+        "CREATE INDEX IF NOT EXISTS idx_ad_connections_user ON shop_ad_connections(user_id)",
+        "CREATE INDEX IF NOT EXISTS idx_ad_connections_platform ON shop_ad_connections(platform)",
     ]
     for idx in indexes:
         conn.execute(idx)
@@ -816,6 +845,45 @@ def _run_alembic_migrations() -> None:
         ("agent_name", "TEXT DEFAULT NULL"),
         ("is_platform_admin", "INTEGER DEFAULT 0"),
     ])
+    # Ensure shop_ad_connections table exists (added after initial migration)
+    try:
+        conn.execute("SELECT id FROM shop_ad_connections LIMIT 0")
+    except Exception:
+        if _is_pg():
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shop_ad_connections (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id),
+                    platform TEXT NOT NULL DEFAULT 'google_ads',
+                    customer_id TEXT NOT NULL,
+                    account_name TEXT,
+                    currency_code TEXT,
+                    time_zone TEXT,
+                    status TEXT DEFAULT 'active',
+                    connected_at TEXT NOT NULL,
+                    verified_at TEXT,
+                    UNIQUE(user_id, platform, customer_id)
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_ad_connections_user ON shop_ad_connections(user_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_ad_connections_platform ON shop_ad_connections(platform)")
+        else:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shop_ad_connections (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL REFERENCES users(id),
+                    platform TEXT NOT NULL DEFAULT 'google_ads',
+                    customer_id TEXT NOT NULL,
+                    account_name TEXT,
+                    currency_code TEXT,
+                    time_zone TEXT,
+                    status TEXT DEFAULT 'active',
+                    connected_at TEXT NOT NULL,
+                    verified_at TEXT,
+                    UNIQUE(user_id, platform, customer_id)
+                )
+            """)
+        logger.info("Created shop_ad_connections table via fallback")
     conn.commit()
 
 
@@ -953,7 +1021,7 @@ def export_user_data(uid: int) -> dict:
     for table in ("agent_configs", "threads", "leads", "execution_log",
                   "pending_actions", "mcp_credentials", "agent_feedback",
                   "agent_preferences", "agent_findings", "agent_schedules",
-                  "llm_usage_log", "user_llm_quotas"):
+                  "llm_usage_log", "user_llm_quotas", "shop_ad_connections"):
         rows = conn.execute(f"SELECT * FROM {table} WHERE user_id = ?", (uid,)).fetchall()
         data[table] = [dict(r) for r in rows]
 
@@ -990,6 +1058,7 @@ def delete_user(uid: int) -> None:
         conn.execute("DELETE FROM agent_schedules WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM llm_usage_log WHERE user_id = ?", (uid,))
         conn.execute("DELETE FROM user_llm_quotas WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM shop_ad_connections WHERE user_id = ?", (uid,))
         for shop in shop_domains:
             conn.execute("DELETE FROM webhook_events WHERE shop = ?", (shop,))
         conn.execute("DELETE FROM shops WHERE user_id = ?", (uid,))
@@ -999,3 +1068,81 @@ def delete_user(uid: int) -> None:
     except Exception:
         conn.rollback()
         raise
+
+
+# ── Ad connection helpers ──────────────────────────────────────────
+
+
+def list_ad_connections(user_id: int, platform: str = "google_ads") -> list[dict]:
+    """List ad platform connections for a user."""
+    conn = _get_conn()
+    rows = conn.execute(
+        "SELECT * FROM shop_ad_connections WHERE user_id = ? AND platform = ? ORDER BY connected_at",
+        (user_id, platform),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def add_ad_connection(user_id: int, platform: str, customer_id: str,
+                      account_name: str = "", currency_code: str = "",
+                      time_zone: str = "") -> int | None:
+    """Add an ad platform connection for a user. Returns the row id."""
+    from datetime import UTC, datetime
+    conn = _get_conn()
+    now = datetime.now(UTC).isoformat()
+    try:
+        if _is_pg():
+            cur = conn.execute(
+                """INSERT INTO shop_ad_connections
+                   (user_id, platform, customer_id, account_name, currency_code,
+                    time_zone, status, connected_at)
+                   VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
+                   ON CONFLICT (user_id, platform, customer_id)
+                   DO UPDATE SET account_name = EXCLUDED.account_name,
+                                 currency_code = EXCLUDED.currency_code,
+                                 time_zone = EXCLUDED.time_zone,
+                                 status = 'active',
+                                 verified_at = ?
+                   RETURNING id""",
+                (user_id, platform, customer_id, account_name,
+                 currency_code, time_zone, now, now),
+            )
+        else:
+            conn.execute(
+                """INSERT INTO shop_ad_connections
+                   (user_id, platform, customer_id, account_name, currency_code,
+                    time_zone, status, connected_at)
+                   VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
+                   ON CONFLICT(user_id, platform, customer_id)
+                   DO UPDATE SET account_name = excluded.account_name,
+                                currency_code = excluded.currency_code,
+                                time_zone = excluded.time_zone,
+                                status = 'active',
+                                verified_at = ?""",
+                (user_id, platform, customer_id, account_name,
+                 currency_code, time_zone, now, now),
+            )
+            cur = conn.execute("SELECT id FROM shop_ad_connections WHERE user_id = ? AND platform = ? AND customer_id = ?",
+                              (user_id, platform, customer_id))
+        conn.commit()
+        return cur.lastrowid
+    except Exception as e:
+        conn.rollback()
+        logger.error("Failed to add ad connection: %s", e)
+        return None
+
+
+def remove_ad_connection(user_id: int, platform: str, customer_id: str) -> bool:
+    """Remove an ad platform connection."""
+    conn = _get_conn()
+    try:
+        conn.execute(
+            "DELETE FROM shop_ad_connections WHERE user_id = ? AND platform = ? AND customer_id = ?",
+            (user_id, platform, customer_id),
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        conn.rollback()
+        logger.error("Failed to remove ad connection: %s", e)
+        return False

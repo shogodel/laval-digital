@@ -29,6 +29,7 @@
     'nav_reports': 'Reports' if locale == 'en' else 'Rapports',
     'nav_managed': 'Managed' if locale == 'en' else 'Gérés',
     'nav_mcp': 'MCP Servers' if locale == 'en' else 'Serveurs MCP',
+    'nav_ads': 'Google Ads' if locale == 'en' else 'Google Ads',
     'sidebar_brand': agent_name ~ ' Control Center',
     'install_app': 'Install App' if locale == 'en' else "Installer l'App",
     'sign_out': 'Sign out' if locale == 'en' else 'Déconnexion',
@@ -132,6 +133,7 @@
             <a href="#" data-tab="reports" role="tab" aria-selected="false" aria-controls="tab-reports"><span class="icon">📄</span> {{ t.nav_reports }}</a>
             <a href="#" data-tab="managed" role="tab" aria-selected="false" aria-controls="tab-managed"><span class="icon">🤝</span> {{ t.nav_managed }}</a>
             <a href="#" data-tab="mcp" role="tab" aria-selected="false" aria-controls="tab-mcp"><span class="icon">🔌</span> {{ t.nav_mcp }}</a>
+            <a href="{{ url_for('admin.ads_connector') }}" style="display:flex;align-items:center;gap:10px;padding:12px 16px;color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.85rem;font-weight:500;transition:all 0.15s;border-left:3px solid transparent;"><span class="icon">📢</span> {{ t.nav_ads }}</a>
         </nav>
         <div class="sidebar-footer" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(255,255,255,0.08);">
             {% if locale == 'fr' %}
