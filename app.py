@@ -83,7 +83,7 @@ def create_app():
     app.secret_key = os.getenv("FLASK_SECRET_KEY")
     app.permanent_session_lifetime = timedelta(hours=8)
     app.config["SESSION_COOKIE_HTTPONLY"] = True
-    app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     if os.getenv("DEV_MODE", "").lower() not in ("true", "1"):
         app.config["SESSION_COOKIE_SECURE"] = True
     else:

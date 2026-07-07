@@ -97,6 +97,7 @@
         </div>
 
         <form method="POST" action="{{ url_for('admin.login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="shop">Shopify Store Domain</label>
                 <input type="text" id="shop" name="shop" placeholder="mystore.myshopify.com" required autofocus>
