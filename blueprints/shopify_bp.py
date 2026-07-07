@@ -64,7 +64,8 @@ def install():
     shop = request.args.get("shop", "").strip().lower()
     if not shop or not shop.endswith(".myshopify.com"):
         return api_error("Invalid shop parameter", 400)
-    redirect_uri = f"{SHOPIFY_APP_HOME}/api/auth/callback"
+    # New OAuth flow: redirect_uri must equal the App URL itself
+    redirect_uri = SHOPIFY_APP_HOME
     install_url = build_install_url(shop, redirect_uri)
     return redirect(install_url)
 

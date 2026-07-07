@@ -460,6 +460,12 @@ def create_app():
 
     @app.route("/")
     def home():
+        # OAuth callback arrives at App URL root in new Shopify flow
+        if request.args.get("code"):
+            return redirect(url_for("shopify.callback", **request.args))
+        # Initial install request from Shopify (no code yet)
+        if request.args.get("hmac") and request.args.get("shop"):
+            return redirect(url_for("shopify.install", **request.args))
         return render_template("home.html")
 
     @app.route("/fr/")
