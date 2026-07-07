@@ -20,6 +20,10 @@ import threading
 from datetime import UTC, datetime, timedelta
 
 from dotenv import load_dotenv
+
+# Load .env BEFORE any project imports that read env vars
+load_dotenv()
+
 from flask import Flask, flash, g, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, logout_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
@@ -49,8 +53,6 @@ logger = logging.getLogger(__name__)
 
 
 def create_app():
-    load_dotenv()
-
     import sentry_sdk
     sentry_dsn = os.getenv("SENTRY_DSN")
     if sentry_dsn:

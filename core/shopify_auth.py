@@ -37,7 +37,7 @@ SHOPIFY_APP_SCOPES = os.getenv(
     "read_analytics,read_content,write_content,read_files,write_files,"
     "read_price_rules,write_price_rules,read_shipping,write_shipping",
 )
-SHOPIFY_APP_HOME = os.getenv("SHOPIFY_APP_HOME", "https://lavaldigital.ca")
+SHOPIFY_APP_HOME = os.getenv("SHOPIFY_APP_HOME", "https://laval.digital")
 ADMIN_SHOP_DOMAIN = os.getenv("ADMIN_SHOP_DOMAIN", "").strip().lower()
 SESSION_TOKEN_EXPIRY = timedelta(hours=2)
 
