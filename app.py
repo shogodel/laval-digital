@@ -252,7 +252,7 @@ def create_app():
             return
         if request.path in API_PUBLIC:
             return
-        if current_user.is_authenticated and current_user.role == "admin":
+        if current_user.is_authenticated and current_user.role in ("admin", "user"):
             return
         shop = session.get("shop") or request.args.get("shop") or request.headers.get("X-Shopify-Shop-Domain")
         if shop:
