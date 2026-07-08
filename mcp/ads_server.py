@@ -9,9 +9,6 @@ from .base_server import MCPServer
 
 logger = logging.getLogger(__name__)
 
-_GOOGLE_ADS_DEFAULT_CUSTOMER = ""
-
-
 def _get_customer_id(**kwargs: Any) -> str:
     """Resolve the Google Ads customer ID to use for this call.
 
