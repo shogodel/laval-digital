@@ -990,6 +990,13 @@ document.addEventListener('keydown', function(e) {
     el = byId('add-user-btn'); if (el) el.addEventListener('click', addUser);
 
     // Platform connections
+    el = byId('connect-shopify-btn'); if (el) el.addEventListener('click', function() { showSimpleConnect('shopify'); });
+    el = byId('save-shopify-btn'); if (el) el.addEventListener('click', function() {
+        var domain = (document.getElementById('shopify-domain') || {}).value || '';
+        domain = domain.trim().toLowerCase();
+        if (!domain) { toast('Please enter your Shopify store domain.'); return; }
+        window.location.href = '/api/auth/install?shop=' + encodeURIComponent(domain);
+    });
     el = byId('connect-website-btn'); if (el) el.addEventListener('click', function() { showSimpleConnect('website'); });
     el = byId('save-website-btn'); if (el) el.addEventListener('click', function() { saveSimpleConnect('website'); });
     el = byId('connect-facebook-btn'); if (el) el.addEventListener('click', function() { showSimpleConnect('facebook'); });

@@ -90,20 +90,11 @@
             <img src="{{ url_for('static', filename=logo_file) }}" alt="Laval Digital" height="96">
         </div>
         <h1>Admin Login</h1>
-        <p>Sign in with your Shopify store to access the admin panel.</p>
+        <p>Sign in to access the admin panel.</p>
 
         <div class="error {% if error %}show{% endif %}" id="error-msg">
             {{ error }}
         </div>
-
-        <form method="POST" action="{{ url_for('admin.login') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="form-group">
-                <label for="shop">Shopify Store Domain</label>
-                <input type="text" id="shop" name="shop" placeholder="mystore.myshopify.com" required autofocus>
-            </div>
-            <button type="submit" class="login-btn">Login with Shopify</button>
-        </form>
 
         {% if legacy_admin %}
         <hr style="margin: 24px 0; border: none; border-top: 1px solid #e0e0e0;">
@@ -112,7 +103,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="Enter your username">
+                <input type="text" id="username" name="username" placeholder="Enter your username" autofocus>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>

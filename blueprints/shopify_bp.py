@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, session, url_for
+from flask_login import current_user
 
 from core import database
 from core.api_helpers import api_error, api_success
@@ -150,8 +151,16 @@ def callback():
     session["shop"] = shop
     session["access_token"] = access_token
 
+    # Link shop to logged-in user if coming from admin panel
+    if current_user.is_authenticated:
+        conn = database._get_conn()
+        conn.execute("UPDATE shops SET user_id = ? WHERE shop = ?", (current_user.id, shop))
+        conn.commit()
+
     _subscribe_webhooks(shop, access_token)
 
+    if current_user.is_authenticated:
+        return redirect(url_for("admin.panel"))
     return redirect(url_for("shopify.admin_embedded"))
 
 

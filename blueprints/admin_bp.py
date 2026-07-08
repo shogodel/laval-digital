@@ -54,13 +54,10 @@ def admin_page_required_fr(f):
 
 @admin_bp.route("/login", methods=["GET", "POST"])
 def login():
-    """Serve the admin login page. Supports Shopify OAuth or legacy password login."""
+    """Serve the admin login page with legacy password login."""
     legacy_admin = os.getenv("ADMIN_USERNAME") and os.getenv("ADMIN_PASSWORD")
 
     if request.method == "POST":
-        shop = request.form.get("shop", "").strip().lower()
-        if shop:
-            return redirect(url_for("shopify.install", shop=shop))
         if legacy_admin:
             if not _check_rate_limit("admin"):
                 return render_template(
@@ -229,13 +226,10 @@ def managed():
 
 @admin_fr_bp.route("/login", methods=["GET", "POST"])
 def login_fr():
-    """Serve the French admin login page. Supports Shopify OAuth or legacy password login."""
+    """Serve the French admin login page with legacy password login."""
     legacy_admin = os.getenv("ADMIN_USERNAME") and os.getenv("ADMIN_PASSWORD")
 
     if request.method == "POST":
-        shop = request.form.get("shop", "").strip().lower()
-        if shop:
-            return redirect(url_for("shopify.install", shop=shop))
         if legacy_admin:
             if not _check_rate_limit("admin"):
                 return render_template(

@@ -312,6 +312,25 @@
                     <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
+                                <strong>🛒 Shopify Store</strong>
+                                <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">{% if locale == 'fr' %}Connectez votre boutique Shopify pour permettre aux agents d'accéder à vos données{% else %}Connect your Shopify store so agents can access your products, orders, and analytics{% endif %}</p>
+                            </div>
+                            <button class="btn btn-gray btn-sm" id="connect-shopify-btn">{{ t.connect }}</button>
+                        </div>
+                        <div id="connect-shopify" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border-radius:var(--radius);">
+                            <label for="shopify-domain" style="font-size:0.85rem;margin-bottom:8px;display:block;">{% if locale == 'fr' %}Domaine de votre boutique Shopify{% else %}Your Shopify store domain{% endif %}</label>
+                            <div style="display:flex;gap:8px;">
+                                <input type="text" id="shopify-domain" placeholder="mystore.myshopify.com" style="flex:1;">
+                                <button class="btn btn-green btn-sm" id="save-shopify-btn">{{ t.save_connect }}</button>
+                            </div>
+                            <p style="font-size:0.75rem;color:var(--gray-500);margin-top:8px;">{% if locale == 'fr' %}Vous serez redirigé vers Shopify pour autoriser {{ agent_name }} à accéder à votre boutique.{% else %}You'll be redirected to Shopify to authorize {{ agent_name }} to access your store.{% endif %}</p>
+                            <span id="connect-shopify-result"></span>
+                        </div>
+                    </div>
+
+                    <div class="agent-card enabled" style="padding:16px;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
                                 <strong>🌐 {% if locale == 'fr' %}Votre Site Web{% else %}Your Website{% endif %}</strong>
                                 <p style="font-size:0.8rem;color:var(--gray-500);margin:2px 0;">Shopify{% if locale == 'fr' %} ou un site personnalisé{% else %} or custom site{% endif %}</p>
                             </div>
