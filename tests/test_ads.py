@@ -278,10 +278,3 @@ class TestAdsApiDiscover:
         if r.status_code in (400, 401):
             data = r.get_json()
             assert data is not None
-
-    def _assert_config_error(self, r):
-        assert r.status_code in (200, 400)
-        if r.status_code == 400:
-            data = r.get_json()
-            assert data is not None
-            assert "not configured" in data.get("error", "").lower() or "not configured" in str(data.get("message", ""))
