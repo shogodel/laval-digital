@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 
 from flask import Blueprint, request, session
 from flask_login import current_user
+from werkzeug.security import generate_password_hash
 
 from core import database
 from core.api_helpers import api_error, api_success
@@ -163,3 +164,32 @@ def switch_tenant():
             "active_tenant": None,
             "message": "Client cleared",
         })
+
+
+@users_bp.route("/api/signup", methods=["POST"])
+def api_signup():
+    """Public signup — creates a new user account."""
+    data = request.json or {}
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password", "")
+    display_name = (data.get("display_name") or "").strip()
+
+    if not email or not password:
+        return api_error("Email and password are required", 400)
+
+    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        return api_error("Invalid email format.", 400)
+
+    is_valid, err_msg = validate_password(password)
+    if not is_valid:
+        return api_error(err_msg, 400)
+
+    existing = database.get_user_by_email(email)
+    if existing:
+        return api_error("An account with this email already exists", 409)
+
+    try:
+        uid = database.create_user(email, generate_password_hash(password), "user", display_name)
+        return api_success({"user_id": uid, "message": "Account created successfully"}, status_code=201)
+    except Exception as e:
+        return safe_error(e, 500)
