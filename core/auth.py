@@ -221,11 +221,9 @@ def admin_page_required(f=None):
 
     As a decorator, wraps the route function and redirects to login if not logged in.
     As middleware, returns a redirect response if not logged in, else None.
-
-    NOTE: Uses _is_platform_admin() — shop-authenticated users cannot access these pages.
     """
     if f is None:
-        if not _is_platform_admin():
+        if not current_user.is_authenticated:
             return redirect(url_for("admin.login"))
         return None
 

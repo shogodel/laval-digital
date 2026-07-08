@@ -10,7 +10,7 @@ from flask_login import current_user, login_user, logout_user
 from werkzeug.security import check_password_hash
 
 from core import database
-from core.auth import AdminUser, User, _check_rate_limit, _is_platform_admin, _record_attempt, admin_page_required
+from core.auth import AdminUser, User, _check_rate_limit, _record_attempt, admin_page_required
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 logger = logging.getLogger(__name__)
@@ -39,10 +39,10 @@ def _get_admin_password_hash() -> str:
 
 
 def admin_page_required_fr(f):
-    """Decorator that requires admin session authentication (redirects to French login)."""
+    """Decorator that requires authentication (redirects to French login)."""
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not _is_platform_admin():
+        if not current_user.is_authenticated:
             return redirect(url_for("admin_fr.login_fr"))
         return f(*args, **kwargs)
     return decorated
