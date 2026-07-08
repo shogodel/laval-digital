@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from functools import wraps
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, g, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_user, logout_user
 from werkzeug.security import check_password_hash
 
@@ -222,10 +222,21 @@ def ads_connector():
     if auth_check:
         return auth_check
     from core.settings import GOOGLE_ADS_MCC_ID, google_ads_configured
+    # Resolve agent_name for the template
+    agent_name = "AI Assistant"
+    shop = session.get("shop") or getattr(g, "shop", "")
+    if shop:
+        try:
+            row = database._get_conn().execute("SELECT agent_name FROM shops WHERE shop = ?", (shop,)).fetchone()
+            if row and row["agent_name"]:
+                agent_name = row["agent_name"]
+        except Exception:
+            pass
     return render_template(
         "admin/ads_connector.html",
         google_ads_configured=google_ads_configured(),
         mcc_id=GOOGLE_ADS_MCC_ID,
+        agent_name=agent_name,
     )
 
 
