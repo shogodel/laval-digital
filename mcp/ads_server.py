@@ -15,23 +15,13 @@ _GOOGLE_ADS_DEFAULT_CUSTOMER = ""
 def _get_customer_id(**kwargs: Any) -> str:
     """Resolve the Google Ads customer ID to use for this call.
 
-    Resolution order:
+    Delegates to ``resolve_customer_id()`` which checks:
     1. Explicit ``customer_id`` kwarg
     2. ``api_credentials.customer_id`` dict
-    3. ``resolve_customer_id()`` — auto-lookup from DB for the current request user
-    4. Empty string (triggers template fallback)
+    3. Flask request context — auto-lookup from DB for the current user
 
-    This is the bridge: user connects their account once in the UI via
-    ``/admin/ads-connector``, and all agent tools automatically use
-    that connection. No need to pass ``customer_id`` per call.
+    Returns empty string if nothing found (triggers template fallback).
     """
-    cid = kwargs.get("customer_id", "").strip()
-    if cid:
-        return cid.replace("-", "")
-    creds = kwargs.get("api_credentials") or {}
-    cid = creds.get("customer_id", "").strip()
-    if cid:
-        return cid.replace("-", "")
     try:
         from core.ads_auth import resolve_customer_id
         resolved = resolve_customer_id(kwargs)
