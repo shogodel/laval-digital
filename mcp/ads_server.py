@@ -183,14 +183,24 @@ class AdsMCPServer(MCPServer):
                 network.target_content_network = campaign_type == "pmax"
                 campaign.network_settings = network
 
-            if location:
-                geo_target = client.get_type("LocationInfo", version="v24")
-                geo_target.geo_target_constant = f"geoTargetConstants/{_resolve_location_id(location)}"
-                campaign.targeting_setting.target_restrictions = [geo_target]
-
             campaign_op.create = campaign
             campaign_response = campaign_service.mutate(customer_id=cid, operations=[campaign_op])
             campaign_resource = campaign_response.results[0].resource_name
+
+            if location:
+                try:
+                    geo_target = client.get_type("LocationInfo", version="v24")
+                    geo_target.geo_target_constant = f"geoTargetConstants/{_resolve_location_id(location)}"
+                    criterion_service = client.get_service("CampaignCriterionService", version="v24")
+                    criterion_op = client.get_type("CampaignCriterionOperation", version="v24")
+                    criterion = client.get_type("CampaignCriterion", version="v24")
+                    criterion.campaign = campaign_resource
+                    criterion.location = geo_target
+                    criterion.negative = False
+                    criterion_op.create = criterion
+                    criterion_service.mutate(customer_id=cid, operations=[criterion_op])
+                except Exception as geo_e:
+                    logger.warning("Location targeting failed (campaign created without location): %s", geo_e)
 
             return {
                 "success": True,
