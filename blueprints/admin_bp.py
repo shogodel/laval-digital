@@ -10,7 +10,7 @@ from flask_login import current_user, login_user, logout_user
 from werkzeug.security import check_password_hash
 
 from core import database
-from core.auth import AdminUser, _check_rate_limit, _is_platform_admin, _record_attempt, admin_page_required
+from core.auth import AdminUser, User, _check_rate_limit, _is_platform_admin, _record_attempt, admin_page_required
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 logger = logging.getLogger(__name__)
@@ -54,31 +54,54 @@ def admin_page_required_fr(f):
 
 @admin_bp.route("/login", methods=["GET", "POST"])
 def login():
-    """Serve the admin login page with legacy password login."""
+    """Serve the admin login page with email/password login."""
     legacy_admin = os.getenv("ADMIN_USERNAME") and os.getenv("ADMIN_PASSWORD")
 
     if request.method == "POST":
-        if legacy_admin:
-            if not _check_rate_limit("admin"):
-                return render_template(
-                    "login.html", error="Too many attempts. Please try again later.", now=datetime.now(),
-                    legacy_admin=True
-                )
-            username = request.form.get("username", "")
-            password = request.form.get("password", "")
-            expected_user = os.getenv("ADMIN_USERNAME")
-            if hmac.compare_digest(username, expected_user) and check_password_hash(_get_admin_password_hash(), password):
+        if not _check_rate_limit("admin"):
+            return render_template(
+                "login.html", error="Too many attempts. Please try again later.", now=datetime.now(),
+                legacy_admin=bool(legacy_admin)
+            )
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        # Try legacy admin first (username-based)
+        if legacy_admin and hmac.compare_digest(email, os.getenv("ADMIN_USERNAME", "")):
+            if check_password_hash(_get_admin_password_hash(), password):
                 _record_attempt(True, "admin")
                 login_user(AdminUser("admin"))
                 return redirect(url_for("admin.panel"))
             _record_attempt(False, "admin")
             return render_template(
-                "login.html", error="Invalid username or password.", now=datetime.now(),
+                "login.html", error="Invalid email or password.", now=datetime.now(),
                 legacy_admin=True
             )
-        return render_template("login.html", error="Invalid request.", now=datetime.now(), legacy_admin=False)
 
-    return render_template("login.html", now=datetime.now(), legacy_admin=legacy_admin)
+        # Try regular user lookup
+        user_row = database.get_user_by_email(email)
+        if user_row and check_password_hash(user_row.get("password_hash", ""), password):
+            _record_attempt(True, "admin")
+            user = User(
+                row_id=user_row["id"],
+                email=user_row["email"],
+                password_hash=user_row["password_hash"],
+                role=user_row.get("role", "user"),
+                display_name=user_row.get("display_name", ""),
+                status=user_row.get("status", "active"),
+                trial_ends_at=user_row.get("trial_ends_at"),
+                tenant_id=user_row.get("tenant_id"),
+            )
+            login_user(user)
+            return redirect(url_for("admin.panel"))
+
+        _record_attempt(False, "admin")
+        return render_template(
+            "login.html", error="Invalid email or password.", now=datetime.now(),
+            legacy_admin=bool(legacy_admin)
+        )
+
+    return render_template("login.html", now=datetime.now(), legacy_admin=bool(legacy_admin))
 
 
 @admin_bp.route("/logout")
@@ -226,35 +249,58 @@ def managed():
 
 @admin_fr_bp.route("/login", methods=["GET", "POST"])
 def login_fr():
-    """Serve the French admin login page with legacy password login."""
+    """Serve the French admin login page with email/password login."""
     legacy_admin = os.getenv("ADMIN_USERNAME") and os.getenv("ADMIN_PASSWORD")
 
     if request.method == "POST":
-        if legacy_admin:
-            if not _check_rate_limit("admin"):
-                return render_template(
-                    "login_fr.html", error="Trop de tentatives. Veuillez réessayer plus tard.",
-                    now=datetime.now(), legacy_admin=True
-                )
-            username = request.form.get("username", "")
-            password = request.form.get("password", "")
-            expected_user = os.getenv("ADMIN_USERNAME")
-            if hmac.compare_digest(username, expected_user) and check_password_hash(_get_admin_password_hash(), password):
+        if not _check_rate_limit("admin"):
+            return render_template(
+                "login_fr.html", error="Trop de tentatives. Veuillez réessayer plus tard.",
+                now=datetime.now(), legacy_admin=bool(legacy_admin)
+            )
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        # Try legacy admin first (username-based)
+        if legacy_admin and hmac.compare_digest(email, os.getenv("ADMIN_USERNAME", "")):
+            if check_password_hash(_get_admin_password_hash(), password):
                 _record_attempt(True, "admin")
                 login_user(AdminUser("admin"))
                 return redirect(url_for("admin_fr.panel_redirect_fr"))
             _record_attempt(False, "admin")
             return render_template(
                 "login_fr.html",
-                error="Nom d'utilisateur ou mot de passe invalide.",
+                error="Courriel ou mot de passe invalide.",
                 now=datetime.now(),
                 legacy_admin=True
             )
+
+        # Try regular user lookup
+        user_row = database.get_user_by_email(email)
+        if user_row and check_password_hash(user_row.get("password_hash", ""), password):
+            _record_attempt(True, "admin")
+            user = User(
+                row_id=user_row["id"],
+                email=user_row["email"],
+                password_hash=user_row["password_hash"],
+                role=user_row.get("role", "user"),
+                display_name=user_row.get("display_name", ""),
+                status=user_row.get("status", "active"),
+                trial_ends_at=user_row.get("trial_ends_at"),
+                tenant_id=user_row.get("tenant_id"),
+            )
+            login_user(user)
+            return redirect(url_for("admin_fr.panel_redirect_fr"))
+
+        _record_attempt(False, "admin")
         return render_template(
-            "login_fr.html", error="Requête invalide.", now=datetime.now(), legacy_admin=False
+            "login_fr.html",
+            error="Courriel ou mot de passe invalide.",
+            now=datetime.now(),
+            legacy_admin=bool(legacy_admin)
         )
 
-    return render_template("login_fr.html", now=datetime.now(), legacy_admin=legacy_admin)
+    return render_template("login_fr.html", now=datetime.now(), legacy_admin=bool(legacy_admin))
 
 
 @admin_fr_bp.route("/logout")

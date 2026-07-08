@@ -132,7 +132,7 @@ class TestAdminAuth:
 
     def test_login_success(self, client):
         r = client.post("/admin/login", data={
-            "username": self.ADMIN_USER,
+            "email": self.ADMIN_USER,
             "password": self.ADMIN_PASS,
         })
         assert r.status_code == 302
@@ -140,7 +140,7 @@ class TestAdminAuth:
 
     def test_login_bad_password(self, client):
         r = client.post("/admin/login", data={
-            "username": self.ADMIN_USER,
+            "email": self.ADMIN_USER,
             "password": "wrong",
         })
         assert r.status_code == 200
@@ -148,7 +148,7 @@ class TestAdminAuth:
 
     def test_login_bad_username(self, client):
         r = client.post("/admin/login", data={
-            "username": "nonexistent",
+            "email": "nonexistent",
             "password": self.ADMIN_PASS,
         })
         assert r.status_code == 200
@@ -156,7 +156,7 @@ class TestAdminAuth:
 
     def test_authenticated_api_call(self, client):
         client.post("/admin/login", data={
-            "username": self.ADMIN_USER,
+            "email": self.ADMIN_USER,
             "password": self.ADMIN_PASS,
         })
         r = client.get("/api/personalities")
@@ -167,7 +167,7 @@ class TestAdminAuth:
 
     def test_authenticated_admin_panel(self, client):
         client.post("/admin/login", data={
-            "username": self.ADMIN_USER,
+            "email": self.ADMIN_USER,
             "password": self.ADMIN_PASS,
         })
         r = client.get("/admin")
