@@ -1,0 +1,40 @@
+name: Site Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Required files exist
+        run: |
+          test -f index.html || (echo "missing index.html" && exit 1)
+          test -f contact.html || (echo "missing contact.html" && exit 1)
+          test -d css || (echo "missing css/" && exit 1)
+          test -d js || (echo "missing js/" && exit 1)
+          echo "required files OK"
+
+      - name: No leftover 212 branding
+        run: |
+          if grep -rniE '212\s*Communication|212communication|logo-light|logos-partners|google-partner|contact@212|Borj Menara|Khattabi' --include='*.html' .; then
+            echo "leftover branding found" && exit 1
+          fi
+          echo "branding check OK"
+
+      - name: Serve and smoke-test pages
+        run: |
+          python3 -m http.server 8000 &
+          SERVER_PID=$!
+          sleep 3
+          curl -fsS http://localhost:8000/index.html > /dev/null
+          curl -fsS http://localhost:8000/contact.html > /dev/null
+          curl -fsS http://localhost:8000/service-web.html > /dev/null
+          kill $SERVER_PID
+          echo "smoke test OK"
