@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Pages utilitaires non indexables
+Disallow: /cgi-bin/
+Disallow: /tmp/
+Disallow: /config.php
+Disallow: /send.php
+Disallow: /ai.php
+Disallow: /dashboard.html
+Disallow: /barreau.html
+Disallow: /index.final.html
+
+# Sitemap
+Sitemap: https://www.212communication.com/sitemap.xml
