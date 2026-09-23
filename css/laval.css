@@ -615,6 +615,132 @@ footer.footer a:hover {
   }
 }
 
+/* ============ SUB-PAGES (service detail) ============ */
+header.masthead.ld-subhero {
+  padding-top: 10rem;
+  padding-bottom: 5rem;
+}
+header.masthead.ld-subhero .masthead-heading {
+  font-size: 2.8rem;
+}
+.ld-eyebrow span {
+  color: var(--ld-gold);
+  font-weight: 800;
+}
+.ld-subhero-lede {
+  max-width: 640px;
+  margin: 0 auto 2rem;
+  font-size: 1.15rem;
+  color: rgba(255, 255, 255, 0.82);
+}
+/* Sub-service cards */
+.ld-sub {
+  height: 100%;
+  border-radius: 1.1rem;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(180deg, #fff, #faf6ec);
+  border: 1px solid rgba(10, 22, 40, 0.08);
+  box-shadow: 0 10px 28px rgba(10, 22, 40, 0.06);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.ld-sub:hover {
+  transform: translateY(-7px);
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 20px 44px rgba(10, 22, 40, 0.12), 0 0 24px rgba(212, 175, 55, 0.2);
+}
+.ld-sub .fa-stack .fa-circle {
+  color: var(--ld-navy) !important;
+}
+.ld-sub h4 {
+  margin: 1.1rem 0 0.7rem;
+}
+.ld-sub p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #495057;
+  line-height: 1.65;
+}
+/* Process steps */
+.ld-step span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  font-weight: 800;
+  color: var(--ld-navy);
+  background: linear-gradient(180deg, #f9ecc8, var(--ld-gold));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 8px 20px rgba(212, 175, 55, 0.3);
+}
+.ld-step h4 {
+  margin: 1rem 0 0.5rem;
+}
+.ld-step p {
+  font-size: 0.93rem;
+  color: #495057;
+}
+/* FAQ */
+.ld-faq {
+  border: 1px solid rgba(10, 22, 40, 0.1);
+  border-radius: 0.9rem;
+  padding: 1.1rem 1.4rem;
+  margin-bottom: 0.9rem;
+  background: #fff;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.ld-faq[open] {
+  border-color: rgba(212, 175, 55, 0.55);
+  box-shadow: 0 12px 30px rgba(10, 22, 40, 0.08);
+}
+.ld-faq summary {
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.ld-faq summary::-webkit-details-marker {
+  display: none;
+}
+.ld-faq summary::after {
+  content: "+";
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  line-height: 1.7rem;
+  text-align: center;
+  border-radius: 50%;
+  color: var(--ld-navy);
+  border: 1px solid var(--ld-gold);
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+.ld-faq[open] summary::after {
+  transform: rotate(45deg);
+  background: var(--ld-gold);
+}
+.ld-faq p {
+  margin: 0.9rem 0 0.2rem;
+  color: #495057;
+  line-height: 1.7;
+}
+/* CTA band */
+.ld-cta {
+  background:
+    radial-gradient(36rem 20rem at 50% 120%, rgba(212, 175, 55, 0.16), transparent 65%),
+    linear-gradient(180deg, #0d1d33, #0a1628);
+}
+.ld-cta h2 {
+  color: #fff;
+}
+.ld-cta p {
+  max-width: 560px;
+  margin: 0 auto 2rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
 /* Mobile menu inherits the glass */
 @media (max-width: 991.98px) {
   #mainNav .navbar-collapse {
