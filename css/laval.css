@@ -386,6 +386,44 @@ html {
   color: var(--ld-navy);
 }
 
+/* ============ ABOUT — claim cards ============ */
+#about {
+  background: linear-gradient(180deg, #ffffff 0%, #faf6ec 100%);
+}
+.ld-claim {
+  height: 100%;
+  border-radius: 1.1rem;
+  padding: 2.2rem 1.6rem;
+  color: #fff;
+  background: linear-gradient(160deg, #10233d 0%, #0a1628 70%);
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  box-shadow: 0 14px 34px rgba(10, 22, 40, 0.16);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.ld-claim:hover {
+  transform: translateY(-8px);
+  border-color: var(--ld-gold);
+  box-shadow: 0 20px 44px rgba(10, 22, 40, 0.24), 0 0 26px rgba(212, 175, 55, 0.3);
+}
+.ld-claim .fa-stack .fa-circle {
+  color: var(--ld-gold) !important;
+}
+.ld-claim .fa-stack .fa-inverse {
+  color: var(--ld-navy) !important;
+}
+.ld-claim h4 {
+  margin: 1.2rem 0 0.8rem;
+  font-size: 1.2rem;
+  letter-spacing: 0.02em;
+  color: var(--ld-champagne);
+}
+.ld-claim p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.78);
+}
+
 /* ============ TEAM ============ */
 #team .team-member img {
   border: 0.4rem solid rgba(212, 175, 55, 0.35);
