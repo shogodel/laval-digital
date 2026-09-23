@@ -635,11 +635,10 @@ header.masthead.ld-subhero .masthead-heading {
 }
 /* Sub-service cards */
 #subservices .row {
-  counter-reset: ld-sub;
+  justify-content: center;
 }
 .ld-sub {
   height: 100%;
-  counter-increment: ld-sub;
   position: relative;
   overflow: hidden;
   border-radius: 1.25rem;
@@ -664,23 +663,6 @@ header.masthead.ld-subhero .masthead-heading {
 }
 .ld-sub:hover::before {
   transform: scaleX(1);
-}
-/* Ghost numerals */
-.ld-sub::after {
-  content: "0" counter(ld-sub);
-  position: absolute;
-  right: 0.5rem;
-  bottom: -1.5rem;
-  font-size: 6rem;
-  font-weight: 800;
-  line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1.5px rgba(212, 175, 55, 0.3);
-  pointer-events: none;
-  transition: -webkit-text-stroke 0.35s ease;
-}
-.ld-sub:hover::after {
-  -webkit-text-stroke: 1.5px rgba(212, 175, 55, 0.6);
 }
 .ld-sub:hover {
   transform: translateY(-7px);
