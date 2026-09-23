@@ -127,6 +127,168 @@ header.masthead {
   }
 }
 
+/* ============ HERO — Laval aurora, Apple style ============ */
+header.masthead {
+  background:
+    radial-gradient(42rem 26rem at 12% 18%, rgba(20, 184, 166, 0.22), transparent 65%),
+    radial-gradient(38rem 24rem at 88% 82%, rgba(212, 175, 55, 0.16), transparent 65%),
+    radial-gradient(30rem 20rem at 78% 12%, rgba(245, 158, 11, 0.1), transparent 60%),
+    linear-gradient(180deg, #0d1d33 0%, #0a1628 100%);
+  position: relative;
+  overflow: hidden;
+}
+/* Drifting aurora blobs */
+header.masthead::before,
+header.masthead::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+}
+header.masthead::before {
+  width: 34rem;
+  height: 34rem;
+  left: -10rem;
+  top: -12rem;
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.28), transparent 70%);
+  animation: ld-drift 14s ease-in-out infinite alternate;
+}
+header.masthead::after {
+  width: 30rem;
+  height: 30rem;
+  right: -8rem;
+  bottom: -12rem;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.22), transparent 70%);
+  animation: ld-drift 18s ease-in-out infinite alternate-reverse;
+}
+@keyframes ld-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(4rem, 3rem) scale(1.15); }
+}
+header.masthead .container {
+  position: relative;
+  z-index: 1;
+}
+
+/* Glass eyebrow badge + pulsing gold dot */
+.ld-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ld-champagne);
+  border: 1px solid rgba(246, 227, 180, 0.35);
+  border-radius: 999px;
+  padding: 0.5rem 1.2rem;
+  margin-bottom: 1.6rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.ld-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ld-gold);
+  box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.6);
+  animation: ld-pulse 2.2s ease-out infinite;
+}
+@keyframes ld-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(212, 175, 55, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+}
+
+/* Champagne gradient words */
+.ld-gold-text {
+  background: linear-gradient(100deg, var(--ld-champagne) 10%, var(--ld-gold) 45%, #fff2cf 60%, var(--ld-gold) 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Staggered entrance */
+header.masthead .ld-eyebrow { animation: ld-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both; }
+header.masthead .masthead-subheading { animation: ld-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
+header.masthead .masthead-heading { animation: ld-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both; }
+header.masthead .btn { animation: ld-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both; }
+@keyframes ld-rise {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Chrome-gold primary button with sheen sweep */
+header.masthead .btn-primary {
+  position: relative;
+  overflow: hidden;
+  border: none;
+  color: var(--ld-navy);
+  font-weight: 700;
+  background: linear-gradient(180deg, #f9ecc8 0%, var(--ld-gold) 55%, #c39a2b 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -1px 0 rgba(120, 85, 10, 0.4), 0 10px 30px rgba(212, 175, 55, 0.28);
+}
+header.masthead .btn-primary::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.6s ease;
+}
+header.masthead .btn-primary:hover::after {
+  left: 130%;
+}
+/* Ghost secondary button */
+header.masthead .btn-ghost-light {
+  margin-left: 0.8rem;
+  color: var(--ld-champagne);
+  border: 1px solid rgba(246, 227, 180, 0.45);
+  background: rgba(255, 255, 255, 0.04);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+header.masthead .btn-ghost-light:hover {
+  color: #fff;
+  border-color: var(--ld-gold);
+  background: rgba(212, 175, 55, 0.12);
+}
+
+/* Animated scroll cue */
+.ld-scroll {
+  position: absolute;
+  left: 50%;
+  bottom: 1.4rem;
+  transform: translateX(-50%);
+  z-index: 1;
+  width: 26px;
+  height: 42px;
+  border: 2px solid rgba(246, 227, 180, 0.5);
+  border-radius: 14px;
+  display: block;
+}
+.ld-scroll span {
+  display: block;
+  width: 4px;
+  height: 8px;
+  margin: 7px auto 0;
+  border-radius: 3px;
+  background: var(--ld-gold);
+  animation: ld-wheel 1.8s ease-in-out infinite;
+}
+@keyframes ld-wheel {
+  0% { transform: translateY(0); opacity: 1; }
+  60% { transform: translateY(12px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+
 /* Mobile menu inherits the glass */
 @media (max-width: 991.98px) {
   #mainNav .navbar-collapse {
