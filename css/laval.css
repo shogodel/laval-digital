@@ -322,22 +322,37 @@ html {
   transform: none;
 }
 
-/* ============ SERVICES ============ */
+/* ============ SERVICES — 4 poles ============ */
 #services .fa-stack .fa-circle {
   color: var(--ld-navy) !important;
 }
-#services .col-md-4 {
+#services .col-md-6 {
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   border-radius: 1rem;
 }
-#services .col-md-4:hover {
+#services .col-md-6:hover {
   transform: translateY(-8px);
 }
-#services .col-md-4:hover .fa-stack {
+#services .col-md-6:hover .fa-stack {
   filter: drop-shadow(0 0 14px rgba(212, 175, 55, 0.55));
 }
 #services .fa-stack {
   transition: filter 0.3s ease;
+}
+.ld-service-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+.ld-service-list li {
+  padding: 0.3rem 0;
+  font-size: 0.95rem;
+  color: #495057;
+}
+.ld-service-list li::before {
+  content: "— ";
+  color: var(--ld-gold);
+  font-weight: 700;
 }
 
 /* ============ PORTFOLIO ============ */
