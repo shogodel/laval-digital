@@ -741,6 +741,38 @@ header.masthead.ld-subhero .masthead-heading {
   color: rgba(255, 255, 255, 0.75);
 }
 
+/* Services dropdown */
+#mainNav .dropdown-menu {
+  background: linear-gradient(180deg, #10233d, #0a1628);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 0.9rem;
+  padding: 0.6rem;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4);
+}
+#mainNav .dropdown-item {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+  border-radius: 0.6rem;
+  padding: 0.6rem 1rem;
+}
+#mainNav .dropdown-item:hover {
+  background: rgba(212, 175, 55, 0.14);
+  color: var(--ld-champagne);
+}
+#mainNav.navbar-shrink .dropdown-menu {
+  background: linear-gradient(180deg, #ffffff, #faf6ec);
+}
+#mainNav.navbar-shrink .dropdown-item {
+  color: rgba(10, 22, 40, 0.8);
+}
+#mainNav.navbar-shrink .dropdown-item:hover {
+  color: var(--ld-navy);
+  background: rgba(212, 175, 55, 0.16);
+}
+
 /* Mobile menu inherits the glass */
 @media (max-width: 991.98px) {
   #mainNav .navbar-collapse {
