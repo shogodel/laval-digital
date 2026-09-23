@@ -6,12 +6,9 @@
   --ld-orange: #f59e0b;
 }
 
-/* Base state (over dark hero): dark glass */
+/* Base state (over dark hero): solid navy, fully separated from hero */
 #mainNav {
-  background-color: rgba(10, 22, 40, 0.55);
-  -webkit-backdrop-filter: saturate(160%) blur(18px);
-  backdrop-filter: saturate(160%) blur(18px);
-  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  background-color: var(--ld-navy);
   border-bottom: 1px solid rgba(255, 255, 255, 0.09);
   transition: background-color 0.35s ease, border-color 0.35s ease;
 }
@@ -31,9 +28,9 @@
   color: var(--ld-teal-bright);
 }
 
-/* Scrolled state (over light content): white glass */
+/* Scrolled state (over light content): solid white */
 #mainNav.navbar-shrink {
-  background-color: rgba(255, 255, 255, 0.75);
+  background-color: #fff;
   border-bottom: 1px solid rgba(10, 22, 40, 0.08);
 }
 #mainNav.navbar-shrink .navbar-brand img {
