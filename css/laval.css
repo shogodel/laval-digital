@@ -47,29 +47,6 @@
   color: var(--ld-teal);
 }
 
-/* Compact hero: fits under the glass header */
-header.masthead {
-  padding-top: 7.5rem;
-  padding-bottom: 3.5rem;
-}
-header.masthead .masthead-subheading {
-  font-size: 1.35rem;
-  margin-bottom: 1rem;
-}
-header.masthead .masthead-heading {
-  font-size: 2.6rem;
-  margin-bottom: 1.75rem;
-}
-@media (min-width: 768px) {
-  header.masthead {
-    padding-top: 9rem;
-    padding-bottom: 4rem;
-  }
-  header.masthead .masthead-heading {
-    font-size: 3.25rem;
-  }
-}
-
 /* Mobile menu inherits the glass */
 @media (max-width: 991.98px) {
   #mainNav .navbar-collapse {
