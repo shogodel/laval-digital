@@ -1,14 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 64" role="img" aria-label="Laval Digital">
-  <g>
-    <rect x="2" y="2" width="60" height="60" rx="17" fill="#0A1628"/>
-    <g>
-      <clipPath id="ld-lg"><rect x="2" y="2" width="60" height="60" rx="17"/></clipPath>
-    </g>
-    <g clip-path="url(#ld-lg)">
-      <rect x="22" y="14" width="11" height="32" rx="5.5" fill="#14B8A6"/>
-      <path d="M13 50 q8 -8.5 16 0 t16 0 t16 0" fill="none" stroke="#F59E0B" stroke-width="6" stroke-linecap="round"/>
-    </g>
+  <defs>
+    <linearGradient id="ld-gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F6E3B4"/>
+      <stop offset="0.5" stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#F6E3B4"/>
+    </linearGradient>
+    <clipPath id="ld-lg"><rect x="2" y="2" width="60" height="60" rx="17"/></clipPath>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="#0A1628"/>
+  <g clip-path="url(#ld-lg)">
+    <rect x="22" y="14" width="11" height="32" rx="5.5" fill="#14B8A6"/>
+    <path d="M13 50 q8 -8.5 16 0 t16 0 t16 0" fill="none" stroke="#F59E0B" stroke-width="6" stroke-linecap="round"/>
   </g>
   <text x="74" y="30" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="21" font-weight="800" letter-spacing="2.5" fill="#FFFFFF">LAVAL</text>
-  <text x="74" y="51" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13.5" font-weight="600" letter-spacing="5" fill="#14B8A6">DIGITAL</text>
+  <text x="74" y="51" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13.5" font-weight="600" letter-spacing="5" fill="url(#ld-gold)">DIGITAL</text>
 </svg>
