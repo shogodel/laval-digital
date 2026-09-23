@@ -289,6 +289,173 @@ header.masthead .btn-ghost-light:hover {
   100% { transform: translateY(0); opacity: 0; }
 }
 
+/* ============ GLOBAL — Laval identity ============ */
+html {
+  scroll-behavior: smooth;
+}
+.page-section {
+  scroll-margin-top: 4rem;
+}
+.section-subheading {
+  color: #8a6d1c !important;
+}
+/* Chrome-gold primary buttons everywhere */
+.btn-primary {
+  border: none;
+  color: var(--ld-navy);
+  font-weight: 700;
+  background: linear-gradient(180deg, #f9ecc8 0%, var(--ld-gold) 55%, #c39a2b 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -1px 0 rgba(120, 85, 10, 0.4), 0 10px 30px rgba(212, 175, 55, 0.28);
+}
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+  color: var(--ld-navy);
+  background: linear-gradient(180deg, #fdf3d8 0%, #ddba45 55%, #cfa72f 100%);
+}
+/* Scroll reveal */
+.ld-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ld-reveal.ld-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ============ SERVICES ============ */
+#services .fa-stack .fa-circle {
+  color: var(--ld-navy) !important;
+}
+#services .col-md-4 {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 1rem;
+}
+#services .col-md-4:hover {
+  transform: translateY(-8px);
+}
+#services .col-md-4:hover .fa-stack {
+  filter: drop-shadow(0 0 14px rgba(212, 175, 55, 0.55));
+}
+#services .fa-stack {
+  transition: filter 0.3s ease;
+}
+
+/* ============ PORTFOLIO ============ */
+#portfolio {
+  background: linear-gradient(180deg, #ffffff 0%, #faf6ec 100%);
+}
+#portfolio .portfolio-item .portfolio-link img {
+  border-radius: 0.9rem;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#portfolio .portfolio-item .portfolio-link:hover img {
+  transform: scale(1.04);
+}
+#portfolio .portfolio-item .portfolio-link .portfolio-hover {
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, rgba(10, 22, 40, 0.88), rgba(14, 159, 138, 0.75));
+}
+#portfolio .portfolio-item .portfolio-link .portfolio-hover .portfolio-hover-content {
+  color: var(--ld-champagne);
+}
+
+/* ============ ABOUT / TIMELINE ============ */
+#about .timeline:before {
+  background: linear-gradient(180deg, var(--ld-gold), var(--ld-teal-bright));
+}
+#about .timeline > li .timeline-image {
+  border-color: var(--ld-gold);
+  box-shadow: 0 0 0 6px rgba(212, 175, 55, 0.15), 0 12px 30px rgba(10, 22, 40, 0.18);
+}
+#about .timeline > li .timeline-image h4 {
+  color: var(--ld-navy);
+}
+
+/* ============ TEAM ============ */
+#team .team-member img {
+  border: 0.4rem solid rgba(212, 175, 55, 0.35);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+#team .team-member:hover img {
+  border-color: var(--ld-gold);
+  box-shadow: 0 14px 34px rgba(10, 22, 40, 0.22), 0 0 22px rgba(212, 175, 55, 0.4);
+  transform: translateY(-4px);
+}
+#team .btn-social:hover, footer .btn-social:hover {
+  background-color: var(--ld-gold);
+  border-color: var(--ld-gold);
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.5);
+}
+
+/* ============ CLIENTS ============ */
+.img-brand {
+  filter: grayscale(1);
+  opacity: 0.55;
+  transition: filter 0.35s ease, opacity 0.35s ease, transform 0.35s ease;
+}
+.img-brand:hover {
+  filter: none;
+  opacity: 1;
+  transform: translateY(-3px);
+}
+
+/* ============ CONTACT ============ */
+section#contact {
+  background:
+    radial-gradient(36rem 22rem at 85% 15%, rgba(20, 184, 166, 0.18), transparent 65%),
+    radial-gradient(30rem 20rem at 10% 90%, rgba(212, 175, 55, 0.14), transparent 65%),
+    linear-gradient(180deg, #0d1d33, #0a1628);
+}
+section#contact .section-heading {
+  color: #fff;
+}
+section#contact .section-subheading {
+  color: var(--ld-champagne) !important;
+}
+section#contact .form-control {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+section#contact .form-control::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+section#contact .form-control:focus {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--ld-gold);
+  color: #fff;
+  box-shadow: 0 0 0 0.25rem rgba(212, 175, 55, 0.22);
+}
+
+/* ============ FOOTER ============ */
+footer.footer {
+  background-color: var(--ld-navy);
+  color: rgba(255, 255, 255, 0.7);
+}
+footer.footer a {
+  color: var(--ld-champagne);
+}
+footer.footer a:hover {
+  color: #fff;
+}
+
+/* ============ MOTION SAFETY ============ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .ld-reveal {
+    opacity: 1;
+    transform: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 /* Mobile menu inherits the glass */
 @media (max-width: 991.98px) {
   #mainNav .navbar-collapse {
