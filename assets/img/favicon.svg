@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Laval Digital favicon">
+  <defs>
+    <clipPath id="ld-fav"><rect x="2" y="2" width="60" height="60" rx="17"/></clipPath>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="#0A1628"/>
+  <g clip-path="url(#ld-fav)">
+    <rect x="20" y="12" width="11" height="32" rx="5.5" fill="#14B8A6"/>
+    <path d="M11 48 q8 -8.5 16 0 t16 0 t16 0" fill="none" stroke="#F59E0B" stroke-width="6" stroke-linecap="round"/>
+  </g>
+</svg>

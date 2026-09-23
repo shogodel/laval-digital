@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Laval Digital">
+  <defs>
+    <clipPath id="ld-isl"><rect x="4" y="4" width="56" height="56" rx="16"/></clipPath>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="#0A1628"/>
+  <g clip-path="url(#ld-isl)">
+    <rect x="21" y="13" width="10" height="31" rx="5" fill="#14B8A6"/>
+    <path d="M12 47 q7.5 -8 15 0 t15 0 t15 0" fill="none" stroke="#F59E0B" stroke-width="5.5" stroke-linecap="round"/>
+  </g>
+</svg>
