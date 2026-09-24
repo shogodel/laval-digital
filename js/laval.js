@@ -31,6 +31,37 @@
       io.observe(el);
     });
   }
+  // Cursor parallax on the hero (desktop pointers only).
+  (function () {
+    var hero = document.querySelector('header.masthead .container');
+    if (!hero || reduce) return;
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+    var tx = 0,
+      ty = 0,
+      cx = 0,
+      cy = 0,
+      raf = null;
+    function loop() {
+      cx += (tx - cx) * 0.06;
+      cy += (ty - cy) * 0.06;
+      hero.style.transform =
+        'translate3d(' + cx.toFixed(2) + 'px,' + cy.toFixed(2) + 'px,0)';
+      if (Math.abs(tx - cx) > 0.05 || Math.abs(ty - cy) > 0.05) {
+        raf = window.requestAnimationFrame(loop);
+      } else {
+        raf = null;
+      }
+    }
+    document
+      .querySelector('header.masthead')
+      .addEventListener('mousemove', function (e) {
+        var r = this.getBoundingClientRect();
+        tx = ((e.clientX - r.left) / r.width - 0.5) * 18;
+        ty = ((e.clientY - r.top) / r.height - 0.5) * 12;
+        if (!raf) raf = window.requestAnimationFrame(loop);
+      });
+  })();
+
   // Gold scroll-progress hairline.
   (function () {
     var bar = document.createElement('div');
