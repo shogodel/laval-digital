@@ -94,6 +94,19 @@
     });
   })();
 
+  // Card spotlight follows the cursor (services + sub-service cards).
+  (function () {
+    if (reduce) return;
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+    document.querySelectorAll('#services .col-md-6, .ld-sub').forEach(function (card) {
+      card.addEventListener('mousemove', function (e) {
+        var r = card.getBoundingClientRect();
+        card.style.setProperty('--sx', ((e.clientX - r.left) / r.width) * 100 + '%');
+        card.style.setProperty('--sy', ((e.clientY - r.top) / r.height) * 100 + '%');
+      });
+    });
+  })();
+
   // Gold scroll-progress hairline.
   (function () {
     var bar = document.createElement('div');

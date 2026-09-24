@@ -353,6 +353,22 @@ html {
   background:
     radial-gradient(40rem 20rem at 50% 0%, rgba(212, 175, 55, 0.08), transparent 65%),
     #fff;
+  position: relative;
+}
+/* Fine dot-grid texture for 4K detail */
+#services::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: radial-gradient(rgba(10, 22, 40, 0.07) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(46rem 30rem at 50% 20%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(46rem 30rem at 50% 20%, #000 30%, transparent 75%);
+}
+#services .container {
+  position: relative;
 }
 #services .fa-stack .fa-circle {
   color: var(--ld-navy) !important;
@@ -378,6 +394,19 @@ html {
   margin-bottom: 1.8rem;
   position: relative;
   overflow: hidden;
+}
+/* Cursor spotlight following the mouse */
+#services .col-md-6::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: radial-gradient(22rem circle at var(--sx, 50%) var(--sy, 50%), rgba(212, 175, 55, 0.14), transparent 65%);
+  pointer-events: none;
+}
+#services .col-md-6:hover::before {
+  opacity: 1;
 }
 /* Ghost numerals intentionally removed for a cleaner card */
 /* Gold divider under card titles */
@@ -433,7 +462,15 @@ html {
 }
 #services .fa-stack {
   position: relative;
+  animation: ld-float 5.5s ease-in-out infinite;
   transition: filter 0.3s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#services .col-md-6:nth-child(2) .fa-stack { animation-delay: -1.4s; }
+#services .col-md-6:nth-child(3) .fa-stack { animation-delay: -2.8s; }
+#services .col-md-6:nth-child(4) .fa-stack { animation-delay: -4.2s; }
+@keyframes ld-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -7px; }
 }
 /* Slowly rotating champagne ring around icons */
 #services .fa-stack::before {
@@ -473,6 +510,11 @@ html {
 }
 #services .col-md-6:hover .fa-stack {
   transform: scale(1.06) rotate(-4deg);
+}
+.ld-services-note {
+  color: #6c757d;
+  font-style: italic;
+  margin-bottom: 1.2rem;
 }
 .ld-service-list {
   list-style: none;
@@ -653,6 +695,19 @@ header.masthead.ld-subhero .masthead-heading {
 }
 .ld-sub:hover::before {
   transform: scaleX(1);
+}
+/* Cursor spotlight (::after is free since numerals were removed) */
+.ld-sub::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: radial-gradient(20rem circle at var(--sx, 50%) var(--sy, 50%), rgba(212, 175, 55, 0.13), transparent 65%);
+  pointer-events: none;
+}
+.ld-sub:hover::after {
+  opacity: 1;
 }
 .ld-sub:hover {
   transform: translateY(-7px);
