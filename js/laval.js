@@ -31,4 +31,29 @@
       io.observe(el);
     });
   }
+  // Gold scroll-progress hairline.
+  (function () {
+    var bar = document.createElement('div');
+    bar.className = 'ld-progress';
+    document.body.appendChild(bar);
+    var ticking = false;
+    function update() {
+      var h = document.documentElement;
+      var max = h.scrollHeight - h.clientHeight;
+      var p = max > 0 ? h.scrollTop / max : 0;
+      bar.style.transform = 'scaleX(' + p + ')';
+      ticking = false;
+    }
+    window.addEventListener(
+      'scroll',
+      function () {
+        if (!ticking) {
+          window.requestAnimationFrame(update);
+          ticking = true;
+        }
+      },
+      { passive: true }
+    );
+    update();
+  })();
 })();
