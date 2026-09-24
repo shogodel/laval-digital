@@ -197,41 +197,6 @@ header.masthead .container {
   text-transform: uppercase;
   color: rgba(246, 227, 180, 0.65);
 }
-/* Capability ticker */
-.ld-ticker {
-  overflow: hidden;
-  background: var(--ld-navy);
-  border-top: 1px solid rgba(212, 175, 55, 0.25);
-  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
-  padding: 0.85rem 0;
-}
-.ld-ticker__track {
-  display: inline-flex;
-  align-items: center;
-  gap: 2.2rem;
-  white-space: nowrap;
-  padding-right: 2.2rem;
-  animation: ld-tick 26s linear infinite;
-}
-.ld-ticker span {
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.72);
-}
-.ld-ticker i {
-  font-style: normal;
-  color: var(--ld-gold);
-  font-size: 0.75rem;
-}
-.ld-ticker:hover .ld-ticker__track {
-  animation-play-state: paused;
-}
-@keyframes ld-tick {
-  to { transform: translateX(-50%); }
-}
-
 /* Glass eyebrow badge + pulsing gold dot */
 .ld-eyebrow {
   display: inline-flex;
