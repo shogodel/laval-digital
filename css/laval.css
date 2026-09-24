@@ -930,6 +930,25 @@ header.masthead.ld-subhero .masthead-heading {
   background: rgba(212, 175, 55, 0.16);
 }
 
+/* Language switcher */
+#mainNav .nav-link.ld-lang {
+  opacity: 0.65;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  margin-left: 0.4rem;
+  font-size: 0.75rem;
+}
+#mainNav .nav-link.ld-lang::after {
+  display: none;
+}
+#mainNav .nav-link.ld-lang:hover {
+  opacity: 1;
+}
+#mainNav.navbar-shrink .nav-link.ld-lang {
+  border-color: rgba(10, 22, 40, 0.25);
+}
+
 /* Scroll progress hairline (gold) */
 .ld-progress {
   position: fixed;

@@ -1,8 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://laval.digital/services-web-apps.html</loc></url>
-  <url><loc>https://laval.digital/services-web-apps.html</loc></url>
-  <url><loc>https://laval.digital/services-marketing.html</loc></url>
-  <url><loc>https://laval.digital/services-ai-data.html</loc></url>
-  <url><loc>https://laval.digital/services-business.html</loc></url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://laval.digital/index.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/index.html" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/index.html" />
+  </url>
+  <url>
+    <loc>https://laval.digital/fr/index.html</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/index.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/index.html" />
+  </url>
+  <url>
+    <loc>https://laval.digital/services-web-apps.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/services-web-apps.html" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/services-web-apps.html" />
+  </url>
+  <url>
+    <loc>https://laval.digital/fr/services-web-apps.html</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/services-web-apps.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/services-web-apps.html" />
+  </url>
+  <url>
+    <loc>https://laval.digital/services-marketing.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/services-marketing.html" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/services-marketing.html" />
+  </url>
+  <url>
+    <loc>https://laval.digital/fr/services-marketing.html</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/services-marketing.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/services-marketing.html" />
+  </url>
+  <url>
+    <loc>https://laval.digital/services-ai-data.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/services-ai-data.html" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/services-ai-data.html" />
+  </url>
+  <url>
+    <loc>https://laval.digital/fr/services-ai-data.html</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/services-ai-data.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/services-ai-data.html" />
+  </url>
+  <url>
+    <loc>https://laval.digital/services-business.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/services-business.html" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/services-business.html" />
+  </url>
+  <url>
+    <loc>https://laval.digital/fr/services-business.html</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/services-business.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/services-business.html" />
+  </url>
 </urlset>

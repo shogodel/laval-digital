@@ -43,6 +43,11 @@ jobs:
           curl -fsS http://localhost:8000/services-marketing.html > /dev/null
           curl -fsS http://localhost:8000/services-ai-data.html > /dev/null
           curl -fsS http://localhost:8000/services-business.html > /dev/null
+          curl -fsS http://localhost:8000/fr/index.html > /dev/null
+          curl -fsS http://localhost:8000/fr/services-web-apps.html > /dev/null
+          curl -fsS http://localhost:8000/fr/services-marketing.html > /dev/null
+          curl -fsS http://localhost:8000/fr/services-ai-data.html > /dev/null
+          curl -fsS http://localhost:8000/fr/services-business.html > /dev/null
           curl -fsS http://localhost:8000/robots.txt > /dev/null
           curl -fsS http://localhost:8000/sitemap.xml > /dev/null
           kill $SERVER_PID
