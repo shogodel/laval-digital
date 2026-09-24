@@ -1,0 +1,49 @@
+name: Site Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Required files exist
+        run: |
+          test -f index.html || (echo "missing index.html" && exit 1)
+          test -f services-web-apps.html || (echo "missing services-web-apps.html" && exit 1)
+          test -f services-marketing.html || (echo "missing services-marketing.html" && exit 1)
+          test -f services-ai-data.html || (echo "missing services-ai-data.html" && exit 1)
+          test -f services-business.html || (echo "missing services-business.html" && exit 1)
+          test -d css || (echo "missing css/" && exit 1)
+          test -d js || (echo "missing js/" && exit 1)
+          test -d assets/img || (echo "missing assets/img/" && exit 1)
+          echo "required files OK"
+
+      - name: No leftover branding or placeholders
+        run: |
+          if grep -rniE '212\s*Communication|212communication|logo-light|logos-partners|google-partner|contact@212|Borj Menara|Khattabi|lorem ipsum|Your Website|API_TOKEN|sb-forms' --include='*.html' --include='*.css' --include='*.js' .; then
+            echo "leftover branding found" && exit 1
+          fi
+          echo "branding check OK"
+
+      - name: Serve and smoke-test pages
+        run: |
+          python3 -m http.server 8000 &
+          SERVER_PID=$!
+          sleep 3
+          curl -fsS http://localhost:8000/index.html > /dev/null
+          curl -fsS http://localhost:8000/services.html > /dev/null || true
+          curl -fsS http://localhost:8000/services-web-apps.html > /dev/null
+          curl -fsS http://localhost:8000/services-marketing.html > /dev/null
+          curl -fsS http://localhost:8000/services-ai-data.html > /dev/null
+          curl -fsS http://localhost:8000/services-business.html > /dev/null
+          curl -fsS http://localhost:8000/robots.txt > /dev/null
+          curl -fsS http://localhost:8000/sitemap.xml > /dev/null
+          kill $SERVER_PID
+          echo "smoke test OK"
