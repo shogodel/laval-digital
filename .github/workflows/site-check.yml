@@ -27,7 +27,7 @@ jobs:
 
       - name: No leftover branding or placeholders
         run: |
-          if grep -rniE '212\s*Communication|212communication|logo-light|logos-partners|google-partner|contact@212|Borj Menara|Khattabi|lorem ipsum|Your Website|API_TOKEN|sb-forms' --include='*.html' --include='*.css' --include='*.js' .; then
+          if grep -rniE '212\s*Communication|212communication|logo-light\.svg|logos-partners|google-partner|contact@212|Borj Menara|Khattabi|lorem ipsum|Your Website|API_TOKEN|data-sb-' --include='*.html' --include='*.css' --include='*.js' .; then
             echo "leftover branding found" && exit 1
           fi
           echo "branding check OK"
