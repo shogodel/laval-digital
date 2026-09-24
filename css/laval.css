@@ -415,9 +415,6 @@ html {
   overflow: hidden;
 }
 /* Ghost numerals intentionally removed for a cleaner card */
-#services .row.text-center {
-  counter-reset: none;
-}
 /* Gold divider under card titles */
 #services .col-md-6 h4 {
   position: relative;
@@ -533,36 +530,11 @@ html {
   font-weight: 700;
 }
 
-/* ============ PORTFOLIO ============ */
-#portfolio {
-  background: linear-gradient(180deg, #ffffff 0%, #faf6ec 100%);
-}
-#portfolio .portfolio-item .portfolio-link img {
-  border-radius: 0.9rem;
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-#portfolio .portfolio-item .portfolio-link:hover img {
-  transform: scale(1.04);
-}
-#portfolio .portfolio-item .portfolio-link .portfolio-hover {
-  border-radius: 0.9rem;
-  background: linear-gradient(135deg, rgba(10, 22, 40, 0.88), rgba(14, 159, 138, 0.75));
-}
-#portfolio .portfolio-item .portfolio-link .portfolio-hover .portfolio-hover-content {
-  color: var(--ld-champagne);
-}
+/* NOTE: Portfolio / Team / Clients styles were stripped with their hidden
+   sections. Restore from git history when unhiding:
+   git show HEAD~:css/laval.css | sed -n '/PORTFOLIO/,/CONTACT/p' */
 
-/* ============ ABOUT / TIMELINE ============ */
-#about .timeline:before {
-  background: linear-gradient(180deg, var(--ld-gold), var(--ld-teal-bright));
-}
-#about .timeline > li .timeline-image {
-  border-color: var(--ld-gold);
-  box-shadow: 0 0 0 6px rgba(212, 175, 55, 0.15), 0 12px 30px rgba(10, 22, 40, 0.18);
-}
-#about .timeline > li .timeline-image h4 {
-  color: var(--ld-navy);
-}
+/* ============ ABOUT / TIMELINE (removed — timeline deleted) ============ */
 
 /* ============ ABOUT — claim cards ============ */
 #about {
@@ -602,33 +574,14 @@ html {
   color: rgba(255, 255, 255, 0.78);
 }
 
-/* ============ TEAM ============ */
-#team .team-member img {
-  border: 0.4rem solid rgba(212, 175, 55, 0.35);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
-}
-#team .team-member:hover img {
-  border-color: var(--ld-gold);
-  box-shadow: 0 14px 34px rgba(10, 22, 40, 0.22), 0 0 22px rgba(212, 175, 55, 0.4);
-  transform: translateY(-4px);
-}
-#team .btn-social:hover, footer .btn-social:hover {
+/* ============ TEAM (removed — section hidden; see note above) ============ */
+footer .btn-social:hover {
   background-color: var(--ld-gold);
   border-color: var(--ld-gold);
   box-shadow: 0 0 16px rgba(212, 175, 55, 0.5);
 }
 
-/* ============ CLIENTS ============ */
-.img-brand {
-  filter: grayscale(1);
-  opacity: 0.55;
-  transition: filter 0.35s ease, opacity 0.35s ease, transform 0.35s ease;
-}
-.img-brand:hover {
-  filter: none;
-  opacity: 1;
-  transform: translateY(-3px);
-}
+/* ============ CLIENTS (removed — section hidden; see note above) ============ */
 
 /* ============ CONTACT ============ */
 section#contact {

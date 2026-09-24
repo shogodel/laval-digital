@@ -62,6 +62,38 @@
       });
   })();
 
+  // Contact form: validate locally, show pending note.
+  // ESPOCRM WIRING POINT: replace the body of this handler with a
+  // fetch() POST to your EspoCRM Lead endpoint, then show
+  // #submitSuccessMessage on 2xx or #submitErrorMessage otherwise.
+  (function () {
+    var form = document.getElementById('contactForm');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var ok = true;
+      var name = document.getElementById('name');
+      var email = document.getElementById('email');
+      var phone = document.getElementById('phone');
+      var message = document.getElementById('message');
+      [[name, /.+/], [email, /.+@.+\..+/], [phone, /.+/], [message, /.+/]].forEach(
+        function (pair) {
+          var field = pair[0],
+            rx = pair[1];
+          var valid = field && rx.test(field.value.trim());
+          field.classList.toggle('is-invalid', !valid);
+          if (!valid) ok = false;
+        }
+      );
+      if (!ok) return;
+      document.getElementById('submitSuccessMessage').classList.remove('d-none');
+      document.getElementById('submitErrorMessage').classList.add('d-none');
+      form.querySelectorAll('.form-control').forEach(function (f) {
+        f.value = '';
+      });
+    });
+  })();
+
   // Gold scroll-progress hairline.
   (function () {
     var bar = document.createElement('div');
