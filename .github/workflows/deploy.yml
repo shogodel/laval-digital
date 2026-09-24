@@ -1,0 +1,41 @@
+name: Deploy Static Site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to Droplet
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.DROPLET_SSH }}
+          script: |
+            set -e
+
+            # 1. Ensure working repo exists, or clone it (public repo, no auth)
+            REPO_DIR="/home/bogdan/apps/laval-digital-repo"
+            if [ ! -d "$REPO_DIR/.git" ]; then
+              git clone https://github.com/shogodel/laval-digital.git "$REPO_DIR"
+            fi
+
+            # 2. Pull the latest
+            cd "$REPO_DIR"
+            git fetch --all
+            git reset --hard origin/main
+
+            # 3. Sync files to SWAG's www folder, deleting anything removed
+            rsync -a --delete --exclude='.git/' "$REPO_DIR/" /home/bogdan/apps/nginx-conf/www/laval-digital/
+
+            # 4. Reload SWAG so any config changes are picked up (harmless otherwise)
+            docker exec swag nginx -s reload || true
+
+            echo "[deploy] done at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
