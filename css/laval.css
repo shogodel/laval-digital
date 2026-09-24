@@ -67,12 +67,18 @@
   color: var(--ld-navy);
 }
 
-/* Logo: soft gold glow on hover */
+/* Logo: bigger (+20%), faint static glow, stronger on hover */
 #mainNav .navbar-brand img {
+  height: 3.5rem;
   transition: height 0.35s ease, filter 0.3s ease;
+  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.22));
 }
 #mainNav .navbar-brand:hover img {
   filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.55));
+}
+/* Dark lockup hidden on navy; shown on white */
+#mainNav .navbar-brand .ld-logo-dark {
+  display: none;
 }
 #mainNav .navbar-nav .nav-item .nav-link {
   position: relative;
@@ -112,9 +118,25 @@
 #mainNav.navbar-shrink {
   background-color: #fff;
   border-bottom: 1px solid rgba(10, 22, 40, 0.08);
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
 }
 #mainNav.navbar-shrink .navbar-brand img {
-  height: 2.3rem;
+  height: 2.75rem;
+}
+#mainNav.navbar-shrink .navbar-brand .ld-logo-dark {
+  display: inline-block;
+}
+#mainNav.navbar-shrink .navbar-brand .ld-logo-light {
+  display: none;
+}
+/* Mobile toggler: navy icon on white bar */
+#mainNav.navbar-shrink .navbar-toggler {
+  color: var(--ld-navy);
+  border-color: rgba(10, 22, 40, 0.25);
+}
+#mainNav.navbar-shrink .navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='%230a1628' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
 }
 #mainNav.navbar-shrink .navbar-nav .nav-item .nav-link {
   color: rgba(10, 22, 40, 0.78);
@@ -871,12 +893,6 @@ header.masthead.ld-subhero .masthead-heading {
   transform-origin: left;
   transform: scaleX(0);
 }
-/* Logo: faint static glow, stronger on hover */
-#mainNav .navbar-brand img {
-  transition: height 0.35s ease, filter 0.3s ease;
-  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.22));
-}
-
 /* Mobile menu inherits the glass */
 @media (max-width: 991.98px) {
   #mainNav .navbar-collapse {
