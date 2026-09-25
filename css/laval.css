@@ -1005,6 +1005,104 @@ header.masthead.ld-subhero .masthead-heading {
   }
 }
 
+/* ============ HEADER — floating rounded glam ============ */
+@media (min-width: 992px) {
+  #mainNav {
+    top: 0.85rem;
+    left: 1.1rem;
+    right: 1.1rem;
+    border-radius: 1.2rem;
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    overflow: visible;
+  }
+  #mainNav.navbar-shrink {
+    box-shadow: 0 14px 36px rgba(10, 22, 40, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    border-color: rgba(212, 175, 55, 0.35);
+  }
+}
+@media (max-width: 991.98px) {
+  #mainNav {
+    border-radius: 0 0 1.1rem 1.1rem;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.22);
+  }
+}
+/* Menu link icons */
+#mainNav .nav-link .ld-ico {
+  font-size: 0.78em;
+  margin-right: 0.45em;
+  color: var(--ld-gold);
+  opacity: 0.9;
+}
+#mainNav.navbar-shrink .nav-link .ld-ico {
+  color: var(--ld-bronze);
+}
+/* Staggered menu entrance (mobile + desktop dropdowns) */
+#mainNav .navbar-collapse.show .nav-item,
+#mainNav .dropdown-menu.show .dropdown-item {
+  animation: ld-menuin 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+#mainNav .navbar-collapse.show .nav-item:nth-child(2) { animation-delay: 0.05s; }
+#mainNav .navbar-collapse.show .nav-item:nth-child(3) { animation-delay: 0.1s; }
+#mainNav .navbar-collapse.show .nav-item:nth-child(4) { animation-delay: 0.15s; }
+@keyframes ld-menuin {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
+/* Mobile open panel */
+@media (max-width: 991.98px) {
+  #mainNav .navbar-collapse.show {
+    padding: 0.6rem 0 0.9rem;
+  }
+  #mainNav .navbar-collapse.show .nav-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  #mainNav .navbar-collapse.show .nav-item:last-child {
+    border-bottom: none;
+  }
+  #mainNav .dropdown-menu {
+    position: static;
+    margin: 0.4rem 0 0.6rem;
+  }
+}
+/* Standalone language switcher (outside the collapse) */
+.ld-langswitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  color: var(--ld-champagne);
+  border: 1px solid rgba(246, 227, 180, 0.4);
+  border-radius: 999px;
+  padding: 0.42rem 0.85rem;
+  margin-right: 0.7rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+}
+.ld-langswitch i {
+  font-size: 0.8em;
+  color: var(--ld-gold);
+}
+.ld-langswitch:hover {
+  color: #fff;
+  border-color: var(--ld-gold);
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.35);
+}
+#mainNav.navbar-shrink .ld-langswitch {
+  color: var(--ld-bronze);
+  border-color: rgba(10, 22, 40, 0.25);
+}
+#mainNav.navbar-shrink .ld-langswitch:hover {
+  color: var(--ld-navy);
+  border-color: var(--ld-gold);
+}
+/* Legacy in-menu language link (retired) */
+#mainNav .nav-link.ld-lang {
+  display: none;
+}
+
 /* Mobile menu inherits the glass */
 @media (max-width: 991.98px) {
   #mainNav .navbar-collapse {
