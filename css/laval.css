@@ -963,10 +963,8 @@ header.masthead.ld-subhero .masthead-heading {
 }
 /* ============ MOBILE (small screens) ============ */
 @media (max-width: 575.98px) {
-  /* Keep brand + toggler on one line */
-  #mainNav > .container {
-    flex-wrap: nowrap;
-  }
+  /* Smaller brand so brand + switcher + toggler share one row;
+     the collapse wraps below by itself (do NOT force nowrap here) */
   #mainNav .navbar-brand img {
     height: 2.4rem;
   }
@@ -1054,11 +1052,29 @@ header.masthead.ld-subhero .masthead-heading {
   #mainNav .navbar-collapse.show {
     padding: 0.6rem 0 0.9rem;
   }
+  #mainNav .navbar-nav {
+    margin-left: 0 !important;
+    width: 100%;
+  }
   #mainNav .navbar-collapse.show .nav-item {
     border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   }
   #mainNav .navbar-collapse.show .nav-item:last-child {
     border-bottom: none;
+  }
+  #mainNav .navbar-collapse.show .nav-link {
+    text-align: left;
+    padding: 0.9rem 0.25rem;
+    font-size: 0.95rem;
+  }
+  #mainNav .navbar-collapse.show .nav-link::after {
+    left: 0.25rem;
+    right: auto;
+    width: 2.2rem;
+  }
+  #mainNav .navbar-collapse.show .nav-item:last-child .nav-link {
+    margin: 0.7rem 0 0.2rem;
+    text-align: center;
   }
   #mainNav .dropdown-menu {
     position: static;
