@@ -567,12 +567,7 @@ html {
   color: rgba(255, 255, 255, 0.78);
 }
 
-/* ============ TEAM (removed — section hidden; see note above) ============ */
-footer .btn-social:hover {
-  background-color: var(--ld-gold);
-  border-color: var(--ld-gold);
-  box-shadow: 0 0 16px rgba(212, 175, 55, 0.5);
-}
+/* ============ TEAM (removed — section hidden; socials now styled under FOOTER) ============ */
 
 /* ============ CLIENTS (removed — section hidden; see note above) ============ */
 
@@ -640,26 +635,46 @@ footer.footer .ld-foot-tag {
 footer.footer .btn-social {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.16);
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 2.8rem;
+  height: 2.8rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   margin: 0 0.45rem 0 0;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 footer.footer .btn-social i {
   color: var(--ld-champagne);
-  font-size: 1rem;
+  font-size: 1.1rem;
+  transition: color 0.3s ease;
 }
 footer.footer .btn-social:hover {
-  background: var(--ld-gold);
-  border-color: var(--ld-gold);
-  box-shadow: 0 0 18px rgba(212, 175, 55, 0.45);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 }
 footer.footer .btn-social:hover i {
-  color: var(--ld-navy);
+  color: #fff;
+}
+/* Vibrant brand hovers */
+footer.footer .ld-x:hover {
+  background: #000;
+  border-color: #fff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.35);
+}
+footer.footer .ld-fb:hover {
+  background: #1877f2;
+  border-color: #1877f2;
+  box-shadow: 0 0 20px rgba(24, 119, 242, 0.55);
+}
+footer.footer .ld-ig:hover {
+  background: linear-gradient(45deg, #f9ce34, #ee2a7b, #6228d7);
+  border-color: #ee2a7b;
+  box-shadow: 0 0 20px rgba(238, 42, 123, 0.5);
+}
+footer.footer .ld-in:hover {
+  background: #0a66c2;
+  border-color: #0a66c2;
+  box-shadow: 0 0 20px rgba(10, 102, 194, 0.55);
 }
 footer.footer h6 {
   font-size: 0.75rem;
