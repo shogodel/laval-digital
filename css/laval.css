@@ -574,24 +574,40 @@ html {
 
 /* ============ ABOUT / TIMELINE (removed — timeline deleted) ============ */
 
-/* ============ ABOUT — claim cards ============ */
+/* ============ ABOUT / WHY — dark proof closer ============ */
 #about {
-  background: linear-gradient(180deg, #ffffff 0%, #faf6ec 100%);
+  background:
+    radial-gradient(40rem 20rem at 15% 10%, rgba(20, 184, 166, 0.12), transparent 65%),
+    radial-gradient(38rem 22rem at 85% 90%, rgba(212, 175, 55, 0.1), transparent 65%),
+    linear-gradient(180deg, #060d18 0%, #04090f 100%);
+  position: relative;
+  overflow: hidden;
+}
+#about .section-heading {
+  color: #fff;
+}
+#about .section-subheading {
+  color: rgba(246, 227, 180, 0.78) !important;
+}
+#about .ld-section-eyebrow {
+  color: var(--ld-champagne);
 }
 .ld-claim {
   height: 100%;
-  border-radius: 1.1rem;
-  padding: 2.2rem 1.6rem;
+  border-radius: 1.25rem;
+  padding: 2.8rem 2.4rem;
   color: #fff;
-  background: linear-gradient(160deg, #0c1930 0%, #060d18 70%);
-  border: 1px solid rgba(212, 175, 55, 0.28);
-  box-shadow: 0 14px 34px rgba(10, 22, 40, 0.16);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
 }
 .ld-claim:hover {
   transform: translateY(-8px);
-  border-color: var(--ld-gold);
-  box-shadow: 0 20px 44px rgba(10, 22, 40, 0.24), 0 0 26px rgba(212, 175, 55, 0.3);
+  border-color: rgba(212, 175, 55, 0.55);
+  box-shadow: 0 26px 54px rgba(0, 0, 0, 0.45), 0 0 30px rgba(212, 175, 55, 0.18);
 }
 .ld-claim .fa-stack .fa-circle {
   color: var(--ld-gold) !important;
@@ -606,10 +622,16 @@ html {
   color: var(--ld-champagne);
 }
 .ld-claim p {
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.65;
+  margin: 0 auto;
+  max-width: 30rem;
+  font-size: 1rem;
+  line-height: 1.7;
   color: rgba(255, 255, 255, 0.78);
+}
+.ld-why-cta-note {
+  color: rgba(246, 227, 180, 0.7);
+  font-style: italic;
+  margin-bottom: 1.2rem;
 }
 
 /* ============ TEAM (removed — section hidden; socials now styled under FOOTER) ============ */
