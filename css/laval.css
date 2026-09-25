@@ -961,6 +961,50 @@ header.masthead.ld-subhero .masthead-heading {
   transform-origin: left;
   transform: scaleX(0);
 }
+/* ============ MOBILE (small screens) ============ */
+@media (max-width: 575.98px) {
+  /* Keep brand + toggler on one line */
+  #mainNav > .container {
+    flex-wrap: nowrap;
+  }
+  #mainNav .navbar-brand img {
+    height: 2.4rem;
+  }
+  #mainNav.navbar-shrink .navbar-brand img {
+    height: 2.1rem;
+  }
+  /* Hero fits the viewport */
+  header.masthead .masthead-heading {
+    font-size: 1.8rem;
+    line-height: 1.25;
+    overflow-wrap: break-word;
+  }
+  header.masthead .masthead-subheading {
+    font-size: 1.1rem;
+  }
+  .ld-eyebrow {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    padding: 0.45rem 0.9rem;
+    max-width: 100%;
+  }
+  header.masthead .btn-xl {
+    display: block;
+    width: 100%;
+    margin: 0 0 0.8rem;
+  }
+  header.masthead .btn-ghost-light {
+    margin-left: 0;
+  }
+  .ld-microtrust {
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+  }
+  .ld-scroll {
+    display: none;
+  }
+}
+
 /* Mobile menu inherits the glass */
 @media (max-width: 991.98px) {
   #mainNav .navbar-collapse {

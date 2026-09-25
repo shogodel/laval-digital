@@ -107,6 +107,20 @@
     });
   })();
 
+  // On mobile, tapping a dropdown item closes the open menu.
+  (function () {
+    var toggler = document.querySelector('.navbar-toggler');
+    var collapse = document.getElementById('navbarResponsive');
+    if (!toggler || !collapse) return;
+    collapse.querySelectorAll('.dropdown-item').forEach(function (item) {
+      item.addEventListener('click', function () {
+        if (window.getComputedStyle(toggler).display !== 'none' && collapse.classList.contains('show')) {
+          toggler.click();
+        }
+      });
+    });
+  })();
+
   // Gold scroll-progress hairline.
   (function () {
     var bar = document.createElement('div');
