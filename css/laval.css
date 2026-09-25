@@ -1,6 +1,6 @@
 /* Laval Digital — header identity (Apple-style frosted glass). Loaded after theme CSS. */
 :root {
-  --ld-navy: #0a1628;
+  --ld-navy: #060d18;
   --ld-teal: #0e9f8a;
   --ld-teal-bright: #14b8a6;
   --ld-orange: #f59e0b;
@@ -41,31 +41,7 @@
   opacity: 0.9;
   pointer-events: none;
 }
-/* Contact becomes a chrome-gold pill CTA */
-#mainNav .navbar-nav .nav-item:last-child .nav-link {
-  border: 1px solid rgba(212, 175, 55, 0.65);
-  border-radius: 999px;
-  padding: 0.45rem 1.15rem;
-  margin-left: 0.4rem;
-  color: var(--ld-champagne);
-  background: linear-gradient(180deg, rgba(246, 227, 180, 0.14), rgba(212, 175, 55, 0.06));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 rgba(212, 175, 55, 0);
-  transition: box-shadow 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-}
-#mainNav .navbar-nav .nav-item:last-child .nav-link::after {
-  display: none;
-}
-#mainNav .navbar-nav .nav-item:last-child .nav-link:hover {
-  color: #fff;
-  border-color: var(--ld-gold);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 18px rgba(212, 175, 55, 0.35);
-}
-#mainNav.navbar-shrink .navbar-nav .nav-item:last-child .nav-link {
-  color: var(--ld-bronze);
-}
-#mainNav.navbar-shrink .navbar-nav .nav-item:last-child .nav-link:hover {
-  color: var(--ld-navy);
-}
+/* Contact is a quiet text link like the rest (no pill) */
 
 /* Logo: bigger (+20%), faint static glow, stronger on hover */
 #mainNav .navbar-brand img {
@@ -164,7 +140,7 @@ header.masthead {
     radial-gradient(42rem 26rem at 12% 18%, rgba(20, 184, 166, 0.22), transparent 65%),
     radial-gradient(38rem 24rem at 88% 82%, rgba(212, 175, 55, 0.16), transparent 65%),
     radial-gradient(30rem 20rem at 78% 12%, rgba(245, 158, 11, 0.1), transparent 60%),
-    linear-gradient(180deg, #0d1d33 0%, #0a1628 100%);
+    linear-gradient(180deg, #0a1626 0%, #060d18 100%);
   position: relative;
   overflow: hidden;
 }
@@ -574,7 +550,7 @@ html {
   border-radius: 1.1rem;
   padding: 2.2rem 1.6rem;
   color: #fff;
-  background: linear-gradient(160deg, #10233d 0%, #0a1628 70%);
+  background: linear-gradient(160deg, #0c1930 0%, #060d18 70%);
   border: 1px solid rgba(212, 175, 55, 0.28);
   box-shadow: 0 14px 34px rgba(10, 22, 40, 0.16);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
@@ -617,7 +593,7 @@ section#contact {
   background:
     radial-gradient(36rem 22rem at 85% 15%, rgba(20, 184, 166, 0.18), transparent 65%),
     radial-gradient(30rem 20rem at 10% 90%, rgba(212, 175, 55, 0.14), transparent 65%),
-    linear-gradient(180deg, #0d1d33, #0a1628);
+    linear-gradient(180deg, #0a1626, #060d18);
 }
 section#contact .section-heading {
   color: #fff;
@@ -887,7 +863,7 @@ header.masthead.ld-subhero .masthead-heading {
 .ld-cta {
   background:
     radial-gradient(36rem 20rem at 50% 120%, rgba(212, 175, 55, 0.16), transparent 65%),
-    linear-gradient(180deg, #0d1d33, #0a1628);
+    linear-gradient(180deg, #0a1626, #060d18);
 }
 .ld-cta h2 {
   color: #fff;
@@ -900,7 +876,7 @@ header.masthead.ld-subhero .masthead-heading {
 
 /* Services dropdown */
 #mainNav .dropdown-menu {
-  background: linear-gradient(180deg, #10233d, #0a1628);
+  background: linear-gradient(180deg, #0c1930, #060d18);
   border: 1px solid rgba(212, 175, 55, 0.3);
   border-radius: 0.9rem;
   padding: 0.6rem;
@@ -1003,37 +979,50 @@ header.masthead.ld-subhero .masthead-heading {
   }
 }
 
-/* ============ HEADER — floating rounded glam ============ */
+/* ============ HEADER — world-class restraint ============
+   Full-bleed, text-only nav, one gold moment (the hairline). */
+#mainNav {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
 @media (min-width: 992px) {
-  #mainNav {
-    top: 0.85rem;
-    left: 1.1rem;
-    right: 1.1rem;
-    border-radius: 1.2rem;
-    border: 1px solid rgba(212, 175, 55, 0.22);
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.07);
-    overflow: visible;
+  /* True-center nav: brand + switcher pinned to edges, links centered */
+  #mainNav .container {
+    position: relative;
   }
-  #mainNav.navbar-shrink {
-    box-shadow: 0 14px 36px rgba(10, 22, 40, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    border-color: rgba(212, 175, 55, 0.35);
+  #mainNav .navbar-brand {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-right: 0;
+  }
+  #mainNav .navbar-collapse {
+    justify-content: center;
+  }
+  #mainNav .ld-langswitch {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
   }
 }
 @media (max-width: 991.98px) {
   #mainNav {
-    border-radius: 0 0 1.1rem 1.1rem;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.22);
+    border-radius: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 }
-/* Menu link icons */
-#mainNav .nav-link .ld-ico {
-  font-size: 0.78em;
-  margin-right: 0.45em;
-  color: var(--ld-gold);
-  opacity: 0.9;
-}
-#mainNav.navbar-shrink .nav-link .ld-ico {
-  color: var(--ld-bronze);
+/* Single gold moment: the hairline */
+#mainNav::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 8%, rgba(212, 175, 55, 0.65) 50%, transparent 92%);
+  opacity: 0.7;
+  pointer-events: none;
 }
 /* Staggered menu entrance (mobile + desktop dropdowns) */
 #mainNav .navbar-collapse.show .nav-item,
@@ -1081,38 +1070,24 @@ header.masthead.ld-subhero .masthead-heading {
     margin: 0.4rem 0 0.6rem;
   }
 }
-/* Standalone language switcher (outside the collapse) */
+/* Quiet text language switcher (outside the collapse) */
 .ld-langswitch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-decoration: none;
-  color: var(--ld-champagne);
-  border: 1px solid rgba(246, 227, 180, 0.4);
-  border-radius: 999px;
-  padding: 0.42rem 0.85rem;
-  margin-right: 0.7rem;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
-}
-.ld-langswitch i {
-  font-size: 0.8em;
-  color: var(--ld-gold);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 0.4rem 0.2rem;
+  transition: color 0.3s ease;
 }
 .ld-langswitch:hover {
   color: #fff;
-  border-color: var(--ld-gold);
-  box-shadow: 0 0 14px rgba(212, 175, 55, 0.35);
 }
 #mainNav.navbar-shrink .ld-langswitch {
-  color: var(--ld-bronze);
-  border-color: rgba(10, 22, 40, 0.25);
+  color: rgba(10, 22, 40, 0.55);
 }
 #mainNav.navbar-shrink .ld-langswitch:hover {
   color: var(--ld-navy);
-  border-color: var(--ld-gold);
 }
 /* Legacy in-menu language link (retired) */
 #mainNav .nav-link.ld-lang {
