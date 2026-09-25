@@ -29,18 +29,6 @@
 #mainNav.navbar-shrink {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 10px 34px rgba(10, 22, 40, 0.14);
 }
-/* Champagne-gold hairline under the header */
-#mainNav::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--ld-champagne) 18%, var(--ld-gold) 38%, var(--ld-teal-bright) 62%, var(--ld-gold) 82%, transparent);
-  opacity: 0.9;
-  pointer-events: none;
-}
 /* Contact is a quiet text link like the rest (no pill) */
 
 /* Logo: bigger (+20%), faint static glow, stronger on hover */
