@@ -1232,9 +1232,15 @@ header.masthead.ld-subhero .masthead-heading {
     right: auto;
     width: 2.2rem;
   }
+  #mainNav .navbar-collapse.show .nav-item {
+    animation: none;
+  }
+  #mainNav .dropdown-menu.show .dropdown-item {
+    animation: none;
+  }
   #mainNav .navbar-collapse.show .nav-item:last-child .nav-link {
-    margin: 0.7rem 0 0.2rem;
-    text-align: center;
+    margin: 0;
+    text-align: left;
   }
   #mainNav .dropdown-menu {
     position: static;
