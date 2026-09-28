@@ -972,6 +972,20 @@ header.masthead.ld-subhero .masthead-heading {
   font-size: 0.93rem;
   color: rgba(255, 255, 255, 0.68);
 }
+.ld-contact-phone {
+  margin-top: 1rem;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+.ld-contact-phone a {
+  color: var(--ld-champagne);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ld-contact-phone a:hover {
+  color: #fff;
+}
 /* FAQ — dark glass */
 #faq {
   background: linear-gradient(180deg, #04090f 0%, #060d18 100%);

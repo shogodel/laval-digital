@@ -22,8 +22,7 @@
         <link rel="alternate" hreflang="x-default" href="https://laval.digital/index.html" />
         <meta property="og:locale" content="fr_CA" />
         <meta name="theme-color" content="#04090f" />
-        <script type="application/ld+json">
-        {
+        <script type="application/ld+json">{
           "@context": "https://schema.org",
           "@graph": [
             {
@@ -39,8 +38,34 @@
                 "addressRegion": "QC",
                 "addressCountry": "CA"
               },
-              "areaServed": ["Laval", "Montréal", "Québec"],
-              "knowsAbout": ["Conception Web", "SEO", "Marketing Numérique", "Automatisation IA", "Cyberréputation"]
+              "areaServed": [
+                "Laval",
+                "Montréal",
+                "Québec"
+              ],
+              "knowsAbout": [
+                "Conception Web",
+                "SEO",
+                "Marketing Numérique",
+                "Automatisation IA",
+                "Cyberréputation"
+              ],
+              "telephone": "+1-514-243-1580",
+              "openingHoursSpecification": [
+                {
+                  "@type": "OpeningHoursSpecification",
+                  "dayOfWeek": [
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday"
+                  ],
+                  "opens": "00:00",
+                  "closes": "23:59"
+                }
+              ]
             },
             {
               "@type": "WebSite",
@@ -48,11 +73,12 @@
               "url": "https://laval.digital/fr/",
               "name": "Laval Digital",
               "inLanguage": "fr-CA",
-              "publisher": { "@id": "https://laval.digital/#organization" }
+              "publisher": {
+                "@id": "https://laval.digital/#organization"
+              }
             }
           ]
-        }
-        </script>
+        }</script>
         <!-- Favicon-->
         <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
         <link rel="apple-touch-icon" href="../assets/img/logo-mark.svg" />
@@ -411,6 +437,7 @@
                 <div class="text-center">
                     <h2 class="section-heading text-uppercase">Contactez-nous</h2>
                     <h3 class="section-subheading text-muted">Parlez-nous de votre projet — réponse en quelques heures, souvent en quelques minutes.</h3>
+                    <p class="ld-contact-phone">Vous préférez parler? <a href="tel:+15142431580">(514) 243-1580</a> — ouvert 24 h, lun–sam.</p>
                 </div>
                 <!-- Contact form: EspoCRM wiring lands here.
                      Until then, submit shows an honest pending note (see js/laval.js?v=4). -->
@@ -498,6 +525,7 @@
                     <div class="col-lg-4 col-md-6">
                         <h6>Contact</h6>
                         <p class="ld-foot-contact">Laval, Québec, Canada</p>
+                        <p class="ld-foot-contact"><a href="tel:+15142431580">(514) 243-1580</a> · Ouvert 24 h, lun–sam</p>
                         <p class="ld-foot-contact">Réponse en quelques heures — souvent en quelques minutes.</p>
                         <p class="ld-foot-contact"><a href="#contact">Démarrer un projet →</a></p>
                     </div>
