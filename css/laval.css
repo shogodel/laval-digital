@@ -1476,3 +1476,78 @@ header.masthead.ld-subhero .masthead-heading {
     display: none;
   }
 }
+
+/* ============ PAINS — start from the problem ============ */
+#pains {
+  background:
+    radial-gradient(40rem 22rem at 50% 0%, rgba(201, 168, 76, 0.07), transparent 65%),
+    linear-gradient(180deg, #060d18 0%, #04090f 100%);
+  position: relative;
+}
+#pains .section-heading {
+  color: #fff;
+}
+#pains .section-subheading {
+  color: rgba(245, 231, 197, 0.78) !important;
+}
+#pains .ld-section-eyebrow {
+  color: var(--ld-champagne);
+}
+.ld-pain {
+  display: block;
+  height: 100%;
+  border-radius: 1.5rem;
+  padding: 2.6rem 2.2rem 2rem;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 2px solid rgba(201, 168, 76, 0.55);
+  box-shadow: 0 28px 68px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.02);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.4s ease, border-color 0.3s ease;
+}
+.ld-pain:hover {
+  color: #fff;
+  transform: translateY(-6px);
+  border-color: rgba(201, 168, 76, 0.25);
+  border-top-color: var(--ld-gold);
+  box-shadow: 0 38px 78px rgba(0, 0, 0, 0.44), 0 0 44px rgba(201, 168, 76, 0.12);
+}
+.ld-pain-quote {
+  display: block;
+  font-size: 2.2rem;
+  line-height: 1;
+  color: var(--ld-gold);
+  margin-bottom: 0.6rem;
+}
+.ld-pain h4 {
+  margin: 0 0 0.9rem;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+.ld-pain p {
+  margin: 0 auto 1.2rem;
+  max-width: 30rem;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.72);
+}
+.ld-pain-link {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ld-champagne);
+  font-family: "Montserrat", sans-serif;
+}
+.ld-pain-link span {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.ld-pain:hover .ld-pain-link span {
+  transform: translateX(6px);
+}
