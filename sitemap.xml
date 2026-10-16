@@ -60,4 +60,14 @@
     <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/pricing.html" />
     <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/pricing.html" />
   </url>
+  <url>
+    <loc>https://laval.digital/industries-restaurants.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/industries-restaurants.html" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/industries-restaurants.html" />
+  </url>
+  <url>
+    <loc>https://laval.digital/fr/industries-restaurants.html</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/industries-restaurants.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/industries-restaurants.html" />
+  </url>
 </urlset>
