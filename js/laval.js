@@ -150,4 +150,45 @@
     );
     update();
   })();
+
+  // Contact FAB + choice sheet (SMS-first; no accounts needed).
+  (function () {
+    var fab = document.getElementById('ldFab');
+    var sheet = document.getElementById('ldSheet');
+    var backdrop = document.getElementById('ldSheetBackdrop');
+    if (!fab || !sheet) return;
+    function open() {
+      sheet.hidden = false;
+      if (backdrop) backdrop.hidden = false;
+      fab.setAttribute('aria-expanded', 'true');
+      var first = sheet.querySelector('a');
+      if (first) first.focus();
+    }
+    function close(returnFocus) {
+      sheet.hidden = true;
+      if (backdrop) backdrop.hidden = true;
+      fab.setAttribute('aria-expanded', 'false');
+      if (returnFocus) fab.focus();
+    }
+    fab.addEventListener('click', function () {
+      if (sheet.hidden) {
+        open();
+      } else {
+        close(false);
+      }
+    });
+    if (backdrop) {
+      backdrop.addEventListener('click', function () {
+        close(true);
+      });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !sheet.hidden) close(true);
+    });
+    sheet.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        close(false);
+      });
+    });
+  })();
 })();

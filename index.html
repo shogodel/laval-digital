@@ -94,7 +94,7 @@
         <!-- Core theme CSS (includes Bootstrap)-->
         <link href="css/styles.css" rel="stylesheet" />
         <!-- Laval Digital identity overrides -->
-        <link href="css/laval.css?v=4" rel="stylesheet" />
+        <link href="css/laval.css?v=5" rel="stylesheet" />
     </head>
     <body id="page-top">
         <!-- Navigation-->
@@ -441,7 +441,7 @@
                     <p class="ld-contact-phone">Prefer to talk? <a href="tel:+15142431580">(514) 243-1580</a> — open 24 hours, Mon—Sat.</p>
                 </div>
                 <!-- Contact form: EspoCRM wiring lands here.
-                     Until then, submit shows an honest pending note (see js/laval.js?v=5). -->
+                     Until then, submit shows an honest pending note (see js/laval.js?v=6). -->
                 <form id="contactForm" novalidate>
                     <div class="row align-items-stretch mb-5">
                         <div class="col-md-6">
@@ -541,11 +541,20 @@
                 </div>
             </div>
         </footer>
+        <!-- Contact FAB + choice sheet (SMS-first, no accounts) -->
+        <button class="ld-fab" id="ldFab" aria-expanded="false" aria-controls="ldSheet" aria-label="Contact options"><i class="fas fa-comment-sms" aria-hidden="true"></i><span>Free audit</span></button>
+        <div class="ld-sheet-backdrop" id="ldSheetBackdrop" hidden></div>
+        <div class="ld-sheet" id="ldSheet" role="dialog" aria-label="Contact options" hidden>
+            <p class="ld-sheet-title">Get a free audit</p>
+            <a class="ld-sheet-row ld-sheet-sms" href="sms:+15142431580?&amp;body=Hi%20Laval%20Digital%2C%20I%20would%20like%20a%20free%20audit.%20My%20business%20is%20___%20and%20my%20goal%20is%20___."><i class="fas fa-comment-sms" aria-hidden="true"></i><span><strong>Text us</strong><small>Opens your messaging app</small></span></a>
+            <a class="ld-sheet-row" href="tel:+15142431580"><i class="fas fa-phone" aria-hidden="true"></i><span><strong>Call (514) 243-1580</strong><small>Mon–Sat, replies within hours</small></span></a>
+            <a class="ld-sheet-row" href="#contact"><i class="fas fa-pen" aria-hidden="true"></i><span><strong>Write to us</strong><small>Form below, on this page</small></span></a>
+        </div>
         <!-- Bootstrap core JS-->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" defer></script>
         <!-- Core theme JS-->
         <script src="js/scripts.js" defer></script>
         <!-- Laval Digital interactions-->
-        <script src="js/laval.js?v=5" defer></script>
+        <script src="js/laval.js?v=6" defer></script>
     </body>
 </html>

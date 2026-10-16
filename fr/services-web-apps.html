@@ -122,7 +122,7 @@
 
         <!-- Laval Digital identity overrides -->
 
-        <link href="../css/laval.css?v=4" rel="stylesheet" />
+        <link href="../css/laval.css?v=5" rel="stylesheet" />
 
     </head>
 
@@ -488,6 +488,15 @@
             </div>
         </footer>
 
+        <!-- Contact FAB + choice sheet (SMS-first, no accounts) -->
+        <button class="ld-fab" id="ldFab" aria-expanded="false" aria-controls="ldSheet" aria-label="Options de contact"><i class="fas fa-comment-sms" aria-hidden="true"></i><span>Audit gratuit</span></button>
+        <div class="ld-sheet-backdrop" id="ldSheetBackdrop" hidden></div>
+        <div class="ld-sheet" id="ldSheet" role="dialog" aria-label="Options de contact" hidden>
+            <p class="ld-sheet-title">Audit gratuit</p>
+            <a class="ld-sheet-row ld-sheet-sms" href="sms:+15142431580?&amp;body=Bonjour%20Laval%20Digital%2C%20je%20veux%20un%20audit%20gratuit.%20Mon%20entreprise%20%3A%20___%20et%20mon%20objectif%20%3A%20___."><i class="fas fa-comment-sms" aria-hidden="true"></i><span><strong>Textez-nous</strong><small>Ouvre votre messagerie</small></span></a>
+            <a class="ld-sheet-row" href="tel:+15142431580"><i class="fas fa-phone" aria-hidden="true"></i><span><strong>Appelez le (514) 243-1580</strong><small>Lun–sam, réponse en quelques heures</small></span></a>
+            <a class="ld-sheet-row" href="index.html#contact"><i class="fas fa-pen" aria-hidden="true"></i><span><strong>Écrivez-nous</strong><small>Formulaire sur l'accueil</small></span></a>
+        </div>
         <!-- Bootstrap core JS-->
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" defer></script>
@@ -498,7 +507,7 @@
 
         <!-- Laval Digital interactions-->
 
-        <script src="../js/laval.js?v=5"></script>
+        <script src="../js/laval.js?v=6"></script>
 
     </body>
 
