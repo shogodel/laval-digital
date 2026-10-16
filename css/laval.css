@@ -1701,3 +1701,75 @@ header.masthead.ld-subhero .masthead-heading {
 .ld-price-table tbody tr:hover td {
   background: rgba(201, 168, 76, 0.06);
 }
+
+/* ============ COST COMPARISON STRIP ============ */
+.ld-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  margin: 2.2rem auto 0;
+  max-width: 56rem;
+  text-align: left;
+}
+@media (max-width: 767.98px) {
+  .ld-compare {
+    grid-template-columns: 1fr;
+  }
+}
+.ld-compare-card {
+  border-radius: 1.25rem;
+  padding: 1.6rem 1.5rem;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ld-compare-card h4 {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+.ld-compare-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+.ld-compare-card ul li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.45rem 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.72);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.ld-compare-card ul li:last-child {
+  border-bottom: none;
+}
+.ld-compare-card ul li span:last-child {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ld-compare-total {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+.ld-compare-card.ld-compare-keep .ld-compare-total {
+  color: rgba(255, 255, 255, 0.85);
+}
+.ld-compare-card.ld-compare-own {
+  border-color: rgba(201, 168, 76, 0.35);
+  box-shadow: 0 0 30px rgba(201, 168, 76, 0.12);
+}
+.ld-compare-card.ld-compare-own .ld-compare-total {
+  color: var(--ld-champagne);
+}
+.ld-compare-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+}
