@@ -86,11 +86,15 @@
         }
       );
       if (!ok) return;
-      document.getElementById('submitSuccessMessage').classList.remove('d-none');
-      document.getElementById('submitErrorMessage').classList.add('d-none');
-      form.querySelectorAll('.form-control').forEach(function (f) {
-        f.value = '';
-      });
+      // Honest pending state: backend (EspoCRM) not wired yet, so do NOT
+      // claim success and do NOT clear the user's input (data loss).
+      document.getElementById('submitSuccessMessage').classList.add('d-none');
+      var errBox = document.getElementById('submitErrorMessage');
+      var errText = errBox && errBox.querySelector('.text-center');
+      if (errText) {
+        errText.textContent = 'Message not sent yet — our direct channel is being connected. Please call (514) 243-1580; your text below was kept so you can copy it.';
+      }
+      if (errBox) errBox.classList.remove('d-none');
     });
   })();
 
