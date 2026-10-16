@@ -50,4 +50,14 @@
     <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/services-business.html" />
     <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/services-business.html" />
   </url>
+  <url>
+    <loc>https://laval.digital/pricing.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/pricing.html" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/pricing.html" />
+  </url>
+  <url>
+    <loc>https://laval.digital/fr/pricing.html</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://laval.digital/fr/pricing.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://laval.digital/pricing.html" />
+  </url>
 </urlset>

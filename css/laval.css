@@ -1650,3 +1650,54 @@ header.masthead.ld-subhero .masthead-heading {
   font-style: italic;
   color: rgba(255, 255, 255, 0.5);
 }
+
+/* ============ PRICE TABLE (pricing page) ============ */
+.table-responsive {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+  overflow-x: auto;
+}
+.ld-price-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+}
+.ld-price-table th,
+.ld-price-table td {
+  padding: 1rem 1.2rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.78);
+}
+.ld-price-table thead th {
+  color: #fff;
+  font-size: 0.95rem;
+  background: rgba(201, 168, 76, 0.08);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.3);
+  white-space: nowrap;
+}
+.ld-price-table thead th span {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--ld-champagne);
+}
+.ld-price-table tbody th[scope="row"] {
+  color: var(--ld-champagne);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ld-price-table tbody tr:last-child th,
+.ld-price-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.ld-price-table tbody tr:hover td {
+  background: rgba(201, 168, 76, 0.06);
+}
