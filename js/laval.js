@@ -62,20 +62,59 @@
       });
   })();
 
-  // Contact form: validate locally, show pending note.
-  // ESPOCRM WIRING POINT: replace the body of this handler with a
-  // fetch() POST to your EspoCRM Lead endpoint, then show
-  // #submitSuccessMessage on 2xx or #submitErrorMessage otherwise.
+  // Contact form: validate locally, then create a Lead in EspoCRM via a
+  // Lead Capture entry point (public key by design; creates Leads only).
+  // Set LEAD_CAPTURE_URL to the URL shown in EspoCRM under
+  // Administration > Lead Capture > <entry> > API URL.
   (function () {
     var form = document.getElementById('contactForm');
     if (!form) return;
+
+    var LEAD_CAPTURE_URL =
+      'https://sales.laval.digital/api/v1/LeadCapture/7b53bd21360ef4194a37eeb01919a1a4';
+
+    var isFr = (document.documentElement.lang || '').toLowerCase().indexOf('fr') === 0;
+    var copy = isFr
+      ? {
+          sending: 'Envoi…',
+          submit: 'Envoyer le message',
+          error:
+            'Nous n\'avons pas pu envoyer votre message. Réessayez, ou appelez/textez le (514) 243-1580 — votre texte est conservé.',
+        }
+      : {
+          sending: 'Sending…',
+          submit: 'Send Message',
+          error:
+            'We couldn\'t send your message just now. Please try again, or call/text (514) 243-1580 — your text is kept so you can copy it.',
+        };
+
+    var successBox = document.getElementById('submitSuccessMessage');
+    var errorBox = document.getElementById('submitErrorMessage');
+    var errorText = errorBox && errorBox.querySelector('.text-center');
+    var submitBtn = document.getElementById('submitButton');
+    var submitting = false;
+
+    function show(box) {
+      if (box) box.classList.remove('d-none');
+    }
+    function hide(box) {
+      if (box) box.classList.add('d-none');
+    }
+    function setError(text) {
+      if (errorText) errorText.textContent = text;
+      show(errorBox);
+    }
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var ok = true;
+      if (submitting) return;
+
       var name = document.getElementById('name');
       var email = document.getElementById('email');
       var phone = document.getElementById('phone');
       var message = document.getElementById('message');
+      var ok = true;
+
       [[name, /.+/], [email, /.+@.+\..+/], [phone, /.+/], [message, /.+/]].forEach(
         function (pair) {
           var field = pair[0],
@@ -85,16 +124,58 @@
           if (!valid) ok = false;
         }
       );
+
+      hide(successBox);
+      hide(errorBox);
       if (!ok) return;
-      // Honest pending state: backend (EspoCRM) not wired yet, so do NOT
-      // claim success and do NOT clear the user's input (data loss).
-      document.getElementById('submitSuccessMessage').classList.add('d-none');
-      var errBox = document.getElementById('submitErrorMessage');
-      var errText = errBox && errBox.querySelector('.text-center');
-      if (errText) {
-        errText.textContent = 'Message not sent yet — our direct channel is being connected. Please call (514) 243-1580; your text below was kept so you can copy it.';
+
+      var fullName = name.value.trim().replace(/\s+/g, ' ');
+      var parts = fullName.split(' ');
+      var firstName = parts.length > 1 ? parts.shift() : '';
+      var lastName = parts.join(' ') || fullName;
+
+      var payload = {
+        firstName: firstName || null,
+        lastName: lastName,
+        emailAddress: email.value.trim(),
+        phoneNumber: phone.value.trim(),
+        description: message.value.trim(),
+      };
+
+      submitting = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.setAttribute('aria-busy', 'true');
+        submitBtn.textContent = copy.sending;
       }
-      if (errBox) errBox.classList.remove('d-none');
+
+      fetch(LEAD_CAPTURE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          form.reset();
+          show(successBox);
+          if (successBox && successBox.scrollIntoView) {
+            successBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }
+        })
+        .catch(function () {
+          setError(copy.error);
+        })
+        .finally(function () {
+          submitting = false;
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.removeAttribute('aria-busy');
+            submitBtn.textContent = copy.submit;
+          }
+        });
     });
   })();
 

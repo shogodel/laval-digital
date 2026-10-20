@@ -659,8 +659,7 @@
                     <h3 class="section-subheading text-muted">Tell us about your project — we reply within hours — often minutes.</h3>
                     <p class="ld-contact-phone">Prefer to talk? <a href="tel:+15142431580">(514) 243-1580</a> — open 24 hours, Mon—Sat.</p>
                 </div>
-                <!-- Contact form: EspoCRM wiring lands here.
-                     Until then, submit shows an honest pending note (see js/laval.js?v=6). -->
+                <!-- Contact form: submits to EspoCRM via a Lead Capture entry point (see js/laval.js?v=7). -->
                 <form id="contactForm" novalidate>
                     <div class="row align-items-stretch mb-5">
                         <div class="col-md-6">
@@ -697,19 +696,19 @@
                     <!---->
                     <!-- This is what your users will see when the form-->
                     <!-- has successfully submitted-->
-                    <div class="d-none" id="submitSuccessMessage">
+                    <div class="d-none" id="submitSuccessMessage" role="status" aria-live="polite">
                         <div class="text-center text-white mb-3">
-                            <div class="fw-bolder">Message noted!</div>
-                            Our direct contact channel is being connected right now.
+                            <div class="fw-bolder">Message sent!</div>
+                            Thanks — your request is on its way. We reply within hours, often minutes.
                             <br />
-                            Please check back shortly — or reach us through the quote links above.
+                            Need us right now? Call (514) 243-1580.
                         </div>
                     </div>
                     <!-- Submit error message-->
                     <!---->
                     <!-- This is what your users will see when there is-->
                     <!-- an error submitting the form-->
-                    <div class="d-none" id="submitErrorMessage"><div class="text-center text-danger mb-3">Error sending message!</div></div>
+                    <div class="d-none" id="submitErrorMessage" role="alert" aria-live="assertive"><div class="text-center text-danger mb-3">We couldn't send your message. Please try again or call (514) 243-1580.</div></div>
                     <!-- Submit Button-->
                     <div class="text-center"><button class="btn btn-primary btn-xl text-uppercase" id="submitButton" type="submit">Send Message</button></div>
                 </form>
@@ -776,6 +775,6 @@
         <!-- Core theme JS-->
         <script src="js/scripts.js" defer></script>
         <!-- Laval Digital interactions-->
-        <script src="js/laval.js?v=6" defer></script>
+        <script src="js/laval.js?v=7" defer></script>
     </body>
 </html>
