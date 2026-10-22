@@ -115,11 +115,13 @@
 header.masthead {
   padding-top: 8rem;
   padding-bottom: 4.6rem;
+  min-height: 70vh;
 }
 @media (min-width: 768px) {
   header.masthead {
     padding-top: 13rem;
     padding-bottom: 9.6rem;
+    min-height: 80vh;
   }
 }
 
@@ -171,22 +173,34 @@ header.masthead .container {
 }
 .masthead-video {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
-  z-index: -1;
+  object-position: center center;
+  z-index: -2;
 }
+
 .masthead-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(4, 9, 15, 0.55);
-  z-index: 0;
+  inset: 0;
+  background: rgba(4, 9, 15, 0.65);
+  z-index: -1;
+}
+
+@media (max-width: 768px) {
+  .masthead-video {
+    object-position: center top;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .masthead-video {
+    display: none;
+  }
+  .masthead-overlay {
+    background: #04090f;
+  }
 }
 /* 4K subtle grain texture */
 .ld-grain {
