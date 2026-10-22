@@ -166,11 +166,11 @@ header.masthead .container {
 }
 .masthead-video {
   position: absolute;
-  top: 50%;
+  top: 0;
   left: 50%;
-  width: 100%;
+  width: 50%;
   height: auto;
-  transform: translate(-50%, -50%) scale(0.5);
+  transform: translateX(-50%);
   z-index: -2;
 }
 
