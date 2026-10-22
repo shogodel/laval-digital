@@ -113,7 +113,7 @@
 
 /* Hero: slightly reduced so it elegantly sits under the glass header */
 header.masthead {
-  padding-top: 2rem;
+  padding-top: 0;
   padding-bottom: 3rem;
   min-height: 70vh;
   position: relative;
@@ -121,7 +121,7 @@ header.masthead {
 }
 @media (min-width: 768px) {
   header.masthead {
-    padding-top: 3rem;
+    padding-top: 0;
     padding-bottom: 4rem;
     min-height: 75vh;
   }
@@ -166,11 +166,11 @@ header.masthead .container {
 }
 .masthead-video {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 50%;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center center;
+  height: auto;
+  transform: translate(-50%, -50%) scale(0.5);
   z-index: -2;
 }
 
