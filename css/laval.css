@@ -1650,6 +1650,33 @@ header.masthead.ld-subhero .masthead-heading {
 }
 
 /* ============ AI VOICE AGENT TIERS ============ */
+#ai-tiers {
+  background:
+    radial-gradient(44rem 22rem at 50% 0%, rgba(212, 175, 55, 0.09), transparent 65%),
+    radial-gradient(36rem 22rem at 85% 100%, rgba(20, 184, 166, 0.1), transparent 65%),
+    linear-gradient(180deg, #04090f 0%, #060d18 100%);
+  position: relative;
+}
+#ai-tiers .section-heading,
+#ai-tiers .section-subheading {
+  color: #fff !important;
+}
+#ai-tiers .ld-section-eyebrow {
+  color: var(--ld-champagne) !important;
+}
+#ai-addons {
+  background:
+    radial-gradient(40rem 22rem at 50% 0%, rgba(15, 173, 155, 0.08), transparent 65%),
+    linear-gradient(180deg, #04090f 0%, #060d18 100%);
+  position: relative;
+}
+#ai-addons .section-heading,
+#ai-addons .section-subheading {
+  color: #fff !important;
+}
+#ai-addons .ld-section-eyebrow {
+  color: var(--ld-champagne) !important;
+}
 .ld-tier {
   height: 100%;
   border-radius: 1.5rem;
