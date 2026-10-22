@@ -116,6 +116,8 @@ header.masthead {
   padding-top: 8rem;
   padding-bottom: 4.6rem;
   min-height: 70vh;
+  position: relative;
+  overflow: hidden;
 }
 @media (min-width: 768px) {
   header.masthead {
@@ -126,15 +128,6 @@ header.masthead {
 }
 
 /* ============ HERO — Sophisticated Apple-style with depth ============ */
-header.masthead {
-  background:
-    radial-gradient(48rem 32rem at 10% 20%, rgba(15, 173, 155, 0.18), transparent 70%),
-    radial-gradient(44rem 28rem at 90% 80%, rgba(201, 168, 76, 0.14), transparent 70%),
-    radial-gradient(36rem 24rem at 90% 15%, rgba(245, 158, 11, 0.08), transparent 65%),
-    linear-gradient(180deg, #0a0e17 0%, #060d18 100%);
-  position: relative;
-  overflow: hidden;
-}
 header.masthead::before {
   content: "";
   position: absolute;
@@ -184,7 +177,11 @@ header.masthead .container {
 .masthead-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(4, 9, 15, 0.65);
+  background:
+    radial-gradient(48rem 32rem at 10% 20%, rgba(15, 173, 155, 0.18), transparent 70%),
+    radial-gradient(44rem 28rem at 90% 80%, rgba(201, 168, 76, 0.14), transparent 70%),
+    radial-gradient(36rem 24rem at 90% 15%, rgba(245, 158, 11, 0.08), transparent 65%),
+    linear-gradient(180deg, rgba(4, 9, 15, 0.55) 0%, rgba(4, 9, 15, 0.75) 100%);
   z-index: -1;
 }
 
