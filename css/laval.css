@@ -1699,8 +1699,24 @@ header.masthead.ld-subhero .masthead-heading {
   box-shadow: 0 32px 72px rgba(0, 0, 0, 0.52), 0 0 40px rgba(201, 168, 76, 0.12);
 }
 .ld-tier.ld-tier-featured {
-  border-color: rgba(201, 168, 76, 0.35);
-  box-shadow: 0 0 30px rgba(201, 168, 76, 0.12);
+  border: 2px solid rgba(201, 168, 76, 0.5);
+  box-shadow: 0 0 40px rgba(201, 168, 76, 0.18);
+  position: relative;
+}
+.ld-tier-best-for {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ld-gold);
+}
+.ld-tier-risk-reversal {
+  margin-top: 1.2rem;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
 }
 .ld-tier-badge {
   display: inline-block;
