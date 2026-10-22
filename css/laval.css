@@ -1649,6 +1649,126 @@ header.masthead.ld-subhero .masthead-heading {
   color: rgba(255, 255, 255, 0.5);
 }
 
+/* ============ AI VOICE AGENT TIERS ============ */
+.ld-tier {
+  height: 100%;
+  border-radius: 1.5rem;
+  padding: 2.4rem 2rem 2rem;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38), 0 1px 0 rgba(255, 255, 255, 0.03);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.4s ease, border-color 0.3s ease;
+}
+.ld-tier:hover {
+  transform: translateY(-6px);
+  border-color: rgba(201, 168, 76, 0.2);
+  box-shadow: 0 32px 72px rgba(0, 0, 0, 0.42), 0 0 40px rgba(201, 168, 76, 0.12);
+}
+.ld-tier.ld-tier-featured {
+  border-color: rgba(201, 168, 76, 0.35);
+  box-shadow: 0 0 30px rgba(201, 168, 76, 0.12);
+}
+.ld-tier-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ld-navy);
+  background: linear-gradient(180deg, #fffcf5, var(--ld-gold));
+  border-radius: 999px;
+  padding: 0.35rem 0.95rem;
+  margin-bottom: 1.1rem;
+}
+.ld-tier-badge.ld-tier-badge-popular {
+  color: #fff;
+  background: var(--ld-gold);
+}
+.ld-tier-name {
+  margin: 0 0 0.6rem;
+  font-size: 1.25rem;
+  color: #fff;
+}
+.ld-tier-pitch {
+  margin: 0 0 1.2rem;
+  font-size: 0.93rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.6;
+}
+.ld-tier-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: var(--ld-champagne);
+}
+.ld-tier-setup {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+}
+.ld-tier-monthly {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+}
+.ld-tier-usage {
+  margin: 0 0 1.2rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+.ld-tier-overage {
+  color: var(--ld-gold);
+  font-weight: 700;
+}
+.ld-tier-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.6rem;
+  flex: 1;
+}
+.ld-tier-features li {
+  padding: 0.45rem 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.75);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.ld-tier-features li:last-child { border-bottom: none; }
+.ld-tier-features li::before {
+  content: "✓ ";
+  color: var(--ld-gold);
+  font-weight: 700;
+}
+/* ============ ADD-ONS ============ */
+.ld-addon {
+  border-radius: 1.25rem;
+  padding: 1.6rem 1.5rem;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ld-addon h5 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+  color: #fff;
+}
+.ld-addon-price {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--ld-champagne);
+}
+.ld-addon-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+}
+
 /* ============ PRICE TABLE (pricing page) ============ */
 .table-responsive {
   border-radius: 1.25rem;
