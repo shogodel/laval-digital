@@ -18,6 +18,8 @@
   --ldh-ink: #f7fafc;
   --ldh-muted: #a6b6cc;
 
+  --ldh-nav-clear: 0rem;
+
   position: relative;
   isolation: isolate;
   display: flex;
@@ -25,7 +27,8 @@
   box-sizing: border-box;
   min-height: 100vh;
   min-height: 100svh;
-  padding: clamp(4.5rem, 9vw, 8rem) clamp(1.25rem, 5vw, 4rem);
+  padding: calc(clamp(4.5rem, 9vw, 8rem) + var(--ldh-nav-clear))
+    clamp(1.25rem, 5vw, 4rem);
   overflow: hidden;
   background: var(--ldh-navy);
   color: var(--ldh-ink);
@@ -36,6 +39,11 @@
 .ld-hero *::before,
 .ld-hero *::after {
   box-sizing: border-box;
+}
+
+/* Embedded in a page with the site's fixed navbar: clear the bar. */
+.ld-hero--site {
+  --ldh-nav-clear: 1.35rem;
 }
 
 /* ---------- Background ---------- */
@@ -539,7 +547,7 @@
 
 @media (max-width: 1000px) {
   .ld-hero {
-    padding-top: clamp(3.5rem, 10vw, 5rem);
+    padding-top: calc(clamp(3.5rem, 10vw, 5rem) + var(--ldh-nav-clear));
     padding-bottom: clamp(4rem, 11vw, 6rem);
   }
 
