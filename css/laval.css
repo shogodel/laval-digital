@@ -1822,6 +1822,113 @@ header.masthead.ld-subhero .masthead-heading {
   line-height: 1.5;
 }
 
+/* ============ PRICING CARDS ============ */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.pricing-card {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.25rem;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pricing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.45);
+}
+
+.pricing-card.popular {
+  border-color: rgba(45, 212, 191, 0.5);
+  box-shadow: 0 24px 60px rgba(45, 212, 191, 0.15);
+}
+
+.pricing-header {
+  padding: 1.8rem 1.5rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pricing-name {
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(245, 231, 197, 0.8);
+  margin-bottom: 0.8rem;
+}
+
+.pricing-price {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.pricing-tag {
+  display: inline-block;
+  background: linear-gradient(90deg, var(--ld-teal-bright), var(--ld-teal));
+  color: #000;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 0.5rem;
+}
+
+.pricing-body {
+  padding: 1.5rem;
+}
+
+.pricing-title {
+  font-size: 1.1rem;
+  color: #fff;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pricing-features li {
+  padding: 0.5rem 0;
+  color: rgba(255, 255, 255, 0.75);
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.pricing-features li:before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--ld-teal-bright);
+  font-weight: bold;
+}
+
+.pricing-highlight {
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pricing-highlight .alert {
+  background: linear-gradient(165deg, rgba(45, 212, 191, 0.1), rgba(45, 212, 191, 0.05));
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
 /* ============ PRICE TABLE (pricing page) ============ */
 .table-responsive {
   border-radius: 1.25rem;
