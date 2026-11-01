@@ -1822,7 +1822,29 @@ header.masthead.ld-subhero .masthead-heading {
   line-height: 1.5;
 }
 
-/* ============ PREMIUM PRICING CARDS ============ */
+/* ============ PREMIUM PRICING SECTION (dark) ============ */
+#pricing {
+    background:
+        radial-gradient(42rem 24rem at 50% 0%, rgba(212, 175, 55, 0.09), transparent 65%),
+        linear-gradient(180deg, #04090f 0%, #060d18 100%);
+}
+#pricing .section-heading {
+    color: #fff;
+}
+#pricing .section-subheading {
+    color: rgba(245, 231, 197, 0.78) !important;
+}
+#pricing .ld-section-eyebrow {
+    color: var(--ld-champagne);
+}
+.ld-pricing-eyebrow {
+    margin: 0 0 0.5rem;
+    color: rgba(245, 231, 197, 0.72);
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
 .ld-pricing-card {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1833,6 +1855,7 @@ header.masthead.ld-subhero .masthead-heading {
     display: flex;
     flex-direction: column;
     position: relative;
+    color: rgba(255, 255, 255, 0.85);
 }
 .ld-pricing-card:hover {
     transform: translateY(-5px);
@@ -1843,6 +1866,10 @@ header.masthead.ld-subhero .masthead-heading {
     border-color: #d4af37;
     background: rgba(212, 175, 55, 0.05);
     box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+}
+.ld-pricing-card.popular:hover {
+    border-color: #d4af37;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 24px rgba(212, 175, 55, 0.22);
 }
 .ld-popular-badge {
     position: absolute;
@@ -1893,6 +1920,89 @@ header.masthead.ld-subhero .masthead-heading {
     border-radius: 12px;
     padding: 1.5rem;
     color: #e0e0e0;
+}
+/* Gold CTA button for the featured pricing card */
+.ld-btn-gold {
+    border: 1px solid #d4af37;
+    background: linear-gradient(180deg, #e8cf86 0%, #d4af37 55%, #c9a84c 100%);
+    color: #000;
+    font-weight: 700;
+}
+.ld-btn-gold:hover,
+.ld-btn-gold:focus,
+.ld-btn-gold:active {
+    color: #000;
+    background: linear-gradient(180deg, #fffdf5 0%, #e5d5c6 55%, #c9a84c 100%);
+    border-color: #d4af37;
+    box-shadow: 0 10px 24px rgba(201, 168, 76, 0.35);
+    transform: translateY(-1px);
+}
+.ld-btn-gold:focus-visible {
+    outline: 2px solid #d4af37;
+    outline-offset: 2px;
+}
+/* ============ PRICING FAQ ACCORDION (dark) ============ */
+#pricingFaq {
+    --bs-accordion-color: rgba(255, 255, 255, 0.78);
+    --bs-accordion-bg: rgba(255, 255, 255, 0.03);
+    --bs-accordion-border-color: rgba(255, 255, 255, 0.1);
+    --bs-accordion-border-width: 1px;
+    --bs-accordion-border-radius: 0.9rem;
+    --bs-accordion-inner-border-radius: calc(0.9rem - 1px);
+    --bs-accordion-btn-color: #fff;
+    --bs-accordion-btn-bg: rgba(255, 255, 255, 0.05);
+    --bs-accordion-btn-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+    --bs-accordion-btn-active-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23d4af37'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+    --bs-accordion-btn-focus-border-color: rgba(212, 175, 55, 0.55);
+    --bs-accordion-btn-focus-box-shadow: 0 0 0 0.25rem rgba(212, 175, 55, 0.2);
+    --bs-accordion-active-color: #fff;
+    --bs-accordion-active-bg: rgba(255, 255, 255, 0.07);
+}
+#pricingFaq .accordion-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.9rem;
+    margin-bottom: 0.65rem;
+    color: rgba(255, 255, 255, 0.78);
+}
+#pricingFaq .accordion-item:first-of-type,
+#pricingFaq .accordion-item:last-of-type {
+    border-radius: 0.9rem;
+}
+#pricingFaq .accordion-button {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    border-top-left-radius: var(--bs-accordion-inner-border-radius);
+    border-top-right-radius: var(--bs-accordion-inner-border-radius);
+}
+#pricingFaq .accordion-button:not(.collapsed) {
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+    box-shadow: none;
+}
+#pricingFaq .accordion-body {
+    color: rgba(255, 255, 255, 0.78);
+}
+/* Keep the fixed FAB clear of page content on small screens */
+@media (max-width: 575.98px) {
+    .ld-fab {
+        right: 0.85rem;
+        bottom: 0.85rem;
+        width: 3.4rem;
+        height: 3.4rem;
+        padding: 0;
+        justify-content: center;
+        border-radius: 50%;
+    }
+    .ld-fab span {
+        display: none;
+    }
+    .ld-fab i {
+        font-size: 1.15rem;
+    }
+    footer.footer {
+        padding-bottom: 5rem !important;
+    }
 }
 /* ============ PRICE TABLE (pricing page) ============ */
 .table-responsive {
