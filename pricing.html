@@ -71,60 +71,49 @@
         <div class="row g-4 justify-content-center">
           <!-- Starter -->
           <div class="col-lg-4 col-md-6">
-            <div class="pricing-card pricing-starter">
-              <div class="pricing-header">
-                <div class="pricing-name">Starter Setup</div>
-                <div class="pricing-price">$1,500 CAD</div>
-              </div>
-              <div class="pricing-body">
-                <h4 class="pricing-title">Simple FAQ & Booking Agent</h4>
-                <ul class="pricing-features">
-                  <li>Calendar sync</li>
-                  <li>Bilingual (EN/FR)</li>
-                </ul>
-              </div>
+            <div class="ld-pricing-card">
+              <p class="text-uppercase text-muted mb-2" style="letter-spacing: 1px; font-size: 0.9rem;">Starter Setup</p>
+              <div class="ld-price-tag">$1,500 <span>CAD</span></div>
+              <h4 class="text-white mt-3">Simple FAQ & Booking Agent</h4>
+              <ul class="ld-pricing-features">
+                <li>Calendar sync</li>
+                <li>Bilingual (EN/FR)</li>
+              </ul>
+              <a href="index.html#contact" class="btn btn-outline-light mt-auto">Get a Quote</a>
             </div>
           </div>
           <!-- Growth (Most Popular) -->
           <div class="col-lg-4 col-md-6">
-            <div class="pricing-card pricing-growth popular">
-              <div class="pricing-header">
-                <div class="pricing-name">Growth Setup</div>
-                <div class="pricing-price">$2,995 CAD</div>
-                <div class="pricing-tag">Most Popular</div>
-              </div>
-              <div class="pricing-body">
-                <h4 class="pricing-title">Multi-turn Agent</h4>
-                <ul class="pricing-features">
-                  <li>CRM sync</li>
-                  <li>Human handoff</li>
-                  <li>Custom prompt tuning</li>
-                </ul>
-              </div>
+            <div class="ld-pricing-card popular">
+              <div class="ld-popular-badge">Most Popular</div>
+              <p class="text-uppercase text-muted mb-2" style="letter-spacing: 1px; font-size: 0.9rem;">Growth Setup</p>
+              <div class="ld-price-tag">$2,995 <span>CAD</span></div>
+              <h4 class="text-white mt-3">Multi-turn Agent</h4>
+              <ul class="ld-pricing-features">
+                <li>CRM sync</li>
+                <li>Human handoff</li>
+                <li>Custom prompt tuning</li>
+              </ul>
+              <a href="index.html#contact" class="btn mt-auto" style="background: #d4af37; color: #000; font-weight: 600;">Get a Quote</a>
             </div>
           </div>
           <!-- Premium -->
           <div class="col-lg-4 col-md-6">
-            <div class="pricing-card pricing-premium">
-              <div class="pricing-header">
-                <div class="pricing-name">Premium Setup</div>
-                <div class="pricing-price">$4,500+ CAD</div>
-              </div>
-              <div class="pricing-body">
-                <h4 class="pricing-title">Outbound Calling</h4>
-                <ul class="pricing-features">
-                  <li>Complex routing</li>
-                  <li>Multi-location SMBs</li>
-                </ul>
-              </div>
+            <div class="ld-pricing-card">
+              <p class="text-uppercase text-muted mb-2" style="letter-spacing: 1px; font-size: 0.9rem;">Premium Setup</p>
+              <div class="ld-price-tag">$4,500+ <span>CAD</span></div>
+              <h4 class="text-white mt-3">Outbound Calling</h4>
+              <ul class="ld-pricing-features">
+                <li>Complex routing</li>
+                <li>Multi-location SMBs</li>
+              </ul>
+              <a href="index.html#contact" class="btn btn-outline-light mt-auto">Get a Quote</a>
             </div>
           </div>
         </div>
         <!-- Usage costs highlight -->
-        <div class="pricing-highlight mt-5">
-          <div class="alert alert-info">
-            <strong>Usage & Platform Costs:</strong> The setup fee covers the build. For phone calls, you will be billed directly by the voice platform at their standard rate (typically $0.13 to $0.31 CAD per minute depending on the voice and LLM you choose). You own your account. No hidden markups.
-          </div>
+        <div class="ld-usage-box mt-5 mb-5">
+          <strong>Usage & Platform Costs:</strong> The setup fee covers the build. For phone calls, you will be billed directly by the voice platform at their standard rate (typically $0.13 to $0.31 CAD per minute depending on the voice and LLM you choose). You own your account. No hidden markups.
         </div>
       </div>
     </section>
@@ -137,30 +126,80 @@
         </div>
         <div class="row justify-content-center">
           <div class="col-lg-8">
-            <details class="ld-faq" open>
-              <summary>Are these fixed prices?</summary>
-              <p>The setup fees are fixed and quoted upfront. For phone calls, you will be billed directly by the voice platform at their standard rate (typically $0.13 to $0.31 CAD per minute depending on the voice and LLM you choose). You own your account. No hidden markups.</p>
-            </details>
-            <details class="ld-faq">
-              <summary>What is excluded?</summary>
-              <p>Ad spend, software licenses, app subscriptions and premium theme fees are excluded and always listed separately before you sign.</p>
-            </details>
-            <details class="ld-faq">
-              <summary>Do I own the code and data?</summary>
-              <p>Yes — code, content, accounts and data are 100% yours. No lock-in, no middlemen.</p>
-            </details>
-            <details class="ld-faq">
-              <summary>What if I need more than the package covers?</summary>
-              <p>You get a fixed quote for the extra scope before any work starts. Nothing is ever billed without your written approval.</p>
-            </details>
-            <details class="ld-faq">
-              <summary>Can I pause or cancel?</summary>
-              <p>Yes — care plans pause or cancel anytime with one message. No fees, no retention calls.</p>
-            </details>
-            <details class="ld-faq">
-              <summary>How do payments work?</summary>
-              <p>Fixed quote first; deposit to schedule, balance at handover. No recurring monthly fees unless you add a care plan.</p>
-            </details>
+            <div class="accordion" id="pricingFaq">
+              <div class="accordion-item" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                <h2 class="accordion-header">
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1" style="background: rgba(255,255,255,0.05); color: #fff;">
+                    Are these fixed prices?
+                  </button>
+                </h2>
+                <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#pricingFaq">
+                  <div class="accordion-body" style="color: #d1d1d1;">
+                    The setup fees are fixed and quoted upfront. For phone calls, you will be billed directly by the voice platform at their standard rate (typically $0.13 to $0.31 CAD per minute depending on the voice and LLM you choose). You own your account. No hidden markups.
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2" style="background: rgba(255,255,255,0.05); color: #fff;">
+                    What is excluded?
+                  </button>
+                </h2>
+                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#pricingFaq">
+                  <div class="accordion-body" style="color: #d1d1d1;">
+                    Ad spend, software licenses, app subscriptions and premium theme fees are excluded and always listed separately before you sign.
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3" style="background: rgba(255,255,255,0.05); color: #fff;">
+                    Do I own the code and data?
+                  </button>
+                </h2>
+                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#pricingFaq">
+                  <div class="accordion-body" style="color: #d1d1d1;">
+                    Yes — code, content, accounts and data are 100% yours. No lock-in, no middlemen.
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4" style="background: rgba(255,255,255,0.05); color: #fff;">
+                    What if I need more than the package covers?
+                  </button>
+                </h2>
+                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#pricingFaq">
+                  <div class="accordion-body" style="color: #d1d1d1;">
+                    You get a fixed quote for the extra scope before any work starts. Nothing is ever billed without your written approval.
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5" style="background: rgba(255,255,255,0.05); color: #fff;">
+                    Can I pause or cancel?
+                  </button>
+                </h2>
+                <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#pricingFaq">
+                  <div class="accordion-body" style="color: #d1d1d1;">
+                    Yes — care plans pause or cancel anytime with one message. No fees, no retention calls.
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6" style="background: rgba(255,255,255,0.05); color: #fff;">
+                    How do payments work?
+                  </button>
+                </h2>
+                <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#pricingFaq">
+                  <div class="accordion-body" style="color: #d1d1d1;">
+                    Fixed quote first; deposit to schedule, balance at handover. No recurring monthly fees unless you add a care plan.
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
