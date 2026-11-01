@@ -2259,3 +2259,159 @@ header.masthead.ld-subhero .masthead-heading {
     transform: none;
   }
 }
+
+/* ============ CLIENT CHECKLIST (lead generation) ============ */
+.ld-client-section {
+  background:
+    radial-gradient(40rem 22rem at 50% 0%, rgba(15, 173, 155, 0.1), transparent 65%),
+    radial-gradient(34rem 20rem at 90% 100%, rgba(201, 168, 76, 0.08), transparent 65%),
+    linear-gradient(180deg, #060d18 0%, #04090f 100%);
+}
+.ld-client-section .section-heading {
+  color: #fff;
+}
+.ld-client-section .section-subheading {
+  color: rgba(245, 231, 197, 0.78) !important;
+}
+.ld-client-section .ld-section-eyebrow {
+  color: var(--ld-champagne);
+}
+.ld-client-checklist {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 2.75rem clamp(1.25rem, 4vw, 3.25rem) 3rem;
+  border-radius: 1.5rem;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38), 0 1px 0 rgba(255, 255, 255, 0.03);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.ld-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 0 0 2.25rem;
+}
+.ld-checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  height: 100%;
+  margin: 0;
+  padding: 1rem 1.15rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
+}
+.ld-checklist-item:hover {
+  border-color: rgba(201, 168, 76, 0.45);
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-2px);
+}
+.ld-checklist-item .form-check-input {
+  flex: 0 0 auto;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid rgba(245, 231, 197, 0.45);
+  border-radius: 0.4rem;
+  background-color: rgba(255, 255, 255, 0.04);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 0.8rem 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.ld-checklist-item .form-check-input:focus {
+  border-color: var(--ld-gold);
+  box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+  outline: none;
+}
+.ld-checklist-item .form-check-input:checked {
+  background-color: #d4af37;
+  border-color: #d4af37;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%230a0e17'%3e%3cpath d='M13.485 3.515a.75.75 0 0 1 0 1.06l-6.5 6.5a.75.75 0 0 1-1.06 0l-3.25-3.25a.75.75 0 1 1 1.06-1.06l2.72 2.72 5.97-5.97a.75.75 0 0 1 1.06 0Z'/%3e%3c/svg%3e");
+}
+.ld-checklist-item .form-check-input:checked + .ld-checklist-text {
+  color: #fff;
+}
+.ld-checklist-text {
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.ld-checklist-form {
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+.ld-checklist-form .form-label {
+  margin-bottom: 0.45rem;
+  color: var(--ld-champagne);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.ld-checklist-form .form-control {
+  padding: 0.85rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-size: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+.ld-checklist-form .form-control::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+.ld-checklist-form .form-control:focus {
+  border-color: var(--ld-gold);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  box-shadow: 0 0 0 0.3rem rgba(201, 168, 76, 0.18);
+  outline: none;
+}
+.ld-checklist-form .form-control.is-invalid {
+  border-color: #f87171;
+  background-image: none;
+}
+.ld-checklist-form .form-control.is-invalid:focus {
+  box-shadow: 0 0 0 0.3rem rgba(248, 113, 113, 0.2);
+}
+.ld-checklist-form .invalid-feedback {
+  color: #fca5a5;
+}
+.ld-form-alert {
+  padding: 0.9rem 1.1rem;
+  border-radius: 0.75rem;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+.ld-form-alert--success {
+  background: rgba(45, 212, 191, 0.12);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  color: #b8fff4;
+}
+.ld-form-alert--error {
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fecaca;
+}
+.ld-checklist-note {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+@media (max-width: 767.98px) {
+  .ld-checklist {
+    grid-template-columns: 1fr;
+  }
+  .ld-client-checklist {
+    padding: 2rem 1.25rem 2.5rem;
+  }
+}

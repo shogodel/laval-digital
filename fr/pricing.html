@@ -30,7 +30,7 @@
     <!-- Core theme CSS (includes Bootstrap)-->
     <link href="../css/styles.css" rel="stylesheet" />
     <!-- Laval Digital identity overrides -->
-    <link href="../css/laval.css?v=10" rel="stylesheet" />
+    <link href="../css/laval.css?v=11" rel="stylesheet" />
   </head>
   <body id="page-top">
     <!-- Navigation-->
@@ -114,6 +114,78 @@
         <!-- Usage costs highlight -->
         <div class="ld-usage-box mt-5 mb-5">
           <strong>Coûts d'utilisation & Plateforme&nbsp;:</strong> Les frais d'installation couvrent la création. Pour les appels téléphoniques, vous serez facturé directement par la plateforme vocale au taux standard (typiquement 0,13 à 0,31 $ CAD la minute selon la voix et le LLM choisis). Vous possédez votre compte. Pas de frais cachés.
+        </div>
+      </div>
+    </section>
+    <!-- Liste de vérification client (génération de prospects) -->
+    <section class="page-section ld-client-section" id="client-checklist">
+      <div class="container">
+        <div class="ld-client-checklist">
+          <div class="text-center">
+            <div class="ld-section-eyebrow">— Pour démarrer</div>
+            <h2 class="section-heading text-uppercase">Ce dont nous avons besoin pour créer votre agent.</h2>
+            <p class="section-subheading">Remplissez cette liste de vérification et nous la remettrons à notre équipe d'ingénieurs. Vous obtenez un agent prêt pour la production en 14 jours.</p>
+          </div>
+          <ul class="ld-checklist list-unstyled">
+            <li>
+              <label class="ld-checklist-item" for="ccItem1">
+                <input class="form-check-input" id="ccItem1" type="checkbox" name="checklist" value="20 à 30 FAQ documentées" />
+                <span class="ld-checklist-text">20 à 30 FAQ documentées</span>
+              </label>
+            </li>
+            <li>
+              <label class="ld-checklist-item" for="ccItem2">
+                <input class="form-check-input" id="ccItem2" type="checkbox" name="checklist" value="5 à 10 politiques clés" />
+                <span class="ld-checklist-text">5 à 10 politiques clés</span>
+              </label>
+            </li>
+            <li>
+              <label class="ld-checklist-item" for="ccItem3">
+                <input class="form-check-input" id="ccItem3" type="checkbox" name="checklist" value="3 à 5 scénarios d'escalade" />
+                <span class="ld-checklist-text">3 à 5 scénarios d'escalade</span>
+              </label>
+            </li>
+            <li>
+              <label class="ld-checklist-item" for="ccItem4">
+                <input class="form-check-input" id="ccItem4" type="checkbox" name="checklist" value="Heures d'ouverture et zone de service" />
+                <span class="ld-checklist-text">Heures d'ouverture et zone de service</span>
+              </label>
+            </li>
+          </ul>
+          <form class="ld-checklist-form" id="clientChecklistForm" novalidate>
+            <div class="row g-4">
+              <div class="col-md-6">
+                <label class="form-label" for="ccName">Nom</label>
+                <input class="form-control" id="ccName" name="name" type="text" placeholder="Votre nom" autocomplete="name" required />
+                <div class="invalid-feedback">Veuillez entrer votre nom.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="ccEmail">Courriel</label>
+                <input class="form-control" id="ccEmail" name="email" type="email" placeholder="vous@entreprise.com" autocomplete="email" inputmode="email" required />
+                <div class="invalid-feedback">Veuillez entrer une adresse courriel valide.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="ccBusiness">Nom de l'entreprise</label>
+                <input class="form-control" id="ccBusiness" name="business" type="text" placeholder="Votre entreprise" autocomplete="organization" required />
+                <div class="invalid-feedback">Veuillez entrer le nom de votre entreprise.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="ccPhone">Numéro de téléphone</label>
+                <input class="form-control" id="ccPhone" name="phone" type="tel" placeholder="(514) 555-0123" autocomplete="tel" inputmode="tel" required />
+                <div class="invalid-feedback">Veuillez entrer un numéro de téléphone valide (10 à 15 chiffres).</div>
+              </div>
+            </div>
+            <div class="d-none mt-4" id="checklistSuccessMessage" role="status" aria-live="polite">
+              <div class="ld-form-alert ld-form-alert--success">Liste reçue! Notre équipe d'ingénieurs l'examinera et vous répondra d'ici un jour ouvrable.</div>
+            </div>
+            <div class="d-none mt-4" id="checklistErrorMessage" role="alert" aria-live="assertive">
+              <div class="ld-form-alert ld-form-alert--error">Nous n'avons pas pu envoyer votre liste. Réessayez ou appelez le (514) 243-1580.</div>
+            </div>
+            <div class="text-center mt-4">
+              <button class="btn ld-btn-gold btn-lg text-uppercase" id="clientChecklistSubmit" type="submit">Demander la configuration de mon agent</button>
+              <p class="ld-checklist-note mb-0 mt-3">Aucun compte requis. Réponse d'ici un jour ouvrable.</p>
+            </div>
+          </form>
         </div>
       </div>
     </section>
@@ -268,6 +340,6 @@
     <!-- Core theme JS-->
     <script src="../js/scripts.js" defer></script>
     <!-- Laval Digital interactions-->
-    <script src="../js/laval.js?v=6" defer></script>
+    <script src="../js/laval.js?v=8" defer></script>
   </body>
 </html>
