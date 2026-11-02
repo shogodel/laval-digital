@@ -722,6 +722,78 @@
                 </div>
             </div>
         </section>
+        <!-- Client Checklist (lead generation) -->
+        <section class="page-section ld-client-section" id="client-checklist">
+            <div class="container">
+                <div class="ld-client-checklist">
+                    <div class="text-center">
+                        <div class="ld-section-eyebrow">— Get Started</div>
+                        <h2 class="section-heading text-uppercase">What We Need From You to Build Your Agent.</h2>
+                        <p class="section-subheading">Fill out this checklist, and we will hand it to our engineering team. You get a production-ready agent in 14 days.</p>
+                    </div>
+                    <ul class="ld-checklist list-unstyled">
+                        <li>
+                            <label class="ld-checklist-item" for="ccItem1">
+                                <input class="form-check-input" id="ccItem1" type="checkbox" name="checklist" value="20-30 FAQs documented" />
+                                <span class="ld-checklist-text">20-30 FAQs documented</span>
+                            </label>
+                        </li>
+                        <li>
+                            <label class="ld-checklist-item" for="ccItem2">
+                                <input class="form-check-input" id="ccItem2" type="checkbox" name="checklist" value="5-10 Key policies" />
+                                <span class="ld-checklist-text">5-10 Key policies</span>
+                            </label>
+                        </li>
+                        <li>
+                            <label class="ld-checklist-item" for="ccItem3">
+                                <input class="form-check-input" id="ccItem3" type="checkbox" name="checklist" value="3-5 Escalation scenarios" />
+                                <span class="ld-checklist-text">3-5 Escalation scenarios</span>
+                            </label>
+                        </li>
+                        <li>
+                            <label class="ld-checklist-item" for="ccItem4">
+                                <input class="form-check-input" id="ccItem4" type="checkbox" name="checklist" value="Business hours & service area" />
+                                <span class="ld-checklist-text">Business hours &amp; service area</span>
+                            </label>
+                        </li>
+                    </ul>
+                    <form class="ld-checklist-form" id="clientChecklistForm" novalidate>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label" for="ccName">Name</label>
+                                <input class="form-control" id="ccName" name="name" type="text" placeholder="Your name" autocomplete="name" required />
+                                <div class="invalid-feedback">Please enter your name.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="ccEmail">Email</label>
+                                <input class="form-control" id="ccEmail" name="email" type="email" placeholder="you@company.com" autocomplete="email" inputmode="email" required />
+                                <div class="invalid-feedback">Please enter a valid email address.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="ccBusiness">Business Name</label>
+                                <input class="form-control" id="ccBusiness" name="business" type="text" placeholder="Your business" autocomplete="organization" required />
+                                <div class="invalid-feedback">Please enter your business name.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="ccPhone">Phone Number</label>
+                                <input class="form-control" id="ccPhone" name="phone" type="tel" placeholder="(514) 555-0123" autocomplete="tel" inputmode="tel" required />
+                                <div class="invalid-feedback">Please enter a valid phone number (10-15 digits).</div>
+                            </div>
+                        </div>
+                        <div class="d-none mt-4" id="checklistSuccessMessage" role="status" aria-live="polite">
+                            <div class="ld-form-alert ld-form-alert--success">Checklist received! Our engineering team will review it and reply within one business day.</div>
+                        </div>
+                        <div class="d-none mt-4" id="checklistErrorMessage" role="alert" aria-live="assertive">
+                            <div class="ld-form-alert ld-form-alert--error">We couldn't send your checklist. Please try again or call (514) 243-1580.</div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <button class="btn ld-btn-gold btn-lg text-uppercase" id="clientChecklistSubmit" type="submit">Request My Agent Setup</button>
+                            <p class="ld-checklist-note mb-0 mt-3">No accounts needed. We reply within one business day.</p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
         <!-- Contact-->
         <section class="page-section" id="contact">
             <div class="container">
