@@ -1583,6 +1583,9 @@ header.masthead.ld-subhero .masthead-heading {
 }
 .ld-offer {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
   border-radius: 1.5rem;
   padding: 2.4rem 2rem 2rem;
   background: linear-gradient(165deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
@@ -1596,6 +1599,22 @@ header.masthead.ld-subhero .masthead-heading {
   transform: translateY(-6px) scale(1.01);
   border-color: rgba(201, 168, 76, 0.2);
   box-shadow: 0 32px 72px rgba(0, 0, 0, 0.42), 0 0 40px rgba(201, 168, 76, 0.12);
+}
+.ld-offer.popular {
+  border-color: rgba(201, 168, 76, 0.55);
+  background: linear-gradient(165deg, rgba(201, 168, 76, 0.12), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38), 0 0 34px rgba(201, 168, 76, 0.14);
+}
+.ld-offer.popular:hover {
+  border-color: rgba(201, 168, 76, 0.7);
+  box-shadow: 0 32px 72px rgba(0, 0, 0, 0.42), 0 0 46px rgba(201, 168, 76, 0.2);
+}
+.ld-offer .ld-card-cta {
+  margin-top: auto;
+  align-self: center;
+}
+.ld-offer .ld-offer-time {
+  align-self: center;
 }
 .ld-offer-time {
   display: inline-block;
