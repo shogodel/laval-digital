@@ -2295,6 +2295,11 @@ header.masthead.ld-subhero .masthead-heading {
 }
 
 /* ============ CLIENT CHECKLIST (lead generation) ============ */
+.ld-contact-anchor {
+  display: block;
+  height: 0;
+  scroll-margin-top: 5.5rem;
+}
 .ld-client-section {
   background:
     radial-gradient(40rem 22rem at 50% 0%, rgba(15, 173, 155, 0.1), transparent 65%),

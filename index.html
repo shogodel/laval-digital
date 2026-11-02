@@ -127,7 +127,7 @@
         <!-- Core theme CSS (includes Bootstrap)-->
         <link href="css/styles.css" rel="stylesheet" />
         <!-- Laval Digital identity overrides -->
-        <link href="css/laval.css?v=13" rel="stylesheet" />
+        <link href="css/laval.css?v=14" rel="stylesheet" />
         <!-- Hero component -->
         <link href="css/hero.css?v=1" rel="stylesheet" />
     </head>
@@ -424,21 +424,56 @@
                     <h2 class="section-heading text-uppercase">Use Cases</h2>
                     <h3 class="section-subheading text-muted">One service: AI voice agents that answer, qualify and book 24/7.</h3>
                 </div>
-                <div class="row text-center">
-                    <div class="col-md-6 mb-5 mb-md-0">
-                        <span class="fa-stack fa-4x">
-                            <i class="fas fa-circle fa-stack-2x text-primary"></i>
-                            <i class="fas fa-robot fa-stack-1x fa-inverse"></i>
-                        </span>
-                        <h4 class="my-3">AI Voice Agents & Receptionists</h4>
-                        <ul class="ld-service-list">
-                            <li>Artificial intelligence voice receptionist</li>
-                            <li>Outbound AI calling</li>
-                            <li>Booking & calendar sync</li>
-                            <li>Missed-call recovery</li>
-                            <li>CRM sync & human handoff</li>
-                        </ul>
-                        <a class="ld-card-cta" href="services-ai-data.html">Explore AI Voice Agents <span>→</span></a>
+                <div class="row text-center justify-content-center">
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="ld-sub">
+                            <span class="fa-stack fa-3x">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-phone fa-stack-1x fa-inverse"></i>
+                            </span>
+                            <h4>Artificial Intelligence Voice Receptionist</h4>
+                            <p>Your front desk on the phone: greets callers, answers FAQs, qualifies and routes — 24/7, with a natural voice and instant pickup.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="ld-sub">
+                            <span class="fa-stack fa-3x">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-phone-volume fa-stack-1x fa-inverse"></i>
+                            </span>
+                            <h4>Outbound AI Calling</h4>
+                            <p>Follow up on open quotes, reactivate lapsed customers and confirm appointments automatically — your list, called and logged for you.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="ld-sub">
+                            <span class="fa-stack fa-3x">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-calendar-check fa-stack-1x fa-inverse"></i>
+                            </span>
+                            <h4>Booking & Calendar Sync</h4>
+                            <p>Real-time appointment booking into Google Calendar, Outlook or your CRM, with confirmations and reminders that cut no-shows.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="ld-sub">
+                            <span class="fa-stack fa-3x">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-comment-sms fa-stack-1x fa-inverse"></i>
+                            </span>
+                            <h4>Missed-Call Recovery</h4>
+                            <p>Every missed call answered by an instant text and auto-callback, so a busy line never turns into lost revenue.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="ld-sub">
+                            <span class="fa-stack fa-3x">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-headset fa-stack-1x fa-inverse"></i>
+                            </span>
+                            <h4>CRM Sync & Human Handoff</h4>
+                            <p>Every call transcribed and logged, with warm transfer to a human whenever the caller asks or the request is out of scope.</p>
+                        </div>
                     </div>
                 </div>
                 <div class="text-center mt-4">
@@ -731,8 +766,9 @@
                 </div>
             </div>
         </section>
-        <!-- Client Checklist (lead generation) -->
+        <!-- Client Checklist (lead generation / contact) -->
         <section class="page-section ld-client-section" id="client-checklist">
+            <div id="contact" class="ld-contact-anchor" aria-hidden="true"></div>
             <div class="container">
                 <div class="ld-client-checklist">
                     <div class="text-center">
@@ -801,69 +837,6 @@
                         </div>
                     </form>
                 </div>
-            </div>
-        </section>
-        <!-- Contact-->
-        <section class="page-section" id="contact">
-            <div class="container">
-                <div class="text-center">
-                    <h2 class="section-heading text-uppercase">Contact Us</h2>
-                    <h3 class="section-subheading text-muted">Tell us about your project — we reply within hours — often minutes.</h3>
-                    <p class="ld-contact-phone">Prefer to talk? <a href="tel:+15142431580">(514) 243-1580</a> — open 24 hours, Mon—Sat.</p>
-                </div>
-                <!-- Contact form: submits to EspoCRM via a Lead Capture entry point (see js/laval.js?v=9). -->
-                <form id="contactForm" novalidate>
-                    <div class="row align-items-stretch mb-5">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <!-- Name input-->
-                                <label class="visually-hidden" for="name">Your Name</label>
-                                <input class="form-control" id="name" type="text" placeholder="Your Name *" />
-                                <div class="invalid-feedback">A name is required.</div>
-                            </div>
-                            <div class="form-group">
-                                <!-- Email address input-->
-                                <label class="visually-hidden" for="email">Your Email</label>
-                                <input class="form-control" id="email" type="email" placeholder="Your Email *" />
-                                <div class="invalid-feedback">An email is required.</div>
-                                <div class="invalid-feedback">Email is not valid.</div>
-                            </div>
-                            <div class="form-group mb-md-0">
-                                <!-- Phone number input-->
-                                <label class="visually-hidden" for="phone">Your Phone</label>
-                                <input class="form-control" id="phone" type="tel" placeholder="Your Phone *" />
-                                <div class="invalid-feedback">A phone number is required.</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group form-group-textarea mb-md-0">
-                                <!-- Message input-->
-                                <label class="visually-hidden" for="message">Your Message</label>
-                                <textarea class="form-control" id="message" placeholder="Your Message *"></textarea>
-                                <div class="invalid-feedback">A message is required.</div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Submit success message-->
-                    <!---->
-                    <!-- This is what your users will see when the form-->
-                    <!-- has successfully submitted-->
-                    <div class="d-none" id="submitSuccessMessage" role="status" aria-live="polite">
-                        <div class="text-center text-white mb-3">
-                            <div class="fw-bolder">Message sent!</div>
-                            Thanks — your request is on its way. We reply within hours, often minutes.
-                            <br />
-                            Need us right now? Call (514) 243-1580.
-                        </div>
-                    </div>
-                    <!-- Submit error message-->
-                    <!---->
-                    <!-- This is what your users will see when there is-->
-                    <!-- an error submitting the form-->
-                    <div class="d-none" id="submitErrorMessage" role="alert" aria-live="assertive"><div class="text-center text-danger mb-3">We couldn't send your message. Please try again or call (514) 243-1580.</div></div>
-                    <!-- Submit Button-->
-                    <div class="text-center"><button class="btn btn-primary btn-xl text-uppercase" id="submitButton" type="submit">Send Message</button></div>
-                </form>
             </div>
         </section>
         <!-- Footer-->

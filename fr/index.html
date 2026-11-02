@@ -128,7 +128,7 @@
         <!-- Core theme CSS (includes Bootstrap)-->
         <link href="../css/styles.css" rel="stylesheet" />
         <!-- Laval Digital identity overrides -->
-        <link href="../css/laval.css?v=13" rel="stylesheet" />
+        <link href="../css/laval.css?v=14" rel="stylesheet" />
         <!-- Hero component -->
         <link href="../css/hero.css?v=1" rel="stylesheet" />
     </head>
@@ -445,21 +445,56 @@
                     <h2 class="section-heading text-uppercase">Cas d'usage</h2>
                     <h3 class="section-subheading text-muted">Un seul service: les agents vocaux IA qui répondent, qualifient et réservent 24/7.</h3>
                 </div>
-                <div class="row text-center">
-                    <div class="col-md-6 mb-5 mb-md-0">
-                        <span class="fa-stack fa-4x">
-                            <i class="fas fa-circle fa-stack-2x text-primary"></i>
-                            <i class="fas fa-robot fa-stack-1x fa-inverse"></i>
-                        </span>
-                        <h4 class="my-3">Agents vocaux IA & Réceptionnistes</h4>
-                        <ul class="ld-service-list">
-                            <li>Réceptionniste vocale en intelligence artificielle</li>
-                            <li>Appels sortants IA</li>
-                            <li>Réservation et agenda</li>
-                            <li>Récupération des appels manqués</li>
-                            <li>Synchro CRM et relais humain</li>
-                        </ul>
-                        <a class="ld-card-cta" href="services-ai-data.html">Explorer Agents vocaux IA <span>→</span></a>
+                <div class="row text-center justify-content-center">
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="ld-sub">
+                            <span class="fa-stack fa-3x">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-phone fa-stack-1x fa-inverse"></i>
+                            </span>
+                            <h4>Réceptionniste vocale en intelligence artificielle</h4>
+                            <p>Votre accueil au téléphone : salue les appelants, répond aux questions fréquentes, qualifie et oriente — 24/7, avec une voix naturelle et une prise d’appel instantanée.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="ld-sub">
+                            <span class="fa-stack fa-3x">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-phone-volume fa-stack-1x fa-inverse"></i>
+                            </span>
+                            <h4>Appels sortants IA</h4>
+                            <p>Relancez les devis ouverts, réactivez les clients dormants et confirmez les rendez-vous automatiquement — votre liste, appelée et journalisée pour vous.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="ld-sub">
+                            <span class="fa-stack fa-3x">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-calendar-check fa-stack-1x fa-inverse"></i>
+                            </span>
+                            <h4>Réservation et agenda</h4>
+                            <p>Prise de rendez-vous en temps réel dans Google Agenda, Outlook ou votre CRM, avec confirmations et rappels qui réduisent les absences.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="ld-sub">
+                            <span class="fa-stack fa-3x">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-comment-sms fa-stack-1x fa-inverse"></i>
+                            </span>
+                            <h4>Récupération des appels manqués</h4>
+                            <p>Chaque appel manqué reçoit un texto instantané et un rappel automatique, pour qu’une ligne occupée ne se transforme jamais en revenu perdu.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="ld-sub">
+                            <span class="fa-stack fa-3x">
+                                <i class="fas fa-circle fa-stack-2x"></i>
+                                <i class="fas fa-headset fa-stack-1x fa-inverse"></i>
+                            </span>
+                            <h4>Synchro CRM et relais humain</h4>
+                            <p>Chaque appel transcrit et journalisé, avec transfert à chaud vers un humain dès que l’appelant le demande ou que la demande sort du cadre.</p>
+                        </div>
                     </div>
                 </div>
                 <div class="text-center mt-4">
@@ -752,8 +787,9 @@
                 </div>
             </div>
         </section>
-        <!-- Liste de vérification client (génération de prospects) -->
+        <!-- Liste de vérification client (génération de prospects / contact) -->
         <section class="page-section ld-client-section" id="client-checklist">
+            <div id="contact" class="ld-contact-anchor" aria-hidden="true"></div>
             <div class="container">
                 <div class="ld-client-checklist">
                     <div class="text-center">
@@ -822,69 +858,6 @@
                         </div>
                     </form>
                 </div>
-            </div>
-        </section>
-        <!-- Contact-->
-        <section class="page-section" id="contact">
-            <div class="container">
-                <div class="text-center">
-                    <h2 class="section-heading text-uppercase">Contactez-nous</h2>
-                    <h3 class="section-subheading text-muted">Parlez-nous de votre projet — réponse en quelques heures, souvent en quelques minutes.</h3>
-                    <p class="ld-contact-phone">Vous préférez parler? <a href="tel:+15142431580">(514) 243-1580</a> — ouvert 24 h, lun–sam.</p>
-                </div>
-                <!-- Formulaire de contact : envoi vers EspoCRM via un point d'entrée Lead Capture (voir js/laval.js?v=9). -->
-                <form id="contactForm" novalidate>
-                    <div class="row align-items-stretch mb-5">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <!-- Name input-->
-                                <label class="visually-hidden" for="name">Votre nom</label>
-                                <input class="form-control" id="name" type="text" placeholder="Votre nom *" />
-                                <div class="invalid-feedback">Votre nom est requis.</div>
-                            </div>
-                            <div class="form-group">
-                                <!-- Email address input-->
-                                <label class="visually-hidden" for="email">Votre courriel</label>
-                                <input class="form-control" id="email" type="email" placeholder="Votre courriel *" />
-                                <div class="invalid-feedback">Votre courriel est requis.</div>
-                                <div class="invalid-feedback">Ce courriel est invalide.</div>
-                            </div>
-                            <div class="form-group mb-md-0">
-                                <!-- Phone number input-->
-                                <label class="visually-hidden" for="phone">Votre téléphone</label>
-                                <input class="form-control" id="phone" type="tel" placeholder="Votre téléphone *" />
-                                <div class="invalid-feedback">Votre numéro est requis.</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group form-group-textarea mb-md-0">
-                                <!-- Message input-->
-                                <label class="visually-hidden" for="message">Votre message</label>
-                                <textarea class="form-control" id="message" placeholder="Votre message *"></textarea>
-                                <div class="invalid-feedback">Votre message est requis.</div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Submit success message-->
-                    <!---->
-                    <!-- This is what your users will see when the form-->
-                    <!-- has successfully submitted-->
-                    <div class="d-none" id="submitSuccessMessage" role="status" aria-live="polite">
-                        <div class="text-center text-white mb-3">
-                            <div class="fw-bolder">Message envoyé!</div>
-                            Merci — votre demande est en route. Nous répondons en quelques heures, souvent en quelques minutes.
-                            <br />
-                            Besoin de nous maintenant? Appelez le (514) 243-1580.
-                        </div>
-                    </div>
-                    <!-- Submit error message-->
-                    <!---->
-                    <!-- This is what your users will see when there is-->
-                    <!-- an error submitting the form-->
-                    <div class="d-none" id="submitErrorMessage" role="alert" aria-live="assertive"><div class="text-center text-danger mb-3">Nous n'avons pas pu envoyer votre message. Réessayez ou appelez le (514) 243-1580.</div></div>
-                    <!-- Submit Button-->
-                    <div class="text-center"><button class="btn btn-primary btn-xl text-uppercase" id="submitButton" type="submit">Envoyer le message</button></div>
-                </form>
             </div>
         </section>
         <!-- Footer-->
