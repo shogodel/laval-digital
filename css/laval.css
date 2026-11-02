@@ -637,6 +637,21 @@ html {
   line-height: 1.8;
   color: rgba(255, 255, 255, 0.78);
 }
+/* Bootstrap card variant keeps the claim visuals but owns its padding via .card-body. */
+.ld-claim.card {
+  padding: 0;
+  background-color: transparent;
+}
+.ld-claim.card .card-body {
+  padding: 3rem 2.6rem;
+}
+.ld-claim.card .card-title {
+  margin: 1.3rem 0 0.9rem;
+  color: var(--ld-champagne);
+}
+.ld-claim.card .card-text {
+  color: rgba(255, 255, 255, 0.78);
+}
 .ld-why-cta-note {
   color: rgba(245, 231, 197, 0.7);
   font-style: italic;
