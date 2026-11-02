@@ -4,6 +4,42 @@
 
   // Reveal-on-scroll for section content (staggered per row).
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Every lead is stored in EspoCRM (Lead Capture) and mirrored by email to
+  // the shared inbox. FormSubmit only needs the address; no API key is exposed.
+  var LEAD_EMAIL_URL = 'https://formsubmit.co/ajax/contact@laval.digital';
+  function sendLeadEmail(subject, fields) {
+    var body = {
+      _subject: subject,
+      _template: 'table',
+      _captcha: 'false',
+      _url: window.location.href,
+      name: fields.name || '',
+      email: fields.email || '',
+      phone: fields.phone || '',
+    };
+    if (fields.business) body.business = fields.business;
+    if (fields.message) body.message = fields.message;
+
+    return fetch(LEAD_EMAIL_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || String(data.success) !== 'true') {
+          throw new Error((data && data.message) || 'Email delivery failed');
+        }
+        return data;
+      });
+  }
   if (!reduce && 'IntersectionObserver' in window) {
     var targets = document.querySelectorAll(
       '.page-section .text-center, .page-section .row > div, footer.footer .row > div'
@@ -142,6 +178,13 @@
         description: message.value.trim(),
       };
 
+      var emailFields = {
+        name: fullName,
+        email: email.value.trim(),
+        phone: phone.value.trim(),
+        message: message.value.trim(),
+      };
+
       submitting = true;
       if (submitBtn) {
         submitBtn.disabled = true;
@@ -161,6 +204,12 @@
           if (!res.ok) throw new Error('HTTP ' + res.status);
           form.reset();
           show(successBox);
+          sendLeadEmail(
+            isFr ? 'Nouvelle demande — Laval Digital' : 'New inquiry — Laval Digital',
+            emailFields
+          ).catch(function (err) {
+            if (window.console && console.warn) console.warn('Lead email failed:', err);
+          });
           if (successBox && successBox.scrollIntoView) {
             successBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
           }
@@ -411,6 +460,14 @@
         description: description,
       };
 
+      var emailFields = {
+        name: fullName,
+        email: email.value.trim(),
+        phone: phone.value.trim(),
+        business: business.value.trim(),
+        message: description,
+      };
+
       submitting = true;
       if (submitBtn) {
         submitBtn.disabled = true;
@@ -440,6 +497,14 @@
               });
           }
           show(successBox);
+          sendLeadEmail(
+            isFr
+              ? 'Nouvelle liste de vérification client — Laval Digital'
+              : 'New client checklist — Laval Digital',
+            emailFields
+          ).catch(function (err) {
+            if (window.console && console.warn) console.warn('Lead email failed:', err);
+          });
           if (successBox && successBox.scrollIntoView) {
             successBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
           }
