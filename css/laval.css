@@ -311,7 +311,8 @@ html {
   scroll-behavior: smooth;
 }
 .page-section {
-  scroll-margin-top: 4rem;
+  /* Keep anchored headings clear of the sticky bar (68px on phones). */
+  scroll-margin-top: 5.5rem;
 }
 .section-subheading {
   color: #8a6d1c !important;
@@ -1270,6 +1271,16 @@ header.masthead.ld-subhero .masthead-heading {
 #mainNav .navbar-toggler:focus-visible {
   color: #fff;
   border-color: rgba(255, 255, 255, 0.38);
+}
+/* Gold focus ring: the default dark outline is invisible on the glass bar */
+#mainNav .nav-link:focus-visible,
+#mainNav .navbar-brand:focus-visible,
+#mainNav .ld-langswitch:focus-visible,
+#mainNav .navbar-toggler:focus-visible {
+  outline: 2px solid var(--ld-gold);
+  outline-offset: 3px;
+  border-radius: 6px;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.16);
 }
 @media (min-width: 992px) {
   /* True-center nav: brand + switcher pinned to edges, links centered */

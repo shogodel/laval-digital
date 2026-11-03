@@ -159,6 +159,15 @@
   color: transparent;
 }
 
+/* Gold city accent — the single warm note in the headline. */
+.ld-hero__gold {
+  color: #d4af37;
+  background: linear-gradient(100deg, #f5e7c5 0%, #d4af37 48%, #b8892b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .ld-hero__sub {
   max-width: 34rem;
   margin: clamp(1.35rem, 2.4vw, 1.8rem) 0 0;
@@ -611,6 +620,7 @@
   .ld-hero__visual,
   .ld-hero__dot,
   .ld-hero__card,
+  .ld-hero__widget,
   .ld-hero__wave span {
     animation: none !important;
   }
@@ -620,12 +630,201 @@
   }
 }
 
+/* ---------- Live call widget (Bootstrap card + glass) ---------- */
+
+.ld-hero__widget {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.5rem;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+  color: var(--ldh-ink);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  animation: ldh-float 7s ease-in-out infinite;
+}
+
+.ld-hero__widget-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ld-hero__widget-agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--ldh-muted);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+
+.ld-hero__online {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid rgba(16, 227, 154, 0.35);
+  border-radius: 999px;
+  background: rgba(16, 227, 154, 0.12);
+  color: var(--ldh-emerald-soft);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.ld-hero__online::before {
+  content: "";
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--ldh-emerald);
+  box-shadow: 0 0 6px rgba(16, 227, 154, 0.8);
+}
+
+.ld-hero__widget .card-body {
+  padding: 1.35rem 1.25rem 1.25rem;
+}
+
+.ld-hero__widget-eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--ldh-emerald-soft);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ld-hero__widget-title {
+  margin: 0;
+  color: var(--ldh-ink);
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.ld-hero__widget .ld-hero__wave {
+  height: 4.25rem;
+  margin: 1.15rem 0 1.25rem;
+  padding: 0 0.5rem;
+  gap: 0.26rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(16, 227, 154, 0.06);
+}
+
+.ld-hero__widget .ld-hero__wave span {
+  width: 0.22rem;
+}
+
+.ld-hero__demo {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.ld-hero__widget .form-control {
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ldh-ink);
+  font-size: 0.9rem;
+}
+
+.ld-hero__widget .form-control::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+  opacity: 1;
+}
+
+.ld-hero__widget .form-control:focus {
+  border-color: rgba(45, 212, 191, 0.6);
+  background: rgba(255, 255, 255, 0.075);
+  color: #fff;
+  box-shadow: 0 0 0 0.2rem rgba(45, 212, 191, 0.16);
+}
+
+.ld-hero__widget .form-control.is-invalid {
+  border-color: rgba(248, 113, 113, 0.7);
+}
+
+.ld-hero__call-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 3.15rem;
+  border: none;
+  border-radius: 0.8rem;
+  background: linear-gradient(180deg, #2af0ac 0%, #10e39a 100%);
+  color: #04170f;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  box-shadow: 0 12px 30px rgba(16, 227, 154, 0.3);
+  transition: all 0.3s ease;
+}
+
+.ld-hero__call-btn:hover,
+.ld-hero__call-btn:focus-visible {
+  background: linear-gradient(180deg, #4bf7bd 0%, #1aefa6 100%);
+  color: #04170f;
+  box-shadow: 0 0 22px rgba(16, 227, 154, 0.55);
+  transform: translateY(-1px);
+}
+
+.ld-hero__call-btn:disabled {
+  opacity: 0.7;
+  box-shadow: none;
+  transform: none;
+  cursor: wait;
+}
+
+.ld-hero__demo-status {
+  min-height: 1rem;
+  margin: 0;
+  color: var(--ldh-emerald-soft);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.ld-hero__demo-status.is-error {
+  color: #fca5a5;
+}
+
+.ld-hero__widget-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.9rem 0 0;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.ld-hero__widget-note svg {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
 /* Keep the headline readable when the OS forces its own colors. */
 @media (forced-colors: active) {
-  .ld-hero__accent {
+  .ld-hero__accent,
+  .ld-hero__gold {
     background: none;
     -webkit-background-clip: border-box;
     background-clip: border-box;
+    -webkit-text-fill-color: currentColor;
     color: CanvasText;
   }
 

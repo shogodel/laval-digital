@@ -522,4 +522,97 @@
         });
     });
   })();
+
+  // Hero live-demo widget: capture a phone number so the team can place the
+  // demo call. Same public Lead Capture entry point as the other forms.
+  (function () {
+    var form = document.getElementById('demoCallForm');
+    if (!form) return;
+
+    var input = document.getElementById('demoPhone');
+    var status = document.getElementById('demoCallStatus');
+    var submitBtn = form.querySelector('button[type="submit"]');
+    if (!input || !status || !submitBtn) return;
+
+    var LEAD_CAPTURE_URL =
+      'https://sales.laval.digital/api/v1/LeadCapture/7b53bd21360ef4194a37eeb01919a1a4';
+
+    var isFr = (document.documentElement.lang || '').toLowerCase().indexOf('fr') === 0;
+    var copy = isFr
+      ? {
+          sending: 'Appel en cours…',
+          submit: 'Appelez-moi',
+          invalid: 'Entrez un numéro de téléphone valide (10 chiffres).',
+          error:
+            'Impossible de lancer l\'appel automatiquement. Appelez-nous au (514) 243-1580.',
+          success: 'Merci — notre agent IA vous appellera sous peu.',
+          description: 'Demande de démo téléphonique depuis le widget du héros.',
+          lastName: 'Demande de démo',
+        }
+      : {
+          sending: 'Calling…',
+          submit: 'Call Me Now',
+          invalid: 'Enter a valid phone number (10 digits).',
+          error: 'We couldn\'t start the call automatically. Call us at (514) 243-1580.',
+          success: 'Thanks — our AI agent will call you shortly.',
+          description: 'Live demo call request from the hero widget.',
+          lastName: 'Website demo request',
+        };
+
+    function setStatus(message, isError) {
+      status.textContent = message;
+      status.classList.toggle('is-error', !!isError);
+    }
+
+    input.addEventListener('input', function () {
+      input.classList.remove('is-invalid');
+      if (status.classList.contains('is-error')) setStatus('', false);
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var digits = input.value.replace(/\D/g, '');
+      if (digits.length < 10) {
+        input.classList.add('is-invalid');
+        setStatus(copy.invalid, true);
+        input.focus();
+        return;
+      }
+
+      input.classList.remove('is-invalid');
+      setStatus(copy.sending, false);
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('aria-busy', 'true');
+      submitBtn.textContent = copy.sending;
+
+      fetch(LEAD_CAPTURE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: '',
+          lastName: copy.lastName,
+          emailAddress: '',
+          phoneNumber: input.value.trim(),
+          description: copy.description,
+        }),
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          form.reset();
+          setStatus(copy.success, false);
+        })
+        .catch(function () {
+          setStatus(copy.error, true);
+        })
+        .finally(function () {
+          submitBtn.disabled = false;
+          submitBtn.removeAttribute('aria-busy');
+          submitBtn.textContent = copy.submit;
+        });
+    });
+  })();
 })();
