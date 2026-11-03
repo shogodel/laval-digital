@@ -635,6 +635,16 @@
       syncButtonState();
     }, 12000);
 
+    // Retell only accepts E.164, so normalise North American input for it.
+    function toE164(raw) {
+      var value = (raw || '').trim();
+      var digits = value.replace(/\D/g, '');
+      if (value.charAt(0) === '+' && digits.length >= 8) return '+' + digits;
+      if (digits.length === 10) return '+1' + digits;
+      if (digits.length === 11 && digits.charAt(0) === '1') return '+' + digits;
+      return digits ? '+' + digits : '';
+    }
+
     input.addEventListener('input', function () {
       input.classList.remove('is-invalid');
       if (status.classList.contains('is-error')) setStatus('', false);
@@ -664,7 +674,7 @@
         }
       }
 
-      var phone = input.value.trim();
+      var phone = toE164(input.value);
       input.classList.remove('is-invalid');
 
       // File the lead first — a call failure must not lose the record.
