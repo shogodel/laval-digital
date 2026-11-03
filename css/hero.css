@@ -759,6 +759,20 @@
   border-color: rgba(248, 113, 113, 0.7);
 }
 
+/* Turnstile sits between the phone field and the call button. */
+.ld-hero__turnstile {
+  display: flex;
+  justify-content: center;
+  min-height: 65px;
+  margin: 0.1rem 0 -0.1rem;
+  overflow: hidden;
+  border-radius: 0.7rem;
+}
+
+.ld-hero__turnstile iframe {
+  border-radius: 0.7rem;
+}
+
 .ld-hero__call-btn {
   display: inline-flex;
   align-items: center;

@@ -523,8 +523,8 @@
     });
   })();
 
-  // Hero live-demo widget: capture a phone number so the team can place the
-  // demo call. Same public Lead Capture entry point as the other forms.
+  // Hero live-demo widget: record the lead in EspoCRM, then ask the Retell
+  // bridge Worker to place the outbound demo call.
   (function () {
     var form = document.getElementById('demoCallForm');
     if (!form) return;
@@ -536,33 +536,104 @@
 
     var LEAD_CAPTURE_URL =
       'https://sales.laval.digital/api/v1/LeadCapture/7b53bd21360ef4194a37eeb01919a1a4';
+    var CALL_BRIDGE_URL = 'https://retell-bridge.lavaldigital.workers.dev/';
 
     var isFr = (document.documentElement.lang || '').toLowerCase().indexOf('fr') === 0;
     var copy = isFr
       ? {
-          sending: 'Appel en cours…',
+          sending: 'Connexion…',
           submit: 'Appelez-moi',
+          answered: 'Répondez à votre téléphone !',
           invalid: 'Entrez un numéro de téléphone valide (10 chiffres).',
+          verify: 'Veuillez compléter la vérification ci-dessus.',
           error:
-            'Impossible de lancer l\'appel automatiquement. Appelez-nous au (514) 243-1580.',
-          success: 'Merci — notre agent IA vous appellera sous peu.',
+            "Impossible de lancer l'appel. Appelez-nous au (514) 243-1580.",
+          success: 'Merci — votre téléphone devrait sonner dans quelques secondes.',
           description: 'Demande de démo téléphonique depuis le widget du héros.',
           lastName: 'Demande de démo',
         }
       : {
-          sending: 'Calling…',
+          sending: 'Connecting…',
           submit: 'Call Me Now',
+          answered: 'Answer Your Phone!',
           invalid: 'Enter a valid phone number (10 digits).',
-          error: 'We couldn\'t start the call automatically. Call us at (514) 243-1580.',
-          success: 'Thanks — our AI agent will call you shortly.',
+          verify: 'Please complete the verification above.',
+          error: "We couldn't start the call. Call us at (514) 243-1580.",
+          success: 'Thanks — your phone should ring in a few seconds.',
           description: 'Live demo call request from the hero widget.',
           lastName: 'Website demo request',
         };
+
+    var defaultButtonHTML = submitBtn.innerHTML;
+    var turnstileToken = window.__ldTurnstileToken || '';
+    var busy = false;
 
     function setStatus(message, isError) {
       status.textContent = message;
       status.classList.toggle('is-error', !!isError);
     }
+
+    function hasTurnstile() {
+      return typeof window.turnstile !== 'undefined';
+    }
+
+    function syncButtonState() {
+      if (busy) return;
+      submitBtn.disabled = hasTurnstile() && !turnstileToken;
+    }
+
+    function resetChallenge() {
+      turnstileToken = '';
+      window.__ldTurnstileToken = '';
+      if (hasTurnstile() && typeof window.turnstile.reset === 'function') {
+        try {
+          window.turnstile.reset();
+        } catch (err) {
+          /* the widget may already be gone */
+        }
+      }
+      syncButtonState();
+    }
+
+    function restoreButton() {
+      busy = false;
+      submitBtn.removeAttribute('aria-busy');
+      submitBtn.innerHTML = defaultButtonHTML;
+      syncButtonState();
+    }
+
+    // The head script buffers Turnstile callbacks until this handler exists.
+    window.__ldTurnstileEvent = function (type, token) {
+      if (type === 'success') {
+        turnstileToken = token || '';
+        if (turnstileToken) setStatus('', false);
+      } else {
+        turnstileToken = '';
+        if (type === 'error') setStatus(copy.verify, true);
+      }
+      syncButtonState();
+    };
+
+    syncButtonState();
+
+    // Keep the call button disabled until the challenge is solved. The poll
+    // also catches a token if the callback ran before this script loaded, and
+    // never leaves the button stuck when Turnstile is blocked.
+    var tokenWatch = setInterval(function () {
+      if (!hasTurnstile()) return;
+      try {
+        var current = window.turnstile.getResponse();
+        if (current) turnstileToken = current;
+      } catch (err) {
+        /* widget not ready yet */
+      }
+      syncButtonState();
+      if (turnstileToken) clearInterval(tokenWatch);
+    }, 500);
+    setTimeout(function () {
+      clearInterval(tokenWatch);
+      syncButtonState();
+    }, 12000);
 
     input.addEventListener('input', function () {
       input.classList.remove('is-invalid');
@@ -571,6 +642,7 @@
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (busy) return;
 
       var digits = input.value.replace(/\D/g, '');
       if (digits.length < 10) {
@@ -580,12 +652,22 @@
         return;
       }
 
-      input.classList.remove('is-invalid');
-      setStatus(copy.sending, false);
-      submitBtn.disabled = true;
-      submitBtn.setAttribute('aria-busy', 'true');
-      submitBtn.textContent = copy.sending;
+      if (hasTurnstile()) {
+        try {
+          turnstileToken = window.turnstile.getResponse() || turnstileToken;
+        } catch (err) {
+          /* fall back to the callback value */
+        }
+        if (!turnstileToken) {
+          setStatus(copy.verify, true);
+          return;
+        }
+      }
 
+      var phone = input.value.trim();
+      input.classList.remove('is-invalid');
+
+      // File the lead first — a call failure must not lose the record.
       fetch(LEAD_CAPTURE_URL, {
         method: 'POST',
         headers: {
@@ -596,23 +678,61 @@
           firstName: '',
           lastName: copy.lastName,
           emailAddress: '',
-          phoneNumber: input.value.trim(),
+          phoneNumber: phone,
           description: copy.description,
         }),
+      }).catch(function () {});
+
+      if (!hasTurnstile()) {
+        window.alert(copy.error);
+        setStatus(copy.error, true);
+        return;
+      }
+
+      busy = true;
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('aria-busy', 'true');
+      setStatus('', false);
+      submitBtn.textContent = copy.sending;
+
+      fetch(CALL_BRIDGE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ phone: phone, token: turnstileToken }),
       })
         .then(function (res) {
-          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json().then(
+            function (data) {
+              return { ok: res.ok, data: data };
+            },
+            function () {
+              return { ok: res.ok, data: {} };
+            },
+          );
+        })
+        .then(function (result) {
+          if (!result.ok || !result.data || result.data.success !== true) {
+            throw new Error('Call not triggered');
+          }
           form.reset();
+          busy = false;
+          submitBtn.removeAttribute('aria-busy');
+          submitBtn.textContent = copy.answered;
+          submitBtn.disabled = true;
           setStatus(copy.success, false);
+          resetChallenge(); // tokens are single-use
+          setTimeout(restoreButton, 6000);
         })
         .catch(function () {
+          window.alert(copy.error);
           setStatus(copy.error, true);
-        })
-        .finally(function () {
-          submitBtn.disabled = false;
-          submitBtn.removeAttribute('aria-busy');
-          submitBtn.textContent = copy.submit;
+          restoreButton();
+          resetChallenge();
         });
     });
   })();
+
 })();

@@ -129,7 +129,24 @@
         <!-- Laval Digital identity overrides -->
         <link href="css/laval.css?v=17" rel="stylesheet" />
         <!-- Hero component -->
-        <link href="css/hero.css?v=3" rel="stylesheet" />
+        <link href="css/hero.css?v=4" rel="stylesheet" />
+        <script>
+            /* Turnstile callbacks can fire before laval.js runs; buffer the token. */
+            window.__ldTurnstileToken = '';
+            window.onTurnstileSuccess = function (token) {
+                window.__ldTurnstileToken = token || '';
+                if (window.__ldTurnstileEvent) window.__ldTurnstileEvent('success', window.__ldTurnstileToken);
+            };
+            window.onTurnstileExpired = function () {
+                window.__ldTurnstileToken = '';
+                if (window.__ldTurnstileEvent) window.__ldTurnstileEvent('expired', '');
+            };
+            window.onTurnstileError = function () {
+                window.__ldTurnstileToken = '';
+                if (window.__ldTurnstileEvent) window.__ldTurnstileEvent('error', '');
+            };
+        </script>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     </head>
     <body id="page-top">
         <!-- Navigation-->
@@ -255,6 +272,7 @@
                             <form class="ld-hero__demo" id="demoCallForm" novalidate>
                                 <label class="visually-hidden" for="demoPhone">Phone number</label>
                                 <input class="form-control" id="demoPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Enter your phone number for a live demo" required />
+                                <div class="cf-turnstile ld-hero__turnstile" data-sitekey="0x4AAAAAAFxeQBLBL_Koopwc" data-theme="dark" data-size="flexible" data-callback="onTurnstileSuccess" data-expired-callback="onTurnstileExpired" data-error-callback="onTurnstileError"></div>
                                 <button class="btn ld-hero__call-btn" type="submit">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z" />
@@ -276,7 +294,7 @@
                 </div>
             </div>
         </section>
-        <!-- Compliance -->$ts
+        <!-- Compliance -->
         <section class="page-section" id="compliance">
             <div class="container">
                 <div class="text-center">
@@ -902,6 +920,6 @@
         <!-- Core theme JS-->
         <script src="js/scripts.js" defer></script>
         <!-- Laval Digital interactions-->
-        <script src="js/laval.js?v=10" defer></script>
+        <script src="js/laval.js?v=11" defer></script>
     </body>
 </html>
