@@ -41,9 +41,10 @@
   box-sizing: border-box;
 }
 
-/* Embedded in a page with the site's fixed navbar: clear the bar. */
+/* Embedded in a page with the site's sticky navbar: the bar is in flow, so
+   no extra clearance is needed on top of the hero's own padding. */
 .ld-hero--site {
-  --ldh-nav-clear: 1.35rem;
+  --ldh-nav-clear: 0rem;
 }
 
 /* ---------- Background ---------- */
